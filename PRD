@@ -1,0 +1,1666 @@
+# Traffic Digital Twin - DGP Demonstration MVP
+
+**Document type:** Product Requirements Document (PRD)  
+**Target build window:** 10-15 calendar days  
+**Primary audience:** Founder/Product, Frontend, Go Backend, ML/Simulation, QA/Demo team  
+**Demo audience:** DGP / senior Traffic Police / control-room stakeholders  
+**Operating mode:** Demonstration + simulation only; no live Odisha signal control  
+**Data policy for MVP:** Synthetic traffic + sample/public traffic video only. Real police/CCTV/controller data is explicitly out of scope until authorized after tender/approval.
+
+---
+
+## 1. Product statement
+
+Build a **Predictive Traffic Digital Twin and Decision-Support System** for a small connected road network. The MVP must demonstrate that a control room can:
+
+1. see the current traffic state,
+2. understand flow between connected nodes,
+3. forecast queue/congestion 30 sec to 5 min ahead,
+4. identify spillback before it forms,
+5. generate coordinated signal recommendations across multiple junctions,
+6. simulate the recommendation before applying it,
+7. keep a human operator in authority at all times,
+8. handle incidents and emergency vehicle priority,
+9. record every recommendation, override, and decision in an audit trail.
+
+The MVP is **not** a claim that Odisha traffic is already modeled. It is a working proof of the architecture and control logic using synthetic traffic and sample video.
+
+### Core message for DGP
+
+> CCTV tells the control room what is happening now. This system is designed to estimate what is likely to happen next across connected junctions, test possible interventions in a digital twin, and give Traffic Police a safe recommendation while retaining human authority.
+
+---
+
+## 2. Demo network
+
+The default demo topology is based on the supplied C1-C6 network.
+
+```text
+                   C2
+                   |
+                   |
+         C5 ------ C1 ------ C4
+                   |
+                   |
+                   C3
+                   |
+                   |
+                   C6
+```
+
+### 2.1 Node model
+
+All nodes are configurable. For the first build:
+
+- **C1**: primary signalized junction and main decision point.
+- **C3**: secondary signalized junction / upstream feeder to C1.
+- **C2, C4, C5, C6**: feeder/boundary/camera nodes. They may be modeled as signalized nodes later without changing the data model.
+
+The system must not hard-code this topology inside UI components. Store the network as graph data so another corridor can be loaded later.
+
+### 2.2 Primary traffic paths
+
+- C6 -> C3 -> C1 -> C2
+- C5 -> C1 -> C4
+- C4 -> C1 -> C5
+- C2 -> C1 -> C3 -> C6
+
+Turning ratios are synthetic configuration for the MVP.
+
+---
+
+## 3. Scope freeze
+
+### 3.1 Must build
+
+- Animated C1-C6 digital twin.
+- Synthetic demand/traffic generator.
+- Virtual signal controller.
+- Real-time aggregate traffic state.
+- Forecasts for +30 sec, +60 sec, +120 sec, +300 sec.
+- Spillback prediction.
+- Multi-junction recommendation engine.
+- Before-vs-after simulation.
+- Operator actions: Simulate, Approve in Digital Twin, Modify, Reject.
+- Manual mode / disable recommendations.
+- Incident scenario at C3.
+- Emergency vehicle route C6 -> C3 -> C1 -> C2.
+- Post-emergency recovery strategy.
+- Audit log.
+- System-health panel.
+- One sample-video computer-vision pipeline, preferably attached to C3.
+- Deterministic Presentation Mode for the DGP demo.
+- Offline/replay fallback for demo reliability.
+
+### 3.2 Explicitly not building in this MVP
+
+- Connection to Odisha Police CCTV.
+- Connection to real traffic signal controllers.
+- Automatic physical signal actuation.
+- Facial recognition.
+- ANPR/license plate recognition.
+- City-wide vehicle re-identification.
+- Production-grade custom deep-learning traffic forecasting.
+- Reinforcement learning signal control.
+- Kafka/Kubernetes/service mesh.
+- Citizen mobile app.
+- E-challan or enforcement functionality.
+- 25+ junction city model.
+
+---
+
+## 4. User roles
+
+### 4.1 Traffic Control Operator
+
+Needs a calm operational screen showing current conditions, predicted risk, actionable recommendations, and clear controls.
+
+Can:
+
+- inspect network/junction state,
+- open a recommendation,
+- simulate it,
+- approve it in the digital twin,
+- modify timing,
+- reject it with a reason,
+- activate manual mode,
+- initiate a demo incident/emergency scenario.
+
+### 4.2 Traffic Supervisor
+
+Needs network-level status, critical alerts, auditability, emergency state, and confidence that the system is bounded by safety rules.
+
+### 4.3 DGP / Executive Viewer
+
+Needs outcome-focused information, not engineering detail:
+
+- what is happening,
+- what is predicted,
+- why action is recommended,
+- what changes if the recommendation is used,
+- where human authority remains.
+
+---
+
+## 5. UX architecture
+
+Keep the product premium and low-density. Do not create a dashboard with 20 tiny cards.
+
+### Primary navigation
+
+1. **Command Center**
+2. **Network**
+3. **Vision**
+4. **Incidents**
+5. **Emergency**
+6. **Audit & Health**
+
+Junction intelligence and recommendation details open in a side drawer/modal from Command Center/Network instead of becoming additional permanent navigation items.
+
+### Presentation Mode
+
+A separate button in the top bar:
+
+`START DGP DEMONSTRATION`
+
+It launches a guided sequence:
+
+1. Current network.
+2. Future congestion prediction.
+3. Recommendation.
+4. Before-vs-after simulation.
+5. C3 incident.
+6. Ambulance corridor.
+7. Human override and audit.
+8. Shadow-pilot ask.
+
+---
+
+## 6. Visual design system
+
+### 6.1 Design goal
+
+Premium control-room software: serious, high-trust, quiet, modern, not flashy.
+
+### 6.2 Theme
+
+Use a dark control-room theme by default.
+
+Suggested tokens:
+
+- Background: near-black/navy (`#070B14` family).
+- Surface: dark slate (`#0E1524` family).
+- Border: subtle slate (`#1D2A3B`).
+- Primary text: off-white.
+- Secondary text: cool gray.
+- Normal: emerald.
+- Rising/attention: amber.
+- Critical: red.
+- Emergency: purple.
+- Offline/unknown: gray.
+
+Do not use saturated color everywhere. Status colors are reserved for state and priority.
+
+### 6.3 Typography
+
+Use **Geist** or **Inter**.
+
+- 28-32 px: page title / primary KPI.
+- 18-20 px: section heading.
+- 14-16 px: operational text.
+- 12-13 px: secondary metadata.
+
+Avoid all-caps except status chips and compact labels.
+
+### 6.4 Layout
+
+- 12-column desktop grid.
+- 8 px spacing unit.
+- 16-20 px internal card padding.
+- 12-16 px card radius.
+- 1 px subtle borders.
+- Minimal shadow.
+- Use empty space intentionally.
+- One dominant visual per screen.
+
+### 6.5 Motion
+
+- 150-250 ms transitions.
+- Vehicle dots animate smoothly between 1-second state updates.
+- Junction status transitions should fade, not blink.
+- Critical alert may pulse once when created, never continuously.
+
+---
+
+## 7. Frontend technical stack
+
+### Required stack
+
+- **Next.js 15+**
+- **React 19+**
+- **TypeScript**
+- **Tailwind CSS**
+- **shadcn/ui** for primitives only; customize styling.
+- **Zustand** for live operational state.
+- **TanStack Query** for REST data and mutations.
+- **ECharts** for forecasts/time-series.
+- **Custom SVG/Canvas** for the C1-C6 digital twin.
+- **Lucide** icons.
+- **Framer Motion** only where it improves state transitions.
+
+### Why custom SVG/Canvas instead of a map first
+
+The DGP demo must be deterministic, readable, and offline. The C1-C6 topology is more important than a geographic basemap. Build the graph as a reusable component driven by JSON coordinates and link metadata.
+
+---
+
+## 8. Frontend screen specification
+
+## 8.1 Command Center
+
+### Purpose
+
+Answer in one view:
+
+- What is happening now?
+- What will become critical soon?
+- What does the system recommend?
+- Is a human in control?
+
+### Layout
+
+**Top bar**
+
+- Product: `Traffic Digital Twin`
+- Environment chip: `DEMONSTRATION MODE`
+- Data chip: `SYNTHETIC DATA`
+- Control chip: `NO LIVE SIGNAL CONTROL`
+- Clock.
+- System health indicator.
+- `START DGP DEMONSTRATION` button.
+- `Manual Mode` control.
+
+**Left/center 8 columns: Network canvas**
+
+- C1-C6 graph.
+- Animated vehicle flow.
+- Directional arrows.
+- Junction color/status.
+- Link labels: flow, queue, speed.
+- Click node to open Junction Intelligence drawer.
+
+**Right 4 columns: Action rail**
+
+1. Highest-priority alert.
+2. Current recommendation.
+3. Next predicted issue.
+4. Simulate button.
+
+**Bottom compact KPI strip**
+
+- Vehicles in modeled network.
+- Avg speed.
+- Avg queue.
+- Critical nodes.
+- Predicted spillback ETA.
+
+Avoid more than 5 KPIs.
+
+### Required states
+
+- Normal traffic.
+- Rising congestion.
+- Critical spillback risk.
+- Incident mode.
+- Emergency mode.
+- System degraded.
+- Manual mode.
+
+---
+
+## 8.2 Junction Intelligence drawer
+
+Opens when C1/C3 is selected.
+
+### Sections
+
+**Current state**
+
+- Current signal phase.
+- Phase remaining.
+- Queue by approach.
+- Arrival rate.
+- Departure rate.
+- Average speed.
+- Occupancy.
+- Downstream storage.
+
+**Forecast chart**
+
+Tabs / selector:
+
+- +30 sec
+- +1 min
+- +2 min
+- +5 min
+
+Display queue and occupancy forecast with confidence band only if confidence is meaningful. In synthetic mode label it `simulation forecast`.
+
+**Why this is happening**
+
+Plain-language explanation generated from deterministic facts, for example:
+
+> C3 is expected to discharge a northbound platoon of approximately 34 vehicles. Based on current travel time, the platoon should reach C1 in 74-96 sec. C1 northbound storage is forecast to exceed 90%.
+
+**Recommendation summary**
+
+- proposed phase timing changes,
+- expected impact,
+- safety constraints satisfied.
+
+---
+
+## 8.3 Recommendation decision panel
+
+### Required information
+
+- Recommendation ID.
+- Priority.
+- Affected junctions.
+- Trigger/reason.
+- Proposed timing change.
+- Predicted impact.
+- Explanation.
+- Safety status.
+
+### Required controls
+
+- `SIMULATE`
+- `APPROVE IN DIGITAL TWIN`
+- `MODIFY`
+- `REJECT`
+
+### Modify workflow
+
+Operator can edit bounded values only.
+
+Example:
+
+- AI recommendation: C1 NS green 42 sec.
+- Allowed manual range: 20-55 sec.
+- Operator chooses 36 sec.
+
+Reason is mandatory:
+
+- Field observation.
+- Accident/obstruction.
+- Pedestrian crowd.
+- Procession/festival.
+- VIP movement.
+- Emergency vehicle.
+- Camera/sensor issue.
+- Signal malfunction.
+- Other.
+
+Every action must be audited.
+
+---
+
+## 8.4 Network screen
+
+A larger full-width digital twin for technical/operations use.
+
+### Features
+
+- Node/link inspection.
+- Current vs future toggle.
+- Time slider: NOW / +30 s / +1 m / +2 m / +5 m.
+- Flow direction.
+- Link occupancy.
+- Queue length.
+- Signal phase overlay.
+- Platoon visualization.
+- Display source tag: `SIMULATED`, `VIDEO ANALYTICS`, or later `LIVE`.
+
+### Before-vs-after mode
+
+Split screen:
+
+- Left: current/baseline strategy.
+- Right: predictive recommendation.
+
+Synchronize both simulations to the same initial condition and random seed.
+
+Show only 4 outcome metrics:
+
+- max queue,
+- average delay,
+- spillback occurrence,
+- stops/vehicle.
+
+All demo values must be labeled as simulated.
+
+---
+
+## 8.5 Vision screen
+
+### Purpose
+
+Demonstrate how a camera becomes machine-readable traffic state.
+
+For MVP, use **one sample traffic video** mapped to C3.
+
+### Left
+
+Video with optional overlays:
+
+- vehicle bounding boxes,
+- temporary track IDs,
+- lane polygons,
+- counting line,
+- queue ROI.
+
+### Right
+
+Aggregate outputs:
+
+- vehicle count by class,
+- lane-wise flow,
+- queue estimate,
+- occupancy/density,
+- speed estimate (only if calibrated; otherwise label `demo estimate`),
+- direction/turn estimate.
+
+### Bottom
+
+`Upstream/Downstream impact`:
+
+- vehicles expected toward C1 in 30/60/120 sec,
+- estimated ETA range,
+- C1 risk indication.
+
+### Privacy rule
+
+Track IDs are temporary camera-local IDs. Do not persist identity across intersections and do not implement ANPR.
+
+---
+
+## 8.6 Incidents screen
+
+### Scenario controls
+
+- Location: C3.
+- Type: accident / blockage / breakdown / procession / waterlogging / signal failure.
+- Severity/capacity slider.
+- Start/reset scenario.
+
+### Demo default
+
+`Accident at C3, effective capacity 35% of normal.`
+
+### Outputs
+
+- incident card,
+- capacity loss,
+- predicted upstream queue,
+- affected links,
+- recommended gating/clearance strategy,
+- estimated recovery cycles,
+- before-vs-after simulation.
+
+The recommendation engine should reason about network recovery, not simply extend the blocked movement's green.
+
+---
+
+## 8.7 Emergency screen
+
+### Default route
+
+C6 -> C3 -> C1 -> C2
+
+### Required information
+
+- emergency vehicle location,
+- ETA to each node,
+- pre-clearance schedule,
+- current signal phase,
+- safe transition countdown,
+- corridor status.
+
+### Required sequence
+
+Normal phase -> amber -> all-red -> priority phase -> emergency passage -> recovery.
+
+### Recovery view
+
+After the vehicle clears, show:
+
+- accumulated cross-road queue,
+- compensating cycles,
+- expected return to normal.
+
+Emergency priority can override optimization priority but cannot override signal-safety constraints.
+
+---
+
+## 8.8 Audit & Health screen
+
+### Audit tab
+
+Timeline/table with:
+
+- timestamp,
+- event type,
+- junction,
+- recommendation ID,
+- operator action,
+- before/after values,
+- reason,
+- result.
+
+### Health tab
+
+- Go API.
+- Simulation engine.
+- Intelligence service.
+- CV pipeline.
+- Database.
+- Signal-controller connection: `NOT CONNECTED`.
+- CCTV source: `DEMO/SAMPLE`.
+- Emergency API: `SIMULATED`.
+
+Degraded components should never be hidden.
+
+---
+
+## 9. Backend architecture
+
+The backend must be **Go-first**.
+
+### 9.1 Go stack
+
+- **Go 1.24+**
+- **chi** router
+- **pgx** for PostgreSQL
+- **sqlc** for typed query generation
+- **nhooyr/websocket** or equivalent maintained WebSocket package
+- **zap** or **slog** for structured logging
+- **OpenTelemetry** instrumentation hooks
+- **JWT/session auth** only if needed for demo; otherwise a single seeded operator account is acceptable.
+
+### 9.2 Responsibilities of Go backend
+
+Go is the authoritative application/orchestration layer.
+
+It owns:
+
+- REST API.
+- WebSocket gateway.
+- session/scenario lifecycle.
+- live network state cache.
+- validation of commands.
+- human approval/modify/reject workflow.
+- safety envelope enforcement at application level.
+- audit logging.
+- persistence.
+- system health aggregation.
+- replay/presentation mode.
+- API integration point for future CCTV/controller systems.
+
+Go should **not** perform neural-network inference.
+
+---
+
+## 10. Python intelligence/simulation services
+
+Use Python only where the ecosystem is materially stronger.
+
+### 10.1 Simulation service
+
+- Python 3.12+
+- SUMO
+- TraCI
+- Pydantic data models
+- gRPC to Go
+
+Responsibilities:
+
+- run C1-C6 traffic simulation,
+- apply synthetic demand profiles,
+- expose aggregate state every second,
+- apply signal plans in simulation,
+- clone/reset scenarios,
+- run baseline and candidate simulations,
+- deterministic replay using seeds.
+
+### 10.2 Intelligence service
+
+- Python 3.12+
+- NumPy
+- SciPy
+- NetworkX (optional, mainly graph utilities)
+- ONNX Runtime / PyTorch for CV/ML where needed
+- gRPC to Go
+
+Responsibilities:
+
+- short-horizon traffic prediction,
+- platoon/arrival estimation,
+- spillback risk,
+- recommendation/optimization,
+- explanation payload generation,
+- CV aggregation.
+
+Do not expose Python services directly to the browser.
+
+---
+
+## 11. Service communication
+
+```mermaid
+flowchart LR
+  UI[Next.js UI] <-- REST/WebSocket --> GO[Go Backend]
+  GO <-- gRPC --> SIM[SUMO Simulation Service]
+  GO <-- gRPC --> AI[Intelligence Service]
+  AI --> CV[CV Pipeline]
+  GO --> DB[(PostgreSQL)]
+```
+
+### Rules
+
+- Browser talks only to Go.
+- Go validates every operator action.
+- Python services are replaceable implementation details.
+- Go owns audit and persistence.
+- Go sends only safe/validated signal plans to simulation.
+
+---
+
+## 12. Database
+
+### 12.1 MVP database
+
+Use **PostgreSQL 16+**.
+
+Do not introduce Redis unless the team has a concrete need. Live state can remain in memory in Go for this MVP and be periodically snapshotted.
+
+### 12.2 Tables
+
+#### `network_nodes`
+
+- id
+- code (`C1`...)
+- node_type
+- x
+- y
+- metadata jsonb
+
+#### `network_links`
+
+- id
+- from_node
+- to_node
+- length_m
+- lanes
+- storage_capacity_veh
+- free_flow_speed_kph
+- metadata jsonb
+
+#### `signal_phases`
+
+- id
+- node_id
+- phase_code
+- allowed_movements jsonb
+- min_green_s
+- max_green_s
+- amber_s
+- all_red_s
+
+#### `scenario_runs`
+
+- id
+- scenario_type
+- seed
+- started_at
+- ended_at
+- mode
+- status
+
+#### `traffic_state_snapshots`
+
+- id
+- scenario_run_id
+- timestamp
+- node_id/link_id
+- queue_veh
+- arrival_rate_vpm
+- departure_rate_vpm
+- avg_speed_kph
+- occupancy
+- source
+
+Do not save every one-second sample forever. For the demo, save 5-second aggregates or important events.
+
+#### `forecasts`
+
+- id
+- scenario_run_id
+- created_at
+- target_type
+- target_id
+- horizon_s
+- predicted_queue
+- predicted_occupancy
+- predicted_arrivals
+- risk_level
+- spillback_eta_s
+- model_version
+
+#### `recommendations`
+
+- id
+- scenario_run_id
+- created_at
+- priority
+- reason_code
+- reason_text
+- status
+- score
+- safety_status
+- explanation jsonb
+
+#### `recommendation_actions`
+
+- id
+- recommendation_id
+- node_id
+- phase_code
+- action_type
+- old_value
+- proposed_value
+- unit
+
+#### `operator_actions`
+
+- id
+- recommendation_id
+- operator_id
+- action
+- modified_payload jsonb
+- reason_code
+- reason_text
+- created_at
+
+#### `incidents`
+
+- id
+- scenario_run_id
+- node/link
+- type
+- severity
+- capacity_factor
+- started_at
+- ended_at
+
+#### `emergency_events`
+
+- id
+- scenario_run_id
+- vehicle_ref
+- route jsonb
+- state
+- started_at
+- cleared_at
+
+#### `audit_events`
+
+- id
+- scenario_run_id
+- event_type
+- actor
+- payload jsonb
+- created_at
+
+#### `system_health_events`
+
+- id
+- component
+- state
+- details jsonb
+- created_at
+
+---
+
+## 13. API specification
+
+### 13.1 REST
+
+`GET /api/v1/network`
+
+Returns nodes, links, geometry, signal metadata.
+
+`GET /api/v1/state`
+
+Returns latest aggregate network state.
+
+`GET /api/v1/junctions/{id}`
+
+Current and forecast state for one node.
+
+`GET /api/v1/recommendations/active`
+
+Current actionable recommendations.
+
+`POST /api/v1/recommendations/{id}/simulate`
+
+Runs candidate in digital twin and returns baseline vs candidate outcome.
+
+`POST /api/v1/recommendations/{id}/approve`
+
+Applies candidate to digital twin only.
+
+`POST /api/v1/recommendations/{id}/modify`
+
+Validates bounded manual edits, then simulates/applies in digital twin.
+
+`POST /api/v1/recommendations/{id}/reject`
+
+Requires reason.
+
+`POST /api/v1/scenarios/{type}/start`
+
+Types: `peak_surge`, `incident_c3`, `ambulance_corridor`.
+
+`POST /api/v1/scenarios/reset`
+
+Reset to deterministic baseline.
+
+`POST /api/v1/mode/manual`
+
+Disable recommendations.
+
+`POST /api/v1/mode/recommendation`
+
+Enable recommendation-only mode.
+
+`GET /api/v1/audit`
+
+Paginated event log.
+
+`GET /api/v1/health`
+
+Component health.
+
+### 13.2 WebSocket
+
+`/ws/v1/live`
+
+Message types:
+
+- `network.state`
+- `junction.state`
+- `forecast.updated`
+- `recommendation.created`
+- `recommendation.updated`
+- `incident.updated`
+- `emergency.updated`
+- `health.updated`
+- `audit.appended`
+
+Target end-to-end latency from new simulator state to browser: **< 500 ms on the demo machine**.
+
+---
+
+## 14. Live state contract
+
+Example:
+
+```json
+{
+  "ts": "2026-09-14T06:42:21+05:30",
+  "scenario_run_id": "demo-001",
+  "mode": "recommendation_only",
+  "nodes": {
+    "C1": {
+      "status": "orange",
+      "queue_veh": 27,
+      "avg_speed_kph": 21,
+      "occupancy": 0.76,
+      "phase": "NS_GREEN",
+      "phase_remaining_s": 17,
+      "source": "simulated"
+    }
+  },
+  "links": {
+    "C3_C1": {
+      "flow_vpm": 31,
+      "queue_veh": 18,
+      "avg_speed_kph": 17,
+      "occupancy": 0.72
+    }
+  }
+}
+```
+
+---
+
+## 15. ML / Computer Vision requirements
+
+## 15.1 MVP philosophy
+
+Do not fake a trained Odisha traffic model without Odisha data.
+
+For the DGP MVP:
+
+- traffic prediction is physics/flow based,
+- optimization is constrained model-based control,
+- CV uses pretrained models on sample video,
+- all claims are marked as simulated/demo.
+
+After authorized data access, replace/calibrate components with data-driven models where evidence supports it.
+
+---
+
+## 15.2 Computer vision pipeline
+
+### Stack
+
+- Python
+- OpenCV
+- Ultralytics YOLO (small pretrained model for demo)
+- ByteTrack
+- NumPy
+- ONNX Runtime if needed for stable inference packaging
+
+### Outputs
+
+Per camera/approach:
+
+- count by vehicle class,
+- lane assignment,
+- flow vehicles/min,
+- queue estimate,
+- occupancy/density,
+- temporary track speed estimate,
+- direction/turn category if entry/exit zones are configured.
+
+### Vehicle classes
+
+- bike
+- car
+- auto
+- bus
+- truck
+
+### Lane assignment
+
+Use polygonal lane ROIs. A track belongs to a lane based on bottom-center point or calibrated ground-plane point.
+
+### Counting
+
+Count once when a track crosses a configured virtual line in the valid direction.
+
+### Queue estimation
+
+A vehicle is considered queued when:
+
+- its track is inside the queue ROI, and
+- estimated motion remains below threshold for a minimum duration.
+
+Without camera calibration, label speed as approximate/demo and do not present it as validated field speed.
+
+### Privacy
+
+- temporary camera-local track IDs only,
+- no cross-camera person/vehicle identity,
+- no ANPR,
+- no face recognition.
+
+---
+
+## 16. Traffic-state estimation
+
+For each directed link `l` at time `t`, maintain:
+
+- `q_l(t)`: queue vehicles,
+- `a_l(t)`: arrival rate,
+- `d_l(t)`: departure rate,
+- `v_l(t)`: average speed,
+- `o_l(t)`: occupancy,
+- `C_l`: storage capacity,
+- `tau_l(t)`: estimated travel time.
+
+Use exponential smoothing for noisy observations:
+
+`x_smooth(t) = alpha * x_observed(t) + (1-alpha) * x_smooth(t-1)`
+
+Default `alpha` for demo: 0.3-0.5 depending on variable.
+
+---
+
+## 17. Short-horizon prediction engine
+
+### 17.1 Queue conservation
+
+At each model step:
+
+`q_l(t+1) = max(0, q_l(t) + arrivals_l(t) - departures_l(t))`
+
+Departures are limited by:
+
+- signal state,
+- saturation flow,
+- current queue,
+- downstream receiving capacity.
+
+### 17.2 Downstream receiving capacity
+
+`R_l(t) = max(0, 1 - q_l(t)/C_l)`
+
+When downstream storage is nearly full, upstream discharge should be gated even if upstream demand is high.
+
+### 17.3 Platoon prediction
+
+When a signal releases a burst of vehicles, group the burst as a platoon:
+
+- size,
+- departure time,
+- average speed/travel time distribution,
+- destination split.
+
+Expected downstream arrival:
+
+`ETA = departure_time + travel_time`
+
+with a tolerance band.
+
+This makes the demo visually explainable: C3 releases a platoon and C1 sees it before the queue forms.
+
+### 17.4 Prediction horizons
+
+- 30 sec
+- 60 sec
+- 120 sec
+- 300 sec
+
+The control engine should optimize primarily over 120 sec for the MVP. The 300-sec forecast is advisory because uncertainty grows quickly.
+
+---
+
+# 18. Core control algorithm: Predictive Network MPC (PN-MPC)
+
+This is the primary intelligent algorithm for the digital twin.
+
+It combines:
+
+1. traffic conservation,
+2. predicted platoon arrivals,
+3. downstream storage,
+4. queue pressure,
+5. signal safety constraints,
+6. operator/manual constraints,
+7. emergency priority,
+8. short-horizon simulation of candidate plans.
+
+It is intentionally more explainable and safer for an MVP than reinforcement learning.
+
+## 18.1 Decision cadence
+
+Every **5 seconds**:
+
+1. read current network state,
+2. update 30/60/120/300-sec forecasts,
+3. compute risk,
+4. generate feasible signal-plan candidates,
+5. simulate each candidate over a 120-sec horizon,
+6. score candidate outcomes,
+7. publish the best recommendation and two alternatives,
+8. wait for operator action.
+
+No recommendation is physically actuated in the MVP.
+
+## 18.2 Candidate actions
+
+For each controlled junction:
+
+- green split +/- 5 or 10 sec,
+- phase order only if configured safe,
+- cycle length within allowed bounds,
+- downstream offset +/- 5 or 10 sec,
+- upstream gating when downstream storage is critical.
+
+Do not allow arbitrary phase creation.
+
+## 18.3 Hard constraints
+
+A candidate is invalid if it violates any of:
+
+- minimum green,
+- maximum green,
+- amber duration,
+- all-red duration,
+- conflicting movement rules,
+- maximum continuous hold,
+- maximum allowed pedestrian/cross-road wait (if modeled),
+- manual lock,
+- incident closure,
+- downstream storage lockout,
+- emergency safety sequence.
+
+Invalid candidates receive infinite cost and are discarded.
+
+## 18.4 Objective function
+
+For candidate plan `u` over horizon `H`:
+
+`J(u) = wq*Q + wd*D + ws*S + wstop*STOP + wsw*SWITCH + wf*FAIR + wem*EMERG + wov*OVERRIDE`
+
+Where:
+
+- `Q`: total queued vehicles over time,
+- `D`: total delay,
+- `S`: spillback penalty,
+- `STOP`: stop count,
+- `SWITCH`: penalty for excessive signal-plan changes,
+- `FAIR`: starvation/fairness penalty,
+- `EMERG`: emergency vehicle delay,
+- `OVERRIDE`: deviation from a manual operator lock/preference.
+
+Suggested demo weights:
+
+- `wq = 1.0`
+- `wd = 0.8`
+- `ws = 3.0`
+- `wstop = 0.35`
+- `wsw = 0.25`
+- `wf = 1.2`
+- `wem = 10.0` when emergency is active, else 0
+- `wov = very high` when operator has locked a movement
+
+These are initial engineering parameters, not field-calibrated values.
+
+## 18.5 Spillback penalty
+
+For link utilization `rho = q/C`:
+
+- below 0.75: small/no penalty,
+- 0.75-0.90: increasing penalty,
+- above 0.90: steep quadratic penalty,
+- >= 1.00: critical/infeasible where possible.
+
+This makes the optimizer prioritize preventing a queue from blocking upstream intersections.
+
+---
+
+# 19. Adaptive Green Duty Allocator (AGDA)
+
+This is the fast algorithm that answers:
+
+> **Which movement/junction should get service now, and how many green seconds should it receive?**
+
+AGDA creates a good candidate plan. PN-MPC then tests/refines it in the digital twin.
+
+## 19.1 Phase service need
+
+For each phase `p`:
+
+`Need_p = CurrentQueue_p + lambdaA*PredictedArrivals_p(H) + lambdaW*WaitAge_p`
+
+Recommended initial values:
+
+- `lambdaA = 0.8`
+- `lambdaW = 0.4`
+
+Normalize all components before combining.
+
+## 19.2 Receiving-capacity factor
+
+If the movement's downstream link is full, giving it more green is harmful.
+
+`Receive_p = max(0, 1 - DownstreamOccupancy_p^gamma)`
+
+Suggested `gamma = 2`.
+
+## 19.3 Emergency/incident modifiers
+
+`Priority_p = Need_p * Receive_p * Fairness_p + EmergencyBoost_p - IncidentPenalty_p`
+
+Emergency movement can receive a very large boost but still cannot violate amber/all-red/conflict constraints.
+
+A movement blocked by an incident receives a severe penalty unless the action is part of a clearance/recovery strategy.
+
+## 19.4 Green budget allocation
+
+Let:
+
+- `Cycle` = target cycle seconds,
+- `LostTime` = amber/all-red total,
+- `MinGreenSum` = sum of phase minimums.
+
+Available flexible green:
+
+`Gflex = Cycle - LostTime - MinGreenSum`
+
+Convert priorities to shares using a tempered softmax:
+
+`Share_p = exp(Priority_p/T) / sum(exp(Priority/T))`
+
+Then:
+
+`Green_p = MinGreen_p + Gflex * Share_p`
+
+Clip to max green, redistribute unused seconds, and repeat until the cycle budget is satisfied.
+
+Use a temperature `T` that prevents one phase from taking the whole cycle unless emergency logic is active.
+
+## 19.5 Fairness guard
+
+Maintain `WaitAge_p` for every phase.
+
+If a phase has waited above a configurable threshold, its fairness multiplier rises regardless of raw demand. This prevents starvation of a low-volume road.
+
+## 19.6 Corridor offset coordination
+
+For a platoon predicted to reach downstream junction `j` at ETA `t_eta`, choose the downstream green start so its green window overlaps the arrival window.
+
+Approximate target:
+
+`Offset_j = (t_eta - desired_green_center) mod Cycle`
+
+PN-MPC tests nearby offset alternatives and selects the one with lowest network cost.
+
+---
+
+## 20. Recommendation explanation engine
+
+The UI must never display only a number. Every recommendation must contain a machine-readable reason and a plain-language explanation.
+
+Example fact payload:
+
+```json
+{
+  "trigger": "spillback_risk",
+  "target": "C1:northbound",
+  "spillback_eta_s": 104,
+  "upstream_source": "C3",
+  "predicted_arrivals_120s": 36,
+  "downstream_occupancy_now": 0.61,
+  "downstream_occupancy_predicted": 0.94,
+  "actions": [
+    {"junction":"C1","phase":"NS","delta_green_s":12},
+    {"junction":"C3","phase":"NB","delta_green_s":-6}
+  ]
+}
+```
+
+Rendered explanation:
+
+> C1 northbound storage is predicted to exceed 90% in about 104 sec. A platoon released from C3 is expected to add approximately 36 vehicles over the next two minutes. The recommended plan increases C1 clearance while slightly reducing C3 release to prevent spillback.
+
+Do not use an LLM to invent operational facts. If an LLM is added later, it may only verbalize structured facts produced by deterministic services.
+
+---
+
+## 21. Scenario definitions
+
+## 21.1 Scenario A: Peak surge
+
+**Goal:** prove predictive multi-junction coordination.
+
+- demand surge originates at C6,
+- reaches C3,
+- C3 releases platoon toward C1,
+- C1 initially appears manageable,
+- forecast predicts C1 spillback in ~90-120 sec,
+- system recommends C1 clearance increase + C3 metering + optional C2 offset,
+- before/after simulation shows difference.
+
+### Acceptance
+
+- alert appears before C1 becomes critical,
+- explanation references upstream C3/C6 flow,
+- operator can simulate and approve in digital twin,
+- baseline and candidate use identical initial state.
+
+## 21.2 Scenario B: C3 incident
+
+**Goal:** prove network recovery logic.
+
+- C3 capacity drops to 35%,
+- C6 queue builds,
+- receiving capacity changes,
+- system does not blindly increase green into blocked space,
+- recommends upstream gating + downstream clearance,
+- estimates recovery cycles.
+
+## 21.3 Scenario C: Ambulance corridor
+
+**Route:** C6 -> C3 -> C1 -> C2
+
+**Goal:** prove predictive pre-clearance + recovery.
+
+- simulate authenticated emergency event,
+- compute ETA per node,
+- safely transition signals ahead of arrival,
+- show corridor progress,
+- after passage, compensate cross-road queues,
+- return to normal plan within a bounded number of cycles.
+
+---
+
+## 22. Human-in-the-loop model
+
+### MVP modes
+
+1. **Observe** - prediction only.
+2. **Recommend** - prediction + recommendations; operator decides.
+
+The DGP demo must run primarily in **Recommend** mode.
+
+### Future modes
+
+3. **Supervised Control** - approved bounded strategies may be sent to controllers.
+4. **Autonomous Bounded Control** - future only, after field validation and approvals.
+
+### Authority chain
+
+```text
+Sensors/Simulation
+      -> Prediction
+      -> Recommendation
+      -> Operator approve/modify/reject
+      -> Safety validator
+      -> Digital Twin in MVP
+```
+
+Future:
+
+```text
+... -> Safety validator -> Controller adapter -> Signal controller
+```
+
+---
+
+## 23. Safety requirements
+
+Even though the MVP is simulation-only, implement safety semantics now.
+
+- Never switch conflicting phases directly.
+- Always honor amber and all-red.
+- Never exceed configured min/max green.
+- Never allow optimizer to bypass manual lock.
+- If intelligence service is unavailable, recommendations stop.
+- If state confidence is low, UI displays degraded status.
+- Manual mode must disable new recommendations immediately.
+- Emergency mode may change priority but not safety constraints.
+- All operator actions are auditable.
+
+---
+
+## 24. Demo reliability requirements
+
+The DGP demo cannot depend on the internet.
+
+### Required
+
+- local install works offline,
+- fixed scenario seeds,
+- one-click reset,
+- scenario starts in < 5 sec,
+- replay mode can drive UI from prerecorded JSON if SUMO/CV fails,
+- a backup demo video should exist,
+- no production service dependency,
+- no external map dependency.
+
+### Golden replay
+
+Record a known-good 8-minute event stream. Add a hidden/admin control:
+
+`LIVE SIMULATION / GOLDEN REPLAY`
+
+This is a fail-safe, not the primary demo mode.
+
+---
+
+## 25. Performance targets
+
+- UI first load on demo laptop: < 3 sec after local services are running.
+- State update cadence: 1 Hz.
+- UI animation: perceived 30-60 fps.
+- Backend API p95 local: < 150 ms.
+- State-to-browser latency: < 500 ms.
+- Recommendation generation: < 2 sec for MVP candidate set.
+- Scenario reset: < 5 sec.
+- No browser memory growth during a 30-minute rehearsal.
+
+---
+
+## 26. Proposed repo structure
+
+```text
+traffic-digital-twin/
+  apps/
+    web/                    # Next.js
+    api/                    # Go backend
+  services/
+    simulation/             # Python + SUMO + TraCI
+    intelligence/           # Python prediction/optimizer/CV
+  packages/
+    contracts/              # protobuf/JSON schemas
+    scenario-config/        # C1-C6 configs
+  infra/
+    docker/
+    compose/
+  db/
+    migrations/
+    queries/
+  docs/
+    PRD.md
+    architecture.md
+    demo-script.md
+  scripts/
+    dev-up.sh
+    seed-demo.sh
+    record-golden-replay.sh
+  AGENT.md
+```
+
+---
+
+## 27. 15-day build plan
+
+### Day 1
+
+- freeze scope,
+- repo setup,
+- C1-C6 graph JSON,
+- UI shell,
+- Go API skeleton,
+- Postgres migrations.
+
+### Day 2
+
+- SUMO network,
+- routes,
+- synthetic demand generator,
+- Go/Python gRPC contract.
+
+### Day 3
+
+- live state stream from SUMO -> Go -> WebSocket -> UI,
+- C1-C6 animated canvas.
+
+### Day 4
+
+- signal state model,
+- queue/flow/speed/occupancy aggregates,
+- junction drawer.
+
+### Day 5
+
+- 30/60/120/300-sec forecast,
+- platoon logic,
+- spillback risk.
+
+### Day 6
+
+- AGDA fast allocator,
+- candidate plan creation,
+- safety constraint validator.
+
+### Day 7
+
+- PN-MPC candidate simulation and scoring,
+- recommendation explanation.
+
+### Day 8
+
+- baseline vs recommendation simulation,
+- split-screen compare.
+
+### Day 9
+
+- operator approve/modify/reject,
+- reasons,
+- audit log,
+- manual mode.
+
+### Day 10
+
+- C3 incident scenario,
+- capacity loss + recovery strategy.
+
+### Day 11
+
+- ambulance route,
+- safe pre-clearance,
+- recovery cycles.
+
+### Day 12
+
+- one-camera CV pipeline,
+- C3 vision analytics screen,
+- connect aggregate CV output into Go state contract.
+
+### Day 13
+
+- Audit & Health screen,
+- degraded states,
+- presentation mode.
+
+### Day 14
+
+- UI polish,
+- performance,
+- deterministic scenario tuning,
+- golden replay.
+
+### Day 15
+
+- bug fixes only,
+- no new features,
+- full rehearsal,
+- offline package,
+- backup recording.
+
+If only 10 days are available, cut the CV screen and advanced charts before cutting prediction, recommendation, incident, emergency, human control, or replay reliability.
+
+---
+
+## 28. Definition of done
+
+The MVP is done when a non-technical executive can watch an 8-minute demo and clearly understand all of the following without verbal rescue:
+
+1. Current traffic is visible on C1-C6.
+2. C1 congestion is predicted before it happens.
+3. The reason is traced to upstream traffic.
+4. The system proposes a coordinated C1/C3 action.
+5. The action can be simulated before application.
+6. Baseline vs recommendation is visually comparable.
+7. The operator can approve, modify, or reject.
+8. Incident mode changes strategy intelligently.
+9. Ambulance mode pre-clears safely and then recovers cross traffic.
+10. The audit log proves who decided what.
+11. The UI clearly states synthetic/demo data and no live signal control.
+12. The entire demo can run offline and be reset deterministically.
+
+---
+
+## 29. Post-approval evolution path
+
+### Phase 1 - Shadow pilot
+
+Inputs become authorized real feeds:
+
+- CCTV/traffic analytics,
+- signal phase/status,
+- junction geometry,
+- link lengths,
+- existing timing plans,
+- incident records,
+- manual overrides.
+
+System remains non-actuating. Compare current operations vs recommendations.
+
+### Phase 2 - Supervised live pilot
+
+Only after evidence and approvals:
+
+`Prediction -> Recommendation -> Operator Approval -> Safety Validator -> Controller Adapter`
+
+### Phase 3 - Bounded automation
+
+Only if shadow and supervised pilots demonstrate measurable benefit and safety.
+
+---
+
+## 30. Data-driven ML after real data becomes available
+
+Do not jump directly to a GNN or deep RL.
+
+### Recommended sequence
+
+1. **Physics/conservation baseline** - already in MVP.
+2. **Historical/seasonal baseline** - time-of-day/day-of-week.
+3. **Gradient-boosted short-horizon model** - LightGBM/XGBoost using current state, signal phase, time, upstream flow, downstream occupancy.
+4. **Sequence model** only if data volume and accuracy justify it.
+5. **Graph-temporal model** only when multiple connected junctions have sufficient synchronized history.
+
+Any advanced model must beat the simple baseline out-of-sample before being promoted.
+
+### ML evaluation
+
+For queue/arrival forecasts:
+
+- MAE,
+- RMSE,
+- MAPE only where denominator is meaningful,
+- calibration of high-risk/spillback alerts,
+- lead time before actual congestion.
+
+For control:
+
+- corridor travel time,
+- total delay,
+- max queue,
+- spillback count,
+- stops/vehicle,
+- emergency travel time,
+- fairness/max side-road wait.
+
+---
+
+## 31. Final product principle
+
+The MVP should feel like an operational decision system, not an AI science project.
+
+**Eyes:** computer vision / sensors.  
+**State:** traffic-state engine.  
+**Foresight:** prediction.  
+**Brain:** AGDA + PN-MPC.  
+**Test bed:** digital twin.  
+**Authority:** Traffic Police operator.  
+**Memory:** audit trail.
+
+That separation should be visible in the architecture, codebase, UI, and DGP narrative.
