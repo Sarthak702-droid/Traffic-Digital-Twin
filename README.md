@@ -30,7 +30,7 @@ Open **http://127.0.0.1:3100**. Go defaults to **127.0.0.1:8081**; PostgreSQL to
 
 For production locally: `npm run build`, then `npm run start -w apps/web`. Webpack is selected explicitly for compiler compatibility in restricted desktop environments.
 
-The existing delivery dashboard is separate: `node dashboard/server.mjs`. It reads `docs/backlog.json` (the versioned copy of the original independent planning project) and repository completion evidence in `docs/delivery-status.json`. The legacy `docs/planning-dashboard` checkout remains untouched and is not required to run this project.
+The existing delivery dashboard is separate: `node server.mjs` from the repository root, or `npm run dashboard`. It reads `docs/backlog.json` (the versioned copy of the original independent planning project) and repository completion evidence in `docs/delivery-status.json`. The legacy `docs/planning-dashboard` checkout remains untouched and is not required to run this project.
 
 ## Epic 1 workflow
 

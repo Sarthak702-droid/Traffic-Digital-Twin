@@ -1,6 +1,6 @@
 import { chromium } from "playwright";
 import assert from "node:assert/strict";
-const base = process.env.DASHBOARD_URL || "http://127.0.0.1:3000";
+const base = process.env.DASHBOARD_URL || "http://127.0.0.1:3001";
 const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage({

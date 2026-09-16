@@ -7,12 +7,12 @@ A local task dashboard inspired by the supplied references, with a dark grid can
 From the repository root, with Node.js 18 or newer:
 
 ```sh
-node dashboard/server.mjs
+node server.mjs
 ```
 
-Open the URL printed in the terminal. The server starts at port 3000; if occupied, it automatically tries the next port (up to 20 retries) without stopping other processes. To choose a starting port: `PORT=3100 node dashboard/server.mjs`. Use `PORT=0` to let the operating system select an available port. Invalid ports produce a readable error. Press Ctrl+C to stop the server and release its port.
+Open the URL printed in the terminal. The server starts at port 3001; if occupied, it automatically tries the next port (up to 20 retries) without stopping other processes. To choose a starting port: `PORT=3101 node server.mjs`. Use `PORT=0` to let the operating system select an available port. Invalid ports produce a readable error. Press Ctrl+C to stop the server and release its port.
 
-From inside `dashboard/`, simply run `node server.mjs`. If another dashboard instance is already running, you can also use its existing URL. Personal tracking is browser-origin specific: a different port has separate localStorage, so use the original URL to retain the same tracking view.
+From inside `dashboard/`, simply run `node server.mjs`, or from the repository root use `node server.mjs`. If another dashboard instance is already running, you can also use its existing URL. Personal tracking is browser-origin specific: a different port has separate localStorage, so use the original URL to retain the same tracking view.
 
 No packages, build step, internet connection or external fonts are required. Open through the server, not directly as a file.
 

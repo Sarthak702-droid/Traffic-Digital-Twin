@@ -38,7 +38,7 @@ const server = http.createServer(async (req,res) => {
     send(200,await readFile(resolve(here,asset[0])),asset[1]);
   } catch { send(500,JSON.stringify({error:'Unable to read repository data. Check that docs/backlog.json exists and is valid.'})); }
 });
-const requestedPort = process.env.PORT ?? '3000';
+const requestedPort = process.env.PORT ?? '3001';
 let port = Number(requestedPort);
 let retries = 0;
 const maxRetries = 20;
@@ -52,7 +52,7 @@ server.on('error', error => {
     return;
   }
   console.error(error.code === 'EADDRINUSE'
-    ? 'No available port found. Choose another starting port with PORT=3100 node server.mjs.'
+    ? 'No available port found. Choose another starting port with PORT=3002 node server.mjs.'
     : `Unable to start dashboard (${error.code || 'unknown error'}): ${error.message}`);
   process.exitCode = 1;
 });
