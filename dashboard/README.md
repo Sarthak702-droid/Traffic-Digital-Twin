@@ -41,8 +41,8 @@ dashboard/
 
 ## Data and boundaries
 
-The server reads `../docs/planning-dashboard/backlog.json` on every refresh. The current source contains 35 proposed stories across 12 epics. All begin in Backlog; readiness percentages reflect personal tracking, not verified implementation. The next eligible task is calculated from dependencies marked completed. Ready/Blocked are manually tracked statuses, not automatic safety checks.
+The server reads `../docs/backlog.json` on every refresh. The current source contains 35 proposed stories across 12 epics. Unverified stories begin in Backlog. Repository progress is loaded from `../docs/delivery-status.json`; accepted completion records with evidence take precedence over personal tracking. The task modal links to the recorded checks. Readiness includes both repository completion and personal status tracking, with the verified count labelled separately. The next eligible task is calculated from dependencies marked completed. Ready/Blocked are manually tracked statuses, not automatic safety checks.
 
 The original planning dashboard and backlog remain unchanged. This is a delivery documentation tool, not the operational Traffic Digital Twin application. It does not implement traffic control or replace the required product architecture.
 
-Git status uses local Git commands without a shell. If this workspace has no usable Git metadata, the view reports that explicitly. The server binds to loopback only, exposes only three static assets and two read-only endpoints, and never writes repository data.
+Git status uses local Git commands without a shell. If this workspace has no usable Git metadata, the view reports that explicitly. The server binds to loopback only, exposes an explicit static/API/evidence allowlist, and never writes repository data.

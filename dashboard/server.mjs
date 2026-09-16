@@ -13,7 +13,19 @@ const server = http.createServer(async (req,res) => {
   try {
     if(req.method !== 'GET') return send(405,JSON.stringify({error:'Method not allowed'}));
     const path = new URL(req.url,'http://localhost').pathname;
-    if(path === '/api/plan') return send(200,await readFile(resolve(root,'docs/planning-dashboard/backlog.json'),'utf8'));
+    if(path === '/api/plan') {
+      const plan = JSON.parse(await readFile(resolve(root,'docs/backlog.json'),'utf8'));
+      const progress = JSON.parse(await readFile(resolve(root,'docs/delivery-status.json'),'utf8'));
+      for (const epic of plan.epics) for (const task of epic.stories) {
+        const record = progress.tasks[task.id];
+        if (record && ['backlog','ready','in-progress','blocked','completed'].includes(record.status)) {
+          task.status = record.status;
+          if (record.status === 'completed' && record.evidence) task.evidence = record.evidence;
+        }
+      }
+      return send(200,JSON.stringify(plan));
+    }
+    if(path === '/evidence/epic1') return send(200,await readFile(resolve(root,'docs/epic1-acceptance.md'),'utf8'),'text/plain');
     if(path === '/api/git') {
       try {
         const [{stdout:branch},{stdout:status}] = await Promise.all([run('git',['branch','--show-current'],{cwd:root}),run('git',['status','--short'],{cwd:root})]);
@@ -24,7 +36,7 @@ const server = http.createServer(async (req,res) => {
     const asset=assets[path];
     if(!asset) return send(404,JSON.stringify({error:'Not found'}));
     send(200,await readFile(resolve(here,asset[0])),asset[1]);
-  } catch { send(500,JSON.stringify({error:'Unable to read repository data. Check that docs/planning-dashboard/backlog.json exists and is valid.'})); }
+  } catch { send(500,JSON.stringify({error:'Unable to read repository data. Check that docs/backlog.json exists and is valid.'})); }
 });
 const requestedPort = process.env.PORT ?? '3000';
 let port = Number(requestedPort);

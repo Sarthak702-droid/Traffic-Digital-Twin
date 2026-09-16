@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "tasks": {
+    "S01": {
+      "status": "completed",
+      "evidence": "docs/epic1-acceptance.md"
+    },
+    "S02": {
+      "status": "completed",
+      "evidence": "docs/epic1-acceptance.md"
+    },
+    "S03": {
+      "status": "completed",
+      "evidence": "docs/epic1-acceptance.md"
+    },
+    "S04": {
+      "status": "completed",
+      "evidence": "docs/epic1-acceptance.md"
+    }
+  }
+}

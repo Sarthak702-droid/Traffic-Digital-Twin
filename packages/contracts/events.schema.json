@@ -1,0 +1,1029 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:traffic:v1:events",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "sequence",
+        "timestamp",
+        "type",
+        "payload"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "type": {
+          "const": "network.state"
+        },
+        "payload": {
+          "$ref": "#/$defs/TrafficState"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "sequence",
+        "timestamp",
+        "type",
+        "payload"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "type": {
+          "const": "junction.state"
+        },
+        "payload": {
+          "$ref": "#/$defs/SignalState"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "sequence",
+        "timestamp",
+        "type",
+        "payload"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "type": {
+          "const": "forecast.updated"
+        },
+        "payload": {
+          "$ref": "#/$defs/Forecast"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "sequence",
+        "timestamp",
+        "type",
+        "payload"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "type": {
+          "const": "recommendation.created"
+        },
+        "payload": {
+          "$ref": "#/$defs/Recommendation"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "sequence",
+        "timestamp",
+        "type",
+        "payload"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "type": {
+          "const": "recommendation.updated"
+        },
+        "payload": {
+          "$ref": "#/$defs/Recommendation"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "sequence",
+        "timestamp",
+        "type",
+        "payload"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "type": {
+          "const": "incident.updated"
+        },
+        "payload": {
+          "$ref": "#/$defs/Incident"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "sequence",
+        "timestamp",
+        "type",
+        "payload"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "type": {
+          "const": "emergency.updated"
+        },
+        "payload": {
+          "$ref": "#/$defs/EmergencyEvent"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "sequence",
+        "timestamp",
+        "type",
+        "payload"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "type": {
+          "const": "health.updated"
+        },
+        "payload": {
+          "$ref": "#/$defs/HealthState"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "sequence",
+        "timestamp",
+        "type",
+        "payload"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "type": {
+          "const": "audit.appended"
+        },
+        "payload": {
+          "$ref": "#/$defs/AuditEvent"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "Node": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "kind",
+        "x",
+        "y"
+      ]
+    },
+    "Link": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "from_node": {
+          "type": "string"
+        },
+        "to_node": {
+          "type": "string"
+        },
+        "length_m": {
+          "type": "number"
+        },
+        "lanes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "storage_capacity_veh": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "free_flow_speed_kph": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "from_node",
+        "to_node",
+        "length_m",
+        "lanes",
+        "storage_capacity_veh",
+        "free_flow_speed_kph"
+      ]
+    },
+    "Movement": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "node_id": {
+          "type": "string"
+        },
+        "incoming_link_id": {
+          "type": "string"
+        },
+        "outgoing_link_id": {
+          "type": "string"
+        },
+        "turning_ratio": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "node_id",
+        "incoming_link_id",
+        "outgoing_link_id",
+        "turning_ratio"
+      ]
+    },
+    "SignalPhase": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "node_id": {
+          "type": "string"
+        },
+        "movement_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "min_green_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_green_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "amber_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "all_red_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "node_id",
+        "movement_ids",
+        "min_green_s",
+        "max_green_s",
+        "amber_s",
+        "all_red_s"
+      ]
+    },
+    "MovementState": {
+      "type": "object",
+      "properties": {
+        "movement_id": {
+          "type": "string"
+        },
+        "queue_veh": {
+          "type": "number",
+          "minimum": 0
+        },
+        "arrival_rate_vpm": {
+          "type": "number",
+          "minimum": 0
+        },
+        "departure_rate_vpm": {
+          "type": "number",
+          "minimum": 0
+        },
+        "avg_speed_kph": {
+          "type": "number",
+          "minimum": 0
+        },
+        "occupancy_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "downstream_capacity_veh": {
+          "type": "number",
+          "minimum": 0
+        },
+        "current_phase_id": {
+          "type": "string"
+        },
+        "waiting_age_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "movement_id",
+        "queue_veh",
+        "arrival_rate_vpm",
+        "departure_rate_vpm",
+        "avg_speed_kph",
+        "occupancy_ratio",
+        "downstream_capacity_veh",
+        "current_phase_id",
+        "waiting_age_s"
+      ]
+    },
+    "TrafficState": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "simulation_time_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "source": {
+          "type": "string"
+        },
+        "movements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MovementState"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "run_id",
+        "timestamp",
+        "simulation_time_s",
+        "source",
+        "movements"
+      ]
+    },
+    "Forecast": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "movement_id": {
+          "type": "string"
+        },
+        "horizon_s": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "queue_veh": {
+          "type": "number",
+          "minimum": 0
+        },
+        "occupancy_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "arrivals_veh": {
+          "type": "number",
+          "minimum": 0
+        },
+        "risk": {
+          "type": "string"
+        },
+        "spillback_eta_s": {
+          "type": "number"
+        },
+        "model_version": {
+          "type": "string"
+        },
+        "explanation_facts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "run_id",
+        "movement_id",
+        "horizon_s",
+        "queue_veh",
+        "occupancy_ratio",
+        "arrivals_veh",
+        "risk",
+        "model_version",
+        "explanation_facts"
+      ]
+    },
+    "TimingChange": {
+      "type": "object",
+      "properties": {
+        "node_id": {
+          "type": "string"
+        },
+        "phase_id": {
+          "type": "string"
+        },
+        "green_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "node_id",
+        "phase_id",
+        "green_s"
+      ]
+    },
+    "Recommendation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimingChange"
+          }
+        },
+        "safety_status": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "explanation_facts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "run_id",
+        "timestamp",
+        "priority",
+        "reason",
+        "changes",
+        "safety_status",
+        "status",
+        "explanation_facts"
+      ]
+    },
+    "OperatorAction": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "actor": {
+          "type": "string"
+        },
+        "recommendation_id": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "modifications": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimingChange"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "run_id",
+        "actor",
+        "recommendation_id",
+        "action",
+        "reason",
+        "timestamp",
+        "modifications"
+      ]
+    },
+    "Incident": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "node_id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "capacity_ratio": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "run_id",
+        "node_id",
+        "kind",
+        "capacity_ratio",
+        "status"
+      ]
+    },
+    "EmergencyEvent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "route_node_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": "string"
+        },
+        "eta_s": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "run_id",
+        "route_node_ids",
+        "status",
+        "eta_s"
+      ]
+    },
+    "ComponentHealth": {
+      "type": "object",
+      "properties": {
+        "component": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "component",
+        "status",
+        "message"
+      ]
+    },
+    "HealthState": {
+      "type": "object",
+      "properties": {
+        "timestamp": {
+          "type": "string"
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ComponentHealth"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "timestamp",
+        "components"
+      ]
+    },
+    "AuditEvent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "actor": {
+          "type": "string"
+        },
+        "recommendation_id": {
+          "type": "string"
+        },
+        "event_type": {
+          "type": "string"
+        },
+        "before": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimingChange"
+          }
+        },
+        "after": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimingChange"
+          }
+        },
+        "reason": {
+          "type": "string"
+        },
+        "safety_result": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "run_id",
+        "timestamp",
+        "actor",
+        "recommendation_id",
+        "event_type",
+        "before",
+        "after",
+        "reason",
+        "safety_result"
+      ]
+    },
+    "Alert": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string"
+        },
+        "target_id": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "run_id",
+        "severity",
+        "target_id",
+        "message"
+      ]
+    },
+    "SignalState": {
+      "type": "object",
+      "properties": {
+        "node_id": {
+          "type": "string"
+        },
+        "phase_id": {
+          "type": "string"
+        },
+        "indication": {
+          "type": "string"
+        },
+        "remaining_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "node_id",
+        "phase_id",
+        "indication",
+        "remaining_s"
+      ]
+    },
+    "ComparisonResult": {
+      "type": "object",
+      "properties": {
+        "run_id": {
+          "type": "string"
+        },
+        "recommendation_id": {
+          "type": "string"
+        },
+        "baseline_max_queue_veh": {
+          "type": "number",
+          "minimum": 0
+        },
+        "candidate_max_queue_veh": {
+          "type": "number",
+          "minimum": 0
+        },
+        "baseline_avg_delay_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "candidate_avg_delay_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "recommendation_id",
+        "baseline_max_queue_veh",
+        "candidate_max_queue_veh",
+        "baseline_avg_delay_s",
+        "candidate_avg_delay_s"
+      ]
+    },
+    "EventEnvelope": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "network_state": {
+          "$ref": "#/$defs/TrafficState"
+        },
+        "junction_state": {
+          "$ref": "#/$defs/SignalState"
+        },
+        "forecast_updated": {
+          "$ref": "#/$defs/Forecast"
+        },
+        "recommendation_created": {
+          "$ref": "#/$defs/Recommendation"
+        },
+        "recommendation_updated": {
+          "$ref": "#/$defs/Recommendation"
+        },
+        "incident_updated": {
+          "$ref": "#/$defs/Incident"
+        },
+        "emergency_updated": {
+          "$ref": "#/$defs/EmergencyEvent"
+        },
+        "health_updated": {
+          "$ref": "#/$defs/HealthState"
+        },
+        "audit_appended": {
+          "$ref": "#/$defs/AuditEvent"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "sequence",
+        "timestamp"
+      ]
+    },
+    "RunCommand": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "scenario_type": {
+          "type": "string"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mode": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "scenario_type",
+        "seed",
+        "mode"
+      ]
+    },
+    "RunRequest": {
+      "type": "object",
+      "properties": {
+        "run_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "run_id"
+      ]
+    },
+    "ValidationResult": {
+      "type": "object",
+      "properties": {
+        "valid": {
+          "type": "boolean"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "valid",
+        "errors"
+      ]
+    }
+  }
+}

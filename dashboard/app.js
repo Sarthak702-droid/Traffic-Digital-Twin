@@ -9,7 +9,11 @@
   try {tracking=JSON.parse(localStorage.getItem(storageKey)||'{}');if(!tracking||typeof tracking!=='object'||Array.isArray(tracking))tracking={};}catch{}
   const state={view:'tasks',filter:'all',query:'',sort:'order',epic:null,priority:'all'};
   let plan, tasks=[],gitRequest=0,dialogId=null,toastTimer;
-  const status = t => Object.hasOwn(statuses,tracking[t.id]) ? tracking[t.id] : 'backlog';
+  const status = t => {
+    const record=tasks.find(task=>task.id===t.id)||t;
+    if(record.status==='completed'&&record.evidence)return 'completed';
+    return Object.hasOwn(statuses,tracking[t.id])?tracking[t.id]:Object.hasOwn(statuses,record.status)?record.status:'backlog';
+  };
   const count = key => tasks.filter(t=>status(t)===key).length;
   function toast(message){$('toast').textContent=message;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),3000);}
   function persist(){try{localStorage.setItem(storageKey,JSON.stringify(tracking));toast('Personal progress saved in this browser');}catch{toast('Storage unavailable. Progress will last for this session only.');}}
@@ -43,6 +47,10 @@
     <div class="card-bottom"><span>Days ${t.days.join('–')}</span><button data-task="${esc(t.id)}">Open task ↗</button></div></article>`;}
   function empty(){return '<div class="empty"><strong>No matching tasks</strong><br>Try a different epic, keyword, priority or status.<br><button data-reset>Clear filters</button></div>';}
   function renderChrome(){
+    const verified=tasks.filter(t=>t.status==='completed'&&t.evidence).length;
+    $('notice').querySelector('strong').textContent=verified?'Repository completion recorded':'Start with the foundation';
+    $('notice').querySelector('p').textContent=verified?`${verified} tasks completed with repository acceptance evidence. Other task changes are personal tracking.`:'Unverified stories remain proposed. Personal tracking does not verify implementation.';
+    document.querySelector('.readiness-foot').textContent=`${verified} repository-verified · personal tracking on this browser`;
     const completed=count('completed'),pct=Math.round(completed/tasks.length*100)||0;
     $('percent').innerHTML=`${pct}<span>%</span>`;$('complete-label').textContent=`${completed} of ${tasks.length} tasks completed`;$('progress').style.width=pct+'%';
     const next=tasks.find(t=>status(t)!=='completed'&&t.dependencies.every(id=>tasks.some(d=>d.id===id&&status(d)==='completed')));
@@ -83,7 +91,7 @@
   function openTask(id){
     const t=tasks.find(t=>t.id===id);if(!t)return;dialogId=id;
     const blocked=t.dependencies.filter(id=>!tasks.some(d=>d.id===id&&status(d)==='completed'));
-    $('dialog-content').innerHTML=`<div class="dialog-top"><div class="card-meta"><span class="task-id">${esc(t.id)} / ${epicLabel(t.epicId)} · Task ${t.epicTaskIndex} of ${t.epicTaskCount}</span> ${badge(t)}</div><button class="icon-button" data-close aria-label="Close task details">×</button></div><div class="dialog-body"><h2 id="dialog-title">${esc(t.title)}</h2><div class="detail-meta">${priorityBadge(t.priority)}<span class="tag">${esc(t.owner)}</span><span class="tag">Days ${t.days.join('–')}</span></div><h3>OBJECTIVE</h3><p>${esc(t.userStory)}</p><h3>ACCEPTANCE CRITERIA</h3><ol>${t.acceptance.map(a=>`<li>${esc(a)}</li>`).join('')}</ol><h3>DEPENDENCIES</h3>${t.dependencies.length?t.dependencies.map(id=>`<button class="dependency" data-task="${esc(id)}">${esc(id)} · ${esc(statuses[status({id})].label)} ↗</button>`).join(''):'<p>No prerequisite stories. This task can start the foundation.</p>'}${blocked.length?`<p>${blocked.length} prerequisite(s) are not yet tracked as completed.</p>`:''}<h3>REQUIREMENT SOURCES</h3><ul>${t.sources.map(s=>`<li>${esc(s)}</li>`).join('')}</ul><div class="detail-controls"><label for="task-status">Personal task status<small>Saved on this device. Does not modify repository evidence.</small></label><select id="task-status">${Object.entries(statuses).map(([key,s])=>`<option value="${key}" ${status(t)===key?'selected':''}>${s.label}</option>`).join('')}</select></div><details><summary>View source record</summary><pre class="source-text">${esc(JSON.stringify(plan.epics.find(e=>e.id===t.epicId).stories.find(s=>s.id===id),null,2))}</pre></details></div>`;
+    $('dialog-content').innerHTML=`<div class="dialog-top"><div class="card-meta"><span class="task-id">${esc(t.id)} / ${epicLabel(t.epicId)} · Task ${t.epicTaskIndex} of ${t.epicTaskCount}</span> ${badge(t)}</div><button class="icon-button" data-close aria-label="Close task details">×</button></div><div class="dialog-body"><h2 id="dialog-title">${esc(t.title)}</h2><div class="detail-meta">${priorityBadge(t.priority)}<span class="tag">${esc(t.owner)}</span><span class="tag">Days ${t.days.join('–')}</span></div><h3>OBJECTIVE</h3><p>${esc(t.userStory)}</p><h3>ACCEPTANCE CRITERIA</h3><ol>${t.acceptance.map(a=>`<li>${esc(a)}</li>`).join('')}</ol><h3>DEPENDENCIES</h3>${t.dependencies.length?t.dependencies.map(id=>`<button class="dependency" data-task="${esc(id)}">${esc(id)} · ${esc(statuses[status({id})].label)} ↗</button>`).join(''):'<p>No prerequisite stories. This task can start the foundation.</p>'}${blocked.length?`<p>${blocked.length} prerequisite(s) are not yet tracked as completed.</p>`:''}<h3>REQUIREMENT SOURCES</h3><ul>${t.sources.map(s=>`<li>${esc(s)}</li>`).join('')}</ul><div class="detail-controls"><label for="task-status">${t.evidence?'Repository-verified completion':'Personal task status'}<small>${t.evidence?'Accepted against the recorded implementation checks.':'Saved on this device. Does not modify repository evidence.'}</small></label><select id="task-status" ${t.evidence?'disabled':''}>${Object.entries(statuses).map(([key,s])=>`<option value="${key}" ${status(t)===key?'selected':''}>${s.label}</option>`).join('')}</select></div>${t.evidence?'<p><a href="/evidence/epic1" target="_blank" rel="noopener">Read Epic 1 acceptance evidence ↗</a></p>':''}<details><summary>View source record</summary><pre class="source-text">${esc(JSON.stringify(plan.epics.find(e=>e.id===t.epicId).stories.find(s=>s.id===id),null,2))}</pre></details></div>`;
     if(!$('task-dialog').open)$('task-dialog').showModal();
     $('dialog-content').querySelector('[data-close]').focus();
   }

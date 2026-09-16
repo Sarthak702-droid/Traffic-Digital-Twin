@@ -1,0 +1,1229 @@
+{
+  "title": "Traffic Digital Twin · Delivery plan",
+  "version": "1.0",
+  "sourceFiles": [
+    "PRD",
+    "AGENT.MD"
+  ],
+  "note": "Proposed backlog derived from requirements, not implementation progress. All stories are initially unstarted. Day ranges are provisional calendar windows, not effort estimates.",
+  "priorities": {
+    "P0": {
+      "label": "Essential",
+      "meaning": "Release blocker. Protect even if the schedule slips."
+    },
+    "P1": {
+      "label": "Important",
+      "meaning": "Supports the executive demo; simplify presentation before cutting core behavior."
+    },
+    "P2": {
+      "label": "Optional",
+      "meaning": "First to defer: CV, advanced charts and nonessential motion."
+    }
+  },
+  "epics": [
+    {
+      "id": "E01",
+      "title": "Foundation & shared contracts",
+      "priority": "P0",
+      "owner": "Platform",
+      "days": [
+        1,
+        2
+      ],
+      "why": "Every downstream feature depends on a single, typed and configurable model.",
+      "sources": [
+        "PRD §§2, 7, 9–14, 26",
+        "AGENT.MD: Architecture, Core traffic state"
+      ],
+      "dependencies": [],
+      "stories": [
+        {
+          "id": "S01",
+          "title": "Freeze scope and repository boundaries",
+          "priority": "P0",
+          "owner": "Platform",
+          "days": [
+            1,
+            1
+          ],
+          "userStory": "As the engineering team, I want a documented architecture and scope freeze, so that implementation stays within the MVP.",
+          "acceptance": [
+            "Create the required apps/web, apps/api, services/simulation, services/intelligence, packages/contracts, packages/scenario-config, db/migrations and db/queries layout.",
+            "Record Browser → Go → Python via gRPC; Go owns validation, persistence, decisions and audit.",
+            "Use the prescribed Next.js/React/TypeScript, Go/chi/pgx/sqlc and Python/SUMO stack; exclude prohibited infrastructure and identity tracking."
+          ],
+          "dependencies": [],
+          "sources": [
+            "PRD §§2, 7, 9–14, 26",
+            "AGENT.MD: Architecture, Core traffic state"
+          ]
+        },
+        {
+          "id": "S02",
+          "title": "Define typed state, event and command contracts",
+          "priority": "P0",
+          "owner": "Platform",
+          "days": [
+            1,
+            2
+          ],
+          "userStory": "As an integration engineer, I want versioned shared schemas, so that all components agree on traffic and decision semantics.",
+          "acceptance": [
+            "Define Node, Link, Movement, SignalPhase, TrafficState, Forecast, Recommendation, OperatorAction, Incident, EmergencyEvent, HealthState and AuditEvent.",
+            "Include movement queue, arrival/departure rate, speed, occupancy, receiving capacity, phase and waiting age with explicit units.",
+            "Specify REST endpoints and all nine PRD WebSocket message types; validate Go/Python gRPC payloads."
+          ],
+          "dependencies": [
+            "S01"
+          ],
+          "sources": [
+            "PRD §§2, 7, 9–14, 26",
+            "AGENT.MD: Architecture, Core traffic state"
+          ]
+        },
+        {
+          "id": "S03",
+          "title": "Configure the C1–C6 network as data",
+          "priority": "P0",
+          "owner": "Simulation",
+          "days": [
+            1,
+            2
+          ],
+          "userStory": "As a scenario author, I want graph and signal configuration outside UI code, so that another corridor can be loaded without rewriting components.",
+          "acceptance": [
+            "Represent the supplied C1–C6 topology, directed links, turning ratios, lengths and storage in configuration.",
+            "C1 and C3 are controlled junctions; C2/C4/C5/C6 start as boundaries.",
+            "Validate geometry, phase conflicts, timing bounds and deterministic scenario seeds."
+          ],
+          "dependencies": [
+            "S02"
+          ],
+          "sources": [
+            "PRD §§2, 7, 9–14, 26",
+            "AGENT.MD: Architecture, Core traffic state"
+          ]
+        },
+        {
+          "id": "S04",
+          "title": "Create Go API and useful persistence",
+          "priority": "P0",
+          "owner": "Backend",
+          "days": [
+            1,
+            2
+          ],
+          "userStory": "As an operator, I want durable run and decision records, so that actions survive service restarts.",
+          "acceptance": [
+            "Set up chi, PostgreSQL migrations and sqlc queries for configs, runs, recommendations, operator actions, incidents, emergencies, health and audit.",
+            "Validate commands in Go and expose configuration/state/history APIs.",
+            "Keep high-frequency state in memory; persist useful aggregates/events rather than every frame."
+          ],
+          "dependencies": [
+            "S02"
+          ],
+          "sources": [
+            "PRD §§2, 7, 9–14, 26",
+            "AGENT.MD: Architecture, Core traffic state"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E02",
+      "title": "Deterministic simulation & live state",
+      "priority": "P0",
+      "owner": "Simulation",
+      "days": [
+        2,
+        4
+      ],
+      "why": "A credible digital twin is the base for prediction, comparison and every scenario.",
+      "sources": [
+        "PRD §§10, 13–14, 16, 21, 24",
+        "AGENT.MD: Demo scenarios, Golden replay"
+      ],
+      "dependencies": [
+        "E01"
+      ],
+      "stories": [
+        {
+          "id": "S05",
+          "title": "Build seeded SUMO scenarios and reset",
+          "priority": "P0",
+          "owner": "Simulation",
+          "days": [
+            2,
+            3
+          ],
+          "userStory": "As an operator, I want repeatable demand and virtual signals, so that the same demo can be reproduced.",
+          "acceptance": [
+            "Build SUMO/TraCI network, routes and synthetic demand for exactly peak_surge, incident_c3 and ambulance_corridor.",
+            "Apply plans only to virtual signals; seed and reset restore identical initial conditions.",
+            "Start and reset complete in less than 5 seconds on the demo machine."
+          ],
+          "dependencies": [
+            "S03"
+          ],
+          "sources": [
+            "PRD §§10, 13–14, 16, 21, 24",
+            "AGENT.MD: Demo scenarios, Golden replay"
+          ]
+        },
+        {
+          "id": "S06",
+          "title": "Stream aggregate traffic through Go",
+          "priority": "P0",
+          "owner": "Backend",
+          "days": [
+            3,
+            4
+          ],
+          "userStory": "As an operator, I want fresh traffic state in the browser, so that the view reflects the active simulation.",
+          "acceptance": [
+            "Publish aggregates at 1 Hz via Python gRPC → Go → WebSocket → browser.",
+            "Carry run ID, timestamp, source and per-movement state; include smoothing for noisy observations when applicable.",
+            "Measure state-to-browser latency below 500 ms locally; make stale/disconnected state visible."
+          ],
+          "dependencies": [
+            "S04",
+            "S05"
+          ],
+          "sources": [
+            "PRD §§10, 13–14, 16, 21, 24",
+            "AGENT.MD: Demo scenarios, Golden replay"
+          ]
+        },
+        {
+          "id": "S07",
+          "title": "Enforce virtual signal timing and phase state",
+          "priority": "P0",
+          "owner": "Simulation",
+          "days": [
+            3,
+            4
+          ],
+          "userStory": "As a traffic engineer, I want explicit phase transitions, so that simulations respect signal semantics.",
+          "acceptance": [
+            "Expose current phase, remaining time, movement permissions and downstream capacity.",
+            "Represent min/max green, amber, all-red, clearance and conflict constraints from configuration.",
+            "Ensure deterministic phase progression and test conservation of arrivals/departures."
+          ],
+          "dependencies": [
+            "S05"
+          ],
+          "sources": [
+            "PRD §§10, 13–14, 16, 21, 24",
+            "AGENT.MD: Demo scenarios, Golden replay"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E03",
+      "title": "Command center & junction intelligence",
+      "priority": "P0",
+      "owner": "Frontend",
+      "days": [
+        1,
+        5
+      ],
+      "why": "The operator must understand current state and future risk without a dense wall of charts.",
+      "sources": [
+        "PRD §§5–8.4",
+        "AGENT.MD: Product UI"
+      ],
+      "dependencies": [
+        "E01",
+        "E02"
+      ],
+      "stories": [
+        {
+          "id": "S08",
+          "title": "Build the product shell and disclosure",
+          "priority": "P0",
+          "owner": "Frontend",
+          "days": [
+            1,
+            2
+          ],
+          "userStory": "As an executive viewer, I want a calm and honest operational interface, so that demo outputs cannot be mistaken for live control.",
+          "acceptance": [
+            "Provide only Command Center, Network/Junction Intelligence, Vision Analytics, Incidents, Emergency and Audit & Health product navigation.",
+            "Always display DEMONSTRATION MODE · SYNTHETIC TRAFFIC DATA · NO LIVE SIGNAL CONTROL.",
+            "Use a dark neutral theme, restrained status colors and accessible controls; support operator/supervisor/viewer needs."
+          ],
+          "dependencies": [
+            "S01"
+          ],
+          "sources": [
+            "PRD §§5–8.4",
+            "AGENT.MD: Product UI"
+          ]
+        },
+        {
+          "id": "S09",
+          "title": "Render the data-driven animated twin",
+          "priority": "P0",
+          "owner": "Frontend",
+          "days": [
+            3,
+            4
+          ],
+          "userStory": "As an operator, I want moving traffic and signal state on C1–C6, so that I can see how connected traffic evolves.",
+          "acceptance": [
+            "Load geometry from configuration; never hard-code it in React.",
+            "Render direction, queue, flow, speed and signal overlays with smooth interpolation between 1 Hz updates.",
+            "Show no more than five summary KPIs and expose the highest-priority alert and recommendation."
+          ],
+          "dependencies": [
+            "S03",
+            "S06",
+            "S08"
+          ],
+          "sources": [
+            "PRD §§5–8.4",
+            "AGENT.MD: Product UI"
+          ]
+        },
+        {
+          "id": "S10",
+          "title": "Inspect junction state and future horizons",
+          "priority": "P0",
+          "owner": "Frontend",
+          "days": [
+            4,
+            5
+          ],
+          "userStory": "As an operator, I want a junction drawer and forecast selector, so that I can trace a predicted risk to its cause.",
+          "acceptance": [
+            "Click C1/C3 to inspect approach queues, arrivals/departures, speed, occupancy, storage, phase and remaining time.",
+            "Provide NOW, +30s, +1m, +2m and +5m views; label outputs simulation forecast and 5-minute output advisory.",
+            "Display spillback ETA, upstream cause and expected recommendation impact; do not invent confidence bands."
+          ],
+          "dependencies": [
+            "S09",
+            "S12"
+          ],
+          "sources": [
+            "PRD §§5–8.4",
+            "AGENT.MD: Product UI"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E04",
+      "title": "Forecasts, platoons & spillback",
+      "priority": "P0",
+      "owner": "Intelligence",
+      "days": [
+        4,
+        5
+      ],
+      "why": "Prediction before C1 congestion is the key proof of value.",
+      "sources": [
+        "PRD §§16–17, 20–21",
+        "AGENT.MD: Forecasting"
+      ],
+      "dependencies": [
+        "E02"
+      ],
+      "stories": [
+        {
+          "id": "S11",
+          "title": "Implement conservation-based forecasting",
+          "priority": "P0",
+          "owner": "Intelligence",
+          "days": [
+            4,
+            5
+          ],
+          "userStory": "As an operator, I want bounded queue forecasts, so that I can anticipate congestion.",
+          "acceptance": [
+            "Implement Q(t+1) = max(0, Q(t) + arrivals − departures).",
+            "Limit departures by phase, saturation, queue and downstream receiving capacity.",
+            "Output queues, occupancy and arrivals at 30/60/120/300 seconds; test non-negative queues and conservation."
+          ],
+          "dependencies": [
+            "S06",
+            "S07"
+          ],
+          "sources": [
+            "PRD §§16–17, 20–21",
+            "AGENT.MD: Forecasting"
+          ]
+        },
+        {
+          "id": "S12",
+          "title": "Propagate platoons and predict spillback",
+          "priority": "P0",
+          "owner": "Intelligence",
+          "days": [
+            5,
+            5
+          ],
+          "userStory": "As an operator, I want upstream-aware alerts and ETA facts, so that I can intervene before C1 becomes critical.",
+          "acceptance": [
+            "Propagate discharge using link travel time, destination split and ETA tolerance.",
+            "Return spillback risk/ETA and deterministic explanation facts including upstream source.",
+            "Peak-surge fixture alerts before C1 becomes critical, with approximately 90–120-second scenario lead time; verify against seeded simulation."
+          ],
+          "dependencies": [
+            "S11"
+          ],
+          "sources": [
+            "PRD §§16–17, 20–21",
+            "AGENT.MD: Forecasting"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E05",
+      "title": "Safety envelope & human authority",
+      "priority": "P0",
+      "owner": "Backend",
+      "days": [
+        3,
+        9
+      ],
+      "why": "Safety is a prerequisite for any candidate application, including emergency priority.",
+      "sources": [
+        "PRD §§8.3, 18.3, 22–23",
+        "AGENT.MD: Safety validator, Recommendation actions"
+      ],
+      "dependencies": [
+        "E01",
+        "E02"
+      ],
+      "stories": [
+        {
+          "id": "S13",
+          "title": "Validate every candidate and application",
+          "priority": "P0",
+          "owner": "Backend",
+          "days": [
+            3,
+            6
+          ],
+          "userStory": "As a supervisor, I want central safety validation in Go, so that unsafe plans never reach the twin.",
+          "acceptance": [
+            "Reject conflicting greens, min/max green violations, amber/all-red/clearance breaches, excessive holds and modeled pedestrian/cross-road wait violations.",
+            "Enforce manual locks, blocked/full receiving links, incident closures and emergency protections.",
+            "On validation failure retain the safe current plan and audit a structured reason; test each rule."
+          ],
+          "dependencies": [
+            "S02",
+            "S04",
+            "S07"
+          ],
+          "sources": [
+            "PRD §§8.3, 18.3, 22–23",
+            "AGENT.MD: Safety validator, Recommendation actions"
+          ]
+        },
+        {
+          "id": "S14",
+          "title": "Support observe, recommend and manual modes",
+          "priority": "P0",
+          "owner": "Backend + Frontend",
+          "days": [
+            6,
+            9
+          ],
+          "userStory": "As an operator, I want explicit control of recommendation authority, so that automation cannot override my decision.",
+          "acceptance": [
+            "Default the demo to recommendation-only mode; observe mode still shows forecasts.",
+            "Manual mode immediately stops new recommendations and honors movement locks.",
+            "Intelligence failure stops recommendations and exposes degradation; there is no physical actuation endpoint."
+          ],
+          "dependencies": [
+            "S13",
+            "S08"
+          ],
+          "sources": [
+            "PRD §§8.3, 18.3, 22–23",
+            "AGENT.MD: Safety validator, Recommendation actions"
+          ]
+        },
+        {
+          "id": "S15",
+          "title": "Approve, modify and reject with audit",
+          "priority": "P0",
+          "owner": "Backend + Frontend",
+          "days": [
+            8,
+            9
+          ],
+          "userStory": "As an operator, I want bounded decision controls, so that I retain final authority over the simulated plan.",
+          "acceptance": [
+            "Expose SIMULATE, APPROVE IN DIGITAL TWIN, MODIFY and REJECT for every recommendation.",
+            "Require a reason for modify/reject, validate bounded edits server-side and revalidate the plan before applying.",
+            "Record actor, timestamp, recommendation ID, before/after, reason, safety result and scenario/run ID; test critical operator flows and invalid edits."
+          ],
+          "dependencies": [
+            "S13",
+            "S19",
+            "S22",
+            "S25"
+          ],
+          "sources": [
+            "PRD §§8.3, 18.3, 22–23",
+            "AGENT.MD: Safety validator, Recommendation actions"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E06",
+      "title": "AGDA & network recommendations",
+      "priority": "P0",
+      "owner": "Intelligence",
+      "days": [
+        6,
+        7
+      ],
+      "why": "Recommendations must coordinate C1/C3 and explain why they improve predicted conditions.",
+      "sources": [
+        "PRD §§18–20",
+        "AGENT.MD: Signal decision algorithm"
+      ],
+      "dependencies": [
+        "E04",
+        "E05"
+      ],
+      "stories": [
+        {
+          "id": "S16",
+          "title": "Implement bounded AGDA phase allocation",
+          "priority": "P0",
+          "owner": "Intelligence",
+          "days": [
+            6,
+            6
+          ],
+          "userStory": "As a traffic engineer, I want demand and fairness aware allocation, so that green time serves need without feeding blocked links.",
+          "acceptance": [
+            "Normalize queue, predicted arrivals and wait age; use weights 0.8 and 0.4 with receiving factor 1 − occupancy².",
+            "Apply fairness, emergency boost and incident penalty; allocate flexible green with clipping/redistribution inside the cycle budget.",
+            "Test bounds, budget feasibility, waiting-age fairness and blocked receiving links; reject infeasible budgets."
+          ],
+          "dependencies": [
+            "S11",
+            "S13"
+          ],
+          "sources": [
+            "PRD §§18–20",
+            "AGENT.MD: Signal decision algorithm"
+          ]
+        },
+        {
+          "id": "S17",
+          "title": "Generate coordinated candidate signal plans",
+          "priority": "P0",
+          "owner": "Intelligence",
+          "days": [
+            6,
+            7
+          ],
+          "userStory": "As an operator, I want bounded network candidates, so that C1 clearance and C3 release work together.",
+          "acceptance": [
+            "Use AGDA plus ±5/10-second split/offset adjustments, allowed cycle lengths and safe configured phase order.",
+            "Coordinate green windows with platoon ETA and gate upstream release when storage is constrained.",
+            "Discard unsafe plans before rollout; do not create arbitrary phases."
+          ],
+          "dependencies": [
+            "S12",
+            "S16"
+          ],
+          "sources": [
+            "PRD §§18–20",
+            "AGENT.MD: Signal decision algorithm"
+          ]
+        },
+        {
+          "id": "S18",
+          "title": "Simulate and score PN-MPC candidates",
+          "priority": "P0",
+          "owner": "Intelligence",
+          "days": [
+            7,
+            7
+          ],
+          "userStory": "As an operator, I want the safest low-cost coordinated recommendation, so that network outcomes guide decisions.",
+          "acceptance": [
+            "Every ~5 seconds evaluate a bounded candidate set over ~120 seconds.",
+            "Score queue, delay, stops, spillback (weight 3), fairness, signal switching, emergency delay and manual preference; invalid candidates have infinite cost.",
+            "Return best plan and two feasible alternatives when available, explicitly explain when fewer exist; measure generation under 2 seconds on the demo machine.",
+            "Test deterministic scoring and scenario behavior; keep application subject to operator and safety checks."
+          ],
+          "dependencies": [
+            "S17",
+            "S21"
+          ],
+          "sources": [
+            "PRD §§18–20",
+            "AGENT.MD: Signal decision algorithm"
+          ]
+        },
+        {
+          "id": "S19",
+          "title": "Explain recommendations from structured facts",
+          "priority": "P0",
+          "owner": "Intelligence + Frontend",
+          "days": [
+            7,
+            7
+          ],
+          "userStory": "As an operator, I want a traceable recommendation explanation, so that I understand the proposed timing change.",
+          "acceptance": [
+            "Include recommendation ID, priority, affected junctions, trigger, timing changes, predicted impact and safety status.",
+            "Derive explanations from upstream flow, arrival ETA, queue/storage and simulated candidate results.",
+            "No invented operational facts, trained-ML claims or unsupported confidence bands."
+          ],
+          "dependencies": [
+            "S18"
+          ],
+          "sources": [
+            "PRD §§18–20",
+            "AGENT.MD: Signal decision algorithm"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E07",
+      "title": "Before-vs-after evidence",
+      "priority": "P0",
+      "owner": "Simulation + Frontend",
+      "days": [
+        6,
+        8
+      ],
+      "why": "The operator must test the proposed intervention on equal initial conditions.",
+      "sources": [
+        "PRD §§8.4, 10.1, 13, 21.1",
+        "AGENT.MD: Definition of done"
+      ],
+      "dependencies": [
+        "E02",
+        "E05"
+      ],
+      "stories": [
+        {
+          "id": "S21",
+          "title": "Create isolated, equal-seed simulation branches",
+          "priority": "P0",
+          "owner": "Simulation",
+          "days": [
+            6,
+            7
+          ],
+          "userStory": "As an operator, I want baseline and candidate rollouts from one snapshot, so that comparisons are fair and never mutate the active run.",
+          "acceptance": [
+            "Clone the same initial state and random seed for baseline and candidate.",
+            "Isolate rollout state from live scenario; validate candidate timing before execution.",
+            "Return max queue, average delay, spillback occurrence and stops/vehicle with units and simulation provenance."
+          ],
+          "dependencies": [
+            "S05",
+            "S07",
+            "S13"
+          ],
+          "sources": [
+            "PRD §§8.4, 10.1, 13, 21.1",
+            "AGENT.MD: Definition of done"
+          ]
+        },
+        {
+          "id": "S22",
+          "title": "Show synchronized comparison and impact",
+          "priority": "P0",
+          "owner": "Frontend",
+          "days": [
+            8,
+            8
+          ],
+          "userStory": "As an operator, I want a synchronized split view, so that I can compare the proposed plan before approving it.",
+          "acceptance": [
+            "Wire SIMULATE to Go and display matched timeline/baseline/candidate views.",
+            "Show only the four outcome metrics with clear simulated labels and honest unchanged/worse outcomes.",
+            "Keep recommendation identity and initial-state provenance visible; handle simulation errors without silently applying the plan."
+          ],
+          "dependencies": [
+            "S09",
+            "S19",
+            "S21"
+          ],
+          "sources": [
+            "PRD §§8.4, 10.1, 13, 21.1",
+            "AGENT.MD: Definition of done"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E08",
+      "title": "Audit, health & replay resilience",
+      "priority": "P0",
+      "owner": "Backend + QA",
+      "days": [
+        2,
+        14
+      ],
+      "why": "Reliability and traceability must grow with the system, not wait until the final rehearsal.",
+      "sources": [
+        "PRD §§8.8, 12–13, 23–25",
+        "AGENT.MD: Audit, Golden replay"
+      ],
+      "dependencies": [
+        "E01",
+        "E02"
+      ],
+      "stories": [
+        {
+          "id": "S25",
+          "title": "Persist recommendation and decision audit events",
+          "priority": "P0",
+          "owner": "Backend",
+          "days": [
+            2,
+            4
+          ],
+          "userStory": "As a supervisor, I want an append-only decision history, so that I can trace who changed what and why.",
+          "acceptance": [
+            "Record recommendations and operator actions including timestamp, actor, recommendation ID, before/after, reason, safety result and run ID.",
+            "Serve paginated audit history and audit.appended events through Go.",
+            "Test successful and rejected decisions, persistence and association with the correct scenario."
+          ],
+          "dependencies": [
+            "S04"
+          ],
+          "sources": [
+            "PRD §§8.8, 12–13, 23–25",
+            "AGENT.MD: Audit, Golden replay"
+          ]
+        },
+        {
+          "id": "S26",
+          "title": "Expose health and safe degraded states",
+          "priority": "P0",
+          "owner": "Backend + Frontend",
+          "days": [
+            4,
+            13
+          ],
+          "userStory": "As an operator, I want visible component health, so that a failed service cannot masquerade as healthy traffic.",
+          "acceptance": [
+            "Show Go, simulation, intelligence, CV and database availability with timestamps/staleness.",
+            "Show controller NOT CONNECTED, CCTV DEMO/SAMPLE and emergency API SIMULATED.",
+            "Stop recommendations when intelligence fails; display missing/low-confidence state and explain absent optional CV."
+          ],
+          "dependencies": [
+            "S06",
+            "S08"
+          ],
+          "sources": [
+            "PRD §§8.8, 12–13, 23–25",
+            "AGENT.MD: Audit, Golden replay"
+          ]
+        },
+        {
+          "id": "S27",
+          "title": "Build golden replay through the real delivery path",
+          "priority": "P0",
+          "owner": "Backend + QA",
+          "days": [
+            3,
+            14
+          ],
+          "userStory": "As a presenter, I want a deterministic replay fallback, so that the demo survives SUMO or CV failure offline.",
+          "acceptance": [
+            "Implement live/replay selection behind a presenter/admin control; replay travels through Go and the same WebSocket/frontend contracts.",
+            "Replay/reset preserve event order, timing and scenario/run identity; visibly indicate replay.",
+            "Capture a known-good eight-minute event stream once scenarios stabilize and verify failure switch-over."
+          ],
+          "dependencies": [
+            "S02",
+            "S06"
+          ],
+          "sources": [
+            "PRD §§8.8, 12–13, 23–25",
+            "AGENT.MD: Audit, Golden replay"
+          ]
+        },
+        {
+          "id": "S28",
+          "title": "Provide audit and health inspection",
+          "priority": "P0",
+          "owner": "Frontend",
+          "days": [
+            9,
+            13
+          ],
+          "userStory": "As a supervisor, I want an inspectable event timeline and health panel, so that I can verify control and system limitations.",
+          "acceptance": [
+            "Display timestamp, type, junction, recommendation, operator action, before/after, reason and result.",
+            "Navigate from decisions to their audit evidence and display degraded states without hiding them.",
+            "Test critical operator action → persisted audit → visible timeline flow."
+          ],
+          "dependencies": [
+            "S15",
+            "S25",
+            "S26"
+          ],
+          "sources": [
+            "PRD §§8.8, 12–13, 23–25",
+            "AGENT.MD: Audit, Golden replay"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E09",
+      "title": "C3 incident & network recovery",
+      "priority": "P0",
+      "owner": "Simulation + Intelligence",
+      "days": [
+        10,
+        10
+      ],
+      "why": "Incident behavior must protect storage and show recovery, not just extend green.",
+      "sources": [
+        "PRD §§8.6, 21.2",
+        "AGENT.MD: Incident mode"
+      ],
+      "dependencies": [
+        "E06",
+        "E07",
+        "E08"
+      ],
+      "stories": [
+        {
+          "id": "S29",
+          "title": "Inject C3 capacity loss with controls",
+          "priority": "P0",
+          "owner": "Simulation + Frontend",
+          "days": [
+            10,
+            10
+          ],
+          "userStory": "As an operator, I want a configurable C3 incident, so that I can demonstrate capacity loss and propagation.",
+          "acceptance": [
+            "Default C3 capacity to 35% of normal; offer incident type and severity/capacity controls.",
+            "Start/reset through Go, record incident lifecycle and display affected links and upstream queues.",
+            "Reset reproducibly restores the original capacity and seed."
+          ],
+          "dependencies": [
+            "S05",
+            "S09",
+            "S25"
+          ],
+          "sources": [
+            "PRD §§8.6, 21.2",
+            "AGENT.MD: Incident mode"
+          ]
+        },
+        {
+          "id": "S30",
+          "title": "Gate release and estimate recovery cycles",
+          "priority": "P0",
+          "owner": "Intelligence",
+          "days": [
+            10,
+            10
+          ],
+          "userStory": "As an operator, I want a network recovery strategy, so that the incident does not spread avoidable spillback.",
+          "acceptance": [
+            "Reduce upstream release, maximize safe discharge and protect receiving storage.",
+            "Forecast C6/upstream propagation and estimate recovery cycles from simulation.",
+            "Compare baseline/candidate; end-to-end test verifies no release into blocked/full links."
+          ],
+          "dependencies": [
+            "S29",
+            "S18",
+            "S22"
+          ],
+          "sources": [
+            "PRD §§8.6, 21.2",
+            "AGENT.MD: Incident mode"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E10",
+      "title": "Emergency corridor & cross-traffic recovery",
+      "priority": "P0",
+      "owner": "Simulation + Intelligence",
+      "days": [
+        11,
+        11
+      ],
+      "why": "Emergency priority is only credible with safe transitions and a bounded return to normal.",
+      "sources": [
+        "PRD §§8.7, 21.3, 23",
+        "AGENT.MD: Emergency mode"
+      ],
+      "dependencies": [
+        "E06",
+        "E08",
+        "E09"
+      ],
+      "stories": [
+        {
+          "id": "S31",
+          "title": "Track the simulated emergency route and ETA",
+          "priority": "P0",
+          "owner": "Simulation + Frontend",
+          "days": [
+            11,
+            11
+          ],
+          "userStory": "As an operator, I want a simulated emergency on C6 → C3 → C1 → C2, so that I can see corridor readiness ahead of the vehicle.",
+          "acceptance": [
+            "Create a simulated authenticated emergency event through Go and record it.",
+            "Display vehicle location, per-junction ETA, pre-clearance schedule, signal state and transition countdown.",
+            "Treat boundary nodes as route points unless explicitly configured as signalized; do not invent a C2 signal."
+          ],
+          "dependencies": [
+            "S29",
+            "S12",
+            "S25"
+          ],
+          "sources": [
+            "PRD §§8.7, 21.3, 23",
+            "AGENT.MD: Emergency mode"
+          ]
+        },
+        {
+          "id": "S32",
+          "title": "Pre-clear safely and compensate displaced traffic",
+          "priority": "P0",
+          "owner": "Intelligence + QA",
+          "days": [
+            11,
+            11
+          ],
+          "userStory": "As an operator, I want safe priority followed by recovery, so that emergency passage does not starve cross traffic.",
+          "acceptance": [
+            "Enforce normal → amber → all-red → priority → passage → recovery at controlled junctions.",
+            "Emergency priority cannot bypass conflicts, manual/safety constraints or downstream protections; conflicts yield a visible safe outcome.",
+            "Show displaced queues, compensating cycles and return to normal within a configured bound; end-to-end test the full sequence."
+          ],
+          "dependencies": [
+            "S31",
+            "S13",
+            "S18",
+            "S30"
+          ],
+          "sources": [
+            "PRD §§8.7, 21.3, 23",
+            "AGENT.MD: Emergency mode"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E11",
+      "title": "Presentation & release acceptance",
+      "priority": "P0",
+      "owner": "QA + Product",
+      "days": [
+        5,
+        15
+      ],
+      "why": "A reliable eight-minute offline demonstration is the release gate.",
+      "sources": [
+        "PRD §§5, 21, 24–28",
+        "AGENT.MD: Tests required, Definition of done"
+      ],
+      "dependencies": [
+        "E03",
+        "E04",
+        "E05",
+        "E06",
+        "E07",
+        "E08",
+        "E09",
+        "E10"
+      ],
+      "stories": [
+        {
+          "id": "S33",
+          "title": "Automate the three scenario acceptance journeys",
+          "priority": "P0",
+          "owner": "QA",
+          "days": [
+            5,
+            14
+          ],
+          "userStory": "As the release team, I want repeatable acceptance tests, so that the protected demo capabilities do not regress.",
+          "acceptance": [
+            "Cover Go validation/safety/audit, forecast propagation, AGDA bounds/fairness, PN-MPC scoring and frontend operator flows.",
+            "Run an end-to-end test for peak surge, C3 incident and ambulance corridor with deterministic resets.",
+            "Verify early congestion warning, equal-seed comparison, reasons/audit, safe emergency transitions and recovery."
+          ],
+          "dependencies": [
+            "S10",
+            "S15",
+            "S22",
+            "S30",
+            "S32"
+          ],
+          "sources": [
+            "PRD §§5, 21, 24–28",
+            "AGENT.MD: Tests required, Definition of done"
+          ]
+        },
+        {
+          "id": "S34",
+          "title": "Author the guided DGP presentation",
+          "priority": "P1",
+          "owner": "Product + Frontend",
+          "days": [
+            13,
+            14
+          ],
+          "userStory": "As a presenter, I want an eight-minute guided story, so that executives understand the outcome without verbal rescue.",
+          "acceptance": [
+            "Provide START DGP DEMONSTRATION with current state → prediction → recommendation → comparison → incident → ambulance → human override/audit → shadow-pilot ask.",
+            "Use deterministic scenarios and visibly preserve synthetic/no-live-control disclosure.",
+            "Prepare a concise demo script and preflight checklist; presentation polish cannot block core functionality."
+          ],
+          "dependencies": [
+            "S28",
+            "S30",
+            "S32"
+          ],
+          "sources": [
+            "PRD §§5, 21, 24–28",
+            "AGENT.MD: Tests required, Definition of done"
+          ]
+        },
+        {
+          "id": "S35",
+          "title": "Package, benchmark and rehearse offline",
+          "priority": "P0",
+          "owner": "QA + Platform",
+          "days": [
+            14,
+            15
+          ],
+          "userStory": "As a presenter, I want a tested offline package and backup, so that the demonstration survives internet and service loss.",
+          "acceptance": [
+            "Bundle local runtime assets/configs, golden replay and backup recording; run the full demo with internet disabled.",
+            "Measure first load <3s, API p95 <150ms, stream latency <500ms, recommendation <2s, start/reset <5s and 1 Hz updates.",
+            "Verify smooth animation and no browser memory growth during a 30-minute rehearsal; record machine and measurements.",
+            "Day 15 is bug fixes and rehearsal only; do not declare done until every protected acceptance journey passes."
+          ],
+          "dependencies": [
+            "S27",
+            "S33"
+          ],
+          "sources": [
+            "PRD §§5, 21, 24–28",
+            "AGENT.MD: Tests required, Definition of done"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E12",
+      "title": "Optional vision & presentation polish",
+      "priority": "P2",
+      "owner": "CV + Frontend",
+      "days": [
+        12,
+        14
+      ],
+      "why": "Useful supporting evidence, but explicitly cut before any protected core capability.",
+      "sources": [
+        "PRD §§3.1, 8.5, 15, 27",
+        "AGENT.MD: Computer Vision, Priority if time slips"
+      ],
+      "dependencies": [
+        "E01",
+        "E02",
+        "E03"
+      ],
+      "stories": [
+        {
+          "id": "S36",
+          "title": "Convert one sample video into traffic aggregates",
+          "priority": "P2",
+          "owner": "CV",
+          "days": [
+            12,
+            12
+          ],
+          "userStory": "As a viewer, I want sample-video traffic analytics at C3, so that I understand how cameras could supply state.",
+          "acceptance": [
+            "Use OpenCV → pretrained YOLO → ByteTrack → lane/ROI mapping → aggregate TrafficState through Go.",
+            "Count once at the directional crossing line, estimate queues/occupancy and label uncalibrated speed as a demo estimate.",
+            "Use clearly labeled non-Odisha sample video, temporary camera-local IDs only; no ANPR, faces or cross-camera identity."
+          ],
+          "dependencies": [
+            "S02",
+            "S06"
+          ],
+          "sources": [
+            "PRD §§3.1, 8.5, 15, 27",
+            "AGENT.MD: Computer Vision, Priority if time slips"
+          ]
+        },
+        {
+          "id": "S37",
+          "title": "Show optional vision overlays and upstream impact",
+          "priority": "P2",
+          "owner": "Frontend + CV",
+          "days": [
+            12,
+            13
+          ],
+          "userStory": "As a viewer, I want video overlays and aggregate metrics, so that the link between observation and prediction is visible.",
+          "acceptance": [
+            "Show boxes, temporary tracks, lanes/counting line and queue ROI for the single sample video.",
+            "Display class counts, lane flow, queue, occupancy, direction and C1 arrival/ETA/risk outputs.",
+            "Missing CV must not block the demo or golden replay; display unavailable honestly."
+          ],
+          "dependencies": [
+            "S36",
+            "S12",
+            "S08"
+          ],
+          "sources": [
+            "PRD §§3.1, 8.5, 15, 27",
+            "AGENT.MD: Computer Vision, Priority if time slips"
+          ]
+        },
+        {
+          "id": "S38",
+          "title": "Refine optional charts and motion",
+          "priority": "P2",
+          "owner": "Frontend",
+          "days": [
+            14,
+            14
+          ],
+          "userStory": "As a viewer, I want restrained presentation polish, so that the explanation is easier to follow.",
+          "acceptance": [
+            "Add heatmaps/advanced charts only if they clarify already-tested behavior and time remains.",
+            "Use 150–250ms transitions and smooth vehicle interpolation; critical alerts pulse once rather than continuously.",
+            "Respect reduced motion; remove nonessential animation before compromising reliability."
+          ],
+          "dependencies": [
+            "S10",
+            "S22"
+          ],
+          "sources": [
+            "PRD §§3.1, 8.5, 15, 27",
+            "AGENT.MD: Computer Vision, Priority if time slips"
+          ]
+        }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "title": "CV has conflicting scope language",
+      "detail": "PRD §3.1 lists a sample-video pipeline as must-build. AGENT.MD explicitly calls it optional, and PRD §27 cuts it in a 10-day build. Plan it as P2; core traffic remains synthetic."
+    },
+    {
+      "title": "Safety and replay move earlier",
+      "detail": "The PRD places some reliability work late. This plan begins the safety envelope, audit and replay plumbing alongside integration, with final recording and rehearsal after scenarios stabilize."
+    },
+    {
+      "title": "C2 is a boundary in the first build",
+      "detail": "The emergency route reaches C2, but PRD §2.1 controls only C1/C3. Show ETA and route progress at C2; signal offsets/pre-clearance there require explicit signal configuration."
+    },
+    {
+      "title": "Ten days requires parallel capacity",
+      "detail": "The compressed view is a proposed sequence, not a delivery promise. Frontend, Go/backend, simulation/intelligence and QA must overlap. CV and optional polish are removed; release gates remain."
+    },
+    {
+      "title": "Planning dashboard is not the product UI",
+      "detail": "This standalone HTML/CSS/JS artifact lives under docs. The traffic MVP retains the required Next.js/Go/Python stack and six-screen navigation. No traffic service is implemented by this dashboard."
+    }
+  ],
+  "risks": [
+    {
+      "title": "Safety configuration is not yet fixed",
+      "mitigation": "Specify actual min/max greens, clearance intervals, conflict matrices, max holds, fairness thresholds and emergency recovery bounds before scenario tuning.",
+      "owner": "Traffic / Simulation",
+      "gate": "S03 · S13"
+    },
+    {
+      "title": "Candidate rollout may miss the latency target",
+      "mitigation": "Benchmark on the demo machine, bound candidates and reuse snapshots. Do not trade away safety or fabricate results to meet 2 seconds.",
+      "owner": "Intelligence",
+      "gate": "S18 · S35"
+    },
+    {
+      "title": "Simulation and optimizer integration is the critical dependency",
+      "mitigation": "Freeze typed contracts first; develop forecast and UI against deterministic fixtures while live integration is completed.",
+      "owner": "Platform",
+      "gate": "S02 · S06"
+    },
+    {
+      "title": "The 10–15 day window lacks staffing assumptions",
+      "mitigation": "Confirm team availability and target laptop early. Dates below are planning windows; acceptance, not the calendar, decides release readiness.",
+      "owner": "Product",
+      "gate": "S01 · S35"
+    }
+  ],
+  "deferred": [
+    "Real Odisha CCTV or signal-controller connections and physical actuation",
+    "ANPR, facial recognition and cross-camera identity tracking",
+    "RL, GNN, custom trained forecasting without real evidence",
+    "Kafka, Kubernetes, Redis, extra microservices and service mesh",
+    "City-wide model, citizen app, enforcement/e-challan and cloud deployment"
+  ],
+  "compressed": {
+    "E01": [
+      1,
+      2
+    ],
+    "E02": [
+      2,
+      3
+    ],
+    "E03": [
+      1,
+      4
+    ],
+    "E04": [
+      3,
+      4
+    ],
+    "E05": [
+      3,
+      6
+    ],
+    "E06": [
+      5,
+      6
+    ],
+    "E07": [
+      5,
+      6
+    ],
+    "E08": [
+      2,
+      9
+    ],
+    "E09": [
+      7,
+      7
+    ],
+    "E10": [
+      8,
+      8
+    ],
+    "E11": [
+      4,
+      10
+    ]
+  }
+}

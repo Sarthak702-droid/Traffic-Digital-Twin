@@ -1,0 +1,7 @@
+[project]
+name = "traffic-simulation"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["grpcio==1.84.0", "protobuf==7.36.1"]
+[project.optional-dependencies]
+engine = ["traci>=1.20,<2", "sumolib>=1.20,<2", "pydantic>=2,<3"]

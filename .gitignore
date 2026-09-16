@@ -1,0 +1,13 @@
+node_modules/
+.next/
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.local
+*.tsbuildinfo
+coverage/
+playwright-report/
+test-results/
+# Legacy independent Sites checkout stays untouched; canonical plan is docs/backlog.json.
+docs/planning-dashboard/
