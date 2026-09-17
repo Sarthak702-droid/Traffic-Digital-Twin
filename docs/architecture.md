@@ -6,9 +6,9 @@ The product is a local demonstration with synthetic traffic and sample video onl
 
 ## Boundaries
 
-Browser → same-origin Next.js proxy → Go/chi API → PostgreSQL and Python gRPC.
+Browser → same-origin Vite proxy → Go/chi API → PostgreSQL and Python gRPC.
 
-- `apps/web`: Next.js 16 / React 19 / strict TypeScript, Tailwind, shadcn-style Radix primitives, TanStack Query for API state, Zustand for selection. ECharts is available for later forecasting; no empty or invented charts.
+- `apps/web`: Vite / React 19 / strict TypeScript, Tailwind, shadcn-style Radix primitives, TanStack Query for API state, Zustand for selection. ECharts is available for later forecasting; no empty or invented charts.
 - `apps/api`: request validation, immutable config registration, durable run preparation and atomic audit, in-memory high-frequency state and WebSocket transport. The seeded local operator is `demo-operator`; this is not a multi-user authentication system.
 - `services/simulation`: Python gRPC boundary; SUMO/TraCI execution belongs to Epic 2.
 - `services/intelligence`: Python gRPC boundary; NumPy/SciPy forecasting and optimization belong to later epics. Python has no persistence connection.

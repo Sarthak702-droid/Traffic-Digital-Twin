@@ -6,7 +6,7 @@ Status: **accepted for Epic 1 scope**. Stories S01–S04 are completed. This is 
 
 - Required apps/web, apps/api, services/simulation, services/intelligence, packages/contracts, packages/scenario-config, db/migrations and db/queries exist.
 - `docs/architecture.md` freezes the Browser → Go → Python gRPC boundary, ownership of validation/persistence/audit, prescribed stack, offline/demo constraints and explicit exclusions.
-- The Next.js/React/TypeScript application compiles and connects to chi/pgx/PostgreSQL through the same-origin Go API proxy. Python service packages declare the future SUMO/TraCI and NumPy/SciPy engine dependencies; actual engines are later-epic work.
+- The Vite/React/TypeScript application compiles and connects to chi/pgx/PostgreSQL through the same-origin Go API proxy. Python service packages declare the future SUMO/TraCI and NumPy/SciPy engine dependencies; actual engines are later-epic work.
 - `docs/PRD.md` points to the supplied canonical root PRD. The standalone legacy planning checkout is preserved; its backlog is versioned as `docs/backlog.json`.
 
 ## S02 — Define typed state, event and command contracts
@@ -40,7 +40,7 @@ All of these passed on the local implementation (final verification: 2026-09-17 
 1. `go test -race -count=1 ./apps/api/... ./db/...` with TEST_DATABASE_URL and SIMULATION_GRPC_ADDR enabled: validation, API, state isolation, frontend-origin/WebSocket regression, PostgreSQL migration/durability/atomicity and live Go→Python integration.
 2. `PYTHONPATH=.:packages/contracts/gen/python .venv/bin/pytest services/shared -q`: 8 tests, including contract/schema coverage.
 3. `npm run test:ui`: 3 tests for supplied geometry, keyboard selection and invalid configuration.
-4. `npm run typecheck` and `npm run build`: strict TypeScript and production Next.js build.
+4. `npm run typecheck` and `npm run build`: strict TypeScript and production Vite build.
 5. `node scripts/verify-browser.mjs`: desktop/mobile UI, keyboard/Escape drawer, invalid seed, all three scenario preparations, durable reload, audit, emergency route and no page runtime errors. Screenshots saved locally under test-results/.
 
 6. `node scripts/verify-dashboard.mjs`: all 12 epic searches, four repository-backed completions, accepted-status locking, evidence endpoint and epic overview.
