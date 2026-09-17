@@ -12,3 +12,4 @@ test-results/
 # Legacy independent Sites checkout stays untouched; canonical plan is docs/backlog.json.
 docs/planning-dashboard/
 .runtime/
+dist/
