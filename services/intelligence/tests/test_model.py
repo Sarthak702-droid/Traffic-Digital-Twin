@@ -46,3 +46,60 @@ def test_platoon_propagates_after_travel_time(sample):
     output=model.rollout(state,default_plan(model.config))
     downstream=[mid for mid,m in model.moves.items() if m['incoming_link_id']=='C3-C1']
     assert sum(output['snapshots'][60][1][mid] for mid in downstream)>sum(output['snapshots'][30][1][mid] for mid in downstream)
+
+def test_conservation_and_non_negative_queues(sample):
+    model,state=sample
+    output=model.rollout(state,default_plan(model.config),horizon=300)
+    for horizon in (30,60,120,300):
+        queues,arrivals,etas=output['snapshots'][horizon]
+        for mid,q in queues.items():
+            assert q>=0.,f"Queue for {mid} must be non-negative, got {q}"
+            assert arrivals[mid]>=0.,f"Arrivals for {mid} must be non-negative"
+
+def test_platoon_dispersion_eta_tolerance(sample):
+    model,state=sample
+    for m in state.movements:m.queue_veh=0;m.vehicle_count=0
+    upstream=next(m for m in state.movements if m.movement_id=='C6-C3-C1');upstream.queue_veh=20;upstream.vehicle_count=20
+    state.signals.add(node_id='C3',phase_id=model.serving[upstream.movement_id],indication='green',remaining_s=30)
+    output=model.rollout(state,default_plan(model.config),horizon=120)
+    downstream=[mid for mid,m in model.moves.items() if m['incoming_link_id']=='C3-C1']
+    arrivals_60=[output['snapshots'][60][1][mid] for mid in downstream]
+    assert len(arrivals_60)==3
+    assert abs(arrivals_60[0]-arrivals_60[1])<.01
+    assert abs(arrivals_60[1]-arrivals_60[2])<.01
+
+def test_spillback_prediction_and_upstream_source_facts(sample):
+    model,state=sample
+    target=next(m for m in state.movements if m.movement_id=='C6-C3-C1')
+    target.queue_veh=100;target.vehicle_count=100
+    analysis=model.analyze(state)
+    f=next(f for f in analysis.forecasts if f.movement_id=='C6-C3-C1' and f.horizon_s==120)
+    assert f.risk in ('warning','critical')
+    assert f.HasField('spillback_eta_s')
+    assert f.spillback_eta_s>0
+    facts_text=" ".join(f.explanation_facts)
+    assert "Upstream source:" in facts_text
+    assert "via corridor C6-C3" in facts_text
+    assert "Predicted spillback ETA:" in facts_text
+
+def test_peak_surge_fixture_alert_lead_time(tmp_path):
+    from services.simulation.engine import Engine
+    eng=Engine(directory=tmp_path)
+    try:
+        eng.reset(pb.RunCommand(schema_version="1.0",scenario_type="peak_surge",seed=1101,mode="recommend",run_id="lead-time-test"))
+        model=Model()
+        alert_time_s=None
+        for step in range(1,100):
+            state=eng.step()
+            if alert_time_s is None and step>=35:
+                analysis=model.analyze(state)
+                surge_forecasts=[f for f in analysis.forecasts if f.movement_id in ('C6-C3-C1','C3-C1-C2') and f.horizon_s==120]
+                if any(f.risk in ('warning','critical') for f in surge_forecasts):
+                    alert_time_s=step
+                    break
+        assert alert_time_s is not None,"Alert should be raised during early peak surge"
+        assert 35<=alert_time_s<=65,f"Alert raised at {alert_time_s}s"
+        lead_time=180-alert_time_s
+        assert 90<=lead_time<=145,f"Expected ~90-120s scenario lead time, got {lead_time}s"
+    finally:
+        eng.close()

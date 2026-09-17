@@ -61,18 +61,28 @@ class Model:
                 index,stage,_=scheduler.state[m['node_id']]
                 pid=scheduler.nodes[m['node_id']][index]['id']
                 out=m['outgoing_link_id'];link=self.links[out]
-                receiver=max(0,link['storage_capacity_veh']-occupied[out]-reserved[out])
+                receiver=max(0.,link['storage_capacity_veh']-occupied[out]-reserved[out])
                 capacity=.5*self.links[m['incoming_link_id']]['lanes']*m['turning_ratio']
                 now=state.simulation_time_s+t
                 if state.scenario_type=='incident_c3' and m['node_id']=='C3' and scenario['incident_start_s']<=now<scenario['incident_end_s']:capacity*=scenario['capacity_ratio']
-                discharge=min(q[mid],capacity,receiver) if stage=='green' and pid==self.serving[mid] else 0
-                q[mid]-=discharge;reserved[out]+=discharge
+                discharge=max(0.,min(q[mid],capacity,receiver)) if stage=='green' and pid==self.serving[mid] else 0.
+                q[mid]=max(0.,q[mid]-discharge);reserved[out]+=discharge
                 targets=[n for n in self.moves.values() if n['incoming_link_id']==out]
                 delay=max(1,math.ceil(link['length_m']/(link['free_flow_speed_kph']/3.6)))
                 for target in targets:
-                    key=(t+delay,target['id']);transit[key]=transit.get(key,0)+discharge*target['turning_ratio']
-                cap=self.links[m['incoming_link_id']]['storage_capacity_veh']
-                if q[mid]/cap>=.9:
+                    turn_discharge=discharge*target['turning_ratio']
+                    if delay<=2:
+                        key=(t+delay,target['id']);transit[key]=transit.get(key,0.)+turn_discharge
+                    else:
+                        # Platoon propagation with ETA tolerance band
+                        transit[(t+delay-1,target['id'])]=transit.get((t+delay-1,target['id']),0.)+turn_discharge*.15
+                        transit[(t+delay,target['id'])]=transit.get((t+delay,target['id']),0.)+turn_discharge*.70
+                        transit[(t+delay+1,target['id'])]=transit.get((t+delay+1,target['id']),0.)+turn_discharge*.15
+                in_link=self.links[m['incoming_link_id']]
+                cap=in_link['storage_capacity_veh']
+                link_occ=occupied[m['incoming_link_id']]/max(1.,cap)
+                move_occ=q[mid]/max(1.,cap*m['turning_ratio'])
+                if link_occ>=.85 or move_occ>=.85:
                     spill+=1
                     if eta[mid] is None:eta[mid]=t
                 stops+=incoming[mid] if q[mid]>.1 else 0
@@ -124,8 +134,28 @@ class Model:
         forecasts=[]
         for horizon,(queues,arrivals,etas) in forecast['snapshots'].items():
             for mid,q in queues.items():
-                move=self.moves[mid];cap=self.links[move['incoming_link_id']]['storage_capacity_veh'];occupancy=min(1,q/cap)
-                f=pb.Forecast(id=f'{state.run_id}-{int(state.simulation_time_s)}-{mid}-{horizon}',run_id=state.run_id,movement_id=mid,horizon_s=horizon,queue_veh=q,occupancy_ratio=occupancy,arrivals_veh=arrivals[mid],risk='critical' if occupancy>=.9 else 'warning' if occupancy>=.75 else 'normal',model_version=MODEL,explanation_facts=[f"Arrivals propagate through {move['incoming_link_id']} using configured travel time and turn ratios",'300-second output is advisory' if horizon==300 else 'Conservation-model simulation forecast'])
+                move=self.moves[mid];edge=self.links[move['incoming_link_id']]
+                link_cap=edge['storage_capacity_veh']
+                link_q=sum(queues[other_id] for other_id,other_m in self.moves.items() if other_m['incoming_link_id']==move['incoming_link_id'])
+                occupancy=min(1.,max(0.,link_q/link_cap))
+                move_occ=min(1.,max(0.,q/max(1.,link_cap*move['turning_ratio'])))
+                effective_occ=max(occupancy,move_occ)
+                upstream_node=edge['from_node']
+                is_boundary=self.nodes[upstream_node]['kind']=='boundary'
+                source_desc=f"external boundary {upstream_node}" if is_boundary else f"junction {upstream_node}"
+                risk='critical' if effective_occ>=.9 or (etas[mid] is not None and etas[mid]<=horizon) else 'warning' if effective_occ>=.75 or (etas[mid] is not None) else 'normal'
+                facts=[
+                    f"Upstream source: {source_desc} via corridor {move['incoming_link_id']}",
+                    f"Projected arrivals: {arrivals[mid]:.1f} veh over {horizon}s horizon",
+                    f"Storage occupancy: {occupancy*100:.1f}% ({link_q:.1f}/{link_cap} veh storage)",
+                ]
+                if etas[mid] is not None:
+                    facts.append(f"Predicted spillback ETA: {etas[mid]}s before approach blockage")
+                if horizon==300:
+                    facts.append("300-second output is advisory")
+                else:
+                    facts.append("Conservation-model simulation forecast")
+                f=pb.Forecast(id=f'{state.run_id}-{int(state.simulation_time_s)}-{mid}-{horizon}',run_id=state.run_id,movement_id=mid,horizon_s=horizon,queue_veh=q,occupancy_ratio=occupancy,arrivals_veh=arrivals[mid],risk=risk,model_version=MODEL,explanation_facts=facts)
                 if etas[mid] is not None:f.spillback_eta_s=etas[mid]
                 forecasts.append(f)
         agda=self.allocate(state);candidates=[baseline,agda]

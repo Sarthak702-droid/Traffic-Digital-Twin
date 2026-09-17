@@ -132,6 +132,8 @@ export function NetworkView({
             frame={frame}
             onSelect={onSelectNode}
             route={route}
+            forecasts={analysis?.forecasts}
+            horizon={timeStep}
           />
 
           <div className="canvas-footer">
@@ -169,6 +171,8 @@ export function NetworkView({
                 frame={frame}
                 onSelect={onSelectNode}
                 route={route}
+                forecasts={analysis?.forecasts}
+                horizon={120}
               />
             </div>
 
@@ -182,6 +186,8 @@ export function NetworkView({
                 frame={frame}
                 onSelect={onSelectNode}
                 route={route}
+                forecasts={analysis?.forecasts}
+                horizon={0}
               />
             </div>
           </div>

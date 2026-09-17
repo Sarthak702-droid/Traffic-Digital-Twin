@@ -82,6 +82,7 @@ export function Workspace() {
     role,
     dgpModalOpen,
     setDgpModalOpen,
+    selectedHorizon,
   } = useWorkspace();
 
   const client = useQueryClient();
@@ -381,12 +382,14 @@ export function Workspace() {
                           </span>
                         </div>
 
-                        {/* Interactive Data-Driven Canvas (Story S09) */}
+                        {/* Interactive Data-Driven Canvas (Story S09, S11, S12) */}
                         <NetworkCanvas
                           network={data}
                           frame={live.fresh ? live.frame : null}
                           onSelect={selectNode}
                           route={[]}
+                          forecasts={analysis?.forecasts}
+                          horizon={selectedHorizon}
                         />
 
                         {/* Node Shortcuts */}

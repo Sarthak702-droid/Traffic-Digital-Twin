@@ -2518,3 +2518,83 @@ tr:last-child td {
     display: none;
   }
 }
+
+/* Platoon Waveform & Forecasting Progress (Epic 4: S11, S12) */
+.platoon-progression-bar {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: #0d1720;
+  border: 1px solid #1e2c38;
+  border-radius: 6px;
+}
+.platoon-progression-bar .bar-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5px;
+  margin-bottom: 5px;
+}
+.platoon-progression-bar .wave-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #8da4b5;
+  font-weight: 500;
+}
+.platoon-progression-bar .wave-val {
+  font-family: var(--font-mono, monospace);
+  color: #a7c5b6;
+  font-weight: 600;
+}
+.platoon-progression-bar .bar-track {
+  width: 100%;
+  height: 4px;
+  background: #192633;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.platoon-progression-bar .bar-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+  border-radius: 2px;
+}
+.platoon-progression-bar .bar-fill.normal {
+  background: #2b7d59;
+}
+.platoon-progression-bar .bar-fill.warning {
+  background: #d99b26;
+}
+.platoon-progression-bar .bar-fill.critical {
+  background: #dc2626;
+}
+
+.forecast-facts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+.forecast-facts-list .forecast-fact-note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #8fa2b1;
+  background: #111a24;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border-left: 2px solid #2d4152;
+}
+
+/* Canvas Spillback Warning Badge */
+.canvas-spillback-badge rect {
+  animation: pulse-spillback 2s infinite ease-in-out;
+}
+@keyframes pulse-spillback {
+  0%, 100% {
+    stroke-opacity: 0.8;
+  }
+  50% {
+    stroke-opacity: 1;
+    fill-opacity: 0.95;
+  }
+}

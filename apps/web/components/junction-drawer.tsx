@@ -8,6 +8,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock,
+  GitBranch,
   Layers,
   ShieldCheck,
   TrendingDown,
@@ -239,8 +240,28 @@ export function JunctionDrawerContent({
                       </strong>
                     </div>
                   </div>
+                  {/* Platoon Waveform & Storage Progress (Story S11, S12) */}
+                  <div className="platoon-progression-bar" title="Platoon arrival waveform with ±5s ETA tolerance">
+                    <div className="bar-labels">
+                      <span className="wave-label"><GitBranch size={11} /> Platoon Arrival (ETA ±5s)</span>
+                      <span className="wave-val">{f.arrivals_veh.toFixed(1)} veh</span>
+                    </div>
+                    <div className="bar-track">
+                      <div
+                        className={`bar-fill ${f.risk}`}
+                        style={{ width: `${Math.min(100, Math.max(8, (f.arrivals_veh / 35) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
+
                   {f.explanation_facts.length > 0 && (
-                    <p className="forecast-fact-note">{f.explanation_facts[0]}</p>
+                    <div className="forecast-facts-list">
+                      {f.explanation_facts.map((fact, idx) => (
+                        <p key={idx} className="forecast-fact-note">
+                          {fact}
+                        </p>
+                      ))}
+                    </div>
                   )}
                 </article>
               ))}

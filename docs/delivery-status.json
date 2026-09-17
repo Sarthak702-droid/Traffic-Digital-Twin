@@ -40,6 +40,14 @@
     "S10": {
       "status": "completed",
       "evidence": "docs/epic3-status.md"
+    },
+    "S11": {
+      "status": "completed",
+      "evidence": "docs/epic4-status.md"
+    },
+    "S12": {
+      "status": "completed",
+      "evidence": "docs/epic4-status.md"
     }
   }
 }

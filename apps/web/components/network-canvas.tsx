@@ -3,6 +3,7 @@
 import React, { useId } from "react";
 import type { Network } from "../../../packages/contracts/typescript/network";
 import type {
+  Forecast,
   MovementState,
   SignalState,
   TrafficState,
@@ -13,11 +14,15 @@ export function NetworkCanvas({
   onSelect,
   route = [],
   frame,
+  forecasts = [],
+  horizon = 0,
 }: {
   network: Network;
   onSelect: (id: string) => void;
   route?: string[];
   frame?: TrafficState | null;
+  forecasts?: Forecast[];
+  horizon?: number;
 }) {
   const uniqueId = useId().replace(/:/g, "");
   const maxX = Math.max(...network.nodes.map((n) => n.x)) + 140;
@@ -127,7 +132,28 @@ export function NetworkCanvas({
 
           // Find live movements on this incoming link
           const linkMovements = movementsByLink.get(link.id) ?? [];
-          const linkQueue = linkMovements.reduce((sum, m) => sum + m.queue_veh, 0);
+          const linkConfigMoves = network.movements.filter((m) => m.incoming_link_id === link.id);
+          const horizonForecasts =
+            horizon > 0
+              ? forecasts.filter(
+                  (f) =>
+                    f.horizon_s === horizon &&
+                    linkConfigMoves.some((m) => m.id === f.movement_id),
+                )
+              : [];
+          const linkSpillback = forecasts.find(
+            (f) =>
+              linkConfigMoves.some((m) => m.id === f.movement_id) &&
+              f.spillback_eta_s != null &&
+              f.spillback_eta_s > 0,
+          );
+
+          const liveLinkQueue = linkMovements.reduce((sum, m) => sum + m.queue_veh, 0);
+          const linkQueue =
+            horizonForecasts.length > 0
+              ? horizonForecasts.reduce((sum, f) => sum + f.queue_veh, 0)
+              : liveLinkQueue;
+
           const linkFlow = linkMovements.reduce((sum, m) => sum + m.arrival_rate_vpm, 0);
           const avgLinkSpeed =
             linkMovements.length > 0
@@ -261,6 +287,36 @@ export function NetworkCanvas({
                   >
                     {avgLinkSpeed.toFixed(0)} km/h
                   </text>
+
+                  {/* Spillback ETA Alert Badge (Story S12) */}
+                  {linkSpillback && linkSpillback.spillback_eta_s != null && (
+                    <g
+                      className="canvas-spillback-badge"
+                      transform={`translate(${lx}, ${ly - 20})`}
+                    >
+                      <rect
+                        x="-38"
+                        y="-8"
+                        width="76"
+                        height="16"
+                        rx="3"
+                        fill="#381010ee"
+                        stroke="#ef4444"
+                        strokeWidth="1.2"
+                      />
+                      <text
+                        x="0"
+                        y="3.5"
+                        textAnchor="middle"
+                        fill="#fca5a5"
+                        fontSize="8.5"
+                        fontWeight="700"
+                        fontFamily="monospace"
+                      >
+                        ⚠ SPILL {linkSpillback.spillback_eta_s}s
+                      </text>
+                    </g>
+                  )}
 
                   {/* If queue is present, display Queue Pill near stop line */}
                   {linkQueue > 0 && (
