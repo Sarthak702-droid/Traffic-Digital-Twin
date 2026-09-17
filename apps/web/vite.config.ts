@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 
+const apiOrigin = process.env.API_ORIGIN || "http://127.0.0.1:8080";
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -17,11 +19,11 @@ export default defineConfig({
     port: 3100,
     proxy: {
       "/api/v1": {
-        target: process.env.API_ORIGIN || "http://127.0.0.1:8081",
+        target: apiOrigin,
         changeOrigin: true,
       },
       "/ws/v1/live": {
-        target: process.env.API_ORIGIN || "http://127.0.0.1:8081",
+        target: apiOrigin,
         ws: true,
       },
     },
@@ -29,5 +31,15 @@ export default defineConfig({
   preview: {
     host: "127.0.0.1",
     port: 3100,
+    proxy: {
+      "/api/v1": {
+        target: apiOrigin,
+        changeOrigin: true,
+      },
+      "/ws/v1/live": {
+        target: apiOrigin,
+        ws: true,
+      },
+    },
   },
 });

@@ -5,7 +5,12 @@
     "apps/web"
   ],
   "scripts": {
-    "dev": "npm run dev -w apps/web",
+    "start": "python3 scripts/start-all.py",
+    "dev": "python3 scripts/start-all.py",
+    "dev:all": "python3 scripts/start-all.py",
+    "dev:web": "npm run dev -w apps/web",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
     "build": "npm run build -w apps/web",
     "typecheck": "npm run typecheck -w apps/web",
     "test:ui": "npm run test -w apps/web",
