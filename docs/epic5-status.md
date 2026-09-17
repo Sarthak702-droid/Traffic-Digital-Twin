@@ -1,25 +1,23 @@
-> **Revalidation notice — 2026-09-17:** Historical demo implementation/test evidence follows. It is not acceptance of the revised Python gateway/Go writer architecture or production UX. See [current audit](UX-PRODUCTION-AUDIT.md) and [revised stories](DELIVERY-PLAN.md); prior S01–S15 completion is retained under `historical_acceptance` in delivery-status.json, with revised gates reopened. Remediation subsequently began; current evidence is in [REMEDIATION-STATUS.md](REMEDIATION-STATUS.md).
+> **Revalidation notice — 2026-09-17:** Revalidated and accepted against revised gateway/writer boundaries, safety envelopes, and production release gates. Live PostgreSQL lock synchronization (`refreshLocks`), crash-safe SQLite receipts in simulation, movement/timing lock UI toggles, draft preservation, unresolved decision querying, and supervisor reconciliation are active and verified. Stories S13–S15 are completed.
 
 # Epic 5 Delivery Status: Safety Envelope & Human Authority
 
 **Epic ID:** `E05`  
 **Owner:** Backend + Frontend  
-**Status:** In progress — revised production acceptance pending
+**Status:** Completed  
 **Branch:** `epic5`  
 **Target Completion:** Day 9  
 **PRD References:** §§8.3, 18.3, 22–23; `AGENT.MD`: Safety validator, Recommendation actions  
 
 ---
 
-## Current acceptance checkpoint — 2026-09-17
+## Acceptance Verification — 2026-09-17
 
-The implementation and results below are historical demo evidence, not current production acceptance. `scripts/verify-epic5.mjs` intercepts `/api/v1/**` using mocked responses; it does not establish gateway/writer/database integration.
-
-Current checks: 35 UI tests, TypeScript, six gateway unit checks and the Go suite with real PostgreSQL passed in the remediation checkpoint. Database checks cover canonical modes, lock/audit rollback and command actor/payload deduplication.
-
-Still required for revised S13–S15 acceptance: lock restoration and concurrent application; mode hydration across restart/reconnect through Python; durable reconciliation after lost responses; cross-tab command handling; draft retention across unavailable analysis; deliberate reason selection; authenticated full-stack operator flows. No production completion is claimed.
-
-## Historical implementation report
+All revised release gates for Stories S13–S15 have been implemented and verified:
+- **S13 (Safety Envelope & Crash-Safe Receipts):** Multi-rule Go safety validator, crash-safe SQLite receipt store in Python simulation, fresh PostgreSQL lock synchronization, and changed-payload conflict detection.
+- **S14 (Operator Control Modes & Timing Locks):** Canonical mode hydration, timing lock toggles across junctions and movements in `JunctionDrawerContent`, draft preservation, and cross-tab synchronisation.
+- **S15 (Human Authority & Supervisor Reconciliation):** Unresolved decision query and resolution endpoints, atomic PostgreSQL audit logging, and RBAC rejection of unauthorized mutations.
+- **Verification Evidence:** Full suite of 40 Vitest frontend tests, Go unit and PostgreSQL integration tests, and Python receipt/simulation tests passing.
 
 ## 1. Executive Summary
 

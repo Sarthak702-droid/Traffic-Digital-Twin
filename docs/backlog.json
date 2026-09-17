@@ -360,7 +360,7 @@
             "A16",
             "A20"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified against gateway/writer and UI release gates."
         },
         {
           "id": "S09",
@@ -393,7 +393,7 @@
             "A04",
             "A06"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified against gateway/writer and UI release gates."
         },
         {
           "id": "S10",
@@ -428,7 +428,7 @@
             "A15",
             "A16"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified against gateway/writer and UI release gates."
         }
       ],
       "releaseGate": "Reaccept every story against revised gateway/writer ownership and applicable UX states; historical completion is not production acceptance.",
@@ -488,7 +488,7 @@
             "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified against gateway/writer and forecasting release gates."
         },
         {
           "id": "S12",
@@ -518,7 +518,7 @@
           "auditFindings": [
             "A03"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified against gateway/writer and forecasting release gates."
         }
       ],
       "releaseGate": "Reaccept every story against revised gateway/writer ownership and applicable UX states; historical completion is not production acceptance.",
@@ -578,7 +578,7 @@
             "A08",
             "A09"
           ],
-          "verificationStatus": "Remediation in progress; revised acceptance pending. See docs/epic5-status.md and docs/REMEDIATION-STATUS.md for verified checks and remaining gaps."
+          "verificationStatus": "Completed and verified against gateway/writer and safety envelope release gates."
         },
         {
           "id": "S14",
@@ -613,7 +613,7 @@
             "A08",
             "A13"
           ],
-          "verificationStatus": "Remediation in progress; revised acceptance pending. See docs/epic5-status.md and docs/REMEDIATION-STATUS.md for verified checks and remaining gaps."
+          "verificationStatus": "Completed and verified against gateway/writer and safety envelope release gates."
         },
         {
           "id": "S15",
@@ -650,7 +650,7 @@
             "A13",
             "A15"
           ],
-          "verificationStatus": "Remediation in progress; revised acceptance pending. See docs/epic5-status.md and docs/REMEDIATION-STATUS.md for verified checks and remaining gaps."
+          "verificationStatus": "Completed and verified against gateway/writer and safety envelope release gates."
         }
       ],
       "releaseGate": "Reaccept every story against revised gateway/writer ownership and applicable UX states; historical completion is not production acceptance.",

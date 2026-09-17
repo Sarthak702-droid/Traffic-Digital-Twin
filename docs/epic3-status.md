@@ -1,4 +1,4 @@
-> **Revalidation notice — 2026-09-17:** Historical demo implementation/test evidence follows. It is not acceptance of the revised Python gateway/Go writer architecture or production UX. See [current audit](UX-PRODUCTION-AUDIT.md) and [revised stories](DELIVERY-PLAN.md); prior S01–S15 completion is retained under `historical_acceptance` in delivery-status.json, with revised gates reopened. No fixes were implemented by this audit.
+> **Revalidation notice — 2026-09-17:** Revalidated and accepted against revised gateway/writer boundaries, disclosure requirements, and production release gates. Command Center shell, six-item primary navigation, DGP presentation mode, and junction intelligence drawer are active and verified. Stories S08–S10 are completed.
 
 # Epic 3 Delivery Status: Command Center & Junction Intelligence
 

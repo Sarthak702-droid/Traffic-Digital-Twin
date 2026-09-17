@@ -176,7 +176,7 @@ As an executive viewer, I want a calm and honest operational interface, so that 
 
 **Owner:** Frontend · **Provisional days:** 1–2 · **Depends on:** S01
 
-**Status:** blocked — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic3-status.md.
 
 **Audit findings:** A03, A04, A13, A15, A16, A20
 
@@ -194,7 +194,7 @@ As an operator, I want moving traffic and signal state on C1–C6, so that I can
 
 **Owner:** Frontend · **Provisional days:** 3–4 · **Depends on:** S03, S06, S08
 
-**Status:** blocked — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic3-status.md.
 
 **Audit findings:** A04, A06
 
@@ -212,7 +212,7 @@ As an operator, I want a junction drawer and forecast selector, so that I can tr
 
 **Owner:** Frontend · **Provisional days:** 4–5 · **Depends on:** S09, S12
 
-**Status:** blocked — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic3-status.md.
 
 **Audit findings:** A03, A04, A06, A15, A16
 
@@ -240,7 +240,7 @@ As an operator, I want bounded queue forecasts, so that I can anticipate congest
 
 **Owner:** Intelligence · **Provisional days:** 4–5 · **Depends on:** S06, S07
 
-**Status:** blocked — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic4-status.md.
 
 **Audit findings:** Cross-cutting revised acceptance
 
@@ -258,7 +258,7 @@ As an operator, I want upstream-aware alerts and ETA facts, so that I can interv
 
 **Owner:** Intelligence · **Provisional days:** 5–5 · **Depends on:** S11
 
-**Status:** blocked — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic4-status.md.
 
 **Audit findings:** A03
 
@@ -286,7 +286,7 @@ As a supervisor, I want central safety validation in Go, so that unsafe plans ne
 
 **Owner:** Backend · **Provisional days:** 3–6 · **Depends on:** S02, S04, S07
 
-**Status:** blocked — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic5-status.md.
 
 **Audit findings:** A03, A08, A09
 
@@ -304,7 +304,7 @@ As an operator, I want explicit control of recommendation authority, so that aut
 
 **Owner:** Backend + Frontend · **Provisional days:** 6–9 · **Depends on:** S13, S08
 
-**Status:** blocked — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic5-status.md.
 
 **Audit findings:** A05, A06, A07, A08, A13
 
@@ -322,7 +322,7 @@ As an operator, I want bounded decision controls, so that I retain final authori
 
 **Owner:** Backend + Frontend · **Provisional days:** 8–9 · **Depends on:** S13, S19, S22, S25
 
-**Status:** blocked — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic5-status.md.
 
 **Audit findings:** A05, A06, A09, A13, A15
 

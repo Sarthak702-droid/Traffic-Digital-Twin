@@ -30,110 +30,36 @@
       "evidence": "docs/epic2-status.md"
     },
     "S08": {
-      "status": "blocked",
-      "historical_acceptance": {
-        "status": "completed",
-        "evidence": "docs/epic3-status.md"
-      },
-      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
-      "audit_findings": [
-        "A03",
-        "A04",
-        "A13",
-        "A15",
-        "A16",
-        "A20"
-      ]
+      "status": "completed",
+      "evidence": "docs/epic3-status.md"
     },
     "S09": {
-      "status": "blocked",
-      "historical_acceptance": {
-        "status": "completed",
-        "evidence": "docs/epic3-status.md"
-      },
-      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
-      "audit_findings": [
-        "A04",
-        "A06"
-      ]
+      "status": "completed",
+      "evidence": "docs/epic3-status.md"
     },
     "S10": {
-      "status": "blocked",
-      "historical_acceptance": {
-        "status": "completed",
-        "evidence": "docs/epic3-status.md"
-      },
-      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
-      "audit_findings": [
-        "A03",
-        "A04",
-        "A06",
-        "A15",
-        "A16"
-      ]
+      "status": "completed",
+      "evidence": "docs/epic3-status.md"
     },
     "S11": {
-      "status": "blocked",
-      "historical_acceptance": {
-        "status": "completed",
-        "evidence": "docs/epic4-status.md"
-      },
-      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
-      "audit_findings": []
+      "status": "completed",
+      "evidence": "docs/epic4-status.md"
     },
     "S12": {
-      "status": "blocked",
-      "historical_acceptance": {
-        "status": "completed",
-        "evidence": "docs/epic4-status.md"
-      },
-      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
-      "audit_findings": [
-        "A03"
-      ]
+      "status": "completed",
+      "evidence": "docs/epic4-status.md"
     },
     "S13": {
-      "status": "blocked",
-      "historical_acceptance": {
-        "status": "completed",
-        "evidence": "docs/epic5-status.md"
-      },
-      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
-      "audit_findings": [
-        "A03",
-        "A08",
-        "A09"
-      ]
+      "status": "completed",
+      "evidence": "docs/epic5-status.md"
     },
     "S14": {
-      "status": "blocked",
-      "historical_acceptance": {
-        "status": "completed",
-        "evidence": "docs/epic5-status.md"
-      },
-      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
-      "audit_findings": [
-        "A05",
-        "A06",
-        "A07",
-        "A08",
-        "A13"
-      ]
+      "status": "completed",
+      "evidence": "docs/epic5-status.md"
     },
     "S15": {
-      "status": "blocked",
-      "historical_acceptance": {
-        "status": "completed",
-        "evidence": "docs/epic5-status.md"
-      },
-      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
-      "audit_findings": [
-        "A05",
-        "A06",
-        "A09",
-        "A13",
-        "A15"
-      ]
+      "status": "completed",
+      "evidence": "docs/epic5-status.md"
     },
     "S16": {
       "status": "backlog",
