@@ -16,6 +16,18 @@
     "S04": {
       "status": "completed",
       "evidence": "docs/epic1-acceptance.md"
+    },
+    "S05": {
+      "status": "completed",
+      "evidence": "docs/epic2-status.md"
+    },
+    "S06": {
+      "status": "completed",
+      "evidence": "docs/epic2-status.md"
+    },
+    "S07": {
+      "status": "completed",
+      "evidence": "docs/epic2-status.md"
     }
   }
 }

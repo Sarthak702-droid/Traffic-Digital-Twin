@@ -26,6 +26,7 @@ const server = http.createServer(async (req,res) => {
       return send(200,JSON.stringify(plan));
     }
     if(path === '/evidence/epic1') return send(200,await readFile(resolve(root,'docs/epic1-acceptance.md'),'utf8'),'text/plain');
+    if(path === '/evidence/epic2') return send(200,await readFile(resolve(root,'docs/epic2-status.md'),'utf8'),'text/plain');
     if(path === '/api/git') {
       try {
         const [{stdout:branch},{stdout:status}] = await Promise.all([run('git',['branch','--show-current'],{cwd:root}),run('git',['status','--short'],{cwd:root})]);
