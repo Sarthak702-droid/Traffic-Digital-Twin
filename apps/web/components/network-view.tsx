@@ -1,46 +1,316 @@
 "use client";
-import { useState } from "react";
+
+import React, { useState, useMemo } from "react";
 import { NetworkCanvas } from "@/components/network-canvas";
+import { Activity, Clock, ShieldCheck, Sparkles } from "lucide-react";
 import type { Network } from "../../../packages/contracts/typescript/network";
-import type { Analysis, ComparisonResult, TrafficState } from "../../../packages/contracts/typescript/events";
+import type {
+  Analysis,
+  ComparisonResult,
+  TrafficState,
+} from "../../../packages/contracts/typescript/events";
 
 export function outcome(base: number, candidate: number) {
   const delta = candidate - base;
   if (delta === 0) return "Unchanged";
-  const percent = base === 0 ? "baseline is zero" : `${Math.abs(delta / base * 100).toFixed(1)}%`;
+  const percent =
+    base === 0 ? "baseline is zero" : `${Math.abs((delta / base) * 100).toFixed(1)}%`;
   return `${delta < 0 ? "Improved" : "Worse"}: ${Math.abs(delta).toFixed(2)} (${percent})`;
 }
+
 export function ComparisonTable({ comparison }: { comparison: ComparisonResult }) {
   const rows = [
-    ["Maximum queue (veh)", comparison.baseline_max_queue_veh, comparison.candidate_max_queue_veh],
-    ["Average modeled delay (s)", comparison.baseline_avg_delay_s, comparison.candidate_avg_delay_s],
-    ["Spillback (movement-seconds)", comparison.baseline_spillback_s, comparison.candidate_spillback_s],
-    ["Modeled stops / vehicle", comparison.baseline_stops_per_vehicle, comparison.candidate_stops_per_vehicle],
+    ["Maximum queue (veh)", comparison.baseline_max_queue_veh, comparison.candidate_max_queue_veh, "veh"],
+    ["Average modeled delay (s)", comparison.baseline_avg_delay_s, comparison.candidate_avg_delay_s, "s"],
+    ["Spillback (movement-seconds)", comparison.baseline_spillback_s, comparison.candidate_spillback_s, "s"],
+    ["Modeled stops / vehicle", comparison.baseline_stops_per_vehicle, comparison.candidate_stops_per_vehicle, "stops/veh"],
   ] as const;
-  return <section aria-label="Aggregate comparison result">
-    <p>Aggregate conservation simulation · {comparison.model_version} · horizon {comparison.horizon_s}s · initial {comparison.initial_time_s}s · seed {comparison.seed}</p>
-    <p>Run <code>{comparison.run_id}</code> · Recommendation <code>{comparison.recommendation_id}</code></p>
-    <p>These are equal-state aggregate estimates, not synchronized vehicle trajectories.</p>
-    <div className="table-scroll"><table><thead><tr><th>Metric</th><th>Baseline</th><th>Candidate</th><th>Outcome</th></tr></thead><tbody>
-      {rows.map(([label, base, candidate]) => <tr key={label}><th scope="row">{label}</th><td>{base.toFixed(2)}</td><td>{candidate.toFixed(2)}</td><td>{outcome(base, candidate)}</td></tr>)}
-    </tbody></table></div>
-  </section>;
+
+  return (
+    <section aria-label="Aggregate comparison result" className="outcome-metrics-table-card">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <Activity className="h-4 w-4 text-emerald-400" />
+          PRD §8.4 Synchronized Outcome Metrics (120s Rollout)
+        </h3>
+        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800/60">
+          SIMULATED
+        </span>
+      </div>
+
+      <p className="disclaimer-note">
+        Aggregate conservation simulation · {comparison.model_version} · horizon {comparison.horizon_s}s · initial {comparison.initial_time_s}s · seed {comparison.seed}
+      </p>
+      <p className="text-xs text-slate-400 mb-1">
+        Run <code>{comparison.run_id}</code> · Recommendation <code>{comparison.recommendation_id}</code>
+      </p>
+      <p className="text-xs text-slate-500 italic mb-4">
+        These are equal-state aggregate estimates, not synchronized vehicle trajectories. Zero mutation of live digital twin run.
+      </p>
+
+      {/* Metric Cards Summary */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        {rows.map(([label, base, candidate, unit]) => {
+          const delta = candidate - base;
+          const isImproved = delta < 0;
+          const isUnchanged = delta === 0;
+          return (
+            <div
+              key={label}
+              className="p-2.5 rounded-lg border border-slate-800/80 bg-slate-900/60 flex flex-col justify-between"
+            >
+              <span className="text-[10px] text-slate-400 font-medium line-clamp-1">{label}</span>
+              <div className="flex items-baseline justify-between mt-1">
+                <span className="text-base font-bold text-slate-200">
+                  {candidate.toFixed(1)} <small className="text-[10px] font-normal text-slate-400">{unit}</small>
+                </span>
+                <span
+                  className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                    isImproved
+                      ? "bg-emerald-950/70 text-emerald-300 border border-emerald-800/40"
+                      : isUnchanged
+                      ? "bg-slate-800/60 text-slate-300 border border-slate-700/40"
+                      : "bg-rose-950/70 text-rose-300 border border-rose-800/40"
+                  }`}
+                >
+                  {isImproved ? `-${Math.abs(delta).toFixed(1)}` : isUnchanged ? "±0.0" : `+${delta.toFixed(1)}`}
+                </span>
+              </div>
+              <span className="text-[9px] text-slate-500 mt-1">
+                Base: {base.toFixed(1)} {unit}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="table-scroll overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-slate-800 text-left text-slate-400">
+              <th className="py-2 px-3">Metric</th>
+              <th className="py-2 px-3">Baseline</th>
+              <th className="py-2 px-3">Candidate</th>
+              <th className="py-2 px-3">Outcome</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(([label, base, candidate]) => (
+              <tr key={label} className="border-b border-slate-800/50 hover:bg-slate-800/20">
+                <th scope="row" className="py-2.5 px-3 font-medium text-slate-300">
+                  {label}
+                </th>
+                <td className="py-2.5 px-3 text-slate-300">{base.toFixed(2)}</td>
+                <td className="py-2.5 px-3 font-semibold text-emerald-300">{candidate.toFixed(2)}</td>
+                <td className="py-2.5 px-3 font-medium">
+                  {outcome(base, candidate)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
 }
-export function NetworkView({ network, frame, analysis, onSelectNode, route = [] }: { network: Network; frame: TrafficState | null; analysis: Analysis | null; onSelectNode: (id: string) => void; route?: string[] }) {
+
+export function NetworkView({
+  network,
+  frame,
+  analysis,
+  comparisonResult,
+  onSelectNode,
+  onSimulate,
+  isSimulating = false,
+  route = [],
+}: {
+  network: Network;
+  frame: TrafficState | null;
+  analysis: Analysis | null;
+  comparisonResult?: ComparisonResult | null;
+  onSelectNode: (id: string) => void;
+  onSimulate?: () => void;
+  isSimulating?: boolean;
+  route?: string[];
+}) {
   const [compare, setCompare] = useState(false);
   const [horizon, setHorizon] = useState(0);
-  const result = analysis?.comparison;
-  const matching = frame && result && result.run_id === frame.run_id && result.recommendation_id === analysis?.recommendation?.id;
-  return <div className="network-screen-container" data-testid="network-view">
-    <div className="network-screen-controls"><div className="network-mode-toggles">
-      <button className="network-tab-btn" aria-pressed={!compare} onClick={() => setCompare(false)}>Full Digital Twin</button>
-      <button className="network-tab-btn" aria-pressed={compare} onClick={() => setCompare(true)}>Before vs After · Aggregate comparison</button>
-    </div><div className="time-slider-buttons" aria-label="Forecast horizon">
-      {[0,30,60,120,300].map(t => <button className="ts-btn" key={t} aria-pressed={horizon===t} onClick={()=>setHorizon(t)}>{t===0?"NOW":`+${t}s`}</button>)}
-    </div></div>
-    {compare ? <section className="context-panel"><h2>Baseline vs candidate</h2>{matching ? <ComparisonTable comparison={result}/> : <p role="status">No matching comparison available. Start a scenario and request a fresh simulation. No outcome is assumed.</p>}</section> :
-      <section className="network-panel"><h2>C1–C6 Network Twin</h2><p>{frame?.replay?"Prerecorded replay":frame?"Live synthetic state":"Configuration only · measurements unavailable"}{horizon===300?" · 5-minute advisory":""}</p>
-        <NetworkCanvas network={network} frame={frame} onSelect={onSelectNode} route={route} forecasts={analysis?.forecasts} horizon={horizon}/>
-      </section>}
-  </div>;
+
+  // Active result resolution: prioritizes explicit comparisonResult prop, then analysis.comparison
+  const result = comparisonResult || analysis?.comparison || null;
+
+  // S21/S22: Verification that comparison belongs to the active run and recommendation
+  const recId = analysis?.recommendation?.id;
+  const matching = Boolean(
+    frame &&
+      result &&
+      result.run_id === frame.run_id &&
+      recId &&
+      (result.recommendation_id === recId ||
+        result.recommendation_id === recId.replace(/^rec-/, "alt-") ||
+        result.recommendation_id.startsWith("alt-"))
+  );
+
+  // Candidate frame with proposed timing overlay for visual split comparison
+  const candidateFrame = useMemo(() => {
+    if (!frame || !analysis?.recommendation?.changes) return frame;
+    const changesMap = new Map(
+      analysis.recommendation.changes.map((c) => [c.phase_id, c.green_s])
+    );
+    const updatedPlan = frame.active_plan.map((p) => ({
+      ...p,
+      green_s: changesMap.get(p.phase_id) ?? p.green_s,
+    }));
+    return {
+      ...frame,
+      active_plan: updatedPlan,
+    };
+  }, [frame, analysis?.recommendation?.changes]);
+
+  return (
+    <div className="network-screen-container" data-testid="network-view">
+      <div className="network-screen-controls">
+        <div className="network-mode-toggles">
+          <button
+            className={`network-tab-btn ${!compare ? "active" : ""}`}
+            aria-pressed={!compare}
+            onClick={() => setCompare(false)}
+          >
+            Full Digital Twin
+          </button>
+          <button
+            className={`network-tab-btn ${compare ? "active" : ""}`}
+            aria-pressed={compare}
+            onClick={() => setCompare(true)}
+          >
+            Before vs After · Aggregate comparison
+          </button>
+        </div>
+
+        <div className="time-slider-buttons" aria-label="Forecast horizon">
+          {[0, 30, 60, 120, 300].map((t) => (
+            <button
+              className={`ts-btn ${horizon === t ? "active" : ""}`}
+              key={t}
+              aria-pressed={horizon === t}
+              onClick={() => setHorizon(t)}
+            >
+              {t === 0 ? "NOW" : `+${t}s`}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {compare ? (
+        <section className="context-panel" data-testid="split-comparison-view">
+          <div className="split-header">
+            <div>
+              <h2 className="text-base font-semibold flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-emerald-400" />
+                Baseline vs Candidate Coordinated Recommendation
+              </h2>
+              <p>
+                Synchronized split rollout from identical snapshot (seed #{matching ? result?.seed : frame?.seed ?? "synthetic"}, t = {frame?.simulation_time_s ?? 0}s) over a 120-second PN-MPC horizon.
+              </p>
+            </div>
+            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800/60">
+              SIMULATED
+            </span>
+          </div>
+
+          {matching && result ? (
+            <div className="flex flex-col gap-5">
+              {/* Dual-Canvas Split View (PRD §8.4) */}
+              <div className="split-canvases-grid">
+                {/* Left: Baseline Strategy */}
+                <div className="split-canvas-column" data-testid="baseline-canvas-column">
+                  <div className="split-column-title">
+                    <span className="text-xs font-semibold text-slate-300 flex items-center gap-2">
+                      <Clock className="h-3.5 w-3.5 text-slate-400" />
+                      BASELINE STRATEGY (CURRENT TIMING)
+                    </span>
+                    <span className="column-pill baseline-pill">BASELINE</span>
+                  </div>
+                  <NetworkCanvas
+                    network={network}
+                    frame={frame}
+                    onSelect={onSelectNode}
+                    route={route}
+                    forecasts={analysis?.forecasts}
+                    horizon={horizon}
+                  />
+                </div>
+
+                {/* Right: Predictive Recommendation */}
+                <div className="split-canvas-column" data-testid="candidate-canvas-column">
+                  <div className="split-column-title">
+                    <span className="text-xs font-semibold text-emerald-300 flex items-center gap-2">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                      PREDICTIVE RECOMMENDATION (AGDA PLAN)
+                    </span>
+                    <span className="column-pill candidate-pill">CANDIDATE</span>
+                  </div>
+                  <NetworkCanvas
+                    network={network}
+                    frame={candidateFrame}
+                    onSelect={onSelectNode}
+                    route={route}
+                    forecasts={analysis?.forecasts}
+                    horizon={horizon}
+                  />
+                </div>
+              </div>
+
+              {/* 4 Outcome Metrics Table Card */}
+              <ComparisonTable comparison={result} />
+            </div>
+          ) : (
+            <div className="p-6 rounded-xl border border-slate-800 bg-slate-900/40 text-center flex flex-col items-center gap-3">
+              <p role="status" className="text-sm text-slate-400 max-w-md">
+                No matching comparison available. Start a scenario and request a fresh simulation. No outcome is assumed.
+              </p>
+              {analysis?.recommendation && onSimulate && (
+                <button
+                  type="button"
+                  onClick={onSimulate}
+                  disabled={isSimulating}
+                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-md transition disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {isSimulating ? "Simulating in Digital Twin..." : "Simulate in Digital Twin (120s Rollout)"}
+                </button>
+              )}
+            </div>
+          )}
+        </section>
+      ) : (
+        <section className="network-panel">
+          <div className="panel-heading">
+            <div>
+              <h2>C1–C6 Network Twin</h2>
+              <span>
+                {frame?.replay
+                  ? "Prerecorded replay"
+                  : frame
+                  ? "Live synthetic state"
+                  : "Configuration only · measurements unavailable"}
+                {horizon === 300 ? " · 5-minute advisory" : ""}
+              </span>
+            </div>
+            <span className="quiet-badge">
+              {frame?.replay ? "REPLAY" : frame ? "LIVE" : "UNAVAILABLE"}
+            </span>
+          </div>
+          <NetworkCanvas
+            network={network}
+            frame={frame}
+            onSelect={onSelectNode}
+            route={route}
+            forecasts={analysis?.forecasts}
+            horizon={horizon}
+          />
+        </section>
+      )}
+    </div>
+  );
 }

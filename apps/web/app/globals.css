@@ -2378,6 +2378,16 @@ tr:last-child td {
   color: #94cbb0;
   border: 1px solid #335542;
 }
+.delta-pill.red {
+  background: #2e1818;
+  color: #ea9696;
+  border: 1px solid #633030;
+}
+.delta-pill.gray {
+  background: #19232b;
+  color: #8da1ad;
+  border: 1px solid #2a3d4a;
+}
 
 /* DGP Demonstration Presentation Modal (PRD §5 & §8.1) */
 .dgp-modal-overlay {

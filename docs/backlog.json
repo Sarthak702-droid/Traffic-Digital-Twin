@@ -861,7 +861,7 @@
           "auditFindings": [
             "A02"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed: 5 Python tests + Go tests pass. Equal-seed simulation branches with 4 outcome metrics, safety envelope enforcement, zero-mutation verified."
         },
         {
           "id": "S22",
@@ -894,7 +894,7 @@
             "A02",
             "A06"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed: 12 frontend tests + Go tests pass. Split-screen dual canvas, 4 outcome metrics with SIMULATED badge, honest delta indicators, stale comparison rejection, simulation trigger."
         }
       ],
       "releaseGate": "Reaccept every story against revised gateway/writer ownership and applicable UX states; historical completion is not production acceptance.",

@@ -433,7 +433,7 @@ As an operator, I want baseline and candidate rollouts from one snapshot, so tha
 
 **Owner:** Simulation · **Provisional days:** 6–7 · **Depends on:** S05, S07, S13
 
-**Status:** backlog — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Equal-seed simulation branches with 4 outcome metrics, safety envelope enforcement, zero-mutation verified. Evidence: docs/epic7-status.md
 
 **Audit findings:** A02
 
@@ -451,7 +451,7 @@ As an operator, I want a synchronized split view, so that I can compare the prop
 
 **Owner:** Frontend · **Provisional days:** 8–8 · **Depends on:** S09, S19, S21
 
-**Status:** backlog — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Split-screen dual canvas, 4 outcome metrics with SIMULATED badge, honest delta indicators, stale comparison rejection, simulation trigger. Evidence: docs/epic7-status.md
 
 **Audit findings:** A02, A06
 

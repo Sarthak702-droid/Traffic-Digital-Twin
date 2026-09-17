@@ -78,12 +78,12 @@
       "evidence": "docs/epic6-status.md"
     },
     "S21": {
-      "status": "backlog",
-      "reason": "Revised acceptance pending; no completion verified by this audit."
+      "status": "completed",
+      "evidence": "docs/epic7-status.md"
     },
     "S22": {
-      "status": "backlog",
-      "reason": "Revised acceptance pending; no completion verified by this audit."
+      "status": "completed",
+      "evidence": "docs/epic7-status.md"
     },
     "S25": {
       "status": "backlog",

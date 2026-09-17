@@ -613,7 +613,17 @@ export function Workspace() {
                           decision.mutateAsync({ action: "reject", reason })
                         }
                         decisionPending={anyCommandPending}
-                        comparisonResult={simulationComparison?.run_id===live.frame?.run_id && simulationComparison?.recommendation_id===analysis?.recommendation?.id ? simulationComparison : null}
+                        comparisonResult={
+                          (simulationComparison?.run_id === live.frame?.run_id &&
+                            (simulationComparison?.recommendation_id === analysis?.recommendation?.id ||
+                             simulationComparison?.recommendation_id === selectedAlternative?.id))
+                            ? simulationComparison
+                            : (analysis?.comparison?.run_id === live.frame?.run_id &&
+                               (analysis?.comparison?.recommendation_id === analysis?.recommendation?.id ||
+                                analysis?.comparison?.recommendation_id === selectedAlternative?.id))
+                              ? analysis.comparison
+                              : null
+                        }
                         onClearComparison={() => setSimulationComparison(null)}
                         manualMode={manual}
                       />
@@ -682,6 +692,9 @@ export function Workspace() {
                     analysis={analysis}
                     onSelectNode={selectNode}
                     route={[]}
+                    comparisonResult={activeComparison}
+                    onSimulate={() => decision.mutate({ action: "simulate" })}
+                    isSimulating={decision.isPending}
                   />
                 )}
 

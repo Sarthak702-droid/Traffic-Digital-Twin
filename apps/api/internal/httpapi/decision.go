@@ -351,6 +351,11 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 			problem(w, 503, "Comparison unavailable")
 			return
 		}
+		s.mu.Lock()
+		if s.analysis != nil && s.analysis.RunId == state.RunId {
+			s.analysis.Comparison = proto.Clone(result).(*pb.ComparisonResult)
+		}
+		s.mu.Unlock()
 		if e = s.auditDecision(ctx, rec, state, action, body.Reason, "simulated", changes); e != nil {
 			problem(w, 503, "Comparison audit failed")
 			return
@@ -427,6 +432,9 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 			}
+		}
+		if action == "approve" || action == "reject" || action == "modify" {
+			s.analysis.Comparison = nil
 		}
 	}
 	s.mu.Unlock()
