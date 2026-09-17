@@ -176,19 +176,51 @@ def main():
     ensure_postgres()
     env = ensure_local_env()
 
-    # Root-level resolution for required tools
+    # Root-level resolution for Go services (precompiled binary or Go compiler)
+    bin_dir = ROOT / "bin"
+    bin_dir.mkdir(exist_ok=True)
+    bin_writer = bin_dir / "writer"
+    bin_api = bin_dir / "api"
+
     go_bin = find_executable("go", [
         "/usr/local/go/bin/go",
-        "~/.local/bin/go",
-        "~/go/bin/go",
+        "/home/sarthaktripathy/.local/bin/go",
+        os.path.expanduser("~/.local/bin/go"),
+        os.path.expanduser("~/go/bin/go"),
         "/usr/bin/go",
+        "/bin/go",
         "/snap/bin/go",
+        "/opt/go/bin/go",
     ])
-    if not (shutil.which(go_bin) or (os.path.isfile(go_bin) and os.access(go_bin, os.X_OK))):
+    go_available = bool(shutil.which(go_bin) or (os.path.isfile(go_bin) and os.access(go_bin, os.X_OK)))
+
+    # If binaries do not exist and Go is available, compile them once
+    if go_available and (not bin_writer.exists() or not bin_api.exists()):
+        log("Compiling Go services to bin/ for instant startup...")
+        try:
+            subprocess.run([go_bin, "build", "-o", str(bin_writer), "./apps/api/cmd/writer"], check=True, cwd=ROOT)
+            subprocess.run([go_bin, "build", "-o", str(bin_api), "./apps/api/cmd/api"], check=True, cwd=ROOT)
+        except Exception as e:
+            log(f"Pre-compilation note: {e}")
+
+    # Determine command for Writer
+    if bin_writer.exists() and os.access(bin_writer, os.X_OK):
+        writer_cmd = [str(bin_writer)]
+    elif go_available:
+        writer_cmd = [go_bin, "run", "./apps/api/cmd/writer"]
+    else:
         raise RuntimeError(
-            "Go compiler ('go') is required but was not found in PATH or standard paths.\n"
-            "Please ensure Go is installed (https://go.dev/dl/)."
+            "Neither pre-compiled Go binaries (bin/writer, bin/api) nor the Go compiler ('go') were found.\n"
+            "Please install Go (https://go.dev/dl/) or ensure bin/writer and bin/api exist."
         )
+
+    # Determine command for Domain API
+    if bin_api.exists() and os.access(bin_api, os.X_OK):
+        api_cmd = [str(bin_api)]
+    elif go_available:
+        api_cmd = [go_bin, "run", "./apps/api/cmd/api"]
+    else:
+        raise RuntimeError("Neither pre-compiled bin/api nor Go compiler found.")
 
     venv_py = ROOT / ".venv" / "bin" / "python"
     py_bin = str(venv_py) if venv_py.exists() else sys.executable
@@ -203,7 +235,8 @@ def main():
 
     # Ensure binary directories are in PATH for child processes
     extra_paths = [
-        os.path.dirname(go_bin),
+        str(bin_dir),
+        os.path.dirname(go_bin) if go_available else "",
         os.path.expanduser("~/go/bin"),
         os.path.dirname(npm_bin),
         os.path.expanduser("~/.local/bin"),
@@ -212,16 +245,16 @@ def main():
         "/bin",
     ]
     cur_path = env.get("PATH", "")
-    to_add = [p for p in extra_paths if os.path.isdir(p) and p not in cur_path.split(":")]
+    to_add = [p for p in extra_paths if p and os.path.isdir(p) and p not in cur_path.split(":")]
     if to_add:
         env["PATH"] = ":".join(to_add) + (":" + cur_path if cur_path else "")
 
     commands = [
-        ("Go DB Writer", [go_bin, "run", "./apps/api/cmd/writer"]),
+        ("Go DB Writer", writer_cmd),
         ("Python API Gateway", [py_bin, "-m", "services.gateway.server"]),
         ("Python Simulation gRPC", [py_bin, "-m", "services.shared.server", "simulation", "--port", "50051"]),
         ("Python Intelligence gRPC", [py_bin, "-m", "services.shared.server", "intelligence", "--port", "50052"]),
-        ("Go Domain API", [go_bin, "run", "./apps/api/cmd/api"]),
+        ("Go Domain API", api_cmd),
         ("Frontend Web (Vite)", [npm_bin, "run", "dev", "-w", "apps/web"]),
     ]
 
@@ -241,7 +274,7 @@ def main():
             children.append((name, proc))
 
             # Wait for writer readiness
-            if cmd[-1] == "./apps/api/cmd/writer":
+            if "writer" in name.lower():
                 for _ in range(50):
                     try:
                         req = urllib.request.Request(
@@ -257,7 +290,7 @@ def main():
                     raise RuntimeError("Go DB Writer did not become ready on port 8083")
 
             # Wait for gateway readiness
-            if "services.gateway.server" in cmd:
+            if "gateway" in name.lower():
                 for _ in range(50):
                     try:
                         req = urllib.request.Request(
