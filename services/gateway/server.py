@@ -209,7 +209,7 @@ def serve():
     if not users():raise RuntimeError('GATEWAY_USERS_FILE with provisioned password hashes required')
     host=os.environ.get('GATEWAY_HOST','127.0.0.1')
     public=ThreadingHTTPServer((host,int(os.environ.get('GATEWAY_PORT','8080'))),Handler);public.private=False;public.daemon_threads=True
-    private=ThreadingHTTPServer(('127.0.0.1',int(os.environ.get('GATEWAY_INTERNAL_PORT','8082'))),Handler);private.private=True;private.daemon_threads=True
+    private=ThreadingHTTPServer(('127.0.0.1',int(os.environ.get('GATEWAY_INTERNAL_PORT','8002'))),Handler);private.private=True;private.daemon_threads=True
     threading.Thread(target=private.serve_forever,daemon=True).start()
     try:public.serve_forever()
     finally:private.shutdown();public.server_close();private.server_close()

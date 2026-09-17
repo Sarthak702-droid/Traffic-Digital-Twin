@@ -87,7 +87,8 @@ def ensure_local_env() -> dict:
         env_data.update(
             WRITE_DATABASE_URL="postgres://traffic:traffic_demo@127.0.0.1:5433/traffic?sslmode=disable",
             READ_DATABASE_URL="postgres://traffic_reader:traffic_reader_demo@127.0.0.1:5433/traffic?sslmode=disable",
-            GATEWAY_INTERNAL_ORIGIN="http://127.0.0.1:8082",
+            GATEWAY_INTERNAL_ORIGIN="http://127.0.0.1:8002",
+            GATEWAY_INTERNAL_PORT="8002",
             GATEWAY_USERS_FILE=str(USERS_FILE),
             API_ORIGIN="http://127.0.0.1:8080",
             UI_ORIGIN="http://127.0.0.1:3100",
@@ -136,6 +137,8 @@ def ensure_local_env() -> dict:
     merged.update(env_data)
     merged.setdefault("PYTHONPATH", ".:packages/contracts/gen/python")
     merged["GATEWAY_PORT"] = str(gateway_port)
+    merged["GATEWAY_INTERNAL_PORT"] = str(int(env_data.get("GATEWAY_INTERNAL_PORT", 8002)))
+    merged["GATEWAY_INTERNAL_ORIGIN"] = f"http://127.0.0.1:{merged['GATEWAY_INTERNAL_PORT']}"
     merged["API_ORIGIN"] = f"http://127.0.0.1:{gateway_port}"
     merged["UI_ORIGIN"] = "http://127.0.0.1:3100"
     return merged
@@ -156,7 +159,7 @@ def find_executable(name: str, fallback_paths: list[str]) -> str:
 
 def cleanup_stale_services():
     # Clean up lingering local processes on digital twin service ports
-    ports = [8081, 8082, 8083, 8085, 8086, 50051, 50052, 3100]
+    ports = [8081, 8082, 8002, 8083, 8085, 8086, 50051, 50052, 3100]
     for p in ports:
         try:
             out = subprocess.check_output(["lsof", "-t", f"-i:{p}"], stderr=subprocess.DEVNULL)

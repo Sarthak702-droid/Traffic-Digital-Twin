@@ -26,7 +26,7 @@ npm run build
 python3 scripts/dev-stack.py
 ```
 
-Bootstrap preserves an existing environment. Password entry is interactive. Generated secrets remain in ignored `.runtime` files. Open **http://127.0.0.1:3100** and sign in. Public gateway: **8080**; private Go domain: **8081**; internal gateway: **8082**; Go writer: **8083**. PostgreSQL: **5433**. The domain uses a read-only database account; only the writer uses write credentials. These are development startup instructions; full-stack acceptance and production deployment remain pending.
+Bootstrap preserves an existing environment. Password entry is interactive. Generated secrets remain in ignored `.runtime` files. Open **http://127.0.0.1:3100** and sign in. Public gateway: **8080**; private Go domain: **8081**; internal gateway: **8002**; Go writer: **8083**. PostgreSQL: **5433**. The domain uses a read-only database account; only the writer uses write credentials. These are development startup instructions; full-stack acceptance and production deployment remain pending.
 
 `.env.example` documents overrides. Next's proxy reads `API_ORIGIN`; rebuild Next when changing it. Keep private services on loopback. Local HTTP does not establish a production transport-security pass.
 
