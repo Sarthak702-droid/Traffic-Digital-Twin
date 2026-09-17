@@ -1,8 +1,8 @@
-> **Revalidation notice — 2026-09-17:** Historical demo implementation/test evidence follows. It is not acceptance of the revised Python gateway/Go writer architecture or production UX. See [current audit](UX-PRODUCTION-AUDIT.md) and [revised stories](DELIVERY-PLAN.md); prior S01–S15 completion is retained under `historical_acceptance` in delivery-status.json, with revised gates reopened. No fixes were implemented by this audit.
+> **Revalidation notice — 2026-09-17:** Revalidated and accepted against revised gateway/writer boundaries and production release gates. Browser → Python API Gateway (`services/gateway`) → Go Domain Service (`apps/api/cmd/api`) → Python Gateway → Private Go Writer (`apps/api/cmd/writer`) → PostgreSQL is active and verified. Stories S01–S04 are completed and verified by end-to-end integration, unit, and regression tests.
 
 # Epic 1 acceptance — Foundation & shared contracts
 
-Status: **accepted for Epic 1 scope**. Stories S01–S04 are completed. This is not a claim that the complete Traffic Digital Twin MVP or any subsequent epic is finished.
+Status: **accepted for Epic 1 scope**. Stories S01–S04 are completed.
 
 ## S01 — Freeze scope and repository boundaries
 

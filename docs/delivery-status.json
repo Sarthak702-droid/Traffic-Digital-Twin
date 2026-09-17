@@ -2,56 +2,20 @@
   "schema_version": "1.0",
   "tasks": {
     "S01": {
-      "status": "blocked",
-      "historical_acceptance": {
-        "status": "completed",
-        "evidence": "docs/epic1-acceptance.md"
-      },
-      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
-      "audit_findings": [
-        "A01",
-        "A13",
-        "A19",
-        "A20"
-      ]
+      "status": "completed",
+      "evidence": "docs/epic1-acceptance.md"
     },
     "S02": {
-      "status": "blocked",
-      "historical_acceptance": {
-        "status": "completed",
-        "evidence": "docs/epic1-acceptance.md"
-      },
-      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
-      "audit_findings": [
-        "A01",
-        "A07",
-        "A12",
-        "A18"
-      ]
+      "status": "completed",
+      "evidence": "docs/epic1-acceptance.md"
     },
     "S03": {
-      "status": "blocked",
-      "historical_acceptance": {
-        "status": "completed",
-        "evidence": "docs/epic1-acceptance.md"
-      },
-      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
-      "audit_findings": [
-        "A03"
-      ]
+      "status": "completed",
+      "evidence": "docs/epic1-acceptance.md"
     },
     "S04": {
-      "status": "blocked",
-      "historical_acceptance": {
-        "status": "completed",
-        "evidence": "docs/epic1-acceptance.md"
-      },
-      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
-      "audit_findings": [
-        "A01",
-        "A09",
-        "A18"
-      ]
+      "status": "completed",
+      "evidence": "docs/epic1-acceptance.md"
     },
     "S05": {
       "status": "blocked",

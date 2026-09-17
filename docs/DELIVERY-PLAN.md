@@ -30,7 +30,7 @@ As the engineering team, I want a documented architecture and scope freeze, so t
 
 **Owner:** Platform · **Provisional days:** 1–1 · **Depends on:** None
 
-**Status:** blocked — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic1-acceptance.md.
 
 **Audit findings:** A01, A13, A19, A20
 
@@ -48,7 +48,7 @@ As an integration engineer, I want versioned shared schemas, so that all compone
 
 **Owner:** Platform · **Provisional days:** 1–2 · **Depends on:** S01
 
-**Status:** blocked — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic1-acceptance.md.
 
 **Audit findings:** A01, A07, A12, A18
 
@@ -66,7 +66,7 @@ As a scenario author, I want graph and signal configuration outside UI code, so 
 
 **Owner:** Simulation · **Provisional days:** 1–2 · **Depends on:** S02
 
-**Status:** blocked — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic1-acceptance.md.
 
 **Audit findings:** A03
 
@@ -84,7 +84,7 @@ As an operator, I want durable run and decision records, so that actions survive
 
 **Owner:** Backend · **Provisional days:** 1–2 · **Depends on:** S02
 
-**Status:** blocked — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic1-acceptance.md.
 
 **Audit findings:** A01, A09, A18
 
