@@ -63,7 +63,7 @@ try {
   const navLabels = await navItems.allInnerTexts();
   assert.deepEqual(
     navLabels.map((l) => l.trim()),
-    ["Command Center", "Network", "Vision Analytics", "Incidents", "Emergency", "Audit & Health"],
+    ["Command Center", "Network / Junction Intelligence", "Vision Analytics", "Incidents", "Emergency", "Audit & Health"],
   );
 
   // 2. Role Switcher Verification
@@ -134,7 +134,7 @@ try {
 
   // 7. Network Screen & Before-vs-After Comparison Mode (PRD §8.4)
   console.log("Verifying Network Screen Before-vs-After Comparison...");
-  await page.getByRole("button", { name: "Network", exact: true }).click();
+  await page.getByRole("button", { name: "Network / Junction Intelligence", exact: true }).click();
   const networkView = page.locator('[data-testid="network-view"]');
   await networkView.waitFor();
 

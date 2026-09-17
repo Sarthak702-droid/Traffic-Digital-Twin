@@ -54,7 +54,7 @@ export { NetworkCanvas };
 
 const sections = [
   { id: "command", label: "Command Center", icon: Layers },
-  { id: "network", label: "Network", icon: NetworkIcon },
+  { id: "network", label: "Network / Junction Intelligence", icon: NetworkIcon },
   { id: "vision", label: "Vision Analytics", icon: Video },
   { id: "incidents", label: "Incidents", icon: TrafficCone },
   { id: "emergency", label: "Emergency", icon: Siren },
