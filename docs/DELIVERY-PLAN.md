@@ -350,7 +350,7 @@ As a traffic engineer, I want demand and fairness aware allocation, so that gree
 
 **Owner:** Intelligence · **Provisional days:** 6–6 · **Depends on:** S11, S13
 
-**Status:** backlog — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic6-status.md.
 
 **Audit findings:** Cross-cutting revised acceptance
 
@@ -368,7 +368,7 @@ As an operator, I want bounded network candidates, so that C1 clearance and C3 r
 
 **Owner:** Intelligence · **Provisional days:** 6–7 · **Depends on:** S12, S16
 
-**Status:** backlog — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic6-status.md.
 
 **Audit findings:** Cross-cutting revised acceptance
 
@@ -386,7 +386,7 @@ As an operator, I want the safest low-cost coordinated recommendation, so that n
 
 **Owner:** Intelligence · **Provisional days:** 7–7 · **Depends on:** S17, S21
 
-**Status:** backlog — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic6-status.md.
 
 **Audit findings:** Cross-cutting revised acceptance
 
@@ -405,7 +405,7 @@ As an operator, I want a traceable recommendation explanation, so that I underst
 
 **Owner:** Intelligence + Frontend · **Provisional days:** 7–7 · **Depends on:** S18
 
-**Status:** backlog — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic6-status.md.
 
 **Audit findings:** A02, A03
 

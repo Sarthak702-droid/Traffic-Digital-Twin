@@ -10,7 +10,9 @@ import {
   CheckCircle2,
   Clock,
   Database,
+  Info,
   Layers,
+  Network as NetworkIcon,
   Radio,
   RefreshCw,
   ShieldAlert,
@@ -23,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import type {
   Analysis,
   ComparisonResult,
+  Recommendation,
   TimingChange,
   TrafficState,
 } from "../../../packages/contracts/typescript/events";
@@ -64,6 +67,7 @@ export function ActionRail({
   onApprove,
   onModify,
   onReject,
+  onSelectAlternative,
   decisionPending,
   comparisonResult,
   onClearComparison,
@@ -102,6 +106,7 @@ export function ActionRail({
   onApprove: () => void;
   onModify: (reason: string, changes: TimingChange[]) => void | Promise<unknown>;
   onReject: (reason: string) => void | Promise<unknown>;
+  onSelectAlternative?: (alt: Recommendation | null) => void;
   decisionPending: boolean;
   comparisonResult?: ComparisonResult | null;
   onClearComparison?: () => void;
@@ -110,7 +115,19 @@ export function ActionRail({
   onDirty?: (dirty:boolean)=>void;
   draftOwner?: string;
 }) {
-  const recId = analysis?.recommendation?.id;
+  const [selectedAltId, setSelectedAltId] = useState<string | null>(null);
+  const [showAllFacts, setShowAllFacts] = useState(false);
+
+  useEffect(() => {
+    setSelectedAltId(null);
+  }, [analysis?.run_id, analysis?.recommendation?.id]);
+
+  const primaryRec = analysis?.recommendation;
+  const activeRec = (selectedAltId && analysis?.alternatives?.find((a) => a.id === selectedAltId)) || primaryRec;
+  const isAltSelected = !!(selectedAltId && activeRec && activeRec.id !== primaryRec?.id);
+  const rec = activeRec;
+
+  const recId = rec?.id;
   const runId = analysis?.run_id || frame?.run_id || "active";
   const draftKey = recId ? `twin-draft:${draftOwner}:${runId}:${recId}` : null;
   const [savedDraft] = useState(()=>{
@@ -134,7 +151,6 @@ export function ActionRail({
     }catch{}
   },[draftKey,modifyOpen,rejectOpen,reasonCategory,decisionReason,edits]);
   useEffect(()=>{onDirty?.(modifyOpen||rejectOpen)},[modifyOpen,rejectOpen,onDirty]);
-  const rec = analysis?.recommendation;
   const forecasts = analysis?.forecasts ?? [];
 
   const getPhaseBounds = (phaseId: string) => {
@@ -247,12 +263,29 @@ export function ActionRail({
           <span className="card-badge rec-badge">
             {manualMode
               ? "MANUAL AUTHORITY"
-              : rec
-                ? `${rec.priority.toUpperCase()} RECOMMENDATION`
-                : "DECISION SUPPORT"}
+              : isAltSelected
+                ? "ALTERNATIVE CANDIDATE PLAN"
+                : rec
+                  ? `${rec.priority.toUpperCase()} RECOMMENDATION`
+                  : "DECISION SUPPORT"}
           </span>
           <Sparkles size={16} className="sparkle-icon" />
         </div>
+
+        {isAltSelected && (
+          <div className="selected-alt-banner" role="status">
+            <span>Inspecting Alternative Candidate</span>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedAltId(null);
+                onSelectAlternative?.(null);
+              }}
+            >
+              Revert to Recommended Plan
+            </button>
+          </div>
+        )}
 
         {manualMode ? (
           <div className="rec-idle-state manual-mode-banner" role="status">
@@ -274,8 +307,69 @@ export function ActionRail({
               </span>
             </div>
 
+            {/* S17: Coordinated Network Intervention (C1 + C3) */}
+            {(() => {
+              const c1Changes = rec.changes.filter((c) => c.node_id === "C1");
+              const c3Changes = rec.changes.filter((c) => c.node_id === "C3");
+              if (c1Changes.length > 0 && c3Changes.length > 0) {
+                return (
+                  <div className="coordinated-corridor-card" data-testid="coordinated-corridor-card">
+                    <div className="coordinated-header">
+                      <NetworkIcon size={14} />
+                      <span>COORDINATED NETWORK PLAN (C1 + C3)</span>
+                    </div>
+                    <div className="junction-action-grid">
+                      <div className="junction-action-item">
+                        <strong>C1 Downstream Clearance</strong>
+                        <span>{c1Changes.map((c) => `${c.phase_id}: ${c.green_s}s`).join(" · ")}</span>
+                        <p>Clears accumulating queue before spillback reaches storage limit.</p>
+                      </div>
+                      <div className="junction-action-item">
+                        <strong>C3 Upstream Metering</strong>
+                        <span>{c3Changes.map((c) => `${c.phase_id}: ${c.green_s}s`).join(" · ")}</span>
+                        <p>Gates upstream release to match downstream corridor capacity.</p>
+                      </div>
+                    </div>
+                    <div className="corridor-transit-note">
+                      <Clock size={12} /> Platoon corridor transit delay ~22s (300m @ 50 km/h)
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
             {rec.explanation_facts?.length > 0 && (
               <p className="rec-fact">{rec.explanation_facts[0]}</p>
+            )}
+
+            {/* S19: Structured Explanation Facts */}
+            {rec.explanation_facts && rec.explanation_facts.length > 1 && (
+              <div className="explanation-facts-section" data-testid="explanation-facts-section">
+                <button
+                  type="button"
+                  className="facts-toggle-btn"
+                  onClick={() => setShowAllFacts(!showAllFacts)}
+                  aria-expanded={showAllFacts}
+                >
+                  <Info size={13} />
+                  <span>
+                    {showAllFacts
+                      ? "Hide Explanation Breakdown"
+                      : `View Structured Explanation (${rec.explanation_facts.length} facts)`}
+                  </span>
+                </button>
+                {showAllFacts && (
+                  <div className="structured-facts-list">
+                    {rec.explanation_facts.map((fact, fIdx) => (
+                      <div key={fIdx} className="structured-fact-item">
+                        <span className="fact-bullet">•</span>
+                        <span>{fact}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Quick Decision Actions */}
@@ -465,6 +559,43 @@ export function ActionRail({
                 >
                   <AlertOctagon size={14} /> Confirm Rejection
                 </Button>
+              </div>
+            )}
+
+            {/* Feasible Candidate Alternatives (Story S18) */}
+            {analysis?.alternatives && analysis.alternatives.length > 0 && (
+              <div className="alternatives-section" data-testid="feasible-alternatives">
+                <div className="overline">FEASIBLE CANDIDATE ALTERNATIVES ({analysis.alternatives.length})</div>
+                {analysis.alternatives.map((alt, idx) => {
+                  const isCurrent = alt.id === rec.id;
+                  return (
+                    <div key={alt.id} className={`alt-candidate-card ${isCurrent ? "active-alt" : ""}`}>
+                      <div className="alt-candidate-header">
+                        <span className="alt-rank-badge">Alternative #{idx + 1}</span>
+                        <button
+                          type="button"
+                          className="alt-select-btn"
+                          onClick={() => {
+                            const next = isCurrent ? null : alt;
+                            setSelectedAltId(next ? next.id : null);
+                            onSelectAlternative?.(next);
+                          }}
+                          disabled={decisionPending || !canAct}
+                        >
+                          {isCurrent ? "Deselect" : "Inspect Alternative"}
+                        </button>
+                      </div>
+                      <div className="alt-timing-row">
+                        {alt.changes.map((c) => `${c.phase_id}: ${c.green_s}s`).join(" · ")}
+                      </div>
+                    </div>
+                  );
+                })}
+                {analysis.alternatives.length < 2 && (
+                  <p className="fewer-alts-note">
+                    Fewer alternatives: only {analysis.alternatives.length} candidate met configured bounds and safety constraints.
+                  </p>
+                )}
               </div>
             )}
           </>

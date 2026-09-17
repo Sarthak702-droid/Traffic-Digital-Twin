@@ -47,6 +47,7 @@ import type {
   Analysis,
   ComparisonResult,
   HealthState,
+  Recommendation,
   TimingChange,
   TrafficState,
 } from "../../../packages/contracts/typescript/events";
@@ -138,6 +139,7 @@ export function Workspace() {
   const decisionAnalysis = analysis?.recommendation ? analysis : draftAnalysis.current;
 
   const [simulationComparison, setSimulationComparison] = useState<ComparisonResult | null>(null);
+  const [selectedAlternative, setSelectedAlternative] = useState<Recommendation | null>(null);
   const modeQuery=useQuery({queryKey:["mode"],queryFn:()=>request<{mode:"recommend"|"observe"|"manual";locks:string[]}>("/mode"),refetchInterval:3000,enabled:session.isSuccess});
   const systemMode=modeQuery.data?.mode ?? "observe";
   const manual=systemMode==="manual";
@@ -207,7 +209,7 @@ export function Workspace() {
     };
   }, [client]);
 
-  // Decision mutation (Story S15: Simulate, Approve, Modify, Reject)
+  // Decision mutation (Story S15 & S18: Simulate, Approve, Modify, Reject across primary or alternatives)
   const decision = useMutation({
     mutationFn: async ({
       action,
@@ -218,7 +220,7 @@ export function Workspace() {
       reason?: string;
       changes?: TimingChange[];
     }) => {
-      const rec = analysis?.recommendation;
+      const rec = selectedAlternative || analysis?.recommendation;
       if (!rec || !canWrite || !live.fresh || live.frame?.replay || modeQuery.isError || systemMode!=="recommend") throw Error("Fresh authorized recommendation required");
       return {
         action,
@@ -601,6 +603,7 @@ export function Workspace() {
                         liveFresh={live.fresh}
                         prepareMutation={prepare}
                         resetMutation={reset}
+                        onSelectAlternative={setSelectedAlternative}
                         onSimulate={() => decision.mutate({ action: "simulate" })}
                         onApprove={() => decision.mutate({ action: "approve" })}
                         onModify={(reason, changes) =>

@@ -1705,6 +1705,182 @@ tr:last-child td {
   white-space: nowrap;
 }
 
+/* Epic 6: AGDA & Network Recommendations UI */
+.coordinated-corridor-card {
+  margin-top: 10px;
+  padding: 10px;
+  background: #0f1922;
+  border: 1px solid #1f3242;
+  border-radius: 6px;
+}
+.coordinated-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #8faec5;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+.corridor-transit-note {
+  font-size: 10px;
+  color: #728a9b;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.junction-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 6px;
+}
+.junction-action-item {
+  background: #0a1219;
+  border: 1px solid #1c2c3b;
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+.junction-action-item strong {
+  display: block;
+  font-size: 11px;
+  color: #c0d4e3;
+}
+.junction-action-item span {
+  display: block;
+  font-size: 10px;
+  color: #8da4b5;
+  font-family: ui-monospace, monospace;
+  margin-top: 2px;
+}
+.junction-action-item p {
+  font-size: 9px;
+  color: #6a8292;
+  margin: 3px 0 0;
+  line-height: 1.3;
+}
+.selected-alt-banner {
+  background: #142838;
+  border: 1px solid #2d4f6d;
+  padding: 6px 8px;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: #8fc7eb;
+}
+.selected-alt-banner button {
+  background: transparent;
+  border: 1px solid #3d688e;
+  color: #b7daf3;
+  padding: 2px 6px;
+  font-size: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.selected-alt-banner button:hover {
+  background: #1e3a52;
+}
+.alternatives-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.alt-candidate-card {
+  background: #0d1620;
+  border: 1px solid #1f3040;
+  padding: 8px 10px;
+  border-radius: 6px;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.alt-candidate-card.active-alt {
+  border-color: #3b6589;
+  background: #122130;
+}
+.alt-candidate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.alt-rank-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #8fb1cb;
+}
+.alt-select-btn {
+  font-size: 10px;
+  padding: 3px 8px;
+  background: #1a2f42;
+  border: 1px solid #2e4d68;
+  color: #afd2ee;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.alt-select-btn:hover {
+  background: #24415c;
+}
+.alt-select-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.alt-timing-row {
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  color: #9ab4c6;
+}
+.fewer-alts-note {
+  font-size: 10px;
+  color: #728b9d;
+  font-style: italic;
+  margin-top: 6px;
+}
+.explanation-facts-section {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #1e2e3b;
+}
+.facts-toggle-btn {
+  background: transparent;
+  border: none;
+  color: #8da4b5;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  margin-bottom: 6px;
+}
+.facts-toggle-btn:hover {
+  color: #cadbe7;
+}
+.structured-facts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+.structured-fact-item {
+  font-size: 10px;
+  color: #92a7b7;
+  background: #0d161f;
+  border: 1px solid #1d2c39;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  line-height: 1.4;
+}
+
+
 /* Canvas Overlays */
 .network-canvas-container {
   width: 100%;

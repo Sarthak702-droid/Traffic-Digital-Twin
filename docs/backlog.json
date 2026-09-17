@@ -712,7 +712,7 @@
             "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified against gateway/writer and schema release gates; evidence in docs/epic6-status.md."
         },
         {
           "id": "S17",
@@ -741,7 +741,7 @@
             "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified against gateway/writer and schema release gates; evidence in docs/epic6-status.md."
         },
         {
           "id": "S18",
@@ -771,7 +771,7 @@
             "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified against gateway/writer and schema release gates; evidence in docs/epic6-status.md."
         },
         {
           "id": "S19",
@@ -802,7 +802,7 @@
             "A02",
             "A03"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified against gateway/writer and schema release gates; evidence in docs/epic6-status.md."
         }
       ],
       "releaseGate": "Reaccept every story against revised gateway/writer ownership and applicable UX states; historical completion is not production acceptance.",

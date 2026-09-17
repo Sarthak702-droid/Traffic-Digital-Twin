@@ -62,20 +62,20 @@
       "evidence": "docs/epic5-status.md"
     },
     "S16": {
-      "status": "backlog",
-      "reason": "Revised acceptance pending; no completion verified by this audit."
+      "status": "completed",
+      "evidence": "docs/epic6-status.md"
     },
     "S17": {
-      "status": "backlog",
-      "reason": "Revised acceptance pending; no completion verified by this audit."
+      "status": "completed",
+      "evidence": "docs/epic6-status.md"
     },
     "S18": {
-      "status": "backlog",
-      "reason": "Revised acceptance pending; no completion verified by this audit."
+      "status": "completed",
+      "evidence": "docs/epic6-status.md"
     },
     "S19": {
-      "status": "backlog",
-      "reason": "Revised acceptance pending; no completion verified by this audit."
+      "status": "completed",
+      "evidence": "docs/epic6-status.md"
     },
     "S21": {
       "status": "backlog",

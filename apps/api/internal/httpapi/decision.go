@@ -71,7 +71,12 @@ func (s *Server) ConnectIntelligence(ctx context.Context, address string) error 
 					if s.analysis.Comparison != nil {
 						analysis.Comparison = proto.Clone(s.analysis.Comparison).(*pb.ComparisonResult)
 					}
-					analysis.Alternatives = nil
+					if len(s.analysis.Alternatives) > 0 {
+						analysis.Alternatives = make([]*pb.Recommendation, len(s.analysis.Alternatives))
+						for idx, alt := range s.analysis.Alternatives {
+							analysis.Alternatives[idx] = proto.Clone(alt).(*pb.Recommendation)
+						}
+					}
 				} else {
 					s.recommendationTime = state.SimulationTimeS
 				}
@@ -282,8 +287,18 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 	s.mu.RLock()
 	var rec *pb.Recommendation
 	var state *pb.TrafficState
-	if s.analysis != nil && s.analysis.Recommendation != nil {
-		rec = proto.Clone(s.analysis.Recommendation).(*pb.Recommendation)
+	targetID := chi.URLParam(r, "id")
+	if s.analysis != nil {
+		if s.analysis.Recommendation != nil && s.analysis.Recommendation.Id == targetID {
+			rec = proto.Clone(s.analysis.Recommendation).(*pb.Recommendation)
+		} else {
+			for _, alt := range s.analysis.Alternatives {
+				if alt.Id == targetID {
+					rec = proto.Clone(alt).(*pb.Recommendation)
+					break
+				}
+			}
+		}
 	}
 	if s.state != nil {
 		state = proto.Clone(s.state).(*pb.TrafficState)
@@ -291,7 +306,7 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 	blocked := s.sim.command == nil || s.sim.command.Mode != "recommend" || s.manual || s.replaying || s.analysisFault != "" || time.Since(s.sim.received) > 2500*time.Millisecond || s.sim.fault != ""
 	recTime := s.recommendationTime
 	s.mu.RUnlock()
-	if blocked || rec == nil || state == nil || rec.Id != chi.URLParam(r, "id") || rec.RunId != state.RunId || rec.Status != "pending" || state.SimulationTimeS-recTime > 30 {
+	if blocked || rec == nil || state == nil || rec.Id != targetID || rec.RunId != state.RunId || rec.Status != "pending" || state.SimulationTimeS-recTime > 30 {
 		problem(w, 409, "Recommendation is stale, unavailable, locked or already decided")
 		return
 	}
@@ -402,8 +417,17 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	s.mu.Lock()
-	if s.analysis != nil && s.analysis.Recommendation != nil && s.analysis.Recommendation.Id == rec.Id {
-		s.analysis.Recommendation = rec
+	if s.analysis != nil {
+		if s.analysis.Recommendation != nil && s.analysis.Recommendation.Id == rec.Id {
+			s.analysis.Recommendation = rec
+		} else {
+			for _, alt := range s.analysis.Alternatives {
+				if alt.Id == rec.Id {
+					s.analysis.Recommendation = rec
+					break
+				}
+			}
+		}
 	}
 	s.mu.Unlock()
 	w.Header().Set("Content-Type", "application/json")
