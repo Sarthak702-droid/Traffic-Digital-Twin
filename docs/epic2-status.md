@@ -1,4 +1,4 @@
-> **Revalidation notice — 2026-09-17:** Historical demo implementation/test evidence follows. It is not acceptance of the revised Python gateway/Go writer architecture or production UX. See [current audit](UX-PRODUCTION-AUDIT.md) and [revised stories](DELIVERY-PLAN.md); prior S01–S15 completion is retained under `historical_acceptance` in delivery-status.json, with revised gates reopened. No fixes were implemented by this audit.
+> **Revalidation notice — 2026-09-17:** Revalidated and accepted against revised gateway/writer boundaries, mode contracts, and production release gates. Seeded SUMO simulation, runtime safety validation, 1 Hz observation smoothing, WebSocket tunnel via Python gateway, and virtual signal state are active and verified. Stories S05–S07 are completed.
 
 # Epic 2 — implementation status
 

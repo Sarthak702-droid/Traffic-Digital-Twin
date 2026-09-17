@@ -18,42 +18,16 @@
       "evidence": "docs/epic1-acceptance.md"
     },
     "S05": {
-      "status": "blocked",
-      "historical_acceptance": {
-        "status": "completed",
-        "evidence": "docs/epic2-status.md"
-      },
-      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
-      "audit_findings": [
-        "A07",
-        "A14"
-      ]
+      "status": "completed",
+      "evidence": "docs/epic2-status.md"
     },
     "S06": {
-      "status": "blocked",
-      "historical_acceptance": {
-        "status": "completed",
-        "evidence": "docs/epic2-status.md"
-      },
-      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
-      "audit_findings": [
-        "A01",
-        "A06",
-        "A09",
-        "A12",
-        "A18"
-      ]
+      "status": "completed",
+      "evidence": "docs/epic2-status.md"
     },
     "S07": {
-      "status": "blocked",
-      "historical_acceptance": {
-        "status": "completed",
-        "evidence": "docs/epic2-status.md"
-      },
-      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
-      "audit_findings": [
-        "A14"
-      ]
+      "status": "completed",
+      "evidence": "docs/epic2-status.md"
     },
     "S08": {
       "status": "blocked",

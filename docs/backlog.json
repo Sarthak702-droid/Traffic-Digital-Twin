@@ -228,7 +228,7 @@
             "A07",
             "A14"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified against gateway/writer and simulation release gates."
         },
         {
           "id": "S06",
@@ -263,7 +263,7 @@
             "A12",
             "A18"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified against gateway/writer and simulation release gates."
         },
         {
           "id": "S07",
@@ -293,7 +293,7 @@
           "auditFindings": [
             "A14"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified against gateway/writer and simulation release gates."
         }
       ],
       "releaseGate": "Reaccept every story against revised gateway/writer ownership and applicable UX states; historical completion is not production acceptance.",

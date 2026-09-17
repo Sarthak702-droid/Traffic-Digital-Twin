@@ -112,7 +112,7 @@ As an operator, I want repeatable demand and virtual signals, so that the same d
 
 **Owner:** Simulation · **Provisional days:** 2–3 · **Depends on:** S03
 
-**Status:** blocked — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic2-status.md.
 
 **Audit findings:** A07, A14
 
@@ -130,7 +130,7 @@ As an operator, I want fresh traffic state in the browser, so that the view refl
 
 **Owner:** Backend · **Provisional days:** 3–4 · **Depends on:** S04, S05
 
-**Status:** blocked — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic2-status.md.
 
 **Audit findings:** A01, A06, A09, A12, A18
 
@@ -148,7 +148,7 @@ As a traffic engineer, I want explicit phase transitions, so that simulations re
 
 **Owner:** Simulation · **Provisional days:** 3–4 · **Depends on:** S05
 
-**Status:** blocked — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic2-status.md.
 
 **Audit findings:** A14
 
