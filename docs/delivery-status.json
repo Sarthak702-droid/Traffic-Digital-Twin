@@ -48,6 +48,18 @@
     "S12": {
       "status": "completed",
       "evidence": "docs/epic4-status.md"
+    },
+    "S13": {
+      "status": "completed",
+      "evidence": "docs/epic5-status.md"
+    },
+    "S14": {
+      "status": "completed",
+      "evidence": "docs/epic5-status.md"
+    },
+    "S15": {
+      "status": "completed",
+      "evidence": "docs/epic5-status.md"
     }
   }
 }

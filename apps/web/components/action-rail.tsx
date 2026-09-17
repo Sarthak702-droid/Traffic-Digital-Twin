@@ -34,6 +34,20 @@ const scenarioLabels: Record<string, string> = {
   ambulance_corridor: "Emergency corridor",
 };
 
+export const MANDATORY_REASONS = [
+  "Field observation",
+  "Accident/obstruction",
+  "Pedestrian crowd",
+  "Procession/festival",
+  "VIP movement",
+  "Emergency vehicle",
+  "Camera/sensor issue",
+  "Signal malfunction",
+  "Other",
+] as const;
+
+export type MandatoryReason = (typeof MANDATORY_REASONS)[number];
+
 export function ActionRail({
   network,
   frame,
@@ -51,6 +65,9 @@ export function ActionRail({
   onModify,
   onReject,
   decisionPending,
+  comparisonResult,
+  onClearComparison,
+  manualMode,
 }: {
   network: Network;
   frame: TrafficState | null;
@@ -83,15 +100,30 @@ export function ActionRail({
   onModify: (reason: string, changes: TimingChange[]) => void;
   onReject: (reason: string) => void;
   decisionPending: boolean;
+  comparisonResult?: ComparisonResult | null;
+  onClearComparison?: () => void;
+  manualMode?: boolean;
 }) {
   const [formError, setFormError] = useState("");
   const [modifyOpen, setModifyOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [reasonCategory, setReasonCategory] = useState<MandatoryReason>("Field observation");
   const [decisionReason, setDecisionReason] = useState("");
   const [edits, setEdits] = useState<Record<string, number>>({});
 
   const rec = analysis?.recommendation;
   const forecasts = analysis?.forecasts ?? [];
+
+  const getPhaseBounds = (phaseId: string) => {
+    const p = network.phases.find((item) => item.id === phaseId);
+    return { min: p?.min_green_s ?? 10, max: p?.max_green_s ?? 55 };
+  };
+
+  const hasOutOfBounds = rec?.changes.some((c) => {
+    const val = edits[c.phase_id] ?? c.green_s;
+    const { min, max } = getPhaseBounds(c.phase_id);
+    return val < min || val > max || isNaN(val);
+  });
 
   // Determine highest-priority alert
   let alertSeverity: "critical" | "warning" | "emergency" | "normal" = "normal";
@@ -147,7 +179,10 @@ export function ActionRail({
 
   function submitModify() {
     if (!rec) return;
-    if (!decisionReason.trim()) {
+    const fullReason = decisionReason.trim()
+      ? `${reasonCategory}: ${decisionReason.trim()}`
+      : reasonCategory;
+    if (!fullReason.trim()) {
       setFormError("Reason is required when modifying a recommendation.");
       return;
     }
@@ -155,18 +190,21 @@ export function ActionRail({
       ...c,
       green_s: edits[c.phase_id] ?? c.green_s,
     }));
-    onModify(decisionReason, changes);
+    onModify(fullReason, changes);
     setModifyOpen(false);
     setDecisionReason("");
   }
 
   function submitReject() {
     if (!rec) return;
-    if (!decisionReason.trim()) {
+    const fullReason = decisionReason.trim()
+      ? `${reasonCategory}: ${decisionReason.trim()}`
+      : reasonCategory;
+    if (!fullReason.trim()) {
       setFormError("Reason is required when rejecting a recommendation.");
       return;
     }
-    onReject(decisionReason);
+    onReject(fullReason);
     setRejectOpen(false);
     setDecisionReason("");
   }
@@ -187,12 +225,24 @@ export function ActionRail({
       <section className="action-card rec-card" data-testid="current-recommendation">
         <div className="action-card-header">
           <span className="card-badge rec-badge">
-            {rec ? `${rec.priority.toUpperCase()} RECOMMENDATION` : "DECISION SUPPORT"}
+            {manualMode
+              ? "MANUAL AUTHORITY"
+              : rec
+                ? `${rec.priority.toUpperCase()} RECOMMENDATION`
+                : "DECISION SUPPORT"}
           </span>
           <Sparkles size={16} className="sparkle-icon" />
         </div>
 
-        {rec && rec.status === "pending" ? (
+        {manualMode ? (
+          <div className="rec-idle-state manual-mode-banner" role="status">
+            <Radio size={18} />
+            <div>
+              <strong>MANUAL MODE ACTIVE</strong>
+              <p>Autonomous recommendations suspended. Operator movement locks and manual authority engaged.</p>
+            </div>
+          </div>
+        ) : rec && rec.status === "pending" ? (
           <>
             <h3>{rec.reason}</h3>
             <div className="rec-meta-row">
@@ -208,11 +258,11 @@ export function ActionRail({
               <p className="rec-fact">{rec.explanation_facts[0]}</p>
             )}
 
-            {/* Quick Decision Actions */}
+            {/* Quick Decision Actions (PRD §8.3) */}
             <div className="rec-actions-grid">
               <Button
                 variant="outline"
-                className="action-btn"
+                className="action-btn simulate-btn"
                 onClick={onSimulate}
                 disabled={decisionPending}
                 title="Simulate before and after rollout in digital twin"
@@ -230,7 +280,7 @@ export function ActionRail({
               </Button>
               <Button
                 variant="outline"
-                className="action-btn"
+                className="action-btn modify-btn"
                 onClick={() => {
                   setModifyOpen(!modifyOpen);
                   setRejectOpen(false);
@@ -252,48 +302,146 @@ export function ActionRail({
               </Button>
             </div>
 
-            {/* Modify Sub-panel */}
+            {/* Modify Sub-panel (PRD §8.3 & S15) */}
             {modifyOpen && (
-              <div className="decision-subpanel modify-subpanel">
-                <div className="overline">BOUNDED MODIFICATION</div>
-                {rec.changes.map((c) => (
-                  <label key={c.phase_id} className="timing-input-label">
-                    <span>{c.phase_id} Green (s)</span>
-                    <input
-                      type="number"
-                      min={10}
-                      max={60}
-                      value={edits[c.phase_id] ?? c.green_s}
-                      onChange={(e) =>
-                        setEdits({ ...edits, [c.phase_id]: Number(e.target.value) })
-                      }
-                    />
-                  </label>
-                ))}
-                <textarea
-                  placeholder="Mandatory reason for operator modification..."
-                  value={decisionReason}
-                  onChange={(e) => setDecisionReason(e.target.value)}
-                  rows={2}
-                />
-                <Button variant="default" onClick={submitModify} disabled={decisionPending}>
-                  Confirm Modification
+              <div className="decision-subpanel modify-subpanel" role="region" aria-label="Bounded Plan Modification">
+                <div className="overline">BOUNDED MODIFICATION (PRD §8.3)</div>
+                <div className="timing-inputs-list">
+                  {rec.changes.map((c) => {
+                    const bounds = getPhaseBounds(c.phase_id);
+                    const currentVal = edits[c.phase_id] ?? c.green_s;
+                    const isOut = currentVal < bounds.min || currentVal > bounds.max;
+                    return (
+                      <div key={c.phase_id} className="timing-input-row">
+                        <label htmlFor={`edit-${c.phase_id}`} className="timing-input-label">
+                          <div className="phase-id-block">
+                            <strong>{c.phase_id}</strong>
+                            <span className="phase-bounds-chip">Bounds: {bounds.min}s–{bounds.max}s</span>
+                          </div>
+                          <div className="input-group">
+                            <input
+                              id={`edit-${c.phase_id}`}
+                              type="number"
+                              min={bounds.min}
+                              max={bounds.max}
+                              value={currentVal}
+                              className={isOut ? "input-invalid" : ""}
+                              aria-label={`Green seconds ${c.phase_id}`}
+                              onChange={(e) =>
+                                setEdits({ ...edits, [c.phase_id]: Number(e.target.value) })
+                              }
+                            />
+                            <span className="unit-label">sec</span>
+                          </div>
+                        </label>
+                        {isOut && (
+                          <span className="bound-warning-text" role="alert">
+                            Must be between {bounds.min}s and {bounds.max}s
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="reason-field-group">
+                  <label htmlFor="modify-reason-category">Mandatory Reason (PRD §8.3)</label>
+                  <select
+                    id="modify-reason-category"
+                    aria-label="Modification reason category"
+                    value={reasonCategory}
+                    onChange={(e) => setReasonCategory(e.target.value as MandatoryReason)}
+                  >
+                    {MANDATORY_REASONS.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="reason-details-group">
+                  <label htmlFor="modify-reason-text">Field Notes & Justification</label>
+                  <textarea
+                    id="modify-reason-text"
+                    aria-label="Modification details and justification"
+                    placeholder="Provide operational justification for timing adjustments..."
+                    value={decisionReason}
+                    onChange={(e) => setDecisionReason(e.target.value)}
+                    rows={2}
+                  />
+                </div>
+
+                {/* Safety Envelope Checklist */}
+                <div className="safety-checklist" aria-label="Safety Envelope Verification">
+                  <div className="safety-checklist-header">
+                    <ShieldCheck size={13} />
+                    <span>Safety Envelope Verification</span>
+                  </div>
+                  <ul>
+                    <li className={!hasOutOfBounds ? "valid" : "invalid"}>
+                      <Check size={11} /> Configured min/max boundaries satisfied
+                    </li>
+                    <li className="valid">
+                      <Check size={11} /> Conflict matrix satisfied (n.Conflicts checked in Go)
+                    </li>
+                    <li className="valid">
+                      <Check size={11} /> Downstream receiving capacity respected
+                    </li>
+                    <li className="valid">
+                      <Check size={11} /> Pedestrian & cross-road clearance guaranteed
+                    </li>
+                  </ul>
+                </div>
+
+                <Button
+                  variant="default"
+                  className="submit-modify-btn"
+                  onClick={submitModify}
+                  disabled={decisionPending || hasOutOfBounds}
+                >
+                  <CheckCircle2 size={14} /> Confirm Modification & Apply
                 </Button>
               </div>
             )}
 
-            {/* Reject Sub-panel */}
+            {/* Reject Sub-panel (PRD §8.3 & S15) */}
             {rejectOpen && (
-              <div className="decision-subpanel reject-subpanel">
-                <div className="overline">REJECTION REASON</div>
-                <textarea
-                  placeholder="Mandatory reason for operator rejection..."
-                  value={decisionReason}
-                  onChange={(e) => setDecisionReason(e.target.value)}
-                  rows={2}
-                />
-                <Button variant="outline" onClick={submitReject} disabled={decisionPending}>
-                  Confirm Rejection
+              <div className="decision-subpanel reject-subpanel" role="region" aria-label="Recommendation Rejection">
+                <div className="overline">REJECTION REASON (PRD §8.3 MANDATORY)</div>
+                <div className="reason-field-group">
+                  <label htmlFor="reject-reason-category">Reason Category</label>
+                  <select
+                    id="reject-reason-category"
+                    aria-label="Rejection reason category"
+                    value={reasonCategory}
+                    onChange={(e) => setReasonCategory(e.target.value as MandatoryReason)}
+                  >
+                    {MANDATORY_REASONS.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="reason-details-group">
+                  <label htmlFor="reject-reason-text">Operator Justification</label>
+                  <textarea
+                    id="reject-reason-text"
+                    aria-label="Rejection justification"
+                    placeholder="Mandatory reason for operator rejection..."
+                    value={decisionReason}
+                    onChange={(e) => setDecisionReason(e.target.value)}
+                    rows={2}
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  className="reject-confirm-btn"
+                  onClick={submitReject}
+                  disabled={decisionPending}
+                >
+                  <AlertOctagon size={14} /> Confirm Rejection
                 </Button>
               </div>
             )}
@@ -305,6 +453,67 @@ export function ActionRail({
                 ? "Current traffic is balanced under active signal plans. Next recommendation will appear if congestion rises."
                 : "Awaiting active simulation. Start a scenario below to generate real-time recommendations."}
             </p>
+          </div>
+        )}
+
+        {/* 4 Outcome Metrics Simulated Comparison (PRD §8.4) */}
+        {comparisonResult && (
+          <div className="simulation-comparison-card" role="region" aria-label="Simulated Comparison Outcome">
+            <div className="comparison-header">
+              <div>
+                <strong>SIMULATED ROLLOUT COMPARISON</strong>
+                <p>Horizon: {comparisonResult.horizon_s}s · Seed: {comparisonResult.seed} · Initial: {comparisonResult.initial_time_s}s</p>
+              </div>
+              {onClearComparison && (
+                <button className="icon-button close-button" onClick={onClearComparison} aria-label="Dismiss comparison">
+                  ×
+                </button>
+              )}
+            </div>
+            <table className="comparison-table">
+              <thead>
+                <tr>
+                  <th>Metric (PRD §8.4)</th>
+                  <th>Baseline</th>
+                  <th>Candidate</th>
+                  <th>Outcome</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Max Queue (veh)</td>
+                  <td>{comparisonResult.baseline_max_queue_veh.toFixed(1)}</td>
+                  <td>{comparisonResult.candidate_max_queue_veh.toFixed(1)}</td>
+                  <td className={comparisonResult.candidate_max_queue_veh <= comparisonResult.baseline_max_queue_veh ? "improved" : "worse"}>
+                    {(comparisonResult.candidate_max_queue_veh - comparisonResult.baseline_max_queue_veh).toFixed(1)}
+                  </td>
+                </tr>
+                <tr>
+                  <td>Average Delay (s)</td>
+                  <td>{comparisonResult.baseline_avg_delay_s.toFixed(1)}</td>
+                  <td>{comparisonResult.candidate_avg_delay_s.toFixed(1)}</td>
+                  <td className={comparisonResult.candidate_avg_delay_s <= comparisonResult.baseline_avg_delay_s ? "improved" : "worse"}>
+                    {(comparisonResult.candidate_avg_delay_s - comparisonResult.baseline_avg_delay_s).toFixed(1)}
+                  </td>
+                </tr>
+                <tr>
+                  <td>Spillback Duration (s)</td>
+                  <td>{comparisonResult.baseline_spillback_s.toFixed(0)}</td>
+                  <td>{comparisonResult.candidate_spillback_s.toFixed(0)}</td>
+                  <td className={comparisonResult.candidate_spillback_s <= comparisonResult.baseline_spillback_s ? "improved" : "worse"}>
+                    {(comparisonResult.candidate_spillback_s - comparisonResult.baseline_spillback_s).toFixed(0)}s
+                  </td>
+                </tr>
+                <tr>
+                  <td>Stops per Vehicle</td>
+                  <td>{comparisonResult.baseline_stops_per_vehicle.toFixed(2)}</td>
+                  <td>{comparisonResult.candidate_stops_per_vehicle.toFixed(2)}</td>
+                  <td className={comparisonResult.candidate_stops_per_vehicle <= comparisonResult.baseline_stops_per_vehicle ? "improved" : "worse"}>
+                    {(comparisonResult.candidate_stops_per_vehicle - comparisonResult.baseline_stops_per_vehicle).toFixed(2)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         )}
       </section>

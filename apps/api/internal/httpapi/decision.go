@@ -92,7 +92,16 @@ func (s *Server) ConnectIntelligence(ctx context.Context, address string) error 
 	return nil
 }
 
-func validateChanges(n config.Network, state *pb.TrafficState, changes []*pb.TimingChange) error {
+func hasConflict(conflicts [][2]string, a, b string) bool {
+	for _, c := range conflicts {
+		if (c[0] == a && c[1] == b) || (c[0] == b && c[1] == a) {
+			return true
+		}
+	}
+	return false
+}
+
+func validateChanges(n config.Network, state *pb.TrafficState, changes []*pb.TimingChange, activeLocks ...map[string]bool) error {
 	if e := n.Validate(); e != nil {
 		return e
 	}
@@ -121,7 +130,38 @@ func validateChanges(n config.Network, state *pb.TrafficState, changes []*pb.Tim
 	for _, c := range state.ActivePlan {
 		current[c.PhaseId] = c.GreenS
 	}
+
+	locks := map[string]bool{}
+	if len(activeLocks) > 0 && activeLocks[0] != nil {
+		locks = activeLocks[0]
+	}
+
 	for _, p := range n.Phases {
+		// Rule 1: Conflicting greens check within phase movements
+		for _, m1 := range p.Movements {
+			for _, m2 := range p.Movements {
+				if m1 != m2 && hasConflict(n.Conflicts, m1, m2) {
+					return fmt.Errorf("conflicting greens: movements %s and %s conflict", m1, m2)
+				}
+			}
+		}
+
+		// Rule 2: Amber clearance check
+		if p.Amber <= 0 {
+			return fmt.Errorf("amber clearance breach: phase %s amber %.0fs <= 0", p.ID, p.Amber)
+		}
+
+		// Rule 3: All-red clearance check
+		if p.AllRed <= 0 {
+			return fmt.Errorf("all-red clearance breach: phase %s all-red %.0fs <= 0", p.ID, p.AllRed)
+		}
+
+		// Rule 4: Modeled pedestrian clearance check
+		if p.Pedestrian > 0 && plan[p.ID] < p.Pedestrian {
+			return fmt.Errorf("pedestrian clearance breach: phase %s green %.0fs is below clearance %.0fs", p.ID, plan[p.ID], p.Pedestrian)
+		}
+
+		// Rule 5: Modeled cross-road wait violation (max_red_s)
 		cycle := 0.
 		for _, other := range n.Phases {
 			if other.Node == p.Node {
@@ -131,15 +171,44 @@ func validateChanges(n config.Network, state *pb.TrafficState, changes []*pb.Tim
 		if cycle-plan[p.ID] > p.MaxRed {
 			return fmt.Errorf("maximum cross-traffic wait exceeded")
 		}
+
+		// Rule 6: Manual locks enforcement
+		if locks[p.ID] && plan[p.ID] != current[p.ID] {
+			return fmt.Errorf("manual lock violation: phase %s is locked by operator", p.ID)
+		}
+		for _, mid := range p.Movements {
+			if locks[mid] && plan[p.ID] != current[p.ID] {
+				return fmt.Errorf("manual lock violation: movement %s is locked by operator", mid)
+			}
+		}
+
+		// Rule 7: Blocked / full receiving links
 		for _, m := range state.Movements {
 			for _, mid := range p.Movements {
-				if m.MovementId == mid && m.DownstreamCapacityVeh <= 0 && plan[p.ID] > current[p.ID] {
-					return fmt.Errorf("cannot extend release into blocked/full downstream link")
+				if m.MovementId == mid {
+					if m.DownstreamCapacityVeh <= 0 && plan[p.ID] > current[p.ID] {
+						return fmt.Errorf("cannot extend release into blocked/full downstream link")
+					}
+					if m.OccupancyRatio >= 1.0 && plan[p.ID] > current[p.ID] {
+						return fmt.Errorf("cannot extend release into blocked/full downstream link")
+					}
 				}
 			}
 		}
+
+		// Rule 8: Incident closures enforcement
+		if state.Incident != nil && (state.Incident.Status == "active" || state.Incident.Status == "closed") {
+			if state.Incident.NodeId == p.Node && state.Incident.CapacityRatio <= 0 && plan[p.ID] > 0 {
+				return fmt.Errorf("incident closure: node %s has an active closure", p.Node)
+			}
+			if state.Incident.NodeId == p.Node && state.Incident.CapacityRatio < 0.4 && plan[p.ID] > current[p.ID] {
+				return fmt.Errorf("incident closure: cannot extend green into incident-restricted junction %s", p.Node)
+			}
+		}
 	}
-	if state.Emergency != nil && (state.Emergency.Status == "priority" || state.Emergency.Status == "pre_clearance") {
+
+	// Rule 9: Emergency protections
+	if state.Emergency != nil && (state.Emergency.Status == "priority" || state.Emergency.Status == "pre_clearance" || state.Emergency.Status == "active") {
 		return fmt.Errorf("emergency protection active; retry after recovery")
 	}
 	return nil
@@ -217,7 +286,7 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if action != "reject" {
-		if e := validateChanges(s.Network, state, changes); e != nil {
+		if e := validateChanges(s.Network, state, changes, s.getLocks()); e != nil {
 			s.auditDecision(r.Context(), rec, state, action, body.Reason, "rejected: "+e.Error(), changes)
 			problem(w, 409, e.Error())
 			return
@@ -302,10 +371,110 @@ func (s *Server) auditDecision(ctx context.Context, rec *pb.Recommendation, stat
 	}
 	return tx.Commit(ctx)
 }
+
+func (s *Server) getLocks() map[string]bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	locksCopy := make(map[string]bool, len(s.locks))
+	for k, v := range s.locks {
+		if v {
+			locksCopy[k] = true
+		}
+	}
+	return locksCopy
+}
+
+func (s *Server) listLocks(w http.ResponseWriter, r *http.Request) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	list := []string{}
+	for k, v := range s.locks {
+		if v {
+			list = append(list, k)
+		}
+	}
+	send(w, 200, map[string]any{"locks": list})
+}
+
+func (s *Server) setLock(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		problem(w, 400, "Lock target identifier required")
+		return
+	}
+	if !s.db(w) {
+		return
+	}
+	s.mu.Lock()
+	if s.locks == nil {
+		s.locks = make(map[string]bool)
+	}
+	s.locks[id] = true
+	runId := ""
+	if s.sim != nil && s.sim.command != nil {
+		runId = s.sim.command.RunId
+	}
+	s.mu.Unlock()
+	if runId != "" {
+		ctx, cancel := context.WithTimeout(r.Context(), time.Second)
+		defer cancel()
+		s.Store.Pool.Exec(ctx, "INSERT INTO audit_events(id,run_id,actor,event_type,before_values,after_values,reason,safety_result) VALUES($1,$2,'demo-operator','lock.applied','{}',$3,'Operator locked movement or phase timing','manual_lock_honored')", store.UUID(), runId, []byte(fmt.Sprintf(`{"target":%q}`, id)))
+	}
+	send(w, 200, map[string]any{"target": id, "locked": true})
+}
+
+func (s *Server) deleteLock(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		problem(w, 400, "Lock target identifier required")
+		return
+	}
+	if !s.db(w) {
+		return
+	}
+	s.mu.Lock()
+	if s.locks != nil {
+		delete(s.locks, id)
+	}
+	runId := ""
+	if s.sim != nil && s.sim.command != nil {
+		runId = s.sim.command.RunId
+	}
+	s.mu.Unlock()
+	if runId != "" {
+		ctx, cancel := context.WithTimeout(r.Context(), time.Second)
+		defer cancel()
+		s.Store.Pool.Exec(ctx, "INSERT INTO audit_events(id,run_id,actor,event_type,before_values,after_values,reason,safety_result) VALUES($1,$2,'demo-operator','lock.released','{}',$3,'Operator released manual lock','manual_lock_released')", store.UUID(), runId, []byte(fmt.Sprintf(`{"target":%q}`, id)))
+	}
+	send(w, 200, map[string]any{"target": id, "locked": false})
+}
+
+func (s *Server) getMode(w http.ResponseWriter, r *http.Request) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	mode := "recommend"
+	if s.manual {
+		mode = "manual"
+	} else if s.sim != nil && s.sim.command != nil && s.sim.command.Mode == "observe" {
+		mode = "observe"
+	}
+	locks := []string{}
+	for k, v := range s.locks {
+		if v {
+			locks = append(locks, k)
+		}
+	}
+	send(w, 200, map[string]any{
+		"mode":   mode,
+		"manual": s.manual,
+		"locks":  locks,
+	})
+}
+
 func (s *Server) setMode(w http.ResponseWriter, r *http.Request) {
 	mode := chi.URLParam(r, "mode")
-	if mode != "manual" && mode != "recommendation" {
-		problem(w, 400, "Unknown mode")
+	if mode != "manual" && mode != "observe" && mode != "recommend" && mode != "recommendation" {
+		problem(w, 400, "Unknown mode: must be recommend, observe, or manual")
 		return
 	}
 	if !s.db(w) {
@@ -323,9 +492,17 @@ func (s *Server) setMode(w http.ResponseWriter, r *http.Request) {
 		problem(w, 409, "Start a scenario first")
 		return
 	}
+	canonicalMode := "recommend"
 	dbMode := "recommend"
+	isManual := false
 	if mode == "manual" {
+		canonicalMode = "manual"
 		dbMode = "observe"
+		isManual = true
+	} else if mode == "observe" {
+		canonicalMode = "observe"
+		dbMode = "observe"
+		isManual = false
 	}
 	tx, e := s.Store.Pool.Begin(r.Context())
 	if e != nil {
@@ -335,17 +512,19 @@ func (s *Server) setMode(w http.ResponseWriter, r *http.Request) {
 	defer tx.Rollback(r.Context())
 	_, e = tx.Exec(r.Context(), "UPDATE scenario_runs SET mode=$1 WHERE id=$2", dbMode, s.sim.command.RunId)
 	if e == nil {
-		_, e = tx.Exec(r.Context(), "INSERT INTO audit_events(id,run_id,actor,event_type,before_values,after_values,reason,safety_result) VALUES($1,$2,'demo-operator','mode.changed','{}',$3,'Operator changed mode','no_actuation')", store.UUID(), s.sim.command.RunId, []byte(fmt.Sprintf(`{"mode":%q}`, mode)))
+		_, e = tx.Exec(r.Context(), "INSERT INTO audit_events(id,run_id,actor,event_type,before_values,after_values,reason,safety_result) VALUES($1,$2,'demo-operator','mode.changed','{}',$3,'Operator changed mode to '+canonicalMode,'no_actuation')", store.UUID(), s.sim.command.RunId, []byte(fmt.Sprintf(`{"mode":%q}`, canonicalMode)))
 	}
 	if e != nil || tx.Commit(r.Context()) != nil {
 		problem(w, 503, "Mode audit failed")
 		return
 	}
-	s.manual = mode == "manual"
+	s.manual = isManual
 	s.sim.command.Mode = dbMode
-	if s.analysis != nil {
-		s.analysis.Recommendation = nil
-		s.analysis.Alternatives = nil
+	if isManual || canonicalMode == "observe" {
+		if s.analysis != nil {
+			s.analysis.Recommendation = nil
+			s.analysis.Alternatives = nil
+		}
 	}
-	send(w, 200, map[string]string{"mode": mode})
+	send(w, 200, map[string]string{"mode": canonicalMode})
 }

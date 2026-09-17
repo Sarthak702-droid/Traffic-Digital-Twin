@@ -28,6 +28,7 @@ type Server struct {
 	analysisFault      string
 	recommendationTime float64
 	manual             bool
+	locks              map[string]bool
 	replaying          bool
 	replayCancel       context.CancelFunc
 	AllowedOrigin      string
@@ -170,7 +171,11 @@ func (s *Server) Handler() http.Handler {
 	r.Post("/api/v1/recommendations/{id}/{action}", s.decision)
 	r.Post("/api/v1/scenarios/{type}/start", s.startScenario)
 	r.Post("/api/v1/scenarios/reset", s.resetScenario)
+	r.Get("/api/v1/mode", s.getMode)
 	r.Post("/api/v1/mode/{mode}", s.setMode)
+	r.Get("/api/v1/locks", s.listLocks)
+	r.Post("/api/v1/locks/{id}", s.setLock)
+	r.Delete("/api/v1/locks/{id}", s.deleteLock)
 	r.Post("/api/v1/replay/{scenario}", s.startReplay)
 	r.Get("/ws/v1/live", s.live)
 	return r
@@ -205,8 +210,8 @@ func (s *Server) createRun(w http.ResponseWriter, r *http.Request) {
 			validScenario = true
 		}
 	}
-	if command.Version != "1.0" || !validScenario || command.Seed < 1 || command.Seed > 4294967295 || (command.Mode != "observe" && command.Mode != "recommend") {
-		problem(w, 400, "Valid schema_version, scenario_type, uint32 seed and observe/recommend mode required")
+	if command.Version != "1.0" || !validScenario || command.Seed < 1 || command.Seed > 4294967295 || (command.Mode != "observe" && command.Mode != "recommend" && command.Mode != "manual") {
+		problem(w, 400, "Valid schema_version, scenario_type, uint32 seed and observe/recommend/manual mode required")
 		return
 	}
 	if !s.db(w) {

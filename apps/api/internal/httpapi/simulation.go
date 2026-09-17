@@ -167,8 +167,8 @@ func (s *Server) startScenario(w http.ResponseWriter, r *http.Request) {
 			valid = true
 		}
 	}
-	if !valid || body.Version != "1.0" || body.Seed == 0 || (body.Mode != "recommend" && body.Mode != "observe") {
-		problem(w, 400, "Valid scenario, schema_version, seed and mode required")
+	if !valid || body.Version != "1.0" || body.Seed == 0 || (body.Mode != "recommend" && body.Mode != "observe" && body.Mode != "manual") {
+		problem(w, 400, "Valid scenario, schema_version, seed and mode (recommend/observe/manual) required")
 		return
 	}
 	s.sim.commands.Lock()
@@ -204,12 +204,16 @@ func (s *Server) launch(w http.ResponseWriter, r *http.Request, command *pb.RunC
 		s.replayCancel = nil
 	}
 	s.replaying = false
-	s.manual = command.Mode == "observe"
+	s.manual = command.Mode == "manual"
 	s.analysis = nil
 	s.mu.Unlock()
 	ctx, cancel := context.WithTimeout(r.Context(), 4500*time.Millisecond)
 	defer cancel()
-	run, e := s.Store.CreateRun(ctx, s.Network.ID, command.ScenarioType, command.Mode, int64(command.Seed))
+	dbMode := command.Mode
+	if dbMode == "manual" {
+		dbMode = "observe"
+	}
+	run, e := s.Store.CreateRun(ctx, s.Network.ID, command.ScenarioType, dbMode, int64(command.Seed))
 	if e != nil {
 		problem(w, 503, "Could not prepare run; simulation unchanged")
 		return

@@ -23,11 +23,15 @@ export function TopBar({
   manual,
   onToggleManual,
   isPendingManual,
+  mode = manual ? "manual" : "recommend",
+  onChangeMode,
 }: {
   health?: HealthState;
   manual: boolean;
   onToggleManual: () => void;
   isPendingManual?: boolean;
+  mode?: "recommend" | "observe" | "manual";
+  onChangeMode?: (m: "recommend" | "observe" | "manual") => void;
 }) {
   const { role, setRole, setDgpModalOpen } = useWorkspace();
   const [clock, setClock] = useState("00:00:00");
@@ -127,6 +131,40 @@ export function TopBar({
         <div className="topbar-clock" aria-label="Local workstation time">
           <Clock size={13} />
           <span>{clock}</span>
+        </div>
+
+        {/* Three-Mode Segmented Control (Story S14 & PRD §22) */}
+        <div className="mode-segmented-control" role="group" aria-label="Operational Mode Selection (PRD §22)">
+          <button
+            type="button"
+            className={`mode-segment-btn ${mode === "recommend" ? "active" : ""}`}
+            onClick={() => (onChangeMode ? onChangeMode("recommend") : manual ? onToggleManual() : undefined)}
+            disabled={isPendingManual}
+            title="Recommend Mode: Digital twin forecasts + predictive coordinated recommendations"
+          >
+            <Sparkles size={12} />
+            <span>Recommend</span>
+          </button>
+          <button
+            type="button"
+            className={`mode-segment-btn ${mode === "observe" ? "active" : ""}`}
+            onClick={() => (onChangeMode ? onChangeMode("observe") : !manual ? onToggleManual() : undefined)}
+            disabled={isPendingManual}
+            title="Observe Mode: Stream forecasts without automated recommendations"
+          >
+            <Activity size={12} />
+            <span>Observe</span>
+          </button>
+          <button
+            type="button"
+            className={`mode-segment-btn ${mode === "manual" ? "active manual-highlight" : ""}`}
+            onClick={() => (onChangeMode ? onChangeMode("manual") : !manual ? onToggleManual() : undefined)}
+            disabled={isPendingManual}
+            title="Manual Mode: Recommendations stopped; manual movement timing locks honored"
+          >
+            <Radio size={12} />
+            <span>Manual</span>
+          </button>
         </div>
 
         {/* Manual Mode Toggle Button */}

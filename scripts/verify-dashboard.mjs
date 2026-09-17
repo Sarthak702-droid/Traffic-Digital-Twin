@@ -16,7 +16,7 @@ try {
   assert.equal(
     plan.epics.flatMap((e) => e.stories).filter((s) => s.status === "completed")
       .length,
-    12,
+    15,
   );
   for (const epic of plan.epics) {
     await page.getByRole("searchbox").fill(String(Number(epic.id.slice(1))));
@@ -108,6 +108,30 @@ try {
     200,
   );
   await page.keyboard.press("Escape");
+  await page.getByRole("searchbox").fill("5");
+  await page.waitForFunction(
+    () => document.querySelectorAll(".task-card").length === 3,
+  );
+  assert.equal(
+    await page
+      .locator(".task-card .badge")
+      .filter({ hasText: "COMPLETED" })
+      .count(),
+    3,
+  );
+  await page
+    .getByRole("button", {
+      name: "Validate every candidate and application",
+      exact: true,
+    })
+    .click();
+  await page.getByRole("dialog").waitFor();
+  assert.equal(await page.locator("#task-status").isDisabled(), true);
+  assert.equal(
+    (await page.request.get(base + "/evidence/epic5")).status(),
+    200,
+  );
+  await page.keyboard.press("Escape");
   await page.getByRole("searchbox").fill("");
   await page
     .getByRole("button", { name: "Epic overview", exact: true })
@@ -118,7 +142,7 @@ try {
   assert.equal(await page.locator(".epic-card").count(), 12);
   assert.deepEqual(errors, []);
   console.log(
-    "PASS dashboard: all 12 epic searches, 12 evidence-backed completions, locked accepted status, evidence endpoints and overview",
+    "PASS dashboard: all 12 epic searches, 15 evidence-backed completions, locked accepted status, evidence endpoints and overview",
   );
 } finally {
   await browser.close();

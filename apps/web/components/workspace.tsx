@@ -107,15 +107,21 @@ export function Workspace() {
   const analysisQuery = useQuery({
     queryKey: ["analysis", live.frame?.run_id],
     queryFn: () => request<Analysis>("/analysis"),
-    enabled: !!live.frame,
     refetchInterval: 2000,
     retry: false,
   });
 
   const analysis: Analysis | null =
-    (analysisQuery.data?.run_id === live.frame?.run_id ? analysisQuery.data : null) ?? null;
+    analysisQuery.data && (!live.frame?.run_id || analysisQuery.data.run_id === live.frame.run_id)
+      ? analysisQuery.data
+      : null;
 
-  // Decision mutation for recommendations (Simulate, Approve, Modify, Reject)
+  const [simulationComparison, setSimulationComparison] = useState<ComparisonResult | null>(null);
+  const [systemMode, setSystemMode] = useState<"recommend" | "observe" | "manual">(
+    manual ? "manual" : "recommend",
+  );
+
+  // Decision mutation (Story S15: Simulate, Approve, Modify, Reject)
   const decision = useMutation({
     mutationFn: async ({
       action,
@@ -142,22 +148,48 @@ export function Workspace() {
         ),
       };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data.action === "simulate") {
+        setSimulationComparison(data.result);
+      } else {
+        setSimulationComparison(null);
+      }
       client.invalidateQueries({ queryKey: ["analysis"] });
       client.invalidateQueries({ queryKey: ["audit"] });
     },
   });
 
-  // Manual mode toggle mutation
+  // Manual / System mode toggle mutations (Story S14)
   const modeMutation = useMutation({
     mutationFn: () =>
-      request(`/mode/${manual ? "recommendation" : "manual"}`, {
+      request<{ mode: string }>(`/mode/${manual ? "recommend" : "manual"}`, {
         method: "POST",
         body: "{}",
       }),
-    onSuccess: () => {
-      setManual(!manual);
+    onSuccess: (data) => {
+      const nextManual = !manual;
+      setManual(nextManual);
+      setSystemMode(nextManual ? "manual" : "recommend");
+      setSimulationComparison(null);
       client.invalidateQueries({ queryKey: ["analysis"] });
+      client.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+
+  const changeModeMutation = useMutation({
+    mutationFn: async (targetMode: "recommend" | "observe" | "manual") => {
+      return request<{ mode: string }>(`/mode/${targetMode}`, {
+        method: "POST",
+        body: "{}",
+      });
+    },
+    onSuccess: (data) => {
+      const m = (data.mode === "manual" ? "manual" : data.mode === "observe" ? "observe" : "recommend") as "recommend" | "observe" | "manual";
+      setSystemMode(m);
+      setManual(m === "manual");
+      setSimulationComparison(null);
+      client.invalidateQueries({ queryKey: ["analysis"] });
+      client.invalidateQueries({ queryKey: ["audit"] });
     },
   });
 
@@ -243,12 +275,14 @@ export function Workspace() {
 
       {/* Main Operational Container */}
       <div className="app-main">
-        {/* TopBar with Chips, Health, Clock, Role Switcher, and DGP Launcher (Story S08) */}
+        {/* TopBar with Chips, Health, Clock, Role Switcher, and DGP Launcher (Story S08, S14) */}
         <TopBar
           health={health.data}
           manual={manual}
+          mode={systemMode}
+          onChangeMode={(m) => changeModeMutation.mutate(m)}
           onToggleManual={() => modeMutation.mutate()}
-          isPendingManual={modeMutation.isPending}
+          isPendingManual={modeMutation.isPending || changeModeMutation.isPending}
         />
 
         {/* Prominent Disclosure Banner (PRD §8.1) */}
@@ -442,6 +476,9 @@ export function Workspace() {
                           decision.mutate({ action: "reject", reason })
                         }
                         decisionPending={decision.isPending}
+                        comparisonResult={simulationComparison}
+                        onClearComparison={() => setSimulationComparison(null)}
+                        manualMode={manual || systemMode === "manual"}
                       />
                     </div>
 
@@ -622,24 +659,41 @@ export function Workspace() {
                           {audit.error.message}
                         </p>
                       ) : audit.data?.events.length ? (
-                        <div className="audit-list">
-                          {audit.data.events.map((a) => (
-                            <article key={a.id}>
-                              <span className="audit-icon">
-                                <Check size={16} />
-                              </span>
-                              <div>
-                                <h3>{a.event_type}</h3>
-                                <p>{a.reason}</p>
-                                <small>
-                                  Actor: {a.actor} ·{" "}
-                                  {new Date(a.created_at).toLocaleString()} ·
-                                  Safety: {a.safety_result}
-                                </small>
-                                <code>Run: {a.run_id}</code>
-                              </div>
-                            </article>
-                          ))}
+                        <div className="audit-list" role="feed" aria-label="Sequential Audit Log">
+                          {audit.data.events.map((a) => {
+                            const isApproved = a.safety_result === "accepted_at_safe_boundary";
+                            const isSimulated = a.safety_result === "simulated";
+                            const isRejected = a.safety_result.startsWith("rejected");
+                            const isLock = a.event_type.startsWith("lock.");
+                            const isMode = a.event_type.startsWith("mode.");
+                            return (
+                              <article key={a.id} className="audit-card">
+                                <div className="audit-card-header">
+                                  <span className={`audit-badge ${
+                                    isApproved ? "badge-success" :
+                                    isSimulated ? "badge-info" :
+                                    isRejected ? "badge-danger" :
+                                    isLock ? "badge-warning" : "badge-neutral"
+                                  }`}>
+                                    {a.event_type.toUpperCase()}
+                                  </span>
+                                  <span className="audit-timestamp">
+                                    {new Date(a.created_at).toLocaleString()}
+                                  </span>
+                                </div>
+                                <div className="audit-card-body">
+                                  <h3>{a.reason}</h3>
+                                  <div className="audit-meta-row">
+                                    <span>Actor: <strong>{a.actor}</strong></span>
+                                    <span>Safety Result: <strong className={isApproved ? "text-success" : isRejected ? "text-danger" : ""}>{a.safety_result}</strong></span>
+                                  </div>
+                                  <div className="audit-run-id">
+                                    <code>Run: {a.run_id}</code>
+                                  </div>
+                                </div>
+                              </article>
+                            );
+                          })}
                         </div>
                       ) : (
                         <p className="panel-message">
