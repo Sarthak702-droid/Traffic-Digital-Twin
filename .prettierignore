@@ -1,0 +1,7 @@
+node_modules/
+.next/
+.venv/
+packages/contracts/gen/
+packages/contracts/typescript/events.ts
+docs/planning-dashboard/
+package-lock.json

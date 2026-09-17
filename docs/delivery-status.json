@@ -1,0 +1,188 @@
+{
+  "schema_version": "1.0",
+  "tasks": {
+    "S01": {
+      "status": "completed",
+      "evidence": "docs/epic1-acceptance.md"
+    },
+    "S02": {
+      "status": "completed",
+      "evidence": "docs/epic1-acceptance.md"
+    },
+    "S03": {
+      "status": "completed",
+      "evidence": "docs/epic1-acceptance.md"
+    },
+    "S04": {
+      "status": "completed",
+      "evidence": "docs/epic1-acceptance.md"
+    },
+    "S05": {
+      "status": "completed",
+      "evidence": "docs/epic2-status.md"
+    },
+    "S06": {
+      "status": "completed",
+      "evidence": "docs/epic2-status.md"
+    },
+    "S07": {
+      "status": "completed",
+      "evidence": "docs/epic2-status.md"
+    },
+    "S08": {
+      "status": "completed",
+      "evidence": "docs/epic3-status.md"
+    },
+    "S09": {
+      "status": "completed",
+      "evidence": "docs/epic3-status.md"
+    },
+    "S10": {
+      "status": "completed",
+      "evidence": "docs/epic3-status.md"
+    },
+    "S11": {
+      "status": "completed",
+      "evidence": "docs/epic4-status.md"
+    },
+    "S12": {
+      "status": "completed",
+      "evidence": "docs/epic4-status.md"
+    },
+    "S13": {
+      "status": "completed",
+      "evidence": "docs/epic5-status.md"
+    },
+    "S14": {
+      "status": "completed",
+      "evidence": "docs/epic5-status.md"
+    },
+    "S15": {
+      "status": "completed",
+      "evidence": "docs/epic5-status.md"
+    },
+    "S16": {
+      "status": "completed",
+      "evidence": "docs/epic6-status.md"
+    },
+    "S17": {
+      "status": "completed",
+      "evidence": "docs/epic6-status.md"
+    },
+    "S18": {
+      "status": "completed",
+      "evidence": "docs/epic6-status.md"
+    },
+    "S19": {
+      "status": "completed",
+      "evidence": "docs/epic6-status.md"
+    },
+    "S21": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S22": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S25": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S26": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S27": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S28": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S29": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S30": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S31": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S32": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S33": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S34": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S35": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S36": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S37": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S38": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S39": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S40": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S41": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S42": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S43": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S44": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S45": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S46": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S47": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S48": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    }
+  },
+  "audit_date": "2026-09-17",
+  "release_status": "not_production_ready",
+  "note": "Revised requirements require reacceptance. Historical records below are retained, not erased; blocked indicates unfulfilled revised acceptance, not implementation in progress."
+}

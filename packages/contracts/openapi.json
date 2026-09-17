@@ -1,0 +1,1983 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Traffic Digital Twin API",
+    "version": "1.0.0",
+    "description": "Local synthetic demonstration: SUMO simulation, conservation-model forecasts, audited operator decisions and prerecorded replay. No live signal control."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8081"
+    }
+  ],
+  "paths": {
+    "/api/v1/network": {
+      "get": {
+        "summary": "Validated graph and signal configuration",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Network"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Component unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/state": {
+      "get": {
+        "summary": "Latest validated traffic state; unavailable until simulation is connected",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrafficState"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Component unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "summary": "Actual component availability",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthState"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Component unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/junctions/{id}": {
+      "get": {
+        "summary": "Configured node and phases; no current measurements",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "503": {
+            "description": "Component unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/runs": {
+      "get": {
+        "summary": "Latest 50 persisted runs",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Run"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Component unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Prepare a run and atomic audit record; does not start simulation",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Run persisted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid command",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-origin command denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistence unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit": {
+      "get": {
+        "summary": "Append-only audit history in ascending sequence order",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "503": {
+            "description": "Component unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/recommendations/active": {
+      "get": {
+        "summary": "Active recommendation; unavailable in manual mode or on service failure",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recommendation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        }
+      }
+    },
+    "/api/v1/recommendations/{id}/simulate": {
+      "post": {
+        "summary": "Compare a frozen current state over 120 seconds",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  },
+                  "changes": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TimingChange"
+                    }
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recommendations/{id}/approve": {
+      "post": {
+        "summary": "Approve a validated plan for virtual signals at safe clearance boundaries",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recommendation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  },
+                  "changes": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TimingChange"
+                    }
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recommendations/{id}/modify": {
+      "post": {
+        "summary": "Validate, compare and apply bounded manual timings with a reason",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recommendation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  },
+                  "changes": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TimingChange"
+                    }
+                  }
+                },
+                "required": [
+                  "reason"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recommendations/{id}/reject": {
+      "post": {
+        "summary": "Retain current safe plan and record operator reason",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recommendation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  },
+                  "changes": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TimingChange"
+                    }
+                  }
+                },
+                "required": [
+                  "reason"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scenarios/{type}/start": {
+      "post": {
+        "summary": "Start a seeded SUMO scenario and persist activation/audit",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "peak_surge",
+                "incident_c3",
+                "ambulance_corridor"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "schema_version",
+                  "seed",
+                  "mode"
+                ],
+                "properties": {
+                  "schema_version": {
+                    "const": "1.0"
+                  },
+                  "seed": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 4294967295
+                  },
+                  "mode": {
+                    "enum": [
+                      "observe",
+                      "recommend"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scenarios/reset": {
+      "post": {
+        "summary": "Repeat the current scenario and seed with a new audited run ID",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        }
+      }
+    },
+    "/api/v1/mode/manual": {
+      "post": {
+        "summary": "Set manual mode and audit the transition",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        }
+      }
+    },
+    "/api/v1/mode/recommendation": {
+      "post": {
+        "summary": "Set recommendation mode and audit the transition",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        }
+      }
+    },
+    "/api/v1/analysis": {
+      "get": {
+        "summary": "Fresh forecasts, recommendation, alternatives and equal-state comparison",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Analysis"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        }
+      }
+    },
+    "/api/v1/replay/{scenario}": {
+      "post": {
+        "summary": "Start a checksummed eight-minute recording through the same state/WebSocket pipeline; actuation disabled",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "scenario",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "peak_surge",
+                "incident_c3",
+                "ambulance_corridor"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Node": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "label",
+          "kind",
+          "x",
+          "y"
+        ]
+      },
+      "Link": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "from_node": {
+            "type": "string"
+          },
+          "to_node": {
+            "type": "string"
+          },
+          "length_m": {
+            "type": "number"
+          },
+          "lanes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "storage_capacity_veh": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "free_flow_speed_kph": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "from_node",
+          "to_node",
+          "length_m",
+          "lanes",
+          "storage_capacity_veh",
+          "free_flow_speed_kph"
+        ]
+      },
+      "Movement": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "node_id": {
+            "type": "string"
+          },
+          "incoming_link_id": {
+            "type": "string"
+          },
+          "outgoing_link_id": {
+            "type": "string"
+          },
+          "turning_ratio": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "node_id",
+          "incoming_link_id",
+          "outgoing_link_id",
+          "turning_ratio"
+        ]
+      },
+      "SignalPhase": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "node_id": {
+            "type": "string"
+          },
+          "movement_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "min_green_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "max_green_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "amber_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "all_red_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "pedestrian_clearance_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "max_red_s": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "node_id",
+          "movement_ids",
+          "min_green_s",
+          "max_green_s",
+          "amber_s",
+          "all_red_s",
+          "pedestrian_clearance_s",
+          "max_red_s"
+        ]
+      },
+      "MovementState": {
+        "type": "object",
+        "properties": {
+          "movement_id": {
+            "type": "string"
+          },
+          "queue_veh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "arrival_rate_vpm": {
+            "type": "number",
+            "minimum": 0
+          },
+          "departure_rate_vpm": {
+            "type": "number",
+            "minimum": 0
+          },
+          "avg_speed_kph": {
+            "type": "number",
+            "minimum": 0
+          },
+          "occupancy_ratio": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "downstream_capacity_veh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "current_phase_id": {
+            "type": "string"
+          },
+          "waiting_age_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "vehicle_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "arrivals_total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "departures_total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "permission": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "movement_id",
+          "queue_veh",
+          "arrival_rate_vpm",
+          "departure_rate_vpm",
+          "avg_speed_kph",
+          "occupancy_ratio",
+          "downstream_capacity_veh",
+          "current_phase_id",
+          "waiting_age_s",
+          "vehicle_count",
+          "arrivals_total",
+          "departures_total",
+          "permission"
+        ]
+      },
+      "TrafficState": {
+        "type": "object",
+        "properties": {
+          "schema_version": {
+            "const": "1.0"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "simulation_time_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "source": {
+            "type": "string"
+          },
+          "movements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MovementState"
+            }
+          },
+          "signals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SignalState"
+            }
+          },
+          "vehicles_in_network": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "inserted_total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "arrived_total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "teleported_total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "scenario_type": {
+            "type": "string"
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "incident": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Incident"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "emergency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmergencyEvent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active_plan": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimingChange"
+            }
+          },
+          "replay": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "run_id",
+          "timestamp",
+          "simulation_time_s",
+          "source",
+          "movements",
+          "signals",
+          "vehicles_in_network",
+          "inserted_total",
+          "arrived_total",
+          "teleported_total",
+          "scenario_type",
+          "seed",
+          "active_plan",
+          "replay"
+        ]
+      },
+      "Forecast": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "movement_id": {
+            "type": "string"
+          },
+          "horizon_s": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "queue_veh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "occupancy_ratio": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "arrivals_veh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "risk": {
+            "type": "string"
+          },
+          "spillback_eta_s": {
+            "type": "number"
+          },
+          "model_version": {
+            "type": "string"
+          },
+          "explanation_facts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "run_id",
+          "movement_id",
+          "horizon_s",
+          "queue_veh",
+          "occupancy_ratio",
+          "arrivals_veh",
+          "risk",
+          "model_version",
+          "explanation_facts"
+        ]
+      },
+      "TimingChange": {
+        "type": "object",
+        "properties": {
+          "node_id": {
+            "type": "string"
+          },
+          "phase_id": {
+            "type": "string"
+          },
+          "green_s": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "node_id",
+          "phase_id",
+          "green_s"
+        ]
+      },
+      "Recommendation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimingChange"
+            }
+          },
+          "safety_status": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "explanation_facts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "run_id",
+          "timestamp",
+          "priority",
+          "reason",
+          "changes",
+          "safety_status",
+          "status",
+          "explanation_facts"
+        ]
+      },
+      "OperatorAction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "actor": {
+            "type": "string"
+          },
+          "recommendation_id": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "modifications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimingChange"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "run_id",
+          "actor",
+          "recommendation_id",
+          "action",
+          "reason",
+          "timestamp",
+          "modifications"
+        ]
+      },
+      "Incident": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "node_id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "capacity_ratio": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "recovery_cycles": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "run_id",
+          "node_id",
+          "kind",
+          "capacity_ratio",
+          "status",
+          "recovery_cycles"
+        ]
+      },
+      "EmergencyEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "route_node_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string"
+          },
+          "eta_s": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "recovery_cycles_remaining": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "vehicle_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "run_id",
+          "route_node_ids",
+          "status",
+          "eta_s",
+          "recovery_cycles_remaining",
+          "vehicle_id"
+        ]
+      },
+      "ComponentHealth": {
+        "type": "object",
+        "properties": {
+          "component": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "component",
+          "status",
+          "message"
+        ]
+      },
+      "HealthState": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string"
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComponentHealth"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "timestamp",
+          "components"
+        ]
+      },
+      "AuditEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "actor": {
+            "type": "string"
+          },
+          "recommendation_id": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string"
+          },
+          "before": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimingChange"
+            }
+          },
+          "after": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimingChange"
+            }
+          },
+          "reason": {
+            "type": "string"
+          },
+          "safety_result": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "run_id",
+          "timestamp",
+          "actor",
+          "recommendation_id",
+          "event_type",
+          "before",
+          "after",
+          "reason",
+          "safety_result"
+        ]
+      },
+      "Alert": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "target_id": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "run_id",
+          "severity",
+          "target_id",
+          "message"
+        ]
+      },
+      "SignalState": {
+        "type": "object",
+        "properties": {
+          "node_id": {
+            "type": "string"
+          },
+          "phase_id": {
+            "type": "string"
+          },
+          "indication": {
+            "type": "string"
+          },
+          "remaining_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "permitted_movement_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "node_id",
+          "phase_id",
+          "indication",
+          "remaining_s",
+          "permitted_movement_ids"
+        ]
+      },
+      "ComparisonResult": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "recommendation_id": {
+            "type": "string"
+          },
+          "baseline_max_queue_veh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "candidate_max_queue_veh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "baseline_avg_delay_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "candidate_avg_delay_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "initial_time_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "model_version": {
+            "type": "string"
+          },
+          "baseline_spillback_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "candidate_spillback_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "baseline_stops_per_vehicle": {
+            "type": "number"
+          },
+          "candidate_stops_per_vehicle": {
+            "type": "number"
+          },
+          "horizon_s": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "run_id",
+          "recommendation_id",
+          "baseline_max_queue_veh",
+          "candidate_max_queue_veh",
+          "baseline_avg_delay_s",
+          "candidate_avg_delay_s",
+          "initial_time_s",
+          "model_version",
+          "baseline_spillback_s",
+          "candidate_spillback_s",
+          "baseline_stops_per_vehicle",
+          "candidate_stops_per_vehicle",
+          "horizon_s",
+          "seed"
+        ]
+      },
+      "EventEnvelope": {
+        "type": "object",
+        "properties": {
+          "schema_version": {
+            "const": "1.0"
+          },
+          "sequence": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "network_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrafficState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "junction_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignalState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "forecast_updated": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Forecast"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recommendation_created": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Recommendation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recommendation_updated": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Recommendation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "incident_updated": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Incident"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "emergency_updated": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmergencyEvent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "health_updated": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HealthState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "audit_appended": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuditEvent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "sequence",
+          "timestamp"
+        ]
+      },
+      "RunCommand": {
+        "type": "object",
+        "properties": {
+          "schema_version": {
+            "const": "1.0"
+          },
+          "scenario_type": {
+            "type": "string"
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "mode": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "scenario_type",
+          "seed",
+          "mode",
+          "run_id"
+        ]
+      },
+      "RunRequest": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "run_id"
+        ]
+      },
+      "ValidationResult": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "valid",
+          "errors"
+        ]
+      },
+      "Network": {
+        "type": "object",
+        "required": [
+          "schema_version",
+          "id",
+          "name",
+          "units",
+          "nodes",
+          "links",
+          "movements",
+          "phases",
+          "conflicts",
+          "scenarios"
+        ],
+        "properties": {
+          "schema_version": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "units": {
+            "type": "object",
+            "required": [
+              "coordinates",
+              "length",
+              "speed",
+              "rate",
+              "queue",
+              "time",
+              "occupancy"
+            ],
+            "properties": {
+              "coordinates": {
+                "type": "string"
+              },
+              "length": {
+                "type": "string"
+              },
+              "speed": {
+                "type": "string"
+              },
+              "rate": {
+                "type": "string"
+              },
+              "queue": {
+                "type": "string"
+              },
+              "time": {
+                "type": "string"
+              },
+              "occupancy": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Node"
+            }
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Link"
+            }
+          },
+          "movements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Movement"
+            }
+          },
+          "phases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SignalPhase"
+            }
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "seed",
+                "route_node_ids",
+                "capacity_ratio"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "seed": {
+                  "type": "integer"
+                },
+                "route_node_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "capacity_ratio": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "Run": {
+        "type": "object",
+        "required": [
+          "id",
+          "config_id",
+          "scenario_type",
+          "seed",
+          "mode",
+          "status",
+          "started_at",
+          "ended_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "config_id": {
+            "type": "string"
+          },
+          "scenario_type": {
+            "enum": [
+              "peak_surge",
+              "incident_c3",
+              "ambulance_corridor"
+            ]
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4294967295
+          },
+          "mode": {
+            "enum": [
+              "observe",
+              "recommend"
+            ]
+          },
+          "status": {
+            "enum": [
+              "prepared",
+              "running",
+              "ended"
+            ]
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ended_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error",
+          "message"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "PlanCommand": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimingChange"
+            }
+          },
+          "command_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "run_id",
+          "changes",
+          "command_id"
+        ]
+      },
+      "Analysis": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "simulation_time_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "forecasts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Forecast"
+            }
+          },
+          "recommendation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Recommendation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "comparison": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComparisonResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alternatives": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Recommendation"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "run_id",
+          "simulation_time_s",
+          "forecasts",
+          "alternatives"
+        ]
+      },
+      "CompareCommand": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrafficState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimingChange"
+            }
+          },
+          "recommendation_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "changes",
+          "recommendation_id"
+        ]
+      }
+    }
+  }
+}

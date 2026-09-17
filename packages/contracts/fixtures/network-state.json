@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "sequence": "1",
+  "timestamp": "2026-09-16T00:00:00Z",
+  "type": "network.state",
+  "payload": {
+    "schema_version": "1.0",
+    "run_id": "test",
+    "timestamp": "2026-09-16T00:00:00Z",
+    "source": "synthetic",
+    "movements": [
+      {
+        "movement_id": "m",
+        "current_phase_id": "p",
+        "queue_veh": 0.0,
+        "arrival_rate_vpm": 0.0,
+        "departure_rate_vpm": 0.0,
+        "avg_speed_kph": 0.0,
+        "occupancy_ratio": 0.0,
+        "downstream_capacity_veh": 0.0,
+        "waiting_age_s": 0.0,
+        "vehicle_count": 0,
+        "arrivals_total": 0,
+        "departures_total": 0,
+        "permission": ""
+      }
+    ],
+    "simulation_time_s": 0.0,
+    "signals": [],
+    "vehicles_in_network": 0,
+    "inserted_total": 0,
+    "arrived_total": 0,
+    "teleported_total": 0,
+    "scenario_type": "",
+    "seed": 0,
+    "active_plan": [],
+    "replay": false
+  }
+}

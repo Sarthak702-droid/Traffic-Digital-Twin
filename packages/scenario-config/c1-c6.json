@@ -1,0 +1,623 @@
+{
+  "schema_version": "1.0",
+  "id": "c1-c6-v3",
+  "name": "C1\u2013C6 demonstration network",
+  "units": {
+    "coordinates": "canvas units",
+    "length": "m",
+    "speed": "km/h",
+    "rate": "vehicles/min",
+    "queue": "vehicles",
+    "time": "seconds",
+    "occupancy": "ratio 0\u20131"
+  },
+  "nodes": [
+    {
+      "id": "C1",
+      "label": "Central junction",
+      "kind": "controlled",
+      "x": 450,
+      "y": 250
+    },
+    {
+      "id": "C2",
+      "label": "North boundary",
+      "kind": "boundary",
+      "x": 450,
+      "y": 70
+    },
+    {
+      "id": "C3",
+      "label": "South junction",
+      "kind": "controlled",
+      "x": 450,
+      "y": 440
+    },
+    {
+      "id": "C4",
+      "label": "East boundary",
+      "kind": "boundary",
+      "x": 740,
+      "y": 250
+    },
+    {
+      "id": "C5",
+      "label": "West boundary",
+      "kind": "boundary",
+      "x": 160,
+      "y": 250
+    },
+    {
+      "id": "C6",
+      "label": "South boundary",
+      "kind": "boundary",
+      "x": 450,
+      "y": 630
+    }
+  ],
+  "links": [
+    {
+      "id": "C1-C2",
+      "from_node": "C1",
+      "to_node": "C2",
+      "length_m": 300,
+      "lanes": 2,
+      "storage_capacity_veh": 80,
+      "free_flow_speed_kph": 40
+    },
+    {
+      "id": "C2-C1",
+      "from_node": "C2",
+      "to_node": "C1",
+      "length_m": 300,
+      "lanes": 2,
+      "storage_capacity_veh": 80,
+      "free_flow_speed_kph": 40
+    },
+    {
+      "id": "C1-C3",
+      "from_node": "C1",
+      "to_node": "C3",
+      "length_m": 420,
+      "lanes": 2,
+      "storage_capacity_veh": 112,
+      "free_flow_speed_kph": 40
+    },
+    {
+      "id": "C3-C1",
+      "from_node": "C3",
+      "to_node": "C1",
+      "length_m": 420,
+      "lanes": 2,
+      "storage_capacity_veh": 112,
+      "free_flow_speed_kph": 40
+    },
+    {
+      "id": "C1-C4",
+      "from_node": "C1",
+      "to_node": "C4",
+      "length_m": 360,
+      "lanes": 2,
+      "storage_capacity_veh": 96,
+      "free_flow_speed_kph": 40
+    },
+    {
+      "id": "C4-C1",
+      "from_node": "C4",
+      "to_node": "C1",
+      "length_m": 360,
+      "lanes": 2,
+      "storage_capacity_veh": 96,
+      "free_flow_speed_kph": 40
+    },
+    {
+      "id": "C1-C5",
+      "from_node": "C1",
+      "to_node": "C5",
+      "length_m": 360,
+      "lanes": 2,
+      "storage_capacity_veh": 96,
+      "free_flow_speed_kph": 40
+    },
+    {
+      "id": "C5-C1",
+      "from_node": "C5",
+      "to_node": "C1",
+      "length_m": 360,
+      "lanes": 2,
+      "storage_capacity_veh": 96,
+      "free_flow_speed_kph": 40
+    },
+    {
+      "id": "C3-C6",
+      "from_node": "C3",
+      "to_node": "C6",
+      "length_m": 400,
+      "lanes": 2,
+      "storage_capacity_veh": 106,
+      "free_flow_speed_kph": 40
+    },
+    {
+      "id": "C6-C3",
+      "from_node": "C6",
+      "to_node": "C3",
+      "length_m": 400,
+      "lanes": 2,
+      "storage_capacity_veh": 106,
+      "free_flow_speed_kph": 40
+    }
+  ],
+  "movements": [
+    {
+      "id": "C2-C1-C3",
+      "node_id": "C1",
+      "incoming_link_id": "C2-C1",
+      "outgoing_link_id": "C1-C3",
+      "turning_ratio": 0.3333333333333333
+    },
+    {
+      "id": "C2-C1-C4",
+      "node_id": "C1",
+      "incoming_link_id": "C2-C1",
+      "outgoing_link_id": "C1-C4",
+      "turning_ratio": 0.3333333333333333
+    },
+    {
+      "id": "C2-C1-C5",
+      "node_id": "C1",
+      "incoming_link_id": "C2-C1",
+      "outgoing_link_id": "C1-C5",
+      "turning_ratio": 0.3333333333333333
+    },
+    {
+      "id": "C3-C1-C2",
+      "node_id": "C1",
+      "incoming_link_id": "C3-C1",
+      "outgoing_link_id": "C1-C2",
+      "turning_ratio": 0.3333333333333333
+    },
+    {
+      "id": "C3-C1-C4",
+      "node_id": "C1",
+      "incoming_link_id": "C3-C1",
+      "outgoing_link_id": "C1-C4",
+      "turning_ratio": 0.3333333333333333
+    },
+    {
+      "id": "C3-C1-C5",
+      "node_id": "C1",
+      "incoming_link_id": "C3-C1",
+      "outgoing_link_id": "C1-C5",
+      "turning_ratio": 0.3333333333333333
+    },
+    {
+      "id": "C4-C1-C2",
+      "node_id": "C1",
+      "incoming_link_id": "C4-C1",
+      "outgoing_link_id": "C1-C2",
+      "turning_ratio": 0.3333333333333333
+    },
+    {
+      "id": "C4-C1-C3",
+      "node_id": "C1",
+      "incoming_link_id": "C4-C1",
+      "outgoing_link_id": "C1-C3",
+      "turning_ratio": 0.3333333333333333
+    },
+    {
+      "id": "C4-C1-C5",
+      "node_id": "C1",
+      "incoming_link_id": "C4-C1",
+      "outgoing_link_id": "C1-C5",
+      "turning_ratio": 0.3333333333333333
+    },
+    {
+      "id": "C5-C1-C2",
+      "node_id": "C1",
+      "incoming_link_id": "C5-C1",
+      "outgoing_link_id": "C1-C2",
+      "turning_ratio": 0.3333333333333333
+    },
+    {
+      "id": "C5-C1-C3",
+      "node_id": "C1",
+      "incoming_link_id": "C5-C1",
+      "outgoing_link_id": "C1-C3",
+      "turning_ratio": 0.3333333333333333
+    },
+    {
+      "id": "C5-C1-C4",
+      "node_id": "C1",
+      "incoming_link_id": "C5-C1",
+      "outgoing_link_id": "C1-C4",
+      "turning_ratio": 0.3333333333333333
+    },
+    {
+      "id": "C1-C3-C6",
+      "node_id": "C3",
+      "incoming_link_id": "C1-C3",
+      "outgoing_link_id": "C3-C6",
+      "turning_ratio": 1.0
+    },
+    {
+      "id": "C6-C3-C1",
+      "node_id": "C3",
+      "incoming_link_id": "C6-C3",
+      "outgoing_link_id": "C3-C1",
+      "turning_ratio": 1.0
+    }
+  ],
+  "phases": [
+    {
+      "id": "C1-FROM-C2",
+      "node_id": "C1",
+      "movement_ids": [
+        "C2-C1-C3",
+        "C2-C1-C4",
+        "C2-C1-C5"
+      ],
+      "min_green_s": 10,
+      "max_green_s": 55,
+      "amber_s": 3,
+      "all_red_s": 2,
+      "pedestrian_clearance_s": 2,
+      "max_red_s": 200
+    },
+    {
+      "id": "C1-FROM-C3",
+      "node_id": "C1",
+      "movement_ids": [
+        "C3-C1-C2",
+        "C3-C1-C4",
+        "C3-C1-C5"
+      ],
+      "min_green_s": 10,
+      "max_green_s": 55,
+      "amber_s": 3,
+      "all_red_s": 2,
+      "pedestrian_clearance_s": 2,
+      "max_red_s": 200
+    },
+    {
+      "id": "C1-FROM-C4",
+      "node_id": "C1",
+      "movement_ids": [
+        "C4-C1-C2",
+        "C4-C1-C3",
+        "C4-C1-C5"
+      ],
+      "min_green_s": 10,
+      "max_green_s": 55,
+      "amber_s": 3,
+      "all_red_s": 2,
+      "pedestrian_clearance_s": 2,
+      "max_red_s": 200
+    },
+    {
+      "id": "C1-FROM-C5",
+      "node_id": "C1",
+      "movement_ids": [
+        "C5-C1-C2",
+        "C5-C1-C3",
+        "C5-C1-C4"
+      ],
+      "min_green_s": 10,
+      "max_green_s": 55,
+      "amber_s": 3,
+      "all_red_s": 2,
+      "pedestrian_clearance_s": 2,
+      "max_red_s": 200
+    },
+    {
+      "id": "C3-FROM-C1",
+      "node_id": "C3",
+      "movement_ids": [
+        "C1-C3-C6"
+      ],
+      "min_green_s": 10,
+      "max_green_s": 55,
+      "amber_s": 3,
+      "all_red_s": 2,
+      "pedestrian_clearance_s": 2,
+      "max_red_s": 200
+    },
+    {
+      "id": "C3-FROM-C6",
+      "node_id": "C3",
+      "movement_ids": [
+        "C6-C3-C1"
+      ],
+      "min_green_s": 10,
+      "max_green_s": 55,
+      "amber_s": 3,
+      "all_red_s": 2,
+      "pedestrian_clearance_s": 2,
+      "max_red_s": 200
+    }
+  ],
+  "conflicts": [
+    [
+      "C2-C1-C3",
+      "C3-C1-C2"
+    ],
+    [
+      "C2-C1-C3",
+      "C3-C1-C4"
+    ],
+    [
+      "C2-C1-C3",
+      "C3-C1-C5"
+    ],
+    [
+      "C2-C1-C3",
+      "C4-C1-C2"
+    ],
+    [
+      "C2-C1-C3",
+      "C4-C1-C3"
+    ],
+    [
+      "C2-C1-C3",
+      "C4-C1-C5"
+    ],
+    [
+      "C2-C1-C3",
+      "C5-C1-C2"
+    ],
+    [
+      "C2-C1-C3",
+      "C5-C1-C3"
+    ],
+    [
+      "C2-C1-C3",
+      "C5-C1-C4"
+    ],
+    [
+      "C2-C1-C4",
+      "C3-C1-C2"
+    ],
+    [
+      "C2-C1-C4",
+      "C3-C1-C4"
+    ],
+    [
+      "C2-C1-C4",
+      "C3-C1-C5"
+    ],
+    [
+      "C2-C1-C4",
+      "C4-C1-C2"
+    ],
+    [
+      "C2-C1-C4",
+      "C4-C1-C3"
+    ],
+    [
+      "C2-C1-C4",
+      "C4-C1-C5"
+    ],
+    [
+      "C2-C1-C4",
+      "C5-C1-C2"
+    ],
+    [
+      "C2-C1-C4",
+      "C5-C1-C3"
+    ],
+    [
+      "C2-C1-C4",
+      "C5-C1-C4"
+    ],
+    [
+      "C2-C1-C5",
+      "C3-C1-C2"
+    ],
+    [
+      "C2-C1-C5",
+      "C3-C1-C4"
+    ],
+    [
+      "C2-C1-C5",
+      "C3-C1-C5"
+    ],
+    [
+      "C2-C1-C5",
+      "C4-C1-C2"
+    ],
+    [
+      "C2-C1-C5",
+      "C4-C1-C3"
+    ],
+    [
+      "C2-C1-C5",
+      "C4-C1-C5"
+    ],
+    [
+      "C2-C1-C5",
+      "C5-C1-C2"
+    ],
+    [
+      "C2-C1-C5",
+      "C5-C1-C3"
+    ],
+    [
+      "C2-C1-C5",
+      "C5-C1-C4"
+    ],
+    [
+      "C3-C1-C2",
+      "C4-C1-C2"
+    ],
+    [
+      "C3-C1-C2",
+      "C4-C1-C3"
+    ],
+    [
+      "C3-C1-C2",
+      "C4-C1-C5"
+    ],
+    [
+      "C3-C1-C2",
+      "C5-C1-C2"
+    ],
+    [
+      "C3-C1-C2",
+      "C5-C1-C3"
+    ],
+    [
+      "C3-C1-C2",
+      "C5-C1-C4"
+    ],
+    [
+      "C3-C1-C4",
+      "C4-C1-C2"
+    ],
+    [
+      "C3-C1-C4",
+      "C4-C1-C3"
+    ],
+    [
+      "C3-C1-C4",
+      "C4-C1-C5"
+    ],
+    [
+      "C3-C1-C4",
+      "C5-C1-C2"
+    ],
+    [
+      "C3-C1-C4",
+      "C5-C1-C3"
+    ],
+    [
+      "C3-C1-C4",
+      "C5-C1-C4"
+    ],
+    [
+      "C3-C1-C5",
+      "C4-C1-C2"
+    ],
+    [
+      "C3-C1-C5",
+      "C4-C1-C3"
+    ],
+    [
+      "C3-C1-C5",
+      "C4-C1-C5"
+    ],
+    [
+      "C3-C1-C5",
+      "C5-C1-C2"
+    ],
+    [
+      "C3-C1-C5",
+      "C5-C1-C3"
+    ],
+    [
+      "C3-C1-C5",
+      "C5-C1-C4"
+    ],
+    [
+      "C4-C1-C2",
+      "C5-C1-C2"
+    ],
+    [
+      "C4-C1-C2",
+      "C5-C1-C3"
+    ],
+    [
+      "C4-C1-C2",
+      "C5-C1-C4"
+    ],
+    [
+      "C4-C1-C3",
+      "C5-C1-C2"
+    ],
+    [
+      "C4-C1-C3",
+      "C5-C1-C3"
+    ],
+    [
+      "C4-C1-C3",
+      "C5-C1-C4"
+    ],
+    [
+      "C4-C1-C5",
+      "C5-C1-C2"
+    ],
+    [
+      "C4-C1-C5",
+      "C5-C1-C3"
+    ],
+    [
+      "C4-C1-C5",
+      "C5-C1-C4"
+    ],
+    [
+      "C1-C3-C6",
+      "C6-C3-C1"
+    ]
+  ],
+  "scenarios": [
+    {
+      "id": "peak_surge",
+      "seed": 1101,
+      "route_node_ids": [
+        "C6",
+        "C3",
+        "C1"
+      ],
+      "capacity_ratio": 1,
+      "demand_duration_s": 900,
+      "base_rate_vps": 0.21,
+      "feeder_rate_vps": 0.51,
+      "surge_rate_vps": 1.65,
+      "surge_start_s": 30,
+      "surge_end_s": 180,
+      "incident_start_s": 30,
+      "incident_end_s": 150,
+      "emergency_depart_s": 25,
+      "recovery_cycles": 2
+    },
+    {
+      "id": "incident_c3",
+      "seed": 2202,
+      "route_node_ids": [
+        "C6",
+        "C3",
+        "C1"
+      ],
+      "capacity_ratio": 0.35,
+      "demand_duration_s": 900,
+      "base_rate_vps": 0.21,
+      "feeder_rate_vps": 0.51,
+      "surge_rate_vps": 1.65,
+      "surge_start_s": 30,
+      "surge_end_s": 180,
+      "incident_start_s": 30,
+      "incident_end_s": 150,
+      "emergency_depart_s": 25,
+      "recovery_cycles": 2
+    },
+    {
+      "id": "ambulance_corridor",
+      "seed": 3303,
+      "route_node_ids": [
+        "C6",
+        "C3",
+        "C1",
+        "C2"
+      ],
+      "capacity_ratio": 1,
+      "demand_duration_s": 900,
+      "base_rate_vps": 0.21,
+      "feeder_rate_vps": 0.51,
+      "surge_rate_vps": 1.65,
+      "surge_start_s": 30,
+      "surge_end_s": 180,
+      "incident_start_s": 30,
+      "incident_end_s": 150,
+      "emergency_depart_s": 25,
+      "recovery_cycles": 1
+    }
+  ]
+}
