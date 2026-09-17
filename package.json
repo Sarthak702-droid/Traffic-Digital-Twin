@@ -5,9 +5,9 @@
     "apps/web"
   ],
   "scripts": {
-    "start": "python3 scripts/start-all.py",
-    "dev": "python3 scripts/start-all.py",
-    "dev:all": "python3 scripts/start-all.py",
+    "start": "if [ -x .venv/bin/python ]; then .venv/bin/python scripts/start-all.py; else python3 scripts/start-all.py; fi",
+    "dev": "if [ -x .venv/bin/python ]; then .venv/bin/python scripts/start-all.py; else python3 scripts/start-all.py; fi",
+    "dev:all": "if [ -x .venv/bin/python ]; then .venv/bin/python scripts/start-all.py; else python3 scripts/start-all.py; fi",
     "dev:web": "npm run dev -w apps/web",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",

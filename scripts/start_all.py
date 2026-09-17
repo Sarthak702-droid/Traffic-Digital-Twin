@@ -236,8 +236,15 @@ def main():
     else:
         raise RuntimeError("Neither pre-compiled bin/api nor Go compiler found.")
 
-    venv_py = ROOT / ".venv" / "bin" / "python"
-    py_bin = str(venv_py) if venv_py.exists() else sys.executable
+    venv_dir = ROOT / ".venv"
+    venv_py = venv_dir / "bin" / "python"
+    py_bin = str(venv_py.resolve()) if venv_py.exists() else sys.executable
+
+    # Activate venv for child processes so grpcio and other packages are found
+    if venv_dir.exists():
+        env["VIRTUAL_ENV"] = str(venv_dir)
+        # Remove any inherited PYTHONHOME that would override the venv
+        env.pop("PYTHONHOME", None)
 
     npm_bin = find_executable("npm", [
         "/usr/local/bin/npm",
@@ -248,7 +255,9 @@ def main():
     ])
 
     # Ensure binary directories are in PATH for child processes
+    # venv bin MUST be first so the venv python is used for subprocesses
     extra_paths = [
+        str(venv_dir / "bin") if venv_dir.exists() else "",
         str(bin_dir),
         os.path.dirname(go_bin) if go_available else "",
         os.path.expanduser("~/go/bin"),
@@ -284,7 +293,7 @@ def main():
     try:
         for name, cmd in commands:
             log(f"Launching {name}...")
-            proc = subprocess.Popen(cmd, env=env, start_new_session=True)
+            proc = subprocess.Popen(cmd, env=env, cwd=str(ROOT), start_new_session=True)
             children.append((name, proc))
 
             # Wait for writer readiness
