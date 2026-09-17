@@ -12,6 +12,7 @@
     "dashboard": "node server.mjs"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "6.1.1",
     "prettier": "3.6.2"
   }
 }
