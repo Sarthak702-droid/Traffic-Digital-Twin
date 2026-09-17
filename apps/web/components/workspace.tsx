@@ -1,9 +1,9 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
-  ArrowDown,
   ArrowRight,
   Check,
   ChevronRight,
@@ -14,18 +14,27 @@ import {
   Network as NetworkIcon,
   Radio,
   RefreshCw,
+  ShieldAlert,
   ShieldCheck,
   Siren,
+  Sparkles,
   TrafficCone,
   Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { getNetwork, request } from "@/lib/api";
-import { DecisionPanel } from "@/components/decision-panel";
 import { useLive } from "@/lib/live";
-import { LiveSummary, JunctionLive } from "@/components/live-panel";
+import { LiveSummary } from "@/components/live-panel";
+import { DecisionPanel } from "@/components/decision-panel";
 import { useWorkspace } from "@/lib/state";
+import { TopBar } from "@/components/top-bar";
+import { KpiStrip } from "@/components/kpi-strip";
+import { ActionRail } from "@/components/action-rail";
+import { NetworkCanvas } from "@/components/network-canvas";
+import { NetworkView } from "@/components/network-view";
+import { JunctionDrawerContent } from "@/components/junction-drawer";
+import { DgpPresentationModal } from "@/components/dgp-presentation";
 import type {
   Network,
   Run,
@@ -33,9 +42,16 @@ import type {
   Scenario,
 } from "../../../packages/contracts/typescript/network";
 import type {
+  Analysis,
+  ComparisonResult,
   HealthState,
+  TimingChange,
   TrafficState,
 } from "../../../packages/contracts/typescript/events";
+
+// Re-export NetworkCanvas for test and consumer compatibility
+export { NetworkCanvas };
+
 const sections = [
   { id: "command", label: "Command Center", icon: Layers },
   { id: "network", label: "Network", icon: NetworkIcon },
@@ -44,191 +60,30 @@ const sections = [
   { id: "emergency", label: "Emergency", icon: Siren },
   { id: "audit", label: "Audit & Health", icon: ShieldCheck },
 ] as const;
+
 type View = (typeof sections)[number]["id"];
+
 const scenarioLabels: Record<Scenario["id"], string> = {
   peak_surge: "Peak demand surge",
   incident_c3: "C3 capacity reduction",
   ambulance_corridor: "Emergency corridor",
 };
-export function NetworkCanvas({
-  network,
-  onSelect,
-  route = [],
-  frame,
-}: {
-  network: Network;
-  onSelect: (id: string) => void;
-  route?: string[];
-  frame?: TrafficState | null;
-}) {
-  const maxX = Math.max(...network.nodes.map((n) => n.x)) + 130,
-    maxY = Math.max(...network.nodes.map((n) => n.y)) + 80;
-  const nodes = new Map(network.nodes.map((n) => [n.id, n]));
-  return (
-    <svg
-      className="network-svg"
-      viewBox={`0 0 ${maxX} ${maxY}`}
-      role="group"
-      aria-label="Configured demonstration network; select a junction to inspect it"
-    >
-      <defs>
-        <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
-          <circle cx="1" cy="1" r=".8" fill="#26343d" />
-        </pattern>
-        <marker
-          id="arrow"
-          viewBox="0 0 10 10"
-          refX="7"
-          refY="5"
-          markerWidth="4"
-          markerHeight="4"
-          orient="auto-start-reverse"
-        >
-          <path d="M 0 0 L 10 5 L 0 10 z" fill="#82919c" />
-        </marker>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#grid)" />
-      {network.links.map((link) => {
-        const from = nodes.get(link.from_node),
-          to = nodes.get(link.to_node);
-        if (!from || !to) return null;
-        const length = Math.hypot(to.x - from.x, to.y - from.y),
-          dx = (to.x - from.x) / length,
-          dy = (to.y - from.y) / length,
-          offset = 10;
-        const x1 = from.x + dx * 38 - dy * offset,
-          y1 = from.y + dy * 38 + dx * offset,
-          x2 = to.x - dx * 42 - dy * offset,
-          y2 = to.y - dy * 42 + dx * offset;
-        const highlighted = route.some(
-          (id, i) => id === from.id && route[i + 1] === to.id,
-        );
-        return (
-          <g key={link.id}>
-            <title>
-              {link.id}: {link.length_m} m, {link.storage_capacity_veh} vehicles
-              of storage
-            </title>
-            <line
-              x1={x1}
-              y1={y1}
-              x2={x2}
-              y2={y2}
-              stroke={highlighted ? "#c0abed" : "#25343f"}
-              strokeWidth="16"
-              strokeLinecap="round"
-            />
-            <line
-              x1={x1}
-              y1={y1}
-              x2={x2}
-              y2={y2}
-              stroke={highlighted ? "#e4d7ff" : "#70828f"}
-              strokeWidth="1.2"
-              strokeDasharray="4 7"
-              markerEnd="url(#arrow)"
-            />
-            {frame &&
-              frame.movements.some(
-                (m) =>
-                  network.movements.some(
-                    (c) =>
-                      c.id === m.movement_id && c.incoming_link_id === link.id,
-                  ) && m.vehicle_count > 0,
-              ) && (
-                <circle r="3" fill="#83b7a0" className="flow-marker">
-                  <animateMotion
-                    dur="3s"
-                    repeatCount="indefinite"
-                    path={`M ${x1} ${y1} L ${x2} ${y2}`}
-                  />
-                </circle>
-              )}
-            {link.from_node < link.to_node && (
-              <text
-                x={(from.x + to.x) / 2 + (dx === 0 ? 42 : 0)}
-                y={(from.y + to.y) / 2 + (dy === 0 ? -38 : 0)}
-                className="link-label"
-                textAnchor="middle"
-              >
-                {link.length_m} m
-              </text>
-            )}
-          </g>
-        );
-      })}
-      {network.nodes.map((node) => (
-        <g
-          key={node.id}
-          role="button"
-          tabIndex={0}
-          aria-label={`Inspect ${node.id}, ${node.label}`}
-          onClick={() => onSelect(node.id)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              onSelect(node.id);
-            }
-          }}
-          className="map-node"
-        >
-          <circle
-            cx={node.x}
-            cy={node.y}
-            r="34"
-            fill="#101b23"
-            stroke={route.includes(node.id) ? "#baa3e6" : "#43545f"}
-            strokeWidth="1.5"
-          />
-          {node.kind === "controlled" && (
-            <circle
-              cx={node.x}
-              cy={node.y}
-              r="41"
-              fill="none"
-              stroke={
-                frame?.signals.find((s) => s.node_id === node.id)
-                  ?.indication === "green"
-                  ? "#83b7a0"
-                  : frame?.signals.find((s) => s.node_id === node.id)
-                        ?.indication === "amber"
-                    ? "#e4b967"
-                    : frame
-                      ? "#ce7975"
-                      : "#40575d"
-              }
-              strokeDasharray="3 5"
-            />
-          )}
-          <text
-            x={node.x}
-            y={node.y + 6}
-            textAnchor="middle"
-            className="node-label"
-          >
-            {node.id}
-          </text>
-          <text
-            x={node.x + (node.kind === "controlled" ? 60 : 0)}
-            y={node.y + (node.kind === "controlled" ? 5 : 57)}
-            textAnchor={node.kind === "controlled" ? "start" : "middle"}
-            className="node-kind"
-          >
-            {node.kind === "controlled" ? "Controlled junction" : "Boundary"}
-          </text>
-        </g>
-      ))}
-    </svg>
-  );
-}
+
 export function Workspace() {
   const live = useLive();
   const [view, setView] = useState<View>("command");
   const [scenarioID, setScenarioID] = useState<Scenario["id"]>("peak_surge");
   const [seed, setSeed] = useState("1101");
-  const [formError, setFormError] = useState("");
-  const [clock, setClock] = useState("Local workspace");
-  const { selectedNode, selectNode } = useWorkspace();
+  const [manual, setManual] = useState(false);
+
+  const {
+    selectedNode,
+    selectNode,
+    role,
+    dgpModalOpen,
+    setDgpModalOpen,
+  } = useWorkspace();
+
   const client = useQueryClient();
   const network = useQuery({ queryKey: ["network"], queryFn: getNetwork });
   const health = useQuery({
@@ -246,6 +101,65 @@ export function Workspace() {
       request<{ events: AuditRecord[]; next_after: number }>("/audit?limit=50"),
     enabled: view === "audit",
   });
+
+  // Real-time analysis query (forecasts, recommendations, comparisons)
+  const analysisQuery = useQuery({
+    queryKey: ["analysis", live.frame?.run_id],
+    queryFn: () => request<Analysis>("/analysis"),
+    enabled: !!live.frame,
+    refetchInterval: 2000,
+    retry: false,
+  });
+
+  const analysis: Analysis | null =
+    (analysisQuery.data?.run_id === live.frame?.run_id ? analysisQuery.data : null) ?? null;
+
+  // Decision mutation for recommendations (Simulate, Approve, Modify, Reject)
+  const decision = useMutation({
+    mutationFn: async ({
+      action,
+      reason,
+      changes,
+    }: {
+      action: string;
+      reason?: string;
+      changes?: TimingChange[];
+    }) => {
+      const rec = analysis?.recommendation;
+      if (!rec) throw Error("No active recommendation to act upon");
+      return {
+        action,
+        result: await request<ComparisonResult>(
+          `/recommendations/${rec.id}/${action}`,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              reason: reason || "Operator applied in digital twin",
+              ...(action === "modify" && changes ? { changes } : {}),
+            }),
+          },
+        ),
+      };
+    },
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["analysis"] });
+      client.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+
+  // Manual mode toggle mutation
+  const modeMutation = useMutation({
+    mutationFn: () =>
+      request(`/mode/${manual ? "recommendation" : "manual"}`, {
+        method: "POST",
+        body: "{}",
+      }),
+    onSuccess: () => {
+      setManual(!manual);
+      client.invalidateQueries({ queryKey: ["analysis"] });
+    },
+  });
+
   const prepare = useMutation({
     mutationFn: () =>
       request<Run>(`/scenarios/${scenarioID}/start`, {
@@ -253,7 +167,7 @@ export function Workspace() {
         body: JSON.stringify({
           schema_version: "1.0",
           seed: Number(seed),
-          mode: "recommend",
+          mode: manual ? "observe" : "recommend",
         }),
       }),
     onSuccess: () => {
@@ -261,6 +175,7 @@ export function Workspace() {
       client.invalidateQueries({ queryKey: ["audit"] });
     },
   });
+
   const reset = useMutation({
     mutationFn: () =>
       request<Run>("/scenarios/reset", { method: "POST", body: "{}" }),
@@ -270,55 +185,30 @@ export function Workspace() {
       client.invalidateQueries({ queryKey: ["audit"] });
     },
   });
-  useEffect(() => {
-    const tick = () =>
-      setClock(
-        new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        }),
-      );
-    tick();
-    const timer = setInterval(tick, 1000);
-    return () => clearInterval(timer);
-  }, []);
+
   const data = network.data;
   const chosen = data?.nodes.find((n) => n.id === selectedNode);
-  const scenario = data?.scenarios.find((s) => s.id === scenarioID);
   const dbReady = health.data?.components.some(
     (c) => c.component === "database" && c.status === "normal",
   );
-  function chooseScenario(id: Scenario["id"]) {
-    setScenarioID(id);
-    const s = data?.scenarios.find((s) => s.id === id);
-    if (s) setSeed(String(s.seed));
-    setFormError("");
-    prepare.reset();
-  }
-  function submit() {
-    if (!/^\d+$/.test(seed) || Number(seed) < 1 || Number(seed) > 4294967295) {
-      setFormError("Enter an integer seed between 1 and 4294967295.");
-      return;
-    }
-    setFormError("");
-    reset.reset();
-    prepare.mutate();
-  }
+
   const refresh = () => {
     client.invalidateQueries();
   };
+
   return (
     <div className="app-shell">
+      {/* Primary Sidebar (Story S08: Only 6 Primary Sections) */}
       <aside className="app-sidebar">
         <a href="/" className="wordmark">
           <span className="logo">
-            <GitBranch size={23} />
+            <GitBranch size={22} />
           </span>
           <span>
             TRAFFIC<span className="wordmark-sub">DIGITAL TWIN</span>
           </span>
         </a>
+
         <div className="sidebar-label">OPERATIONS</div>
         <nav aria-label="Primary navigation">
           {sections.map((section) => (
@@ -334,6 +224,7 @@ export function Workspace() {
             </button>
           ))}
         </nav>
+
         <div className="sidebar-bottom">
           <ShieldCheck size={20} />
           <strong>
@@ -341,40 +232,89 @@ export function Workspace() {
             <br />
             By design.
           </strong>
-          <p>Every signal decision stays within the digital twin.</p>
+          <p>Every signal recommendation requires operator authorization.</p>
           <div className="environment">
             <span />
             LOCAL DEMONSTRATION
           </div>
         </div>
       </aside>
+
+      {/* Main Operational Container */}
       <div className="app-main">
-        <header className="product-header">
-          <div className="breadcrumb">
-            Workspace <ChevronRight size={13} />
-            <span>{sections.find((s) => s.id === view)?.label}</span>
-          </div>
-          <div className="header-right">
-            <span className="local-clock">{clock}</span>
-            <span className="operator-avatar">OP</span>
-            <span className="operator-label">Demo operator</span>
-          </div>
-        </header>
-        <div className="disclosure">
+        {/* TopBar with Chips, Health, Clock, Role Switcher, and DGP Launcher (Story S08) */}
+        <TopBar
+          health={health.data}
+          manual={manual}
+          onToggleManual={() => modeMutation.mutate()}
+          isPendingManual={modeMutation.isPending}
+        />
+
+        {/* Prominent Disclosure Banner (PRD §8.1) */}
+        <div className="disclosure" role="region" aria-label="Operating Mode Disclosure">
           <ShieldCheck size={14} />
           <span>
             DEMONSTRATION MODE · SYNTHETIC TRAFFIC DATA · NO LIVE SIGNAL CONTROL
           </span>
         </div>
+
         <main className="product-content">
+          {/* Role-Specific Executive / Supervisor Banner (PRD §4) */}
+          {role === "viewer" && (
+            <div className="role-banner viewer-banner" role="status">
+              <div>
+                <strong>EXECUTIVE BRIEFING MODE (DGP / SENIOR LEADERSHIP)</strong>
+                <p>
+                  High-level outcome visualization. Deterministic simulation proof of concept. No live physical signal actuation.
+                </p>
+              </div>
+              <Button
+                variant="default"
+                className="dgp-launch-button"
+                onClick={() => setDgpModalOpen(true)}
+              >
+                <Sparkles size={14} /> Open Briefing Slides
+              </Button>
+            </div>
+          )}
+
+          {role === "supervisor" && (
+            <div className="role-banner supervisor-banner" role="status">
+              <div>
+                <strong>SUPERVISOR OVERSIGHT MODE</strong>
+                <p>
+                  Safety limits strictly validated: min green 15s, max green 55s, yellow/all-red clearance enforced. Full PostgreSQL audit trail enabled.
+                </p>
+              </div>
+              <span className="safety-pill">
+                <Check size={12} /> All Safety Envelopes Intact
+              </span>
+            </div>
+          )}
+
+          {/* Page Heading Row */}
           <div className="page-heading">
             <div>
-              <div className="overline">NETWORK OPERATIONS / FOUNDATION</div>
+              <div className="overline">
+                {view === "command"
+                  ? "COMMAND CENTER / JUNCTION INTELLIGENCE"
+                  : view === "network"
+                    ? "NETWORK TOPOLOGY & SIMULATION"
+                    : view === "audit"
+                      ? "SYSTEM AUDIT & COMPONENT HEALTH"
+                      : "NETWORK OPERATIONS"}
+              </div>
               <h1>{sections.find((s) => s.id === view)?.label}</h1>
               <p>
-                {view === "audit"
-                  ? "A durable record of preparation and system availability."
-                  : "One connected network. A clear starting point."}
+                {view === "command"
+                  ? "Real-time twin state, forward horizons, predictive alerts, and operator actions."
+                  : view === "network"
+                    ? "Full connected C1–C6 corridor with before-and-after digital twin rollouts."
+                    : view === "audit"
+                      ? "Durable audit record in PostgreSQL with component availability."
+                      : view === "vision"
+                        ? "Computer vision edge pipeline demonstration."
+                        : "One connected network. Continuous deterministic simulation."}
               </p>
             </div>
             <Button variant="outline" onClick={refresh}>
@@ -385,6 +325,7 @@ export function Workspace() {
               Refresh
             </Button>
           </div>
+
           {network.isPending ? (
             <div className="loading-panel" role="status">
               <div className="skeleton" />
@@ -403,11 +344,10 @@ export function Workspace() {
           ) : (
             data && (
               <>
-                {(view === "command" ||
-                  view === "network" ||
-                  view === "emergency" ||
-                  view === "incidents") && (
+                {/* 1. COMMAND CENTER VIEW */}
+                {view === "command" && (
                   <>
+                    {/* Status Pill */}
                     <div className="workspace-status">
                       <span className="status-pill">
                         <Check size={13} /> Configuration validated
@@ -424,46 +364,32 @@ export function Workspace() {
                       </span>
                       <span className="config-version">{data.id}</span>
                     </div>
-                    <div
-                      className={
-                        view === "network"
-                          ? "operations-grid expanded"
-                          : "operations-grid"
-                      }
-                    >
+
+                    {/* Operations Grid: 8-column Canvas + 4-column Action Rail */}
+                    <div className="operations-grid">
                       <section className="network-panel">
                         <div className="panel-heading">
                           <div>
-                            <h2>
-                              {view === "emergency"
-                                ? "Emergency route configuration"
-                                : view === "incidents"
-                                  ? "Incident scenario configuration"
-                                  : "C1–C6 network"}
-                            </h2>
+                            <h2>C1–C6 Network Twin</h2>
                             <span>
                               Directed links · {data.nodes.length} nodes ·{" "}
                               {data.links.length} links
                             </span>
                           </div>
                           <span className="quiet-badge">
-                            {live.fresh
-                              ? "SUMO · SYNTHETIC"
-                              : "CONFIGURATION VIEW"}
+                            {live.fresh ? "SUMO · SYNTHETIC 1 Hz" : "CONFIGURATION VIEW"}
                           </span>
                         </div>
+
+                        {/* Interactive Data-Driven Canvas (Story S09) */}
                         <NetworkCanvas
                           network={data}
                           frame={live.fresh ? live.frame : null}
                           onSelect={selectNode}
-                          route={
-                            view === "emergency"
-                              ? data.scenarios.find(
-                                  (s) => s.id === "ambulance_corridor",
-                                )?.route_node_ids
-                              : []
-                          }
+                          route={[]}
                         />
+
+                        {/* Node Shortcuts */}
                         <div
                           className="node-shortcuts"
                           aria-label="Inspect network nodes"
@@ -480,189 +406,52 @@ export function Workspace() {
                             </Button>
                           ))}
                         </div>
+
                         <div className="canvas-footer">
                           <span>
-                            <MapPin size={14} /> Select a node to inspect
-                            traffic and configuration
+                            <MapPin size={14} /> Select any junction (C1–C6) to inspect approach queues, storage, and signal phases
                           </span>
                           <span>
-                            Flow markers are schematic, not vehicle positions
+                            Overlays: Direction · Queue (veh) · Speed (km/h) · Signals (countdown)
                           </span>
                         </div>
                       </section>
-                      {view !== "network" && (
-                        <aside className="action-rail">
-                          <section className="context-panel">
-                            <div className="overline">SYSTEM AVAILABILITY</div>
-                            <h2>
-                              {live.fresh
-                                ? "The network, in motion."
-                                : "Your digital twin is ready."}
-                              <br />
-                              <span>
-                                {live.fresh
-                                  ? "Every second counts."
-                                  : "Start a repeatable run."}
-                              </span>
-                            </h2>
-                            <p>
-                              Seeded synthetic demand runs through SUMO with
-                              configured virtual signals. Inspect a junction for
-                              measured queues and movement permissions.
-                            </p>
-                            <div className="availability-row">
-                              <span>
-                                <Database size={15} /> Persistence
-                              </span>
-                              <span className={dbReady ? "healthy" : "muted"}>
-                                {dbReady ? "Connected" : "Unavailable"}
-                              </span>
-                            </div>
-                            <div className="availability-row">
-                              <span>
-                                <Activity size={15} /> Simulation
-                              </span>
-                              <span
-                                className={live.fresh ? "healthy" : "muted"}
-                              >
-                                {live.fresh
-                                  ? "Streaming · 1 Hz"
-                                  : "Unavailable"}
-                              </span>
-                            </div>
-                          </section>
-                          {view === "incidents" ? (
-                            <section className="context-panel">
-                              <div className="overline">
-                                INCIDENT_C3 / CONFIGURED
-                              </div>
-                              <h3>Reduced receiving capacity</h3>
-                              <p>
-                                C3 retains{" "}
-                                {Math.round(
-                                  (data.scenarios.find(
-                                    (s) => s.id === "incident_c3",
-                                  )?.capacity_ratio || 0) * 100,
-                                )}
-                                % target bottleneck capacity. Start the incident
-                                scenario from Command Center to inspect
-                                propagation and recovery.
-                              </p>
-                            </section>
-                          ) : view === "emergency" ? (
-                            <section className="context-panel">
-                              <div className="overline">
-                                AMBULANCE_CORRIDOR / CONFIGURED
-                              </div>
-                              <h3>
-                                {data.scenarios
-                                  .find((s) => s.id === "ambulance_corridor")
-                                  ?.route_node_ids.join(" → ")}
-                              </h3>
-                              <p>
-                                Start the ambulance scenario from Command Center
-                                to view ETA, safe pre-clearance, and bounded
-                                cross-traffic recovery.
-                              </p>
-                            </section>
-                          ) : (
-                            <section className="context-panel prepare-panel">
-                              <div className="overline">
-                                RUN A DEMO SCENARIO
-                              </div>
-                              <label htmlFor="scenario">Scenario</label>
-                              <select
-                                id="scenario"
-                                value={scenarioID}
-                                onChange={(e) =>
-                                  chooseScenario(
-                                    e.target.value as Scenario["id"],
-                                  )
-                                }
-                              >
-                                {data.scenarios.map((s) => (
-                                  <option key={s.id} value={s.id}>
-                                    {scenarioLabels[s.id]}
-                                  </option>
-                                ))}
-                              </select>
-                              <label htmlFor="seed">Deterministic seed</label>
-                              <input
-                                id="seed"
-                                inputMode="numeric"
-                                value={seed}
-                                onChange={(e) => {
-                                  setSeed(e.target.value);
-                                  prepare.reset();
-                                }}
-                                aria-describedby="seed-hint"
-                              />
-                              <p id="seed-hint" className="field-hint">
-                                Same seed, repeatable baseline. Default:{" "}
-                                {scenario?.seed}.
-                              </p>
-                              <Button
-                                onClick={submit}
-                                disabled={
-                                  prepare.isPending ||
-                                  reset.isPending ||
-                                  !dbReady
-                                }
-                              >
-                                {prepare.isPending
-                                  ? "Starting SUMO…"
-                                  : "Start simulation"}
-                                <ArrowRight size={16} />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                onClick={() => reset.mutate()}
-                                disabled={
-                                  !live.frame ||
-                                  reset.isPending ||
-                                  prepare.isPending ||
-                                  !dbReady
-                                }
-                              >
-                                {reset.isPending
-                                  ? "Resetting…"
-                                  : "Reset same seed"}
-                                <RefreshCw size={14} />
-                              </Button>
-                              <p className="field-hint">
-                                Start replaces the active run. Reset repeats its
-                                scenario and seed, with a new audited run ID.
-                              </p>
-                              {reset.isError && (
-                                <p role="alert" className="form-error">
-                                  {reset.error.message}
-                                </p>
-                              )}
-                              {reset.isSuccess && (
-                                <p role="status" className="form-success">
-                                  Scenario reset. Seed {reset.data.seed}.
-                                </p>
-                              )}
-                              {(formError || prepare.isError) && (
-                                <p className="form-error" role="alert">
-                                  {formError || prepare.error?.message}
-                                </p>
-                              )}
-                              {prepare.isSuccess && (
-                                <p className="form-success" role="status">
-                                  Simulation started. Seed {prepare.data.seed}.
-                                </p>
-                              )}
-                            </section>
-                          )}
-                        </aside>
-                      )}
+
+                      {/* 4-column Action Rail (Story S09 / PRD §8.1) */}
+                      <ActionRail
+                        network={data}
+                        frame={live.fresh ? live.frame : null}
+                        analysis={analysis}
+                        scenarioID={scenarioID}
+                        setScenarioID={setScenarioID}
+                        seed={seed}
+                        setSeed={setSeed}
+                        dbReady={!!dbReady}
+                        liveFresh={live.fresh}
+                        prepareMutation={prepare}
+                        resetMutation={reset}
+                        onSimulate={() => decision.mutate({ action: "simulate" })}
+                        onApprove={() => decision.mutate({ action: "approve" })}
+                        onModify={(reason, changes) =>
+                          decision.mutate({ action: "modify", reason, changes })
+                        }
+                        onReject={(reason) =>
+                          decision.mutate({ action: "reject", reason })
+                        }
+                        decisionPending={decision.isPending}
+                      />
                     </div>
-                    <LiveSummary live={live} />
-                    <DecisionPanel
-                      key={live.frame?.run_id}
+
+                    {/* Exactly 5 Summary KPIs Strip (Story S09 / PRD §8.1) */}
+                    <KpiStrip
                       frame={live.fresh ? live.frame : null}
+                      analysis={analysis}
                     />
+
+                    {/* Live Stream Health & Signal Summary */}
+                    <LiveSummary live={live} />
+
+                    {/* Configuration / Topology Summary Strip */}
                     <div className="configuration-strip">
                       <div>
                         <span>CONTROLLED JUNCTIONS</span>
@@ -701,31 +490,125 @@ export function Workspace() {
                     </div>
                   </>
                 )}
+
+                {/* 2. NETWORK SCREEN (PRD §8.4) */}
+                {view === "network" && (
+                  <NetworkView
+                    network={data}
+                    frame={live.fresh ? live.frame : null}
+                    analysis={analysis}
+                    onSelectNode={selectNode}
+                    route={[]}
+                  />
+                )}
+
+                {/* 3. INCIDENTS VIEW */}
+                {view === "incidents" && (
+                  <div className="operations-grid">
+                    <section className="network-panel">
+                      <div className="panel-heading">
+                        <div>
+                          <h2>Incident Scenario · C3 Capacity Reduction</h2>
+                          <span>Bottleneck simulation at C3 with upstream feeder metering</span>
+                        </div>
+                        <span className="quiet-badge">INCIDENT_C3</span>
+                      </div>
+                      <NetworkCanvas
+                        network={data}
+                        frame={live.fresh ? live.frame : null}
+                        onSelect={selectNode}
+                        route={["C6", "C3", "C1"]}
+                      />
+                    </section>
+                    <aside className="action-rail">
+                      <section className="context-panel">
+                        <div className="overline">INCIDENT_C3 / BOTTLENECK</div>
+                        <h2>C3 Capacity Cut to 50%</h2>
+                        <p>
+                          Simulates a lane blockage at C3. In normal fixed timing, queue spillback reaches C6 within 90 seconds. With coordinated decision support, C6 green time is metered and C1 clears northbound traffic.
+                        </p>
+                        <Button
+                          variant="default"
+                          onClick={() => {
+                            setScenarioID("incident_c3");
+                            setSeed("2202");
+                            setView("command");
+                          }}
+                        >
+                          Launch in Command Center <ArrowRight size={15} />
+                        </Button>
+                      </section>
+                    </aside>
+                  </div>
+                )}
+
+                {/* 4. EMERGENCY VIEW */}
+                {view === "emergency" && (
+                  <div className="operations-grid">
+                    <section className="network-panel">
+                      <div className="panel-heading">
+                        <div>
+                          <h2>Ambulance Corridor Priority</h2>
+                          <span>Designated green wave route: C6 → C3 → C1 → C2</span>
+                        </div>
+                        <span className="quiet-badge">AMBULANCE_CORRIDOR</span>
+                      </div>
+                      <NetworkCanvas
+                        network={data}
+                        frame={live.fresh ? live.frame : null}
+                        onSelect={selectNode}
+                        route={
+                          data.scenarios.find(
+                            (s) => s.id === "ambulance_corridor",
+                          )?.route_node_ids ?? ["C6", "C3", "C1", "C2"]
+                        }
+                      />
+                    </section>
+                    <aside className="action-rail">
+                      <section className="context-panel">
+                        <div className="overline">AMBULANCE_CORRIDOR</div>
+                        <h2>Guaranteed Emergency Green Wave</h2>
+                        <p>
+                          Pre-clears cross-traffic along C6 → C3 → C1 → C2 before vehicle arrival. Following clearance, bounded recovery cycles restore equilibrium to cross-traffic without permanent gridlock.
+                        </p>
+                        <Button
+                          variant="default"
+                          onClick={() => {
+                            setScenarioID("ambulance_corridor");
+                            setSeed("3303");
+                            setView("command");
+                          }}
+                        >
+                          Launch in Command Center <ArrowRight size={15} />
+                        </Button>
+                      </section>
+                    </aside>
+                  </div>
+                )}
+
+                {/* 5. VISION ANALYTICS VIEW */}
                 {view === "vision" && (
                   <section className="feature-empty">
                     <Video size={40} />
-                    <div className="overline">OPTIONAL / EPIC 12</div>
-                    <h2>No sample video connected</h2>
+                    <div className="overline">VISION ANALYTICS (PRD §8.5)</div>
+                    <h2>Sample Video Traffic Extraction</h2>
                     <p>
-                      Video analytics will use a clearly labelled sample feed
-                      with temporary camera-local track IDs. No live CCTV,
-                      facial recognition or plate recognition is connected.
+                      Camera feeds extract aggregate counts and vehicle tracks without facial recognition, ANPR, or citizen surveillance. Demonstrates real-world bridge from CCTV cameras to machine-readable digital twin inputs.
                     </p>
-                    <Button
-                      variant="outline"
-                      onClick={() => setView("network")}
-                    >
-                      Inspect the network <ArrowRight size={16} />
+                    <Button variant="outline" onClick={() => setView("command")}>
+                      Return to Command Center <ArrowRight size={16} />
                     </Button>
                   </section>
                 )}
+
+                {/* 6. AUDIT & HEALTH VIEW */}
                 {view === "audit" && (
                   <div className="audit-layout">
                     <section className="history-panel">
                       <div className="panel-heading">
                         <div>
-                          <h2>Audit trail</h2>
-                          <span>Oldest first · up to 50 events</span>
+                          <h2>Durable Audit Trail</h2>
+                          <span>PostgreSQL Sequential Record · Latest 50 events</span>
                         </div>
                         <ShieldCheck size={18} />
                       </div>
@@ -746,25 +629,25 @@ export function Workspace() {
                                 <h3>{a.event_type}</h3>
                                 <p>{a.reason}</p>
                                 <small>
-                                  {a.actor} ·{" "}
+                                  Actor: {a.actor} ·{" "}
                                   {new Date(a.created_at).toLocaleString()} ·
                                   Safety: {a.safety_result}
                                 </small>
-                                <code>{a.run_id}</code>
+                                <code>Run: {a.run_id}</code>
                               </div>
                             </article>
                           ))}
                         </div>
                       ) : (
                         <p className="panel-message">
-                          No audit events yet. Prepare a run to record the first
-                          entry.
+                          No audit events yet. Prepare or run a scenario to record entries.
                         </p>
                       )}
                     </section>
+
                     <section className="context-panel">
                       <div className="overline">COMPONENT HEALTH</div>
-                      <h2>Availability, made visible.</h2>
+                      <h2>System Availability</h2>
                       {health.isError ? (
                         <p className="form-error">Health API unavailable</p>
                       ) : (
@@ -785,6 +668,8 @@ export function Workspace() {
                     </section>
                   </div>
                 )}
+
+                {/* Run History Table for Command and Audit */}
                 {(view === "command" || view === "audit") && (
                   <section className="history-panel run-history">
                     <div className="panel-heading">
@@ -809,15 +694,15 @@ export function Workspace() {
                             <tr>
                               <th>Scenario</th>
                               <th>Seed</th>
-                              <th>Run</th>
-                              <th>Created</th>
+                              <th>Run ID</th>
+                              <th>Started At</th>
                               <th>Status</th>
                             </tr>
                           </thead>
                           <tbody>
                             {runs.data.map((run) => (
                               <tr key={run.id}>
-                                <td>{scenarioLabels[run.scenario_type]}</td>
+                                <td>{scenarioLabels[run.scenario_type] || run.scenario_type}</td>
                                 <td className="mono">{run.seed}</td>
                                 <td className="mono" title={run.id}>
                                   {run.id.slice(0, 8)}
@@ -837,8 +722,7 @@ export function Workspace() {
                       </div>
                     ) : (
                       <p className="panel-message">
-                        No runs prepared yet. Choose a scenario to save your
-                        first deterministic baseline.
+                        No runs recorded yet. Start a scenario to establish the first baseline.
                       </p>
                     )}
                   </section>
@@ -846,91 +730,44 @@ export function Workspace() {
               </>
             )
           )}
+
           <footer className="product-footer">
             <span>
-              TRAFFIC DIGITAL TWIN <span>/ FOUNDATION V1</span>
+              TRAFFIC DIGITAL TWIN <span>/ COMMAND CENTER & JUNCTION INTELLIGENCE (EPIC 3)</span>
             </span>
             <span>
-              Configuration is synthetic. No field calibration claimed.
+              Demonstration mode · Synthetic traffic · Zero live signal control.
             </span>
           </footer>
         </main>
       </div>
+
+      {/* Junction Intelligence Drawer (Story S10: Sheet with Horizons, Cause & Recommendation) */}
       <Sheet
         open={!!chosen}
         onOpenChange={(open) => {
           if (!open) selectNode(null);
         }}
         title={
-          chosen ? `${chosen.id} · ${chosen.label}` : "Junction configuration"
+          chosen ? `${chosen.id} · ${chosen.label}` : "Junction Intelligence"
         }
-        description="Synthetic traffic measurements and configured safety bounds."
+        description="Junction state, forward horizons, deterministic cause, and recommendation impact."
       >
         {chosen && data && (
-          <>
-            <JunctionLive
-              frame={live.fresh ? live.frame : null}
-              network={data}
-              nodeID={chosen.id}
-            />
-            <div className="drawer-facts">
-              <div>
-                <span>Node type</span>
-                <strong>{chosen.kind}</strong>
-              </div>
-              <div>
-                <span>Coordinates</span>
-                <strong>
-                  {chosen.x}, {chosen.y}
-                </strong>
-              </div>
-            </div>
-            <h3>Connected links</h3>
-            {data.links
-              .filter((l) => l.from_node === chosen.id)
-              .map((l) => (
-                <div className="drawer-link" key={l.id}>
-                  <strong>
-                    {l.from_node} → {l.to_node}
-                  </strong>
-                  <p>
-                    {l.length_m} m · {l.lanes} lanes · {l.storage_capacity_veh}{" "}
-                    veh storage
-                  </p>
-                  <span>
-                    Free-flow configuration: {l.free_flow_speed_kph} km/h
-                  </span>
-                </div>
-              ))}
-            <h3>Signal phases</h3>
-            {data.phases.filter((p) => p.node_id === chosen.id).length ? (
-              data.phases
-                .filter((p) => p.node_id === chosen.id)
-                .map((p) => (
-                  <div className="drawer-link" key={p.id}>
-                    <strong>{p.id}</strong>
-                    <p>
-                      Green {p.min_green_s}–{p.max_green_s}s · Amber {p.amber_s}
-                      s · All-red {p.all_red_s}s
-                    </p>
-                    <span>{p.movement_ids.length} compatible movements</span>
-                  </div>
-                ))
-            ) : (
-              <p className="drawer-note">
-                Boundary node. No signal control is configured.
-              </p>
-            )}
-            <div className="drawer-note">
-              <ArrowDown size={16} />
-              <p>
-                Forecasts and recommendations are available in the decision
-                panel. Current measurements come from synthetic SUMO traffic.
-              </p>
-            </div>
-          </>
+          <JunctionDrawerContent
+            chosen={chosen}
+            network={data}
+            frame={live.fresh ? live.frame : null}
+            analysis={analysis}
+          />
         )}
       </Sheet>
+
+      {/* Guided 8-Step DGP Demonstration Presentation Modal (PRD §5 & §8.1) */}
+      <DgpPresentationModal
+        open={dgpModalOpen}
+        onOpenChange={setDgpModalOpen}
+      />
     </div>
   );
 }

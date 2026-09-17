@@ -28,6 +28,18 @@
     "S07": {
       "status": "completed",
       "evidence": "docs/epic2-status.md"
+    },
+    "S08": {
+      "status": "completed",
+      "evidence": "docs/epic3-status.md"
+    },
+    "S09": {
+      "status": "completed",
+      "evidence": "docs/epic3-status.md"
+    },
+    "S10": {
+      "status": "completed",
+      "evidence": "docs/epic3-status.md"
     }
   }
 }
