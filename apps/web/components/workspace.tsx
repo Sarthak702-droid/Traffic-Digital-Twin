@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
+  AlertTriangle,
   ArrowRight,
   Check,
   ChevronRight,
@@ -73,17 +74,16 @@ const scenarioLabels: Record<Scenario["id"], string> = {
 export function Workspace() {
   const live = useLive();
   const session = useSession();
-  const canWrite = session.isSuccess && !session.isError && session.data.role !== "viewer";
   const [dirty, setDirty] = useState(false);
   const [online,setOnline]=useState(true);
   const [auditAfter,setAuditAfter]=useState(0);
   const [auditPages,setAuditPages]=useState<number[]>([]);
   const [view, setViewState] = useState<View>("command");
-  const setView=(next:View)=>{if(dirty&&!window.confirm("Discard unsent decision draft and change section?"))return;setDirty(false);setViewState(next);const url=new URL(location.href);url.searchParams.set("view",next);history.pushState(null,"",url)};
-  useEffect(()=>{const read=()=>{const next=new URL(location.href).searchParams.get("view");if(sections.some(s=>s.id===next))setViewState(next as View)};read();const back=()=>{if(!dirty||window.confirm("Leave the unsent draft?")){setDirty(false);read()}};const connectivity=()=>setOnline(navigator.onLine);connectivity();window.addEventListener("popstate",back);window.addEventListener("online",connectivity);window.addEventListener("offline",connectivity);const leave=(e:BeforeUnloadEvent)=>{if(dirty){e.preventDefault();e.returnValue=""}};window.addEventListener("beforeunload",leave);return()=>{window.removeEventListener("popstate",back);window.removeEventListener("online",connectivity);window.removeEventListener("offline",connectivity);window.removeEventListener("beforeunload",leave)}},[dirty]);
+  const acceptedURL = useRef("");
+  const setView=(next:View)=>{if(dirty&&!window.confirm("Discard unsent decision draft and change section?"))return;setDirty(false);setViewState(next);const url=new URL(location.href);url.searchParams.set("view",next);history.pushState(null,"",url);acceptedURL.current=url.href};
+  useEffect(()=>{const read=()=>{const next=new URL(location.href).searchParams.get("view");if(sections.some(s=>s.id===next))setViewState(next as View);acceptedURL.current=location.href};read();const back=()=>{if(!dirty||window.confirm("Leave the unsent draft?")){setDirty(false);read()}else if(acceptedURL.current){history.pushState(null,"",acceptedURL.current)}};const connectivity=()=>setOnline(navigator.onLine);connectivity();window.addEventListener("popstate",back);window.addEventListener("online",connectivity);window.addEventListener("offline",connectivity);const leave=(e:BeforeUnloadEvent)=>{if(dirty){e.preventDefault();e.returnValue=""}};window.addEventListener("beforeunload",leave);return()=>{window.removeEventListener("popstate",back);window.removeEventListener("online",connectivity);window.removeEventListener("offline",connectivity);window.removeEventListener("beforeunload",leave)}},[dirty]);
   const [scenarioID, setScenarioID] = useState<Scenario["id"]>("peak_surge");
   const [seed, setSeed] = useState("1101");
-
 
   const {
     selectedNode,
@@ -93,6 +93,9 @@ export function Workspace() {
     setDgpModalOpen,
     selectedHorizon,
   } = useWorkspace();
+
+  const activeRole = session.isSuccess && !session.isError && session.data?.role ? session.data.role : role;
+  const canWrite = activeRole !== "viewer";
 
   const client = useQueryClient();
   const network = useQuery({ queryKey: ["network"], queryFn: getNetwork, enabled: session.isSuccess && !session.isError });
@@ -127,12 +130,82 @@ export function Workspace() {
       ? analysisQuery.data
       : null;
 
+  // Retain the last identified recommendation during temporary auth/network loss.
+  // It remains disabled because decisionReady is based only on fresh analysis.
+  const draftAnalysis = useRef<Analysis | null>(null);
+  if (analysis?.recommendation) draftAnalysis.current = analysis;
+  if (live.frame && draftAnalysis.current?.run_id !== live.frame.run_id) draftAnalysis.current = null;
+  const decisionAnalysis = analysis?.recommendation ? analysis : draftAnalysis.current;
+
   const [simulationComparison, setSimulationComparison] = useState<ComparisonResult | null>(null);
   const modeQuery=useQuery({queryKey:["mode"],queryFn:()=>request<{mode:"recommend"|"observe"|"manual";locks:string[]}>("/mode"),refetchInterval:3000,enabled:session.isSuccess});
   const systemMode=modeQuery.data?.mode ?? "observe";
   const manual=systemMode==="manual";
-  useEffect(()=>{setSimulationComparison(null);setDirty(false)},[live.frame?.run_id,analysis?.recommendation?.id]);
-  useEffect(()=>{const refreshAudit=()=>client.invalidateQueries({queryKey:["audit"]});window.addEventListener("audit-updated",refreshAudit);return()=>window.removeEventListener("audit-updated",refreshAudit)},[client]);
+  const unresolvedQuery = useQuery({
+    queryKey: ["unresolved-decisions"],
+    queryFn: () =>
+      request<{
+        unresolved: Array<{
+          command_id: string;
+          recommendation_id: string;
+          actor: string;
+          created_at: string;
+          payload: any;
+        }>;
+      }>("/decisions/unresolved"),
+    refetchInterval: 3000,
+    enabled: session.isSuccess,
+  });
+
+  const resolveDecisionMutation = useMutation({
+    mutationFn: ({
+      commandId,
+      recommendationId,
+      resolution,
+      reason,
+    }: {
+      commandId: string;
+      recommendationId: string;
+      resolution: string;
+      reason?: string;
+    }) =>
+      request("/decisions/resolve", {
+        method: "POST",
+        body: JSON.stringify({
+          command_id: commandId,
+          recommendation_id: recommendationId,
+          resolution,
+          reason,
+        }),
+      }),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["unresolved-decisions"] });
+      client.invalidateQueries({ queryKey: ["analysis"] });
+      client.invalidateQueries({ queryKey: ["audit"] });
+      try {
+        localStorage.setItem("twin-action-sync", Date.now().toString());
+      } catch {}
+    },
+  });
+
+  useEffect(() => {
+    const refreshAll = () => {
+      client.invalidateQueries({ queryKey: ["audit"] });
+      client.invalidateQueries({ queryKey: ["mode"] });
+      client.invalidateQueries({ queryKey: ["locks"] });
+      client.invalidateQueries({ queryKey: ["analysis"] });
+      client.invalidateQueries({ queryKey: ["unresolved-decisions"] });
+    };
+    window.addEventListener("audit-updated", refreshAll);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "twin-action-sync") refreshAll();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("audit-updated", refreshAll);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [client]);
 
   // Decision mutation (Story S15: Simulate, Approve, Modify, Reject)
   const decision = useMutation({
@@ -237,7 +310,7 @@ export function Workspace() {
 
   const replay=useMutation({mutationFn:()=>request(`/replay/${scenarioID}`,{method:"POST",body:"{}"}),onSuccess:()=>{setSimulationComparison(null);client.invalidateQueries()}});
   const lock=useMutation({mutationFn:({target,locked}:{target:string;locked:boolean})=>request(`/locks/${target}`,{method:locked?"POST":"DELETE",body:"{}"}),onSuccess:()=>client.invalidateQueries()});
-  const anyCommandPending=decision.isPending||modeMutation.isPending||changeModeMutation.isPending||prepare.isPending||reset.isPending||replay.isPending||lock.isPending;
+  const anyCommandPending=decision.isPending||modeMutation.isPending||changeModeMutation.isPending||prepare.isPending||reset.isPending||replay.isPending||lock.isPending||resolveDecisionMutation.isPending;
   const decisionReady=!!analysis && live.fresh && !live.frame?.replay && !!dbReady && systemMode==="recommend" && canWrite && !anyCommandPending;
   const refresh = () => {
     client.invalidateQueries();
@@ -475,14 +548,51 @@ export function Workspace() {
                         </div>
                       </section>
 
+                      {/* Unresolved Decision Intent Banner (Story S15 / PRD §8.3) */}
+                      {unresolvedQuery.data?.unresolved && unresolvedQuery.data.unresolved.length > 0 && (
+                        <aside
+                          className="unresolved-intent-banner"
+                          role="alert"
+                          aria-label="Unresolved decision intent pending reconciliation"
+                        >
+                          <div className="unresolved-banner-content">
+                            <AlertTriangle className="unresolved-alert-icon" size={18} />
+                            <div className="unresolved-banner-text">
+                              <strong>Unsettled Decision Intent Pending Reconciliation</strong>
+                              <p>
+                                Command <code>{unresolvedQuery.data.unresolved[0].command_id.slice(0, 8)}...</code> on recommendation <code>{unresolvedQuery.data.unresolved[0].recommendation_id}</code> by {unresolvedQuery.data.unresolved[0].actor} is unconfirmed. Subsequent plans are paused under Story S15 safety governance.
+                              </p>
+                            </div>
+                            {(activeRole === "supervisor" || activeRole === "operator") && (
+                              <Button
+                                variant="default"
+                                disabled={resolveDecisionMutation.isPending}
+                                onClick={() =>
+                                  resolveDecisionMutation.mutate({
+                                    commandId: unresolvedQuery.data!.unresolved[0].command_id,
+                                    recommendationId: unresolvedQuery.data!.unresolved[0].recommendation_id,
+                                    resolution: "fail",
+                                    reason: "Supervisor resolved unconfirmed decision intent",
+                                  })
+                                }
+                                aria-label="Reconcile and clear pending decision intent"
+                              >
+                                {resolveDecisionMutation.isPending ? "Reconciling..." : "Resolve / Clear Intent"}
+                              </Button>
+                            )}
+                          </div>
+                        </aside>
+                      )}
+
                       {/* 4-column Action Rail (Story S09 / PRD §8.1) */}
                       <ActionRail
-                        key={`${live.frame?.run_id || "none"}:${analysis?.recommendation?.id || "none"}`}
+                        key={`${session.data?.actor}:${live.frame?.run_id || "none"}`}
+                        draftOwner={session.data?.actor}
                         canAct={decisionReady}
                         onDirty={setDirty}
                         network={data}
                         frame={live.fresh ? live.frame : null}
-                        analysis={analysis}
+                        analysis={decisionAnalysis}
                         scenarioID={scenarioID}
                         setScenarioID={setScenarioID}
                         seed={seed}
@@ -850,6 +960,9 @@ export function Workspace() {
             network={data}
             frame={live.fresh ? live.frame : null}
             analysis={analysis}
+            activeLocks={modeQuery.data?.locks || []}
+            onToggleLock={(target, locked) => lock.mutate({ target, locked })}
+            canLock={!!dbReady && live.fresh && !live.frame?.replay && !anyCommandPending && canWrite}
           />
         )}
       </Sheet>

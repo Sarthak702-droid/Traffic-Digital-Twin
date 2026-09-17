@@ -366,3 +366,55 @@ func TestModesAndLockEndpoints(t *testing.T) {
 		t.Fatalf("expected lock to be removed, got %s", w.Body.String())
 	}
 }
+
+func TestViewerRoleMutationForbidden(t *testing.T) {
+	h := app(t).Handler()
+
+	mutations := []struct {
+		method string
+		path   string
+		body   string
+	}{
+		{"POST", "/api/v1/mode/manual", ""},
+		{"POST", "/api/v1/locks/C1-FROM-C2", ""},
+		{"DELETE", "/api/v1/locks/C1-FROM-C2", ""},
+		{"POST", "/api/v1/recommendations/rec-1/approve", "{}"},
+		{"POST", "/api/v1/recommendations/rec-1/reject", `{"reason":"Other: test"}`},
+		{"POST", "/api/v1/decisions/resolve", `{"command_id":"cmd-1"}`},
+	}
+
+	for _, m := range mutations {
+		for _, role := range []string{"viewer", "observer"} {
+			req := httptest.NewRequest(m.method, m.path, strings.NewReader(m.body))
+			req.Header.Set("X-Role", role)
+			req.Header.Set("X-Actor", "test-user")
+			w := httptest.NewRecorder()
+			h.ServeHTTP(w, req)
+			if w.Code != http.StatusForbidden {
+				t.Errorf("expected 403 Forbidden for %s on %s %s, got %d", role, m.method, m.path, w.Code)
+			}
+		}
+	}
+}
+
+func TestResolveDecisionValidation(t *testing.T) {
+	s := app(t)
+	h := s.Handler()
+
+	// Without store (DB nil), returns 503
+	req := httptest.NewRequest("POST", "/api/v1/decisions/resolve", strings.NewReader(`{"command_id":"cmd-1","resolution":"fail"}`))
+	req.Header.Set("X-Role", "supervisor")
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusServiceUnavailable {
+		t.Errorf("expected 503 when db is unavailable, got %d", w.Code)
+	}
+
+	// Unresolved query without store returns 503
+	req = httptest.NewRequest("GET", "/api/v1/decisions/unresolved", nil)
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusServiceUnavailable {
+		t.Errorf("expected 503 when db is unavailable, got %d", w.Code)
+	}
+}

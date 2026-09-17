@@ -30,7 +30,13 @@ try:
                     urllib.request.urlopen(req,timeout=1).close();break
                 except OSError:time.sleep(.2)
             else:raise RuntimeError('Writer did not become ready')
-        if command[-1]=='services.gateway.server':time.sleep(.5)
+        if command[-1]=='services.gateway.server':
+            for attempt in range(100):
+                try:
+                    req=urllib.request.Request(env['GATEWAY_INTERNAL_ORIGIN']+'/internal/write',data=b'{"operation":"ping","actor":"startup","payload":{}}',headers={'X-Service-Token':env['DOMAIN_WRITE_TOKEN'],'Content-Type':'application/json'})
+                    urllib.request.urlopen(req,timeout=1).close();break
+                except OSError:time.sleep(.2)
+            else:raise RuntimeError('Gateway did not become ready')
     print('Demo: http://127.0.0.1:3100 — Ctrl+C stops the stack.',flush=True)
     while all(p.poll() is None for p in children):time.sleep(.5)
     failed=next(p for p in children if p.poll() is not None)

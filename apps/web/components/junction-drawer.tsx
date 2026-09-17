@@ -10,10 +10,13 @@ import {
   Clock,
   GitBranch,
   Layers,
+  Lock,
   ShieldCheck,
   TrendingDown,
   TrendingUp,
+  Unlock,
 } from "lucide-react";
+import { Button } from "./ui/button";
 import type { Network, Node } from "../../../packages/contracts/typescript/network";
 import type {
   Analysis,
@@ -34,11 +37,17 @@ export function JunctionDrawerContent({
   network,
   frame,
   analysis,
+  activeLocks = [],
+  onToggleLock,
+  canLock = true,
 }: {
   chosen: Node;
   network: Network;
   frame: TrafficState | null;
   analysis: Analysis | null;
+  activeLocks?: string[];
+  onToggleLock?: (target: string, locked: boolean) => void;
+  canLock?: boolean;
 }) {
   const [selectedHorizon, setSelectedHorizon] = useState<number>(0);
 
@@ -311,6 +320,94 @@ export function JunctionDrawerContent({
           <p className="drawer-note-text">
             No active timing changes recommended for {chosen.id}. No safety or traffic-flow conclusion is inferred from missing recommendations.
           </p>
+        )}
+      </section>
+
+      {/* TIMING LOCKS & MOVEMENT PROTECTION (Story S13 / S14) */}
+      <section className="drawer-locks-section" aria-label="Timing locks and safety controls">
+        <div className="section-header-row">
+          <div className="overline">SAFETY ENVELOPE & TIMING LOCKS</div>
+          <span className="horizon-badge">Operator Authority</span>
+        </div>
+        <h3>Phase & Movement Locks</h3>
+        <p className="drawer-narrative-text">
+          Operator locks prevent automated recommendations from altering signal timing on protected phases or movements. Under Story S13, any candidate plan affecting a locked target is immediately refused.
+        </p>
+
+        {phases.length > 0 && (
+          <div className="locks-subsection">
+            <h4 className="locks-subheading">Controlled Phases</h4>
+            <div className="locks-list">
+              {phases.map((p) => {
+                const isLocked = activeLocks.includes(p.id);
+                return (
+                  <div key={p.id} className={`lock-item-row ${isLocked ? "locked" : ""}`}>
+                    <div className="lock-item-info">
+                      <div className="lock-item-header">
+                        <strong>Phase {p.id}</strong>
+                        <span className={`lock-status-chip ${isLocked ? "active-lock" : "unlocked"}`}>
+                          {isLocked ? <Lock size={12} /> : <Unlock size={12} />}
+                          {isLocked ? "LOCKED" : "UNLOCKED"}
+                        </span>
+                      </div>
+                      <span className="lock-item-details">
+                        Min: {p.min_green_s}s · Max: {p.max_green_s}s · Amber: {p.amber_s}s · All-Red: {p.all_red_s}s
+                      </span>
+                    </div>
+                    {onToggleLock && (
+                      <Button
+                        variant={isLocked ? "default" : "outline"}
+                        disabled={!canLock}
+                        onClick={() => onToggleLock(p.id, !isLocked)}
+                        aria-label={`${isLocked ? "Unlock" : "Lock"} phase ${p.id}`}
+                      >
+                        {isLocked ? <Unlock size={13} /> : <Lock size={13} />}
+                        <span>{isLocked ? "Unlock" : "Lock"}</span>
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {movements && movements.length > 0 && (
+          <div className="locks-subsection">
+            <h4 className="locks-subheading">Approaching Movements</h4>
+            <div className="locks-list">
+              {movements.map((m) => {
+                const isLocked = activeLocks.includes(m.movement_id);
+                return (
+                  <div key={m.movement_id} className={`lock-item-row ${isLocked ? "locked" : ""}`}>
+                    <div className="lock-item-info">
+                      <div className="lock-item-header">
+                        <strong>Movement {m.movement_id}</strong>
+                        <span className={`lock-status-chip ${isLocked ? "active-lock" : "unlocked"}`}>
+                          {isLocked ? <Lock size={12} /> : <Unlock size={12} />}
+                          {isLocked ? "LOCKED" : "UNLOCKED"}
+                        </span>
+                      </div>
+                      <span className="lock-item-details">
+                        Queue: {m.queue_veh} veh · Storage: {Math.round(m.occupancy_ratio * 100)}%
+                      </span>
+                    </div>
+                    {onToggleLock && (
+                      <Button
+                        variant={isLocked ? "default" : "outline"}
+                        disabled={!canLock}
+                        onClick={() => onToggleLock(m.movement_id, !isLocked)}
+                        aria-label={`${isLocked ? "Unlock" : "Lock"} movement ${m.movement_id}`}
+                      >
+                        {isLocked ? <Unlock size={13} /> : <Lock size={13} />}
+                        <span>{isLocked ? "Unlock" : "Lock"}</span>
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
       </section>
 

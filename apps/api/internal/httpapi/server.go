@@ -24,6 +24,7 @@ import (
 )
 
 type Server struct {
+	ComputeToken       string
 	ServiceToken       string
 	RequireOwner       bool
 	ownerReady         atomic.Bool
@@ -178,6 +179,8 @@ func (s *Server) Handler() http.Handler {
 	r.Post("/api/v1/recommendations/{id}/{action}", s.decision)
 	r.Post("/api/v1/scenarios/{type}/start", s.startScenario)
 	r.Post("/api/v1/scenarios/reset", s.resetScenario)
+	r.Get("/api/v1/decisions/unresolved", s.getUnresolvedDecisions)
+	r.Post("/api/v1/decisions/resolve", s.resolveDecision)
 	r.Get("/api/v1/mode", s.getMode)
 	r.Post("/api/v1/mode/{mode}", s.setMode)
 	r.Get("/api/v1/locks", s.listLocks)

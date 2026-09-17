@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"io"
@@ -15,6 +14,7 @@ import (
 	"strings"
 	"time"
 	"traffic.local/twin/apps/api/internal/config"
+	"traffic.local/twin/apps/api/internal/contracts"
 	"traffic.local/twin/apps/api/internal/store"
 	pb "traffic.local/twin/packages/contracts/gen/go"
 )
@@ -24,7 +24,7 @@ func jsonProto(v proto.Message) []byte {
 	return b
 }
 func (s *Server) ConnectIntelligence(ctx context.Context, address string) error {
-	conn, e := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, e := grpc.NewClient(address, s.computeOptions()...)
 	if e != nil {
 		return e
 	}
@@ -273,7 +273,7 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 		problem(w, 404, "Unknown decision")
 		return
 	}
-	if (action == "modify" || action == "reject") && strings.TrimSpace(body.Reason) == "" {
+	if (action == "modify" || action == "reject") && !validReason(body.Reason) {
 		problem(w, 400, "A reason is required")
 		return
 	}
@@ -288,11 +288,27 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 	if s.state != nil {
 		state = proto.Clone(s.state).(*pb.TrafficState)
 	}
-	blocked := s.manual || s.replaying || s.analysisFault != "" || time.Since(s.sim.received) > 2500*time.Millisecond || s.sim.fault != ""
+	blocked := s.sim.command == nil || s.sim.command.Mode != "recommend" || s.manual || s.replaying || s.analysisFault != "" || time.Since(s.sim.received) > 2500*time.Millisecond || s.sim.fault != ""
 	recTime := s.recommendationTime
 	s.mu.RUnlock()
 	if blocked || rec == nil || state == nil || rec.Id != chi.URLParam(r, "id") || rec.RunId != state.RunId || rec.Status != "pending" || state.SimulationTimeS-recTime > 30 {
 		problem(w, 409, "Recommendation is stale, unavailable, locked or already decided")
+		return
+	}
+	var unresolved bool
+	var pendingCmdID string
+	var pendingPayloadBytes []byte
+	err := s.Store.Pool.QueryRow(r.Context(), "SELECT command_id, payload FROM decision_intents WHERE NOT settled AND payload->'recommendation'->>'run_id'=$1 LIMIT 1", state.RunId).Scan(&pendingCmdID, &pendingPayloadBytes)
+	if err == nil {
+		unresolved = true
+	}
+	if unresolved {
+		currentCmdID := commandID(r.Context(), rec.Id)
+		if currentCmdID != "" && currentCmdID != pendingCmdID {
+			problem(w, 409, "Payload conflict: a prior decision is pending reconciliation; inspect or resolve the pending decision first")
+			return
+		}
+		problem(w, 409, "A prior decision is being reconciled; inspect its command outcome before another decision")
 		return
 	}
 	changes := rec.Changes
@@ -303,7 +319,7 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if action != "reject" {
-		if e := validateChanges(s.Network, state, changes, s.getLocks()); e != nil {
+		if e := validateChanges(s.Network, state, changes, s.refreshLocks(r.Context())); e != nil {
 			if err := s.auditDecision(r.Context(), rec, state, action, body.Reason, "rejected: "+e.Error(), changes); err != nil {
 				problem(w, 503, "Unsafe plan refused; audit write not confirmed")
 				return
@@ -341,15 +357,33 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
+		latest, err := s.sim.client.GetState(ctx, &pb.RunRequest{RunId: state.RunId})
+		if err != nil {
+			problem(w, 503, "Fresh simulator validation unavailable; nothing applied")
+			return
+		}
+		if err = contracts.ValidateState(latest); err != nil {
+			problem(w, 503, "Invalid simulator state; nothing applied")
+			return
+		}
+		if err = validateChanges(s.Network, latest, changes, s.refreshLocks(ctx)); err != nil {
+			if auditErr := s.auditDecision(ctx, rec, latest, action, body.Reason, "rejected: "+err.Error(), changes); auditErr != nil {
+				problem(w, 503, "Plan refused; audit unavailable")
+				return
+			}
+			problem(w, 409, err.Error())
+			return
+		}
+		state = latest
 		// Durable intent precedes virtual actuation; ambiguous RPC failure is never reported as success.
 		if e := s.auditDecision(ctx, rec, state, action, body.Reason, "validated_pending_application", changes); e != nil {
 			problem(w, 503, "Decision could not be persisted; nothing applied")
 			return
 		}
-		result, e := s.sim.client.ApplyPlan(ctx, &pb.PlanCommand{RunId: state.RunId, Changes: changes, CommandId: rec.Id})
+		result, e := s.sim.client.ApplyPlan(ctx, &pb.PlanCommand{RunId: state.RunId, Changes: changes, CommandId: commandID(r.Context(), rec.Id)})
 		if e != nil || !result.Valid {
 			auditCtx, auditCancel := context.WithTimeout(context.Background(), time.Second)
-			auditCtx = store.WithActor(auditCtx, store.Actor(r.Context()))
+			auditCtx = store.WithCommand(store.WithActor(auditCtx, store.Actor(r.Context())), store.CommandID(r.Context()))
 			auditErr := s.auditDecision(auditCtx, rec, state, action, body.Reason, "application_failed_or_unconfirmed", changes)
 			auditCancel()
 			if auditErr != nil {
@@ -378,7 +412,7 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 func (s *Server) auditDecision(ctx context.Context, rec *pb.Recommendation, state *pb.TrafficState, action, reason, result string, changes []*pb.TimingChange) error {
 	before, _ := json.Marshal(state.ActivePlan)
 	after, _ := json.Marshal(changes)
-	return s.Store.Write(ctx, "decision", store.DecisionWrite{Recommendation: jsonProto(rec), Before: before, After: after, Action: action, Reason: reason, Result: result}, nil)
+	return s.Store.Write(ctx, "decision", store.DecisionWrite{CommandID: store.CommandID(ctx), Recommendation: jsonProto(rec), Before: before, After: after, Action: action, Reason: reason, Result: result}, nil)
 }
 
 func (s *Server) getLocks() map[string]bool {
@@ -393,11 +427,31 @@ func (s *Server) getLocks() map[string]bool {
 	return locksCopy
 }
 
+func (s *Server) refreshLocks(ctx context.Context) map[string]bool {
+	if s.Store != nil {
+		c, cancel := context.WithTimeout(ctx, time.Second)
+		defer cancel()
+		rows, err := s.Store.Pool.Query(c, "SELECT target FROM control_locks")
+		if err == nil {
+			s.mu.Lock()
+			s.locks = map[string]bool{}
+			for rows.Next() {
+				var target string
+				if rows.Scan(&target) == nil {
+					s.locks[target] = true
+				}
+			}
+			rows.Close()
+			s.mu.Unlock()
+		}
+	}
+	return s.getLocks()
+}
+
 func (s *Server) listLocks(w http.ResponseWriter, r *http.Request) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	locks := s.refreshLocks(r.Context())
 	list := []string{}
-	for k, v := range s.locks {
+	for k, v := range locks {
 		if v {
 			list = append(list, k)
 		}
@@ -459,24 +513,95 @@ func (s *Server) changeLock(w http.ResponseWriter, r *http.Request, locked bool)
 }
 
 func (s *Server) getMode(w http.ResponseWriter, r *http.Request) {
+	locksMap := s.refreshLocks(r.Context())
 	s.mu.RLock()
-	defer s.mu.RUnlock()
 	mode := "recommend"
 	if s.manual {
 		mode = "manual"
 	} else if s.sim != nil && s.sim.command != nil && s.sim.command.Mode == "observe" {
 		mode = "observe"
 	}
+	manual := s.manual
+	s.mu.RUnlock()
+
 	locks := []string{}
-	for k, v := range s.locks {
+	for k, v := range locksMap {
 		if v {
 			locks = append(locks, k)
 		}
 	}
 	send(w, 200, map[string]any{
 		"mode":   mode,
-		"manual": s.manual,
+		"manual": manual,
 		"locks":  locks,
+	})
+}
+
+func (s *Server) getUnresolvedDecisions(w http.ResponseWriter, r *http.Request) {
+	if !s.db(w) {
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+	rows, err := s.Store.Pool.Query(ctx, "SELECT command_id, recommendation_id, actor, payload, created_at FROM decision_intents WHERE NOT settled ORDER BY created_at DESC LIMIT 20")
+	if err != nil {
+		problem(w, 503, "Failed to query unresolved decisions")
+		return
+	}
+	defer rows.Close()
+	type item struct {
+		CommandID        string          `json:"command_id"`
+		RecommendationID string          `json:"recommendation_id"`
+		Actor            string          `json:"actor"`
+		CreatedAt        string          `json:"created_at"`
+		Payload          json.RawMessage `json:"payload"`
+	}
+	list := []item{}
+	for rows.Next() {
+		var it item
+		var t time.Time
+		if rows.Scan(&it.CommandID, &it.RecommendationID, &it.Actor, &it.Payload, &t) == nil {
+			it.CreatedAt = t.UTC().Format(time.RFC3339Nano)
+			list = append(list, it)
+		}
+	}
+	send(w, 200, map[string]any{"unresolved": list})
+}
+
+func (s *Server) resolveDecision(w http.ResponseWriter, r *http.Request) {
+	if !s.db(w) {
+		return
+	}
+	role := store.Role(r.Context())
+	if role != "supervisor" && role != "operator" {
+		problem(w, 403, "Only supervisor or operator can resolve decision intents")
+		return
+	}
+	var req struct {
+		CommandID        string `json:"command_id"`
+		RecommendationID string `json:"recommendation_id"`
+		Resolution       string `json:"resolution"`
+		Reason           string `json:"reason"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.CommandID == "" {
+		problem(w, 400, "Valid command_id and resolution required")
+		return
+	}
+	if req.Reason == "" {
+		req.Reason = "Supervisor manual reconciliation"
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+	err := s.Store.Write(ctx, "decision.resolve", req, nil)
+	if err != nil {
+		problem(w, 500, "Failed to resolve decision intent: "+err.Error())
+		return
+	}
+	send(w, 200, map[string]any{
+		"settled":           true,
+		"command_id":        req.CommandID,
+		"recommendation_id": req.RecommendationID,
+		"resolution":        req.Resolution,
 	})
 }
 
@@ -519,4 +644,20 @@ func (s *Server) setMode(w http.ResponseWriter, r *http.Request) {
 		s.analysis.Comparison = nil
 	}
 	send(w, 200, map[string]string{"mode": canonicalMode})
+}
+
+func commandID(ctx context.Context, fallback string) string {
+	if id := store.CommandID(ctx); id != "" {
+		return id
+	}
+	return fallback
+}
+func validReason(reason string) bool {
+	category := strings.TrimSpace(strings.SplitN(reason, ":", 2)[0])
+	for _, allowed := range []string{"Field observation", "Accident/obstruction", "Pedestrian crowd", "Procession/festival", "VIP movement", "Emergency vehicle", "Camera/sensor issue", "Signal malfunction", "Other"} {
+		if category == allowed {
+			return len(reason) <= 2000
+		}
+	}
+	return false
 }

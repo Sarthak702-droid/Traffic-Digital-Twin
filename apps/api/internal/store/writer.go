@@ -7,10 +7,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"google.golang.org/protobuf/encoding/protojson"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 	"traffic.local/twin/apps/api/internal/config"
 	pb "traffic.local/twin/packages/contracts/gen/go"
@@ -28,7 +30,26 @@ func Actor(ctx context.Context) string {
 	return "demo-operator"
 }
 
+func WithCommand(ctx context.Context, id string) context.Context {
+	return context.WithValue(ctx, contextKey("command"), id)
+}
+func CommandID(ctx context.Context) string {
+	id, _ := ctx.Value(contextKey("command")).(string)
+	return id
+}
+
+func WithRole(ctx context.Context, role string) context.Context {
+	return context.WithValue(ctx, contextKey("role"), role)
+}
+func Role(ctx context.Context) string {
+	if s, ok := ctx.Value(contextKey("role")).(string); ok && s != "" {
+		return s
+	}
+	return "operator"
+}
+
 type WriteEnvelope struct {
+	CommandID string          `json:"command_id,omitempty"`
 	Operation string          `json:"operation"`
 	Actor     string          `json:"actor"`
 	Payload   json.RawMessage `json:"payload"`
@@ -50,7 +71,7 @@ func (s *Store) Write(ctx context.Context, op string, payload any, out any) erro
 		}
 		return nil
 	}
-	data, _ := json.Marshal(WriteEnvelope{op, Actor(ctx), b})
+	data, _ := json.Marshal(WriteEnvelope{Operation: op, Actor: Actor(ctx), Payload: b, CommandID: CommandID(ctx)})
 	req, err := http.NewRequestWithContext(ctx, "POST", s.Gateway+"/internal/write", bytes.NewReader(data))
 	if err != nil {
 		return err
@@ -94,7 +115,7 @@ func (s *Store) WriterHandler(token string) http.Handler {
 			http.Error(w, `{"message":"Invalid typed write"}`, 400)
 			return
 		}
-		ctx, cancel := context.WithTimeout(WithActor(r.Context(), e.Actor), 4*time.Second)
+		ctx, cancel := context.WithTimeout(WithCommand(WithActor(r.Context(), e.Actor), e.CommandID), 4*time.Second)
 		defer cancel()
 		out, err := s.execute(ctx, e.Operation, e.Payload)
 		if err != nil {
@@ -164,6 +185,12 @@ func (s *Store) execute(ctx context.Context, op string, b []byte) (any, error) {
 			return nil, e
 		}
 		return nil, s.SaveDecision(ctx, v)
+	case "decision.resolve":
+		var v DecisionResolveWrite
+		if e := decode(b, &v); e != nil {
+			return nil, e
+		}
+		return nil, s.ResolveDecision(ctx, v)
 	case "lifecycle":
 		return nil, s.SaveLifecycle(ctx, b)
 	case "mode", "lock":
@@ -189,6 +216,7 @@ func (s *Store) execute(ctx context.Context, op string, b []byte) (any, error) {
 }
 
 type DecisionWrite struct {
+	CommandID      string          `json:"command_id,omitempty"`
 	Recommendation json.RawMessage `json:"recommendation"`
 	Before         json.RawMessage `json:"before"`
 	After          json.RawMessage `json:"after"`
@@ -210,6 +238,33 @@ func (s *Store) SaveDecision(ctx context.Context, v DecisionWrite) error {
 		return e
 	}
 	defer tx.Rollback(ctx)
+	if v.CommandID != "" {
+		if _, e = tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtextextended($1,0))", rec.Id); e != nil {
+			return e
+		}
+		if v.Result == "validated_pending_application" || v.Result == "rejected_by_operator" {
+			var pending bool
+			if e = tx.QueryRow(ctx, "SELECT status IN ('pending','unknown') FROM command_outcomes WHERE id=$1 AND actor=$2 FOR UPDATE", v.CommandID, Actor(ctx)).Scan(&pending); e != nil {
+				return e
+			}
+			if !pending {
+				return errors.New("command already settled")
+			}
+			payload, _ := json.Marshal(v)
+			_, e = tx.Exec(ctx, "INSERT INTO decision_intents(command_id,recommendation_id,actor,payload) VALUES($1,$2,$3,$4)", v.CommandID, rec.Id, Actor(ctx), payload)
+			if e != nil {
+				return errors.New("recommendation already claimed; inspect original command")
+			}
+		} else if v.Result != "simulated" && !strings.HasPrefix(v.Result, "rejected:") {
+			var settled bool
+			if e = tx.QueryRow(ctx, "SELECT settled FROM decision_intents WHERE command_id=$1 AND actor=$2 FOR UPDATE", v.CommandID, Actor(ctx)).Scan(&settled); e != nil {
+				return e
+			}
+			if settled {
+				return nil
+			}
+		}
+	}
 	_, e = tx.Exec(ctx, "INSERT INTO recommendations(id,run_id,status,payload) VALUES($1,$2,$3,$4) ON CONFLICT(id) DO UPDATE SET status=EXCLUDED.status,payload=EXCLUDED.payload", rec.Id, rec.RunId, rec.Status, v.Recommendation)
 	if e != nil {
 		return e
@@ -218,11 +273,81 @@ func (s *Store) SaveDecision(ctx context.Context, v DecisionWrite) error {
 	if e != nil {
 		return e
 	}
-	_, e = tx.Exec(ctx, "INSERT INTO audit_events(id,run_id,recommendation_id,actor,event_type,before_values,after_values,reason,safety_result) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)", UUID(), rec.RunId, rec.Id, Actor(ctx), "recommendation."+v.Action, v.Before, v.After, v.Reason, v.Result)
+	auditAfter := v.After
+	if v.CommandID != "" {
+		auditAfter, _ = json.Marshal(map[string]any{"command_id": v.CommandID, "changes": json.RawMessage(v.After)})
+	}
+	_, e = tx.Exec(ctx, "INSERT INTO audit_events(id,run_id,recommendation_id,actor,event_type,before_values,after_values,reason,safety_result) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)", UUID(), rec.RunId, rec.Id, Actor(ctx), "recommendation."+v.Action, v.Before, auditAfter, v.Reason, v.Result)
 	if e != nil {
 		return e
 	}
+	if v.CommandID != "" && (rec.Status == "approved" || rec.Status == "rejected" || rec.Status == "failed") {
+		if _, e = tx.Exec(ctx, "UPDATE decision_intents SET settled=true WHERE command_id=$1", v.CommandID); e != nil {
+			return e
+		}
+		if e = completeCommand(ctx, tx, v.CommandID, json.RawMessage(v.Recommendation)); e != nil {
+			return e
+		}
+	}
 	return tx.Commit(ctx)
+}
+
+type DecisionResolveWrite struct {
+	CommandID        string `json:"command_id"`
+	RecommendationID string `json:"recommendation_id"`
+	Resolution       string `json:"resolution"`
+	Reason           string `json:"reason"`
+}
+
+func (s *Store) ResolveDecision(ctx context.Context, v DecisionResolveWrite) error {
+	tx, e := s.Pool.Begin(ctx)
+	if e != nil {
+		return e
+	}
+	defer tx.Rollback(ctx)
+	var runID string
+	e = tx.QueryRow(ctx, "SELECT payload->'recommendation'->>'run_id' FROM decision_intents WHERE command_id=$1", v.CommandID).Scan(&runID)
+	if e != nil {
+		return fmt.Errorf("decision intent not found: %w", e)
+	}
+	if _, e = tx.Exec(ctx, "UPDATE decision_intents SET settled=true WHERE command_id=$1", v.CommandID); e != nil {
+		return e
+	}
+	if v.RecommendationID != "" {
+		_, _ = tx.Exec(ctx, "UPDATE recommendations SET status='failed' WHERE id=$1", v.RecommendationID)
+	}
+	after, _ := json.Marshal(map[string]any{"command_id": v.CommandID, "recommendation_id": v.RecommendationID, "resolution": v.Resolution})
+	var runUUID pgtype.UUID
+	_ = runUUID.Scan(runID)
+	reason := v.Reason
+	if reason == "" {
+		reason = "Supervisor manual reconciliation"
+	}
+	_, e = tx.Exec(ctx, "INSERT INTO audit_events(id,run_id,recommendation_id,actor,event_type,before_values,after_values,reason,safety_result) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)", UUID(), runUUID, v.RecommendationID, Actor(ctx), "decision.reconciled", []byte(`{}`), after, reason, "reconciled_by_supervisor")
+	if e != nil {
+		return e
+	}
+	_ = completeCommand(ctx, tx, v.CommandID, map[string]any{"status": "reconciled", "resolution": v.Resolution})
+	return tx.Commit(ctx)
+}
+
+// Business state, audit and recoverable command result commit together.
+func completeCommand(ctx context.Context, tx pgx.Tx, id string, response any) error {
+	if id == "" {
+		return nil
+	}
+	b, e := json.Marshal(response)
+	if e != nil {
+		return e
+	}
+	tag, e := tx.Exec(ctx, "UPDATE command_outcomes SET status='completed',http_status=200,response=$1,updated_at=now() WHERE id=$2 AND actor=$3 AND status IN ('pending','unknown')", b, id, Actor(ctx))
+	if e != nil {
+		return e
+	}
+	if tag.RowsAffected() != 1 {
+		return errors.New("command reservation missing or already completed")
+	}
+	return nil
 }
 
 type ControlWrite struct {
@@ -297,10 +422,18 @@ func (s *Store) SaveControl(ctx context.Context, op string, v ControlWrite) erro
 	if e != nil {
 		return e
 	}
+	response := map[string]any{"target": v.Target, "locked": v.Locked}
+	if op == "mode" {
+		response = map[string]any{"mode": v.Mode}
+	}
+	if e = completeCommand(ctx, tx, CommandID(ctx), response); e != nil {
+		return e
+	}
 	return tx.Commit(ctx)
 }
 
 type CommandWrite struct {
+	Route      string          `json:"route,omitempty"`
 	ID         string          `json:"id"`
 	Hash       string          `json:"hash"`
 	HTTPStatus int             `json:"http_status"`
@@ -316,7 +449,7 @@ func (s *Store) Command(ctx context.Context, op string, v CommandWrite) (any, er
 		if len(v.Hash) != 64 {
 			return nil, errors.New("payload hash required")
 		}
-		tag, e := s.Pool.Exec(ctx, "INSERT INTO command_outcomes(id,actor,payload_hash,status) VALUES($1,$2,$3,'pending') ON CONFLICT(id) DO NOTHING", v.ID, Actor(ctx), v.Hash)
+		tag, e := s.Pool.Exec(ctx, "INSERT INTO command_outcomes(id,actor,payload_hash,status,route) VALUES($1,$2,$3,'pending',$4) ON CONFLICT(id) DO NOTHING", v.ID, Actor(ctx), v.Hash, v.Route)
 		if e != nil {
 			return nil, e
 		}
@@ -333,6 +466,14 @@ func (s *Store) Command(ctx context.Context, op string, v CommandWrite) (any, er
 			v.Response = json.RawMessage(`{}`)
 		}
 		_, e := s.Pool.Exec(ctx, "UPDATE command_outcomes SET status=$1,http_status=$2,response=$3,updated_at=now() WHERE id=$4 AND actor=$5 AND payload_hash=$6 AND status IN ('pending','unknown')", state, v.HTTPStatus, v.Response, v.ID, Actor(ctx), v.Hash)
+		if e != nil {
+			return nil, e
+		}
+	}
+	if op == "command.get" {
+		// Only decision/control writes have atomic completion with business state.
+		// Expire abandoned reservations after all domain deadlines, never replay them.
+		_, e := s.Pool.Exec(ctx, `UPDATE command_outcomes c SET status='completed',http_status=409,response='{"message":"Command expired without committed decision/control; no action replayed"}'::jsonb,updated_at=now() WHERE id=$1 AND actor=$2 AND status IN ('pending','unknown') AND created_at<now()-interval '30 seconds' AND (route LIKE '/api/v1/recommendations/%' OR route LIKE '/api/v1/mode/%' OR route LIKE '/api/v1/locks/%') AND NOT EXISTS(SELECT 1 FROM decision_intents d WHERE d.command_id=c.id)`, v.ID, Actor(ctx))
 		if e != nil {
 			return nil, e
 		}

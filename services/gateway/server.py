@@ -49,8 +49,8 @@ def upstream(origin, method, path, body=None, headers=None, timeout=6):
         return result.status, data
     finally: connection.close()
 
-def write(operation, payload, actor='gateway'):
-    code, body = upstream(WRITER, 'POST', '/internal/write', encode({'operation': operation, 'payload': payload, 'actor': actor}), {'Content-Type': 'application/json', 'X-Service-Token': WRITER_TOKEN}, 5)
+def write(operation, payload, actor='gateway', command_id=''):
+    code, body = upstream(WRITER, 'POST', '/internal/write', encode({'operation': operation, 'payload': payload, 'actor': actor, 'command_id':command_id}), {'Content-Type': 'application/json', 'X-Service-Token': WRITER_TOKEN}, 5)
     if code != 200: raise OSError('Writer unavailable')
     return json.loads(body)
 
@@ -119,7 +119,7 @@ class Handler(BaseHTTPRequestHandler):
             envelope = json.loads(self.body())
             if not isinstance(envelope, dict) or not all(k in envelope for k in ('operation', 'payload', 'actor')):
                 self.error(400, 'Invalid write envelope'); return
-            result = write(envelope['operation'], envelope['payload'], envelope['actor'])
+            result = write(envelope['operation'], envelope['payload'], envelope['actor'], envelope.get('command_id',''))
             self.reply(200, result); return
         if self.command != 'GET' and self.headers.get('Origin') != PUBLIC_ORIGIN:
             self.error(403, 'Same-origin command required'); return
@@ -169,7 +169,7 @@ class Handler(BaseHTTPRequestHandler):
             try: payload=json.loads(body or b'{}')
             except ValueError: self.error(400,'Invalid JSON command');return
             digest=hashlib.sha256(json.dumps([self.command,path,payload],sort_keys=True,separators=(',', ':')).encode()).hexdigest()
-            reservation=write('command.reserve',{'id':command_id,'hash':digest},identity['actor'])
+            reservation=write('command.reserve',{'id':command_id,'hash':digest,'route':path},identity['actor'])
             if reservation['status']!='reserved':
                 if reservation['status']=='completed':self.reply(reservation['http_status'],reservation['response'],{'X-Command-ID':command_id})
                 elif reservation['status']=='conflict':self.error(409,'Idempotency key belongs to different content or actor',command_id,False)

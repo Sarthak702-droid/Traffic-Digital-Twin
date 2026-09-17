@@ -2240,6 +2240,66 @@ func (x *PlanCommand) GetCommandId() string {
 	return ""
 }
 
+type PlanOutcome struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CommandId     string                 `protobuf:"bytes,1,opt,name=command_id,json=commandId,proto3" json:"command_id,omitempty"`
+	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PlanOutcome) Reset() {
+	*x = PlanOutcome{}
+	mi := &file_twin_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PlanOutcome) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PlanOutcome) ProtoMessage() {}
+
+func (x *PlanOutcome) ProtoReflect() protoreflect.Message {
+	mi := &file_twin_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PlanOutcome.ProtoReflect.Descriptor instead.
+func (*PlanOutcome) Descriptor() ([]byte, []int) {
+	return file_twin_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *PlanOutcome) GetCommandId() string {
+	if x != nil {
+		return x.CommandId
+	}
+	return ""
+}
+
+func (x *PlanOutcome) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *PlanOutcome) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 type Analysis struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	RunId           string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
@@ -2254,7 +2314,7 @@ type Analysis struct {
 
 func (x *Analysis) Reset() {
 	*x = Analysis{}
-	mi := &file_twin_proto_msgTypes[23]
+	mi := &file_twin_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2266,7 +2326,7 @@ func (x *Analysis) String() string {
 func (*Analysis) ProtoMessage() {}
 
 func (x *Analysis) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[23]
+	mi := &file_twin_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2279,7 +2339,7 @@ func (x *Analysis) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Analysis.ProtoReflect.Descriptor instead.
 func (*Analysis) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{23}
+	return file_twin_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *Analysis) GetRunId() string {
@@ -2335,7 +2395,7 @@ type CompareCommand struct {
 
 func (x *CompareCommand) Reset() {
 	*x = CompareCommand{}
-	mi := &file_twin_proto_msgTypes[24]
+	mi := &file_twin_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2347,7 +2407,7 @@ func (x *CompareCommand) String() string {
 func (*CompareCommand) ProtoMessage() {}
 
 func (x *CompareCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[24]
+	mi := &file_twin_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2360,7 +2420,7 @@ func (x *CompareCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompareCommand.ProtoReflect.Descriptor instead.
 func (*CompareCommand) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{24}
+	return file_twin_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *CompareCommand) GetState() *TrafficState {
@@ -2600,7 +2660,12 @@ const file_twin_proto_rawDesc = "" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x122\n" +
 	"\achanges\x18\x02 \x03(\v2\x18.traffic.v1.TimingChangeR\achanges\x12\x1d\n" +
 	"\n" +
-	"command_id\x18\x03 \x01(\tR\tcommandId\"\xc3\x02\n" +
+	"command_id\x18\x03 \x01(\tR\tcommandId\"^\n" +
+	"\vPlanOutcome\x12\x1d\n" +
+	"\n" +
+	"command_id\x18\x01 \x01(\tR\tcommandId\x12\x16\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"\xc3\x02\n" +
 	"\bAnalysis\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12*\n" +
 	"\x11simulation_time_s\x18\x02 \x01(\x01R\x0fsimulationTimeS\x122\n" +
@@ -2613,9 +2678,10 @@ const file_twin_proto_rawDesc = "" +
 	"\x0eCompareCommand\x12.\n" +
 	"\x05state\x18\x01 \x01(\v2\x18.traffic.v1.TrafficStateR\x05state\x122\n" +
 	"\achanges\x18\x02 \x03(\v2\x18.traffic.v1.TimingChangeR\achanges\x12+\n" +
-	"\x11recommendation_id\x18\x03 \x01(\tR\x10recommendationId2\x93\x03\n" +
+	"\x11recommendation_id\x18\x03 \x01(\tR\x10recommendationId2\xd7\x03\n" +
 	"\n" +
 	"Simulation\x12B\n" +
+	"\x0eGetPlanOutcome\x12\x17.traffic.v1.PlanCommand\x1a\x17.traffic.v1.PlanOutcome\x12B\n" +
 	"\tApplyPlan\x12\x17.traffic.v1.PlanCommand\x1a\x1c.traffic.v1.ValidationResult\x12G\n" +
 	"\rValidateState\x12\x18.traffic.v1.TrafficState\x1a\x1c.traffic.v1.ValidationResult\x129\n" +
 	"\x05Reset\x12\x16.traffic.v1.RunCommand\x1a\x18.traffic.v1.TrafficState\x12<\n" +
@@ -2640,7 +2706,7 @@ func file_twin_proto_rawDescGZIP() []byte {
 	return file_twin_proto_rawDescData
 }
 
-var file_twin_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
+var file_twin_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_twin_proto_goTypes = []any{
 	(*Node)(nil),             // 0: traffic.v1.Node
 	(*Link)(nil),             // 1: traffic.v1.Link
@@ -2665,8 +2731,9 @@ var file_twin_proto_goTypes = []any{
 	(*RunRequest)(nil),       // 20: traffic.v1.RunRequest
 	(*ValidationResult)(nil), // 21: traffic.v1.ValidationResult
 	(*PlanCommand)(nil),      // 22: traffic.v1.PlanCommand
-	(*Analysis)(nil),         // 23: traffic.v1.Analysis
-	(*CompareCommand)(nil),   // 24: traffic.v1.CompareCommand
+	(*PlanOutcome)(nil),      // 23: traffic.v1.PlanOutcome
+	(*Analysis)(nil),         // 24: traffic.v1.Analysis
+	(*CompareCommand)(nil),   // 25: traffic.v1.CompareCommand
 }
 var file_twin_proto_depIdxs = []int32{
 	4,  // 0: traffic.v1.TrafficState.movements:type_name -> traffic.v1.MovementState
@@ -2695,28 +2762,30 @@ var file_twin_proto_depIdxs = []int32{
 	8,  // 23: traffic.v1.Analysis.alternatives:type_name -> traffic.v1.Recommendation
 	5,  // 24: traffic.v1.CompareCommand.state:type_name -> traffic.v1.TrafficState
 	7,  // 25: traffic.v1.CompareCommand.changes:type_name -> traffic.v1.TimingChange
-	22, // 26: traffic.v1.Simulation.ApplyPlan:input_type -> traffic.v1.PlanCommand
-	5,  // 27: traffic.v1.Simulation.ValidateState:input_type -> traffic.v1.TrafficState
-	19, // 28: traffic.v1.Simulation.Reset:input_type -> traffic.v1.RunCommand
-	20, // 29: traffic.v1.Simulation.GetState:input_type -> traffic.v1.RunRequest
-	20, // 30: traffic.v1.Simulation.StreamState:input_type -> traffic.v1.RunRequest
-	20, // 31: traffic.v1.Simulation.Stop:input_type -> traffic.v1.RunRequest
-	5,  // 32: traffic.v1.Intelligence.ValidateState:input_type -> traffic.v1.TrafficState
-	5,  // 33: traffic.v1.Intelligence.Predict:input_type -> traffic.v1.TrafficState
-	5,  // 34: traffic.v1.Intelligence.Analyze:input_type -> traffic.v1.TrafficState
-	24, // 35: traffic.v1.Intelligence.Compare:input_type -> traffic.v1.CompareCommand
-	21, // 36: traffic.v1.Simulation.ApplyPlan:output_type -> traffic.v1.ValidationResult
-	21, // 37: traffic.v1.Simulation.ValidateState:output_type -> traffic.v1.ValidationResult
-	5,  // 38: traffic.v1.Simulation.Reset:output_type -> traffic.v1.TrafficState
-	5,  // 39: traffic.v1.Simulation.GetState:output_type -> traffic.v1.TrafficState
-	5,  // 40: traffic.v1.Simulation.StreamState:output_type -> traffic.v1.TrafficState
-	21, // 41: traffic.v1.Simulation.Stop:output_type -> traffic.v1.ValidationResult
-	21, // 42: traffic.v1.Intelligence.ValidateState:output_type -> traffic.v1.ValidationResult
-	6,  // 43: traffic.v1.Intelligence.Predict:output_type -> traffic.v1.Forecast
-	23, // 44: traffic.v1.Intelligence.Analyze:output_type -> traffic.v1.Analysis
-	17, // 45: traffic.v1.Intelligence.Compare:output_type -> traffic.v1.ComparisonResult
-	36, // [36:46] is the sub-list for method output_type
-	26, // [26:36] is the sub-list for method input_type
+	22, // 26: traffic.v1.Simulation.GetPlanOutcome:input_type -> traffic.v1.PlanCommand
+	22, // 27: traffic.v1.Simulation.ApplyPlan:input_type -> traffic.v1.PlanCommand
+	5,  // 28: traffic.v1.Simulation.ValidateState:input_type -> traffic.v1.TrafficState
+	19, // 29: traffic.v1.Simulation.Reset:input_type -> traffic.v1.RunCommand
+	20, // 30: traffic.v1.Simulation.GetState:input_type -> traffic.v1.RunRequest
+	20, // 31: traffic.v1.Simulation.StreamState:input_type -> traffic.v1.RunRequest
+	20, // 32: traffic.v1.Simulation.Stop:input_type -> traffic.v1.RunRequest
+	5,  // 33: traffic.v1.Intelligence.ValidateState:input_type -> traffic.v1.TrafficState
+	5,  // 34: traffic.v1.Intelligence.Predict:input_type -> traffic.v1.TrafficState
+	5,  // 35: traffic.v1.Intelligence.Analyze:input_type -> traffic.v1.TrafficState
+	25, // 36: traffic.v1.Intelligence.Compare:input_type -> traffic.v1.CompareCommand
+	23, // 37: traffic.v1.Simulation.GetPlanOutcome:output_type -> traffic.v1.PlanOutcome
+	21, // 38: traffic.v1.Simulation.ApplyPlan:output_type -> traffic.v1.ValidationResult
+	21, // 39: traffic.v1.Simulation.ValidateState:output_type -> traffic.v1.ValidationResult
+	5,  // 40: traffic.v1.Simulation.Reset:output_type -> traffic.v1.TrafficState
+	5,  // 41: traffic.v1.Simulation.GetState:output_type -> traffic.v1.TrafficState
+	5,  // 42: traffic.v1.Simulation.StreamState:output_type -> traffic.v1.TrafficState
+	21, // 43: traffic.v1.Simulation.Stop:output_type -> traffic.v1.ValidationResult
+	21, // 44: traffic.v1.Intelligence.ValidateState:output_type -> traffic.v1.ValidationResult
+	6,  // 45: traffic.v1.Intelligence.Predict:output_type -> traffic.v1.Forecast
+	24, // 46: traffic.v1.Intelligence.Analyze:output_type -> traffic.v1.Analysis
+	17, // 47: traffic.v1.Intelligence.Compare:output_type -> traffic.v1.ComparisonResult
+	37, // [37:48] is the sub-list for method output_type
+	26, // [26:37] is the sub-list for method input_type
 	26, // [26:26] is the sub-list for extension type_name
 	26, // [26:26] is the sub-list for extension extendee
 	0,  // [0:26] is the sub-list for field type_name
@@ -2745,7 +2814,7 @@ func file_twin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_twin_proto_rawDesc), len(file_twin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   25,
+			NumMessages:   26,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

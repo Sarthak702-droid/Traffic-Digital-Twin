@@ -34,6 +34,11 @@ class SimulationStub:
         Args:
             channel: A grpc.Channel.
         """
+        self.GetPlanOutcome = channel.unary_unary(
+                '/traffic.v1.Simulation/GetPlanOutcome',
+                request_serializer=twin__pb2.PlanCommand.SerializeToString,
+                response_deserializer=twin__pb2.PlanOutcome.FromString,
+                _registered_method=True)
         self.ApplyPlan = channel.unary_unary(
                 '/traffic.v1.Simulation/ApplyPlan',
                 request_serializer=twin__pb2.PlanCommand.SerializeToString,
@@ -68,6 +73,12 @@ class SimulationStub:
 
 class SimulationServicer:
     """Missing associated documentation comment in .proto file."""
+
+    def GetPlanOutcome(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def ApplyPlan(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -108,6 +119,11 @@ class SimulationServicer:
 
 def add_SimulationServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'GetPlanOutcome': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetPlanOutcome,
+                    request_deserializer=twin__pb2.PlanCommand.FromString,
+                    response_serializer=twin__pb2.PlanOutcome.SerializeToString,
+            ),
             'ApplyPlan': grpc.unary_unary_rpc_method_handler(
                     servicer.ApplyPlan,
                     request_deserializer=twin__pb2.PlanCommand.FromString,
@@ -148,6 +164,33 @@ def add_SimulationServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class Simulation:
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def GetPlanOutcome(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/traffic.v1.Simulation/GetPlanOutcome',
+            twin__pb2.PlanCommand.SerializeToString,
+            twin__pb2.PlanOutcome.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def ApplyPlan(request,

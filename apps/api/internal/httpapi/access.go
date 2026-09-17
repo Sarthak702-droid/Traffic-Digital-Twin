@@ -12,22 +12,28 @@ import (
 // the gateway again; untrusted browser headers cannot establish a principal.
 func (s *Server) access(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		role, actor := r.Header.Get("X-Role"), r.Header.Get("X-Actor")
+		if actor == "" {
+			actor = "demo-operator"
+		}
+		if role == "" {
+			role = "operator"
+		}
 		if s.ServiceToken != "" {
 			if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Service-Token")), []byte(s.ServiceToken)) != 1 {
 				problem(w, 401, "Private domain service")
 				return
 			}
-			role, actor := r.Header.Get("X-Role"), r.Header.Get("X-Actor")
-			if actor == "" || (role != "operator" && role != "supervisor" && role != "viewer") {
+			if r.Header.Get("X-Actor") == "" || (role != "operator" && role != "supervisor" && role != "viewer") {
 				problem(w, 401, "Authenticated principal required")
 				return
 			}
-			if r.Method != "GET" && r.Method != "HEAD" && role == "viewer" {
-				problem(w, 403, "Viewer cannot change the digital twin")
-				return
-			}
-			r = r.WithContext(store.WithActor(r.Context(), actor))
 		}
+		if r.Method != "GET" && r.Method != "HEAD" && (role == "viewer" || role == "observer") {
+			problem(w, 403, "Viewer cannot change the digital twin")
+			return
+		}
+		r = r.WithContext(store.WithRole(store.WithCommand(store.WithActor(r.Context(), actor), r.Header.Get("X-Command-ID")), role))
 		if r.URL.Path == "/internal/ready" {
 			send(w, 200, map[string]bool{"ready": s.ownerReady.Load()})
 			return

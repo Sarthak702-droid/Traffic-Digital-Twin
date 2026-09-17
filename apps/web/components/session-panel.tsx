@@ -7,7 +7,7 @@ export interface Session { actor:string;role:"operator"|"supervisor"|"viewer" }
 export function useSession(){return useQuery({queryKey:["session"],queryFn:()=>request<Session>("/session"),retry:false,refetchInterval:30000})}
 export function SessionPanel(){
  const session=useSession();const client=useQueryClient();const [username,setUsername]=useState("");const [password,setPassword]=useState("");const [uncertain,setUncertain]=useState<string|null>(null);const [reviewed,setReviewed]=useState(false);
- useEffect(()=>{const update=()=>setUncertain(pendingCommand());const expired=()=>client.invalidateQueries({queryKey:["session"]});update();window.addEventListener("command-outcome",update);window.addEventListener("session-expired",expired);return()=>{window.removeEventListener("command-outcome",update);window.removeEventListener("session-expired",expired)}},[client]);
+ useEffect(()=>{const update=()=>setUncertain(pendingCommand());const expired=()=>client.invalidateQueries({queryKey:["session"]});update();window.addEventListener("command-outcome",update);window.addEventListener("storage",update);window.addEventListener("session-expired",expired);return()=>{window.removeEventListener("command-outcome",update);window.removeEventListener("storage",update);window.removeEventListener("session-expired",expired)}},[client]);
  useEffect(()=>{if(session.data)useWorkspace.getState().setRole(session.data.role)},[session.data]);
  const login=useMutation({mutationFn:()=>request<Session>("/session/login",{method:"POST",body:JSON.stringify({username,password})}),onSuccess:()=>{setPassword("");client.invalidateQueries()}});
  const logout=useMutation({mutationFn:()=>request("/session/logout",{method:"POST",body:"{}"}),onSuccess:()=>{client.removeQueries();client.invalidateQueries()}});
@@ -24,7 +24,7 @@ export function SessionPanel(){
  <details><summary>Saved outcome</summary><pre>{JSON.stringify(outcome.data?.response??{},null,2)}</pre></details>
  <p>Inspect the current plan and Audit & Health. If the outcome remains unknown, ask a supervisor to reconcile it before further changes.</p>
  <label><input type="checkbox" checked={reviewed} onChange={e=>setReviewed(e.target.checked)}/> I have checked the recorded outcome and current plan.</label>
- <button disabled={!reviewed||!(outcome.data?.status==="completed"||session.data?.role==="supervisor")} onClick={()=>{clearPendingCommand();setReviewed(false);client.invalidateQueries()}}>Finish review (does not retry)</button>
+ <button disabled={!reviewed||!(outcome.data?.status==="completed")} onClick={()=>{clearPendingCommand();setReviewed(false);client.invalidateQueries()}}>Finish review (does not retry)</button>
  </div>}
  </section>;
 }

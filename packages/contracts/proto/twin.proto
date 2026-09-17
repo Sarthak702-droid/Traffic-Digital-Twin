@@ -41,9 +41,11 @@ message RunCommand { string schema_version = 1; string scenario_type = 2; uint32
 message RunRequest { string run_id = 1; }
 message ValidationResult { bool valid = 1; repeated string errors = 2; }
 message PlanCommand { string run_id = 1; repeated TimingChange changes = 2; string command_id = 3; }
+message PlanOutcome { string command_id = 1; string status = 2; string message = 3; }
 message Analysis { string run_id = 1; double simulation_time_s = 2; repeated Forecast forecasts = 3; Recommendation recommendation = 4; ComparisonResult comparison = 5; repeated Recommendation alternatives = 6; }
 message CompareCommand { TrafficState state = 1; repeated TimingChange changes = 2; string recommendation_id = 3; }
 service Simulation {
+  rpc GetPlanOutcome(PlanCommand) returns (PlanOutcome);
   rpc ApplyPlan(PlanCommand) returns (ValidationResult);
   rpc ValidateState(TrafficState) returns (ValidationResult);
   rpc Reset(RunCommand) returns (TrafficState);

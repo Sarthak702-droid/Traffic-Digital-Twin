@@ -1269,6 +1269,26 @@
         "command_id"
       ]
     },
+    "PlanOutcome": {
+      "type": "object",
+      "properties": {
+        "command_id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "command_id",
+        "status",
+        "message"
+      ]
+    },
     "Analysis": {
       "type": "object",
       "properties": {

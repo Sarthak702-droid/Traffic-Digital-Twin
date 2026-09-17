@@ -3,6 +3,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { cleanup, render, screen, fireEvent } from "@testing-library/react";
 import { ActionRail, MANDATORY_REASONS } from "./action-rail";
 import { TopBar } from "./top-bar";
+import { JunctionDrawerContent } from "./junction-drawer";
 import { networkSchema } from "@/lib/api";
 import config from "../../../packages/scenario-config/c1-c6.json";
 import type {
@@ -11,7 +12,7 @@ import type {
   TrafficState,
 } from "../../../packages/contracts/typescript/events";
 
-afterEach(cleanup);
+afterEach(()=>{cleanup();sessionStorage.clear()});
 
 const mockNetwork = networkSchema.parse(config);
 
@@ -115,7 +116,8 @@ describe("Epic 5: Safety Envelope & Human Authority (S13, S14, S15)", () => {
       // Verify bounds are shown (C1-EW phase min 10, max 55)
       expect(screen.getByText(/Bounds: 10s–55s/)).toBeDefined();
 
-      // Submit button should be enabled for in-bounds value
+      fireEvent.change(screen.getByLabelText("Modification reason category"), { target: { value: "Field observation" } });
+      // Both a deliberate reason and valid bounds are required.
       const submitBtn = screen.getByRole("button", { name: /confirm modification & apply/i });
       expect(submitBtn.hasAttribute("disabled")).toBe(false);
     });
@@ -306,7 +308,9 @@ describe("Epic 5: Safety Envelope & Human Authority (S13, S14, S15)", () => {
       // Mandatory reason selector should have all 9 reasons
       const reasonSelect = screen.getByLabelText("Modification reason category") as HTMLSelectElement;
       expect(reasonSelect).toBeDefined();
-      expect(reasonSelect.options.length).toBe(MANDATORY_REASONS.length);
+      expect(reasonSelect.options.length).toBe(MANDATORY_REASONS.length + 1);
+      expect(reasonSelect.value).toBe("");
+      expect(screen.getByRole("button", {name:/confirm modification & apply/i})).toBeDisabled();
 
       // Select Accident/obstruction
       fireEvent.change(reasonSelect, { target: { value: "Accident/obstruction" } });
@@ -433,5 +437,102 @@ describe("Epic 5: Safety Envelope & Human Authority (S13, S14, S15)", () => {
       fireEvent.click(dismissBtn);
       expect(onClear).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+describe("Epic 5 recovery regressions", () => {
+  function props() { return {
+    network:mockNetwork, frame:null, analysis:makeAnalysis(), scenarioID:"peak_surge" as const,
+    setScenarioID:vi.fn(),seed:"1101",setSeed:vi.fn(),dbReady:true,liveFresh:true,
+    ...mockMutations,onSimulate:vi.fn(),onApprove:vi.fn(),onModify:vi.fn(),onReject:vi.fn(),decisionPending:false,
+    draftOwner:"operator-test",
+  }; }
+  it("retains failed edits across disabled recovery and remount, isolated by user", async () => {
+    const p=props();p.onModify=vi.fn().mockRejectedValue(new Error("Writer unavailable; inspect saved command"));
+    const view=render(<ActionRail {...p}/>);
+    fireEvent.click(screen.getByRole("button",{name:/^modify$/i}));
+    fireEvent.change(screen.getByLabelText("Modification reason category"),{target:{value:"Field observation"}});
+    fireEvent.change(screen.getByLabelText("Modification details and justification"),{target:{value:"Keep this draft"}});
+    fireEvent.change(screen.getByLabelText("Green seconds C1-EW"),{target:{value:"35"}});
+    fireEvent.click(screen.getByRole("button",{name:/confirm modification & apply/i}));
+    expect(await screen.findByText("Writer unavailable; inspect saved command")).toBeInTheDocument();
+    view.rerender(<ActionRail {...p} canAct={false}/>);
+    expect(screen.getByLabelText("Modification details and justification")).toHaveValue("Keep this draft");
+    expect(screen.getByRole("button",{name:/confirm modification & apply/i})).toBeDisabled();
+    view.unmount();
+    const restored=render(<ActionRail {...p}/>);
+    expect(screen.getByLabelText("Modification details and justification")).toHaveValue("Keep this draft");
+    expect(screen.getByLabelText("Green seconds C1-EW")).toHaveValue(35);
+    restored.unmount();
+    render(<ActionRail {...p} draftOwner="different-operator"/>);
+    expect(screen.queryByLabelText("Modification details and justification")).not.toBeInTheDocument();
+  });
+  it("does not submit a rejection without an explicit category, even with notes", () => {
+    const p=props();render(<ActionRail {...p}/>);
+    fireEvent.click(screen.getByRole("button",{name:/^reject$/i}));
+    fireEvent.change(screen.getByLabelText("Rejection justification"),{target:{value:"Notes alone are insufficient"}});
+    expect(screen.getByRole("button",{name:/confirm rejection/i})).toBeDisabled();
+    fireEvent.click(screen.getByRole("button",{name:/confirm rejection/i}));
+    expect(p.onReject).not.toHaveBeenCalled();
+  });
+
+  it("disables all action rail controls when canAct is false (e.g. Viewer role)", () => {
+    const p = props();
+    render(<ActionRail {...p} canAct={false} />);
+    expect(screen.getByRole("button", { name: /simulate/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /approve in twin/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^modify$/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^reject$/i })).toBeDisabled();
+  });
+
+  it("renders junction drawer locks, reflects active locks, and triggers toggle lock", () => {
+    const onToggleLock = vi.fn();
+    const chosenNode = mockNetwork.nodes.find((n) => n.id === "C1")!;
+    render(
+      <JunctionDrawerContent
+        chosen={chosenNode}
+        network={mockNetwork}
+        frame={null}
+        analysis={makeAnalysis()}
+        activeLocks={["C1-FROM-C2"]}
+        onToggleLock={onToggleLock}
+        canLock={true}
+      />,
+    );
+
+    // Should display timing locks section
+    expect(screen.getByText("SAFETY ENVELOPE & TIMING LOCKS")).toBeDefined();
+    expect(screen.getByText("Phase & Movement Locks")).toBeDefined();
+
+    // Check active lock on C1-FROM-C2
+    expect(screen.getByText("LOCKED")).toBeDefined();
+    const unlockBtn = screen.getByRole("button", { name: /unlock phase C1-FROM-C2/i });
+    expect(unlockBtn).toBeDefined();
+    fireEvent.click(unlockBtn);
+    expect(onToggleLock).toHaveBeenCalledWith("C1-FROM-C2", false);
+
+    // Check unlocked phase C1-FROM-C3
+    const lockBtn = screen.getByRole("button", { name: /lock phase C1-FROM-C3/i });
+    expect(lockBtn).toBeDefined();
+    fireEvent.click(lockBtn);
+    expect(onToggleLock).toHaveBeenCalledWith("C1-FROM-C3", true);
+  });
+
+  it("disables junction drawer lock buttons when canLock is false", () => {
+    const chosenNode = mockNetwork.nodes.find((n) => n.id === "C1")!;
+    render(
+      <JunctionDrawerContent
+        chosen={chosenNode}
+        network={mockNetwork}
+        frame={null}
+        analysis={makeAnalysis()}
+        activeLocks={["C1-FROM-C2"]}
+        onToggleLock={vi.fn()}
+        canLock={false}
+      />,
+    );
+
+    const unlockBtn = screen.getByRole("button", { name: /unlock phase C1-FROM-C2/i });
+    expect(unlockBtn).toBeDisabled();
   });
 });

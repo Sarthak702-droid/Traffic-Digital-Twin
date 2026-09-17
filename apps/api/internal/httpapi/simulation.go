@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
 	"io"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -26,7 +26,7 @@ type simulationLink struct {
 }
 
 func (s *Server) ConnectSimulation(ctx context.Context, address string) error {
-	conn, e := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, e := grpc.NewClient(address, s.computeOptions()...)
 	if e != nil {
 		return e
 	}
@@ -35,6 +35,10 @@ func (s *Server) ConnectSimulation(ctx context.Context, address string) error {
 		readCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		runs, e := s.Store.Q.ListRuns(readCtx, 50)
 		cancel()
+		if e != nil {
+			conn.Close()
+			return e
+		}
 		if e == nil {
 			for _, r := range runs {
 				if r.Status == "running" {
@@ -65,6 +69,7 @@ func (s *Server) ConnectSimulation(ctx context.Context, address string) error {
 			return rows.Err()
 		}
 	}
+	go s.ReconcileDecisions(ctx)
 	go func() {
 		defer conn.Close()
 		for ctx.Err() == nil {
@@ -234,6 +239,7 @@ func (s *Server) launch(w http.ResponseWriter, r *http.Request, command *pb.RunC
 	command.RunId = id.(string)
 	frame, e := s.sim.client.Reset(ctx, command)
 	if e != nil {
+		slog.Error("Simulator reset failed", "error", e)
 		s.mu.Lock()
 		s.state = nil
 		s.sim.fault = "Simulator start/reset failed"

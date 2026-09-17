@@ -231,6 +231,12 @@ export interface PlanCommand {
   command_id: string;
 }
 
+export interface PlanOutcome {
+  command_id: string;
+  status: string;
+  message: string;
+}
+
 export interface Analysis {
   run_id: string;
   simulation_time_s: number;

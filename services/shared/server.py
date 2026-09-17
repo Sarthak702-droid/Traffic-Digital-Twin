@@ -1,5 +1,7 @@
 """Private gRPC services; the browser communicates through Go only."""
 import argparse
+import os
+import hmac
 from concurrent import futures
 import grpc
 import twin_pb2 as pb
@@ -8,8 +10,21 @@ from services.shared.validation import validate_state
 
 from services.intelligence.service import Intelligence
 
+class ServiceIdentity(grpc.ServerInterceptor):
+    def __init__(self, token): self.token=token
+    def intercept_service(self, continuation, details):
+        handler=continuation(details)
+        supplied=dict(details.invocation_metadata).get('x-service-token','')
+        if hmac.compare_digest(supplied,self.token): return handler
+        def denied(request, context): context.abort(grpc.StatusCode.UNAUTHENTICATED,'Private compute service')
+        if handler and handler.response_streaming:
+            return grpc.unary_stream_rpc_method_handler(denied,request_deserializer=handler.request_deserializer,response_serializer=handler.response_serializer)
+        return grpc.unary_unary_rpc_method_handler(denied,request_deserializer=handler.request_deserializer if handler else None,response_serializer=handler.response_serializer if handler else None)
+
 def serve(kind, port):
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=4), options=[('grpc.max_receive_message_length', 1048576)])
+    token=os.environ.get('COMPUTE_TOKEN','')
+    if len(token)<32: raise RuntimeError('COMPUTE_TOKEN of 32+ characters required')
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=4), interceptors=[ServiceIdentity(token)], options=[('grpc.max_receive_message_length', 1048576)])
     if kind == 'simulation':
         from services.simulation.service import Simulation
         simulation = Simulation()

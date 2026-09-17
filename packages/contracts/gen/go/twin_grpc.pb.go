@@ -19,18 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Simulation_ApplyPlan_FullMethodName     = "/traffic.v1.Simulation/ApplyPlan"
-	Simulation_ValidateState_FullMethodName = "/traffic.v1.Simulation/ValidateState"
-	Simulation_Reset_FullMethodName         = "/traffic.v1.Simulation/Reset"
-	Simulation_GetState_FullMethodName      = "/traffic.v1.Simulation/GetState"
-	Simulation_StreamState_FullMethodName   = "/traffic.v1.Simulation/StreamState"
-	Simulation_Stop_FullMethodName          = "/traffic.v1.Simulation/Stop"
+	Simulation_GetPlanOutcome_FullMethodName = "/traffic.v1.Simulation/GetPlanOutcome"
+	Simulation_ApplyPlan_FullMethodName      = "/traffic.v1.Simulation/ApplyPlan"
+	Simulation_ValidateState_FullMethodName  = "/traffic.v1.Simulation/ValidateState"
+	Simulation_Reset_FullMethodName          = "/traffic.v1.Simulation/Reset"
+	Simulation_GetState_FullMethodName       = "/traffic.v1.Simulation/GetState"
+	Simulation_StreamState_FullMethodName    = "/traffic.v1.Simulation/StreamState"
+	Simulation_Stop_FullMethodName           = "/traffic.v1.Simulation/Stop"
 )
 
 // SimulationClient is the client API for Simulation service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SimulationClient interface {
+	GetPlanOutcome(ctx context.Context, in *PlanCommand, opts ...grpc.CallOption) (*PlanOutcome, error)
 	ApplyPlan(ctx context.Context, in *PlanCommand, opts ...grpc.CallOption) (*ValidationResult, error)
 	ValidateState(ctx context.Context, in *TrafficState, opts ...grpc.CallOption) (*ValidationResult, error)
 	Reset(ctx context.Context, in *RunCommand, opts ...grpc.CallOption) (*TrafficState, error)
@@ -45,6 +47,16 @@ type simulationClient struct {
 
 func NewSimulationClient(cc grpc.ClientConnInterface) SimulationClient {
 	return &simulationClient{cc}
+}
+
+func (c *simulationClient) GetPlanOutcome(ctx context.Context, in *PlanCommand, opts ...grpc.CallOption) (*PlanOutcome, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PlanOutcome)
+	err := c.cc.Invoke(ctx, Simulation_GetPlanOutcome_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *simulationClient) ApplyPlan(ctx context.Context, in *PlanCommand, opts ...grpc.CallOption) (*ValidationResult, error) {
@@ -120,6 +132,7 @@ func (c *simulationClient) Stop(ctx context.Context, in *RunRequest, opts ...grp
 // All implementations must embed UnimplementedSimulationServer
 // for forward compatibility.
 type SimulationServer interface {
+	GetPlanOutcome(context.Context, *PlanCommand) (*PlanOutcome, error)
 	ApplyPlan(context.Context, *PlanCommand) (*ValidationResult, error)
 	ValidateState(context.Context, *TrafficState) (*ValidationResult, error)
 	Reset(context.Context, *RunCommand) (*TrafficState, error)
@@ -136,6 +149,9 @@ type SimulationServer interface {
 // pointer dereference when methods are called.
 type UnimplementedSimulationServer struct{}
 
+func (UnimplementedSimulationServer) GetPlanOutcome(context.Context, *PlanCommand) (*PlanOutcome, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPlanOutcome not implemented")
+}
 func (UnimplementedSimulationServer) ApplyPlan(context.Context, *PlanCommand) (*ValidationResult, error) {
 	return nil, status.Error(codes.Unimplemented, "method ApplyPlan not implemented")
 }
@@ -173,6 +189,24 @@ func RegisterSimulationServer(s grpc.ServiceRegistrar, srv SimulationServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&Simulation_ServiceDesc, srv)
+}
+
+func _Simulation_GetPlanOutcome_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PlanCommand)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SimulationServer).GetPlanOutcome(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Simulation_GetPlanOutcome_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SimulationServer).GetPlanOutcome(ctx, req.(*PlanCommand))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Simulation_ApplyPlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -283,6 +317,10 @@ var Simulation_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "traffic.v1.Simulation",
 	HandlerType: (*SimulationServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetPlanOutcome",
+			Handler:    _Simulation_GetPlanOutcome_Handler,
+		},
 		{
 			MethodName: "ApplyPlan",
 			Handler:    _Simulation_ApplyPlan_Handler,

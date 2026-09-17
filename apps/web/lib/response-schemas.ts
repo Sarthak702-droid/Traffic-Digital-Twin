@@ -16,6 +16,8 @@ export function validateResponse(path:string,data:unknown){
  if(p==="/audit")return z.object({events:z.array(audit),next_after:n}).parse(data);
  if(p==="/mode"||p.startsWith("/mode/"))return z.object({mode:z.enum(["observe","recommend","manual"]),locks:z.array(z.string()).optional(),manual:z.boolean().optional()}).parse(data);
  if(p==="/locks")return z.object({locks:z.array(z.string())}).parse(data);
+ if(p==="/decisions/unresolved")return z.object({unresolved:z.array(z.object({command_id:z.string(),recommendation_id:z.string(),actor:z.string(),created_at:z.string(),payload:z.unknown()}))}).parse(data);
+ if(p==="/decisions/resolve")return z.object({settled:z.boolean(),command_id:z.string(),recommendation_id:z.string(),resolution:z.string()}).parse(data);
  if(p.startsWith("/scenarios/"))return z.object({run_id:z.string(),scenario_type:z.string(),seed:n,status:z.string()}).parse(data);
  if(p.startsWith("/recommendations/"))return p.endsWith("/simulate")?comparisonSchema.parse(data):recommendationSchema.parse(data);
  return data;

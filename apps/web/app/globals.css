@@ -2977,3 +2977,116 @@ input, textarea, select { max-width: 100%; font-size: 1rem; }
  .rec-actions-grid { grid-template-columns: 1fr; }
  .health-popover { position: fixed; top: 16px; left: 16px; right: 16px; max-height: 80dvh; overflow: auto; }
 }
+
+/* Junction Drawer Locks & Operator Authority */
+.drawer-locks-section {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  margin-top: 20px;
+}
+.locks-subsection {
+  margin-top: 14px;
+}
+.locks-subheading {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #889fab;
+  margin-bottom: 8px;
+}
+.locks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lock-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #141f27;
+  border: 1px solid #233541;
+  border-radius: 6px;
+  transition: border-color 0.15s ease;
+}
+.lock-item-row.locked {
+  border-color: #f59e0b;
+  background: #1c1a14;
+}
+.lock-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lock-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lock-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
+}
+.lock-status-chip.active-lock {
+  background: #f59e0b22;
+  color: #f59e0b;
+  border: 1px solid #f59e0b55;
+}
+.lock-status-chip.unlocked {
+  background: #23354144;
+  color: #7b93a4;
+  border: 1px solid #233541;
+}
+.lock-item-details {
+  font-size: 11px;
+  color: #889fab;
+}
+
+/* Unresolved Intent Reconciliation Banner (Story S15) */
+.unresolved-intent-banner {
+  background: #2a1b12;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  animation: pulse-slow 3s infinite alternate;
+}
+.unresolved-banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.unresolved-alert-icon {
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+.unresolved-banner-text {
+  flex: 1;
+  font-size: 12px;
+  color: #fde68a;
+}
+.unresolved-banner-text strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 2px;
+  color: #fbbf24;
+}
+.unresolved-banner-text p {
+  margin: 0;
+  color: #e5e7eb;
+}
+.unresolved-banner-text code {
+  background: #18120d;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #f59e0b;
+}

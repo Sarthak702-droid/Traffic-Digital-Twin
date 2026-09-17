@@ -1,5 +1,6 @@
 """Deterministic SUMO/TraCI runtime. All signals are virtual."""
 import json
+import os
 import threading
 import time
 from datetime import datetime, timezone
@@ -8,14 +9,16 @@ import traci
 import traci.constants as tc
 import twin_pb2 as pb
 from services.simulation.safety import validate_config, Signals, validate_plan, validate_runtime_safety, SafetyViolation
+from services.simulation.receipts import Receipts
 from services.simulation.network import ROOT, binary, compile_network, write_demand
 
 class Engine:
     def __init__(self, config_path=None, directory=None):
         self.config=json.loads(Path(config_path or ROOT/'packages/scenario-config/c1-c6.json').read_text())
         validate_config(self.config)
-        self.directory=Path(directory or ROOT/'.runtime/sumo')
+        self.directory=Path(directory or os.environ.get('SIMULATION_DIRECTORY') or ROOT/'.runtime/sumo')
         self.net=compile_network(self.config,self.directory)
+        self.receipts=Receipts(self.directory/"command-receipts.sqlite")
         self.connection=None
         self.lock=threading.RLock()
         self.changed=threading.Condition(self.lock)
@@ -81,8 +84,9 @@ class Engine:
                 raise ValueError('Run is not active')
             if not command.command_id:
                 raise ValueError('An idempotency command ID is required')
-            if command.command_id in self.applied_commands:
-                return
+            receipt = self.receipts.status(command)
+            if receipt == 'accepted': return
+            if receipt != 'not_found': raise ValueError('Command receipt: '+receipt+'; inspect outcome, do not replay')
             plan={c.phase_id:c.green_s for c in command.changes}
             if len(plan)!=len(command.changes):
                 raise ValueError('Duplicate phase changes')
@@ -90,7 +94,9 @@ class Engine:
             for c in command.changes:
                 if not any(p['id']==c.phase_id and p['node_id']==c.node_id for p in self.config['phases']):
                     raise ValueError('Phase/node mismatch')
+            self.receipts.prepare(command)
             self.scheduler.apply(plan)
+            self.receipts.accept(command)
             self.applied_commands.add(command.command_id)
 
     def _scenario_state(self, tick):

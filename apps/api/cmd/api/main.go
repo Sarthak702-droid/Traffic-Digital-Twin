@@ -41,7 +41,11 @@ func run() error {
 	if len(token) < 32 || len(writerToken) < 32 || gateway == "" {
 		return fmt.Errorf("DOMAIN_TOKEN, DOMAIN_WRITE_TOKEN (32+ characters), GATEWAY_INTERNAL_ORIGIN required")
 	}
-	app := &httpapi.Server{Network: network, AllowedOrigin: origin, ServiceToken: token, RequireOwner: true}
+	computeToken := os.Getenv("COMPUTE_TOKEN")
+	if len(computeToken) < 32 {
+		return fmt.Errorf("COMPUTE_TOKEN (32+ characters) required")
+	}
+	app := &httpapi.Server{ComputeToken: computeToken, Network: network, AllowedOrigin: origin, ServiceToken: token, RequireOwner: true}
 	if dsn := os.Getenv("READ_DATABASE_URL"); dsn != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()

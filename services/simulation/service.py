@@ -31,9 +31,15 @@ class Simulation(rpc.SimulationServicer):
                     if not request.run_id or request.run_id==self.engine.latest.run_id:value=self.engine.copy_state()
                 else:self.engine.changed.wait(timeout=.2)
             if value is not None:yield value
+    def GetPlanOutcome(self,request,context):
+        with self.engine.lock:
+            state = self.engine.receipts.status(request)
+            return pb.PlanOutcome(command_id=request.command_id,status=state,message='Receipt records scheduling acceptance; no command is replayed')
     def ApplyPlan(self,request,context):
         try:
-            self.engine.apply_plan(request)
+            with self.engine.lock:
+                if not context.is_active(): context.abort(grpc.StatusCode.CANCELLED, "Command expired before dispatch")
+                self.engine.apply_plan(request)
             return pb.ValidationResult(valid=True)
         except ValueError as error:
             return pb.ValidationResult(valid=False,errors=[str(error)])

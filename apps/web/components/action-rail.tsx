@@ -70,6 +70,7 @@ export function ActionRail({
   manualMode,
   canAct = true,
   onDirty,
+  draftOwner = "local-demo",
 }: {
   network: Network;
   frame: TrafficState | null;
@@ -107,14 +108,31 @@ export function ActionRail({
   manualMode?: boolean;
   canAct?: boolean;
   onDirty?: (dirty:boolean)=>void;
+  draftOwner?: string;
 }) {
+  const recId = analysis?.recommendation?.id;
+  const runId = analysis?.run_id || frame?.run_id || "active";
+  const draftKey = recId ? `twin-draft:${draftOwner}:${runId}:${recId}` : null;
+  const [savedDraft] = useState(()=>{
+    if (!draftKey) return null;
+    try {const value=JSON.parse(sessionStorage.getItem(draftKey)||"null");
+      if(value && typeof value.notes==="string" && (value.reason===""||MANDATORY_REASONS.includes(value.reason)) && value.edits && typeof value.edits==="object" && Object.values(value.edits).every(x=>typeof x==="number"&&Number.isFinite(x)))return value;
+    }catch{};return null;
+  });
   const [formError, setFormError] = useState("");
-  const [modifyOpen, setModifyOpen] = useState(false);
-  const [rejectOpen, setRejectOpen] = useState(false);
-  const [reasonCategory, setReasonCategory] = useState<MandatoryReason>("Field observation");
-  const [decisionReason, setDecisionReason] = useState("");
-  const [edits, setEdits] = useState<Record<string, number>>({});
+  const [modifyOpen, setModifyOpen] = useState(!!savedDraft?.modify);
+  const [rejectOpen, setRejectOpen] = useState(!!savedDraft?.reject);
+  const [reasonCategory, setReasonCategory] = useState<MandatoryReason | "">(savedDraft?.reason || "");
+  const [decisionReason, setDecisionReason] = useState<string>(savedDraft?.notes || "");
+  const [edits, setEdits] = useState<Record<string, number>>(savedDraft?.edits || {});
 
+  useEffect(()=>{
+    if (!draftKey) return;
+    try{
+      if(modifyOpen||rejectOpen)sessionStorage.setItem(draftKey,JSON.stringify({modify:modifyOpen,reject:rejectOpen,reason:reasonCategory,notes:decisionReason,edits}));
+      else sessionStorage.removeItem(draftKey)
+    }catch{}
+  },[draftKey,modifyOpen,rejectOpen,reasonCategory,decisionReason,edits]);
   useEffect(()=>{onDirty?.(modifyOpen||rejectOpen)},[modifyOpen,rejectOpen,onDirty]);
   const rec = analysis?.recommendation;
   const forecasts = analysis?.forecasts ?? [];
@@ -184,11 +202,11 @@ export function ActionRail({
   }
 
   async function submitModify() {
-    if (!rec) return;
+    if (!rec || !canAct || decisionPending) return;
     const fullReason = decisionReason.trim()
       ? `${reasonCategory}: ${decisionReason.trim()}`
       : reasonCategory;
-    if (!fullReason.trim()) {
+    if (!reasonCategory || !fullReason.trim()) {
       setFormError("Reason is required when modifying a recommendation.");
       return;
     }
@@ -200,11 +218,11 @@ export function ActionRail({
   }
 
   async function submitReject() {
-    if (!rec) return;
+    if (!rec || !canAct || decisionPending) return;
     const fullReason = decisionReason.trim()
       ? `${reasonCategory}: ${decisionReason.trim()}`
       : reasonCategory;
-    if (!fullReason.trim()) {
+    if (!reasonCategory || !fullReason.trim()) {
       setFormError("Reason is required when rejecting a recommendation.");
       return;
     }
@@ -284,6 +302,7 @@ export function ActionRail({
                 variant="outline"
                 className="action-btn modify-btn"
                 onClick={() => {
+                  if(!modifyOpen)setReasonCategory("");
                   setModifyOpen(!modifyOpen);
                   setRejectOpen(false);
                 }}
@@ -295,6 +314,7 @@ export function ActionRail({
                 variant="ghost"
                 className="action-btn reject-btn"
                 onClick={() => {
+                  if(!rejectOpen)setReasonCategory("");
                   setRejectOpen(!rejectOpen);
                   setModifyOpen(false);
                 }}
@@ -354,6 +374,7 @@ export function ActionRail({
                     value={reasonCategory}
                     onChange={(e) => setReasonCategory(e.target.value as MandatoryReason)}
                   >
+                    <option value="" disabled>Select a reason</option>
                     {MANDATORY_REASONS.map((r) => (
                       <option key={r} value={r}>
                         {r}
@@ -398,7 +419,7 @@ export function ActionRail({
                   variant="default"
                   className="submit-modify-btn"
                   onClick={submitModify}
-                  disabled={decisionPending || !canAct || hasOutOfBounds}
+                  disabled={decisionPending || !canAct || hasOutOfBounds || !reasonCategory}
                 >
                   <CheckCircle2 size={14} /> Confirm Modification & Apply
                 </Button>
@@ -417,6 +438,7 @@ export function ActionRail({
                     value={reasonCategory}
                     onChange={(e) => setReasonCategory(e.target.value as MandatoryReason)}
                   >
+                    <option value="" disabled>Select a reason</option>
                     {MANDATORY_REASONS.map((r) => (
                       <option key={r} value={r}>
                         {r}
@@ -439,7 +461,7 @@ export function ActionRail({
                   variant="outline"
                   className="reject-confirm-btn"
                   onClick={submitReject}
-                  disabled={decisionPending || !canAct}
+                  disabled={decisionPending || !canAct || !reasonCategory}
                 >
                   <AlertOctagon size={14} /> Confirm Rejection
                 </Button>
