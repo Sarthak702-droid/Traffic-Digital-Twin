@@ -7,8 +7,8 @@ message Node { string id = 1; string label = 2; string kind = 3; double x = 4; d
 message Link { string id = 1; string from_node = 2; string to_node = 3; double length_m = 4; uint32 lanes = 5; uint32 storage_capacity_veh = 6; double free_flow_speed_kph = 7; }
 message Movement { string id = 1; string node_id = 2; string incoming_link_id = 3; string outgoing_link_id = 4; double turning_ratio = 5; }
 message SignalPhase { string id = 1; string node_id = 2; repeated string movement_ids = 3; double min_green_s = 4; double max_green_s = 5; double amber_s = 6; double all_red_s = 7; }
-message MovementState { string movement_id = 1; double queue_veh = 2; double arrival_rate_vpm = 3; double departure_rate_vpm = 4; double avg_speed_kph = 5; double occupancy_ratio = 6; double downstream_capacity_veh = 7; string current_phase_id = 8; double waiting_age_s = 9; }
-message TrafficState { string schema_version = 1; string run_id = 2; string timestamp = 3; double simulation_time_s = 4; string source = 5; repeated MovementState movements = 6; }
+message MovementState { string movement_id = 1; double queue_veh = 2; double arrival_rate_vpm = 3; double departure_rate_vpm = 4; double avg_speed_kph = 5; double occupancy_ratio = 6; double downstream_capacity_veh = 7; string current_phase_id = 8; double waiting_age_s = 9; uint32 vehicle_count = 10; uint32 arrivals_total = 11; uint32 departures_total = 12; string permission = 13; }
+message TrafficState { string schema_version = 1; string run_id = 2; string timestamp = 3; double simulation_time_s = 4; string source = 5; repeated MovementState movements = 6; repeated SignalState signals = 7; uint32 vehicles_in_network = 8; uint32 inserted_total = 9; uint32 arrived_total = 10; uint32 teleported_total = 11; string scenario_type = 12; uint32 seed = 13; }
 message Forecast { string id = 1; string run_id = 2; string movement_id = 3; uint32 horizon_s = 4; double queue_veh = 5; double occupancy_ratio = 6; double arrivals_veh = 7; string risk = 8; optional double spillback_eta_s = 9; string model_version = 10; repeated string explanation_facts = 11; }
 message TimingChange { string node_id = 1; string phase_id = 2; double green_s = 3; }
 message Recommendation { string id = 1; string run_id = 2; string timestamp = 3; string priority = 4; string reason = 5; repeated TimingChange changes = 6; string safety_status = 7; string status = 8; repeated string explanation_facts = 9; }
@@ -19,7 +19,7 @@ message ComponentHealth { string component = 1; string status = 2; string messag
 message HealthState { string timestamp = 1; repeated ComponentHealth components = 2; }
 message AuditEvent { string id = 1; string run_id = 2; string timestamp = 3; string actor = 4; string recommendation_id = 5; string event_type = 6; repeated TimingChange before = 7; repeated TimingChange after = 8; string reason = 9; string safety_result = 10; }
 message Alert { string id = 1; string run_id = 2; string severity = 3; string target_id = 4; string message = 5; }
-message SignalState { string node_id = 1; string phase_id = 2; string indication = 3; double remaining_s = 4; }
+message SignalState { string node_id = 1; string phase_id = 2; string indication = 3; double remaining_s = 4; repeated string permitted_movement_ids = 5; }
 message ComparisonResult { string run_id = 1; string recommendation_id = 2; double baseline_max_queue_veh = 3; double candidate_max_queue_veh = 4; double baseline_avg_delay_s = 5; double candidate_avg_delay_s = 6; }
 message EventEnvelope {
   string schema_version = 1;
@@ -37,13 +37,15 @@ message EventEnvelope {
     AuditEvent audit_appended = 18;
   }
 }
-message RunCommand { string schema_version = 1; string scenario_type = 2; uint32 seed = 3; string mode = 4; }
+message RunCommand { string schema_version = 1; string scenario_type = 2; uint32 seed = 3; string mode = 4; string run_id = 5; }
 message RunRequest { string run_id = 1; }
 message ValidationResult { bool valid = 1; repeated string errors = 2; }
 service Simulation {
   rpc ValidateState(TrafficState) returns (ValidationResult);
   rpc Reset(RunCommand) returns (TrafficState);
   rpc GetState(RunRequest) returns (TrafficState);
+  rpc StreamState(RunRequest) returns (stream TrafficState);
+  rpc Stop(RunRequest) returns (ValidationResult);
 }
 service Intelligence {
   rpc ValidateState(TrafficState) returns (ValidationResult);

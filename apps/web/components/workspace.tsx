@@ -22,6 +22,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { getNetwork, request } from "@/lib/api";
+import { useLive } from "@/lib/live";
+import { LiveSummary, JunctionLive } from "@/components/live-panel";
 import { useWorkspace } from "@/lib/state";
 import type {
   Network,
@@ -29,7 +31,7 @@ import type {
   AuditRecord,
   Scenario,
 } from "../../../packages/contracts/typescript/network";
-import type { HealthState } from "../../../packages/contracts/typescript/events";
+import type { HealthState, TrafficState } from "../../../packages/contracts/typescript/events";
 const sections = [
   { id: "command", label: "Command Center", icon: Layers },
   { id: "network", label: "Network", icon: NetworkIcon },
@@ -48,10 +50,12 @@ export function NetworkCanvas({
   network,
   onSelect,
   route = [],
+  frame,
 }: {
   network: Network;
   onSelect: (id: string) => void;
   route?: string[];
+  frame?: TrafficState | null;
 }) {
   const maxX = Math.max(...network.nodes.map((n) => n.x)) + 130,
     maxY = Math.max(...network.nodes.map((n) => n.y)) + 80;
@@ -120,6 +124,11 @@ export function NetworkCanvas({
               strokeDasharray="4 7"
               markerEnd="url(#arrow)"
             />
+            {frame && frame.movements.some(m => network.movements.some(c => c.id === m.movement_id && c.incoming_link_id === link.id) && m.vehicle_count > 0) && (
+              <circle r="3" fill="#83b7a0" className="flow-marker">
+                <animateMotion dur="3s" repeatCount="indefinite" path={`M ${x1} ${y1} L ${x2} ${y2}`} />
+              </circle>
+            )}
             {link.from_node < link.to_node && (
               <text
                 x={(from.x + to.x) / 2 + (dx === 0 ? 42 : 0)}
@@ -162,7 +171,7 @@ export function NetworkCanvas({
               cy={node.y}
               r="41"
               fill="none"
-              stroke="#40575d"
+              stroke={frame?.signals.find(s => s.node_id === node.id)?.indication === "green" ? "#83b7a0" : frame?.signals.find(s => s.node_id === node.id)?.indication === "amber" ? "#e4b967" : frame ? "#ce7975" : "#40575d"}
               strokeDasharray="3 5"
             />
           )}
@@ -188,6 +197,7 @@ export function NetworkCanvas({
   );
 }
 export function Workspace() {
+  const live = useLive();
   const [view, setView] = useState<View>("command");
   const [scenarioID, setScenarioID] = useState<Scenario["id"]>("peak_surge");
   const [seed, setSeed] = useState("1101");
@@ -213,11 +223,10 @@ export function Workspace() {
   });
   const prepare = useMutation({
     mutationFn: () =>
-      request<Run>("/runs", {
+      request<Run>(`/scenarios/${scenarioID}/start`, {
         method: "POST",
         body: JSON.stringify({
           schema_version: "1.0",
-          scenario_type: scenarioID,
           seed: Number(seed),
           mode: "recommend",
         }),
@@ -226,6 +235,10 @@ export function Workspace() {
       client.invalidateQueries({ queryKey: ["runs"] });
       client.invalidateQueries({ queryKey: ["audit"] });
     },
+  });
+  const reset = useMutation({
+    mutationFn: () => request<Run>("/scenarios/reset", {method: "POST", body: "{}"}),
+    onSuccess: () => { prepare.reset(); client.invalidateQueries({queryKey:["runs"]}); client.invalidateQueries({queryKey:["audit"]}); }
   });
   useEffect(() => {
     const tick = () =>
@@ -369,8 +382,7 @@ export function Workspace() {
                         <Check size={13} /> Configuration validated
                       </span>
                       <span>
-                        <span className="status-dot unknown" /> Traffic
-                        measurements unavailable
+                        <span className={`status-dot ${live.fresh ? "" : "unknown"}`} /> {live.fresh ? "Live synthetic traffic · 1 Hz" : live.frame ? "Traffic stream stale / disconnected" : "Start a scenario to receive traffic"}
                       </span>
                       <span className="config-version">{data.id}</span>
                     </div>
@@ -397,11 +409,12 @@ export function Workspace() {
                             </span>
                           </div>
                           <span className="quiet-badge">
-                            CONFIGURATION VIEW
+                            {live.fresh ? "SUMO · SYNTHETIC" : "CONFIGURATION VIEW"}
                           </span>
                         </div>
                         <NetworkCanvas
                           network={data}
+                          frame={live.fresh ? live.frame : null}
                           onSelect={selectNode}
                           route={
                             view === "emergency"
@@ -430,9 +443,9 @@ export function Workspace() {
                         <div className="canvas-footer">
                           <span>
                             <MapPin size={14} /> Select a node to inspect
-                            configuration
+                            traffic and configuration
                           </span>
-                          <span>Geometry from network configuration</span>
+                          <span>Flow markers are schematic, not vehicle positions</span>
                         </div>
                       </section>
                       {view !== "network" && (
@@ -440,14 +453,11 @@ export function Workspace() {
                           <section className="context-panel">
                             <div className="overline">SYSTEM AVAILABILITY</div>
                             <h2>
-                              The foundation is ready.
-                              <br />
-                              <span>Traffic comes next.</span>
+                              {live.fresh ? "The network, in motion." : "Your digital twin is ready."}
+                              <br /><span>{live.fresh ? "Every second counts." : "Start a repeatable run."}</span>
                             </h2>
                             <p>
-                              Network geometry and scenario definitions are
-                              available. Simulation, forecasts and signal
-                              recommendations are not connected yet.
+                              Seeded synthetic demand runs through SUMO with configured virtual signals. Inspect a junction for measured queues and movement permissions.
                             </p>
                             <div className="availability-row">
                               <span>
@@ -461,7 +471,7 @@ export function Workspace() {
                               <span>
                                 <Activity size={15} /> Simulation
                               </span>
-                              <span className="muted">Not connected</span>
+                              <span className={live.fresh ? "healthy" : "muted"}>{live.fresh ? "Streaming · 1 Hz" : "Unavailable"}</span>
                             </div>
                           </section>
                           {view === "incidents" ? (
@@ -500,7 +510,7 @@ export function Workspace() {
                             </section>
                           ) : (
                             <section className="context-panel prepare-panel">
-                              <div className="overline">PREPARE A DEMO RUN</div>
+                              <div className="overline">RUN A DEMO SCENARIO</div>
                               <label htmlFor="scenario">Scenario</label>
                               <select
                                 id="scenario"
@@ -534,17 +544,17 @@ export function Workspace() {
                               </p>
                               <Button
                                 onClick={submit}
-                                disabled={prepare.isPending || !dbReady}
+                                disabled={prepare.isPending || reset.isPending || !dbReady}
                               >
                                 {prepare.isPending
-                                  ? "Saving run…"
-                                  : "Prepare run"}
+                                  ? "Starting SUMO…"
+                                  : "Start simulation"}
                                 <ArrowRight size={16} />
                               </Button>
-                              <p className="field-hint">
-                                Saves a run and audit entry. Does not start
-                                simulation.
-                              </p>
+                              <Button variant="outline" onClick={() => reset.mutate()} disabled={!live.frame || reset.isPending || prepare.isPending || !dbReady}>{reset.isPending ? "Resetting…" : "Reset same seed"}<RefreshCw size={14}/></Button>
+                              <p className="field-hint">Start replaces the active run. Reset repeats its scenario and seed, with a new audited run ID.</p>
+                              {reset.isError && <p role="alert" className="form-error">{reset.error.message}</p>}
+                              {reset.isSuccess && <p role="status" className="form-success">Scenario reset. Seed {reset.data.seed}.</p>}
                               {(formError || prepare.isError) && (
                                 <p className="form-error" role="alert">
                                   {formError || prepare.error?.message}
@@ -552,8 +562,7 @@ export function Workspace() {
                               )}
                               {prepare.isSuccess && (
                                 <p className="form-success" role="status">
-                                  Run saved. Seed {prepare.data.seed}; ready for
-                                  future simulation.
+                                  Simulation started. Seed {prepare.data.seed}.
                                 </p>
                               )}
                             </section>
@@ -561,6 +570,7 @@ export function Workspace() {
                         </aside>
                       )}
                     </div>
+                    <LiveSummary live={live} />
                     <div className="configuration-strip">
                       <div>
                         <span>CONTROLLED JUNCTIONS</span>
@@ -687,7 +697,7 @@ export function Workspace() {
                   <section className="history-panel run-history">
                     <div className="panel-heading">
                       <div>
-                        <h2>Prepared runs</h2>
+                        <h2>Run history</h2>
                         <span>Persisted in PostgreSQL · latest 50</span>
                       </div>
                       <span className="quiet-badge">
@@ -762,10 +772,11 @@ export function Workspace() {
         title={
           chosen ? `${chosen.id} · ${chosen.label}` : "Junction configuration"
         }
-        description="Configured geometry and safety bounds. No live traffic measurements."
+        description="Synthetic traffic measurements and configured safety bounds."
       >
         {chosen && data && (
           <>
+            <JunctionLive frame={live.fresh ? live.frame : null} network={data} nodeID={chosen.id} />
             <div className="drawer-facts">
               <div>
                 <span>Node type</span>
@@ -817,8 +828,7 @@ export function Workspace() {
             <div className="drawer-note">
               <ArrowDown size={16} />
               <p>
-                Queue, speed, occupancy and forecasts will appear when the
-                simulation stream is connected.
+                Forecasts and recommendations are scheduled for later epics. Current measurements come from synthetic SUMO traffic.
               </p>
             </div>
           </>

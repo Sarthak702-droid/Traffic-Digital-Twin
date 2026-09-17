@@ -69,3 +69,28 @@ func (s *Store) CreateRun(ctx context.Context, configID, scenario, mode string, 
 	}
 	return run, tx.Commit(ctx)
 }
+
+func (s *Store) Activate(ctx context.Context, id pgtype.UUID, reason string) (queries.ScenarioRun, error) {
+	tx, e := s.Pool.Begin(ctx)
+	if e != nil {
+		return queries.ScenarioRun{}, e
+	}
+	defer tx.Rollback(ctx)
+	q := s.Q.WithTx(tx)
+	if e = q.EndRunningRuns(ctx); e != nil {
+		return queries.ScenarioRun{}, e
+	}
+	run, e := q.ActivateRun(ctx, id)
+	if e != nil {
+		return run, e
+	}
+	after, e := json.Marshal(run)
+	if e != nil {
+		return run, e
+	}
+	_, e = q.AppendAudit(ctx, queries.AppendAuditParams{ID: UUID(), RunID: run.ID, Actor: "demo-operator", EventType: "scenario.started", BeforeValues: []byte(`{}`), AfterValues: after, Reason: reason, SafetyResult: "virtual_configured_plan"})
+	if e != nil {
+		return run, e
+	}
+	return run, tx.Commit(ctx)
+}

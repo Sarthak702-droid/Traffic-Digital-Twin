@@ -24,3 +24,7 @@ INSERT INTO emergencies(id,run_id,status,payload) VALUES ($1,$2,$3,$4);
 INSERT INTO system_health_events(id,component,status,details) VALUES ($1,$2,$3,$4);
 -- name: SaveAggregate :exec
 INSERT INTO traffic_state_snapshots(id,run_id,window_start,window_s,aggregate) VALUES ($1,$2,$3,$4,$5);
+-- name: EndRunningRuns :exec
+UPDATE scenario_runs SET status='ended',ended_at=now() WHERE status='running';
+-- name: ActivateRun :one
+UPDATE scenario_runs SET status='running' WHERE id=$1 AND status='prepared' RETURNING *;

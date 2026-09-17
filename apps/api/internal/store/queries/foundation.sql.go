@@ -12,6 +12,26 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const activateRun = `-- name: ActivateRun :one
+UPDATE scenario_runs SET status='running' WHERE id=$1 AND status='prepared' RETURNING id, config_id, scenario_type, seed, mode, status, started_at, ended_at
+`
+
+func (q *Queries) ActivateRun(ctx context.Context, id pgtype.UUID) (ScenarioRun, error) {
+	row := q.db.QueryRow(ctx, activateRun, id)
+	var i ScenarioRun
+	err := row.Scan(
+		&i.ID,
+		&i.ConfigID,
+		&i.ScenarioType,
+		&i.Seed,
+		&i.Mode,
+		&i.Status,
+		&i.StartedAt,
+		&i.EndedAt,
+	)
+	return i, err
+}
+
 const appendAudit = `-- name: AppendAudit :one
 INSERT INTO audit_events (id,run_id,recommendation_id,actor,event_type,before_values,after_values,reason,safety_result) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING sequence, id, run_id, recommendation_id, actor, event_type, before_values, after_values, reason, safety_result, created_at
 `
@@ -89,6 +109,15 @@ func (q *Queries) CreateRun(ctx context.Context, arg CreateRunParams) (ScenarioR
 		&i.EndedAt,
 	)
 	return i, err
+}
+
+const endRunningRuns = `-- name: EndRunningRuns :exec
+UPDATE scenario_runs SET status='ended',ended_at=now() WHERE status='running'
+`
+
+func (q *Queries) EndRunningRuns(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, endRunningRuns)
+	return err
 }
 
 const getConfig = `-- name: GetConfig :one

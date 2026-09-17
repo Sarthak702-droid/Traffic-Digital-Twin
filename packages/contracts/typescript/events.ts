@@ -45,6 +45,10 @@ export interface MovementState {
   downstream_capacity_veh: number;
   current_phase_id: string;
   waiting_age_s: number;
+  vehicle_count: number;
+  arrivals_total: number;
+  departures_total: number;
+  permission: string;
 }
 
 export interface TrafficState {
@@ -54,6 +58,13 @@ export interface TrafficState {
   simulation_time_s: number;
   source: string;
   movements: MovementState[];
+  signals: SignalState[];
+  vehicles_in_network: number;
+  inserted_total: number;
+  arrived_total: number;
+  teleported_total: number;
+  scenario_type: string;
+  seed: number;
 }
 
 export interface Forecast {
@@ -153,6 +164,7 @@ export interface SignalState {
   phase_id: string;
   indication: string;
   remaining_s: number;
+  permitted_movement_ids: string[];
 }
 
 export interface ComparisonResult {
@@ -184,6 +196,7 @@ export interface RunCommand {
   scenario_type: string;
   seed: number;
   mode: string;
+  run_id: string;
 }
 
 export interface RunRequest {

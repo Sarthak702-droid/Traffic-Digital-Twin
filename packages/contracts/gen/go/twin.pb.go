@@ -369,6 +369,10 @@ type MovementState struct {
 	DownstreamCapacityVeh float64                `protobuf:"fixed64,7,opt,name=downstream_capacity_veh,json=downstreamCapacityVeh,proto3" json:"downstream_capacity_veh,omitempty"`
 	CurrentPhaseId        string                 `protobuf:"bytes,8,opt,name=current_phase_id,json=currentPhaseId,proto3" json:"current_phase_id,omitempty"`
 	WaitingAgeS           float64                `protobuf:"fixed64,9,opt,name=waiting_age_s,json=waitingAgeS,proto3" json:"waiting_age_s,omitempty"`
+	VehicleCount          uint32                 `protobuf:"varint,10,opt,name=vehicle_count,json=vehicleCount,proto3" json:"vehicle_count,omitempty"`
+	ArrivalsTotal         uint32                 `protobuf:"varint,11,opt,name=arrivals_total,json=arrivalsTotal,proto3" json:"arrivals_total,omitempty"`
+	DeparturesTotal       uint32                 `protobuf:"varint,12,opt,name=departures_total,json=departuresTotal,proto3" json:"departures_total,omitempty"`
+	Permission            string                 `protobuf:"bytes,13,opt,name=permission,proto3" json:"permission,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -466,16 +470,51 @@ func (x *MovementState) GetWaitingAgeS() float64 {
 	return 0
 }
 
+func (x *MovementState) GetVehicleCount() uint32 {
+	if x != nil {
+		return x.VehicleCount
+	}
+	return 0
+}
+
+func (x *MovementState) GetArrivalsTotal() uint32 {
+	if x != nil {
+		return x.ArrivalsTotal
+	}
+	return 0
+}
+
+func (x *MovementState) GetDeparturesTotal() uint32 {
+	if x != nil {
+		return x.DeparturesTotal
+	}
+	return 0
+}
+
+func (x *MovementState) GetPermission() string {
+	if x != nil {
+		return x.Permission
+	}
+	return ""
+}
+
 type TrafficState struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	SchemaVersion   string                 `protobuf:"bytes,1,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
-	RunId           string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
-	Timestamp       string                 `protobuf:"bytes,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	SimulationTimeS float64                `protobuf:"fixed64,4,opt,name=simulation_time_s,json=simulationTimeS,proto3" json:"simulation_time_s,omitempty"`
-	Source          string                 `protobuf:"bytes,5,opt,name=source,proto3" json:"source,omitempty"`
-	Movements       []*MovementState       `protobuf:"bytes,6,rep,name=movements,proto3" json:"movements,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	SchemaVersion     string                 `protobuf:"bytes,1,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
+	RunId             string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	Timestamp         string                 `protobuf:"bytes,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	SimulationTimeS   float64                `protobuf:"fixed64,4,opt,name=simulation_time_s,json=simulationTimeS,proto3" json:"simulation_time_s,omitempty"`
+	Source            string                 `protobuf:"bytes,5,opt,name=source,proto3" json:"source,omitempty"`
+	Movements         []*MovementState       `protobuf:"bytes,6,rep,name=movements,proto3" json:"movements,omitempty"`
+	Signals           []*SignalState         `protobuf:"bytes,7,rep,name=signals,proto3" json:"signals,omitempty"`
+	VehiclesInNetwork uint32                 `protobuf:"varint,8,opt,name=vehicles_in_network,json=vehiclesInNetwork,proto3" json:"vehicles_in_network,omitempty"`
+	InsertedTotal     uint32                 `protobuf:"varint,9,opt,name=inserted_total,json=insertedTotal,proto3" json:"inserted_total,omitempty"`
+	ArrivedTotal      uint32                 `protobuf:"varint,10,opt,name=arrived_total,json=arrivedTotal,proto3" json:"arrived_total,omitempty"`
+	TeleportedTotal   uint32                 `protobuf:"varint,11,opt,name=teleported_total,json=teleportedTotal,proto3" json:"teleported_total,omitempty"`
+	ScenarioType      string                 `protobuf:"bytes,12,opt,name=scenario_type,json=scenarioType,proto3" json:"scenario_type,omitempty"`
+	Seed              uint32                 `protobuf:"varint,13,opt,name=seed,proto3" json:"seed,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *TrafficState) Reset() {
@@ -548,6 +587,55 @@ func (x *TrafficState) GetMovements() []*MovementState {
 		return x.Movements
 	}
 	return nil
+}
+
+func (x *TrafficState) GetSignals() []*SignalState {
+	if x != nil {
+		return x.Signals
+	}
+	return nil
+}
+
+func (x *TrafficState) GetVehiclesInNetwork() uint32 {
+	if x != nil {
+		return x.VehiclesInNetwork
+	}
+	return 0
+}
+
+func (x *TrafficState) GetInsertedTotal() uint32 {
+	if x != nil {
+		return x.InsertedTotal
+	}
+	return 0
+}
+
+func (x *TrafficState) GetArrivedTotal() uint32 {
+	if x != nil {
+		return x.ArrivedTotal
+	}
+	return 0
+}
+
+func (x *TrafficState) GetTeleportedTotal() uint32 {
+	if x != nil {
+		return x.TeleportedTotal
+	}
+	return 0
+}
+
+func (x *TrafficState) GetScenarioType() string {
+	if x != nil {
+		return x.ScenarioType
+	}
+	return ""
+}
+
+func (x *TrafficState) GetSeed() uint32 {
+	if x != nil {
+		return x.Seed
+	}
+	return 0
 }
 
 type Forecast struct {
@@ -1407,13 +1495,14 @@ func (x *Alert) GetMessage() string {
 }
 
 type SignalState struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	NodeId        string                 `protobuf:"bytes,1,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
-	PhaseId       string                 `protobuf:"bytes,2,opt,name=phase_id,json=phaseId,proto3" json:"phase_id,omitempty"`
-	Indication    string                 `protobuf:"bytes,3,opt,name=indication,proto3" json:"indication,omitempty"`
-	RemainingS    float64                `protobuf:"fixed64,4,opt,name=remaining_s,json=remainingS,proto3" json:"remaining_s,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	NodeId               string                 `protobuf:"bytes,1,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
+	PhaseId              string                 `protobuf:"bytes,2,opt,name=phase_id,json=phaseId,proto3" json:"phase_id,omitempty"`
+	Indication           string                 `protobuf:"bytes,3,opt,name=indication,proto3" json:"indication,omitempty"`
+	RemainingS           float64                `protobuf:"fixed64,4,opt,name=remaining_s,json=remainingS,proto3" json:"remaining_s,omitempty"`
+	PermittedMovementIds []string               `protobuf:"bytes,5,rep,name=permitted_movement_ids,json=permittedMovementIds,proto3" json:"permitted_movement_ids,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *SignalState) Reset() {
@@ -1472,6 +1561,13 @@ func (x *SignalState) GetRemainingS() float64 {
 		return x.RemainingS
 	}
 	return 0
+}
+
+func (x *SignalState) GetPermittedMovementIds() []string {
+	if x != nil {
+		return x.PermittedMovementIds
+	}
+	return nil
 }
 
 type ComparisonResult struct {
@@ -1782,6 +1878,7 @@ type RunCommand struct {
 	ScenarioType  string                 `protobuf:"bytes,2,opt,name=scenario_type,json=scenarioType,proto3" json:"scenario_type,omitempty"`
 	Seed          uint32                 `protobuf:"varint,3,opt,name=seed,proto3" json:"seed,omitempty"`
 	Mode          string                 `protobuf:"bytes,4,opt,name=mode,proto3" json:"mode,omitempty"`
+	RunId         string                 `protobuf:"bytes,5,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1840,6 +1937,13 @@ func (x *RunCommand) GetSeed() uint32 {
 func (x *RunCommand) GetMode() string {
 	if x != nil {
 		return x.Mode
+	}
+	return ""
+}
+
+func (x *RunCommand) GetRunId() string {
+	if x != nil {
+		return x.RunId
 	}
 	return ""
 }
@@ -1974,7 +2078,7 @@ const file_twin_proto_rawDesc = "" +
 	"\vmin_green_s\x18\x04 \x01(\x01R\tminGreenS\x12\x1e\n" +
 	"\vmax_green_s\x18\x05 \x01(\x01R\tmaxGreenS\x12\x17\n" +
 	"\aamber_s\x18\x06 \x01(\x01R\x06amberS\x12\x1a\n" +
-	"\tall_red_s\x18\a \x01(\x01R\aallRedS\"\xf8\x02\n" +
+	"\tall_red_s\x18\a \x01(\x01R\aallRedS\"\x8f\x04\n" +
 	"\rMovementState\x12\x1f\n" +
 	"\vmovement_id\x18\x01 \x01(\tR\n" +
 	"movementId\x12\x1b\n" +
@@ -1985,14 +2089,29 @@ const file_twin_proto_rawDesc = "" +
 	"\x0foccupancy_ratio\x18\x06 \x01(\x01R\x0eoccupancyRatio\x126\n" +
 	"\x17downstream_capacity_veh\x18\a \x01(\x01R\x15downstreamCapacityVeh\x12(\n" +
 	"\x10current_phase_id\x18\b \x01(\tR\x0ecurrentPhaseId\x12\"\n" +
-	"\rwaiting_age_s\x18\t \x01(\x01R\vwaitingAgeS\"\xe7\x01\n" +
+	"\rwaiting_age_s\x18\t \x01(\x01R\vwaitingAgeS\x12#\n" +
+	"\rvehicle_count\x18\n" +
+	" \x01(\rR\fvehicleCount\x12%\n" +
+	"\x0earrivals_total\x18\v \x01(\rR\rarrivalsTotal\x12)\n" +
+	"\x10departures_total\x18\f \x01(\rR\x0fdeparturesTotal\x12\x1e\n" +
+	"\n" +
+	"permission\x18\r \x01(\tR\n" +
+	"permission\"\xfa\x03\n" +
 	"\fTrafficState\x12%\n" +
 	"\x0eschema_version\x18\x01 \x01(\tR\rschemaVersion\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1c\n" +
 	"\ttimestamp\x18\x03 \x01(\tR\ttimestamp\x12*\n" +
 	"\x11simulation_time_s\x18\x04 \x01(\x01R\x0fsimulationTimeS\x12\x16\n" +
 	"\x06source\x18\x05 \x01(\tR\x06source\x127\n" +
-	"\tmovements\x18\x06 \x03(\v2\x19.traffic.v1.MovementStateR\tmovements\"\xff\x02\n" +
+	"\tmovements\x18\x06 \x03(\v2\x19.traffic.v1.MovementStateR\tmovements\x121\n" +
+	"\asignals\x18\a \x03(\v2\x17.traffic.v1.SignalStateR\asignals\x12.\n" +
+	"\x13vehicles_in_network\x18\b \x01(\rR\x11vehiclesInNetwork\x12%\n" +
+	"\x0einserted_total\x18\t \x01(\rR\rinsertedTotal\x12#\n" +
+	"\rarrived_total\x18\n" +
+	" \x01(\rR\farrivedTotal\x12)\n" +
+	"\x10teleported_total\x18\v \x01(\rR\x0fteleportedTotal\x12#\n" +
+	"\rscenario_type\x18\f \x01(\tR\fscenarioType\x12\x12\n" +
+	"\x04seed\x18\r \x01(\rR\x04seed\"\xff\x02\n" +
 	"\bForecast\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1f\n" +
@@ -2072,7 +2191,7 @@ const file_twin_proto_rawDesc = "" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1a\n" +
 	"\bseverity\x18\x03 \x01(\tR\bseverity\x12\x1b\n" +
 	"\ttarget_id\x18\x04 \x01(\tR\btargetId\x12\x18\n" +
-	"\amessage\x18\x05 \x01(\tR\amessage\"\x82\x01\n" +
+	"\amessage\x18\x05 \x01(\tR\amessage\"\xb8\x01\n" +
 	"\vSignalState\x12\x17\n" +
 	"\anode_id\x18\x01 \x01(\tR\x06nodeId\x12\x19\n" +
 	"\bphase_id\x18\x02 \x01(\tR\aphaseId\x12\x1e\n" +
@@ -2080,7 +2199,8 @@ const file_twin_proto_rawDesc = "" +
 	"indication\x18\x03 \x01(\tR\n" +
 	"indication\x12\x1f\n" +
 	"\vremaining_s\x18\x04 \x01(\x01R\n" +
-	"remainingS\"\xa6\x02\n" +
+	"remainingS\x124\n" +
+	"\x16permitted_movement_ids\x18\x05 \x03(\tR\x14permittedMovementIds\"\xa6\x02\n" +
 	"\x10ComparisonResult\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12+\n" +
 	"\x11recommendation_id\x18\x02 \x01(\tR\x10recommendationId\x123\n" +
@@ -2102,24 +2222,27 @@ const file_twin_proto_rawDesc = "" +
 	"\x11emergency_updated\x18\x10 \x01(\v2\x1a.traffic.v1.EmergencyEventH\x00R\x10emergencyUpdated\x12@\n" +
 	"\x0ehealth_updated\x18\x11 \x01(\v2\x17.traffic.v1.HealthStateH\x00R\rhealthUpdated\x12?\n" +
 	"\x0eaudit_appended\x18\x12 \x01(\v2\x16.traffic.v1.AuditEventH\x00R\rauditAppendedB\a\n" +
-	"\x05event\"\x80\x01\n" +
+	"\x05event\"\x97\x01\n" +
 	"\n" +
 	"RunCommand\x12%\n" +
 	"\x0eschema_version\x18\x01 \x01(\tR\rschemaVersion\x12#\n" +
 	"\rscenario_type\x18\x02 \x01(\tR\fscenarioType\x12\x12\n" +
 	"\x04seed\x18\x03 \x01(\rR\x04seed\x12\x12\n" +
-	"\x04mode\x18\x04 \x01(\tR\x04mode\"#\n" +
+	"\x04mode\x18\x04 \x01(\tR\x04mode\x12\x15\n" +
+	"\x06run_id\x18\x05 \x01(\tR\x05runId\"#\n" +
 	"\n" +
 	"RunRequest\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\"@\n" +
 	"\x10ValidationResult\x12\x14\n" +
 	"\x05valid\x18\x01 \x01(\bR\x05valid\x12\x16\n" +
-	"\x06errors\x18\x02 \x03(\tR\x06errors2\xce\x01\n" +
+	"\x06errors\x18\x02 \x03(\tR\x06errors2\xcf\x02\n" +
 	"\n" +
 	"Simulation\x12G\n" +
 	"\rValidateState\x12\x18.traffic.v1.TrafficState\x1a\x1c.traffic.v1.ValidationResult\x129\n" +
 	"\x05Reset\x12\x16.traffic.v1.RunCommand\x1a\x18.traffic.v1.TrafficState\x12<\n" +
-	"\bGetState\x12\x16.traffic.v1.RunRequest\x1a\x18.traffic.v1.TrafficState2\x92\x01\n" +
+	"\bGetState\x12\x16.traffic.v1.RunRequest\x1a\x18.traffic.v1.TrafficState\x12A\n" +
+	"\vStreamState\x12\x16.traffic.v1.RunRequest\x1a\x18.traffic.v1.TrafficState0\x01\x12<\n" +
+	"\x04Stop\x12\x16.traffic.v1.RunRequest\x1a\x1c.traffic.v1.ValidationResult2\x92\x01\n" +
 	"\fIntelligence\x12G\n" +
 	"\rValidateState\x12\x18.traffic.v1.TrafficState\x1a\x1c.traffic.v1.ValidationResult\x129\n" +
 	"\aPredict\x12\x18.traffic.v1.TrafficState\x1a\x14.traffic.v1.ForecastB:Z8traffic.local/twin/packages/contracts/gen/go;contractsv1b\x06proto3"
@@ -2163,35 +2286,40 @@ var file_twin_proto_goTypes = []any{
 }
 var file_twin_proto_depIdxs = []int32{
 	4,  // 0: traffic.v1.TrafficState.movements:type_name -> traffic.v1.MovementState
-	7,  // 1: traffic.v1.Recommendation.changes:type_name -> traffic.v1.TimingChange
-	7,  // 2: traffic.v1.OperatorAction.modifications:type_name -> traffic.v1.TimingChange
-	12, // 3: traffic.v1.HealthState.components:type_name -> traffic.v1.ComponentHealth
-	7,  // 4: traffic.v1.AuditEvent.before:type_name -> traffic.v1.TimingChange
-	7,  // 5: traffic.v1.AuditEvent.after:type_name -> traffic.v1.TimingChange
-	5,  // 6: traffic.v1.EventEnvelope.network_state:type_name -> traffic.v1.TrafficState
-	16, // 7: traffic.v1.EventEnvelope.junction_state:type_name -> traffic.v1.SignalState
-	6,  // 8: traffic.v1.EventEnvelope.forecast_updated:type_name -> traffic.v1.Forecast
-	8,  // 9: traffic.v1.EventEnvelope.recommendation_created:type_name -> traffic.v1.Recommendation
-	8,  // 10: traffic.v1.EventEnvelope.recommendation_updated:type_name -> traffic.v1.Recommendation
-	10, // 11: traffic.v1.EventEnvelope.incident_updated:type_name -> traffic.v1.Incident
-	11, // 12: traffic.v1.EventEnvelope.emergency_updated:type_name -> traffic.v1.EmergencyEvent
-	13, // 13: traffic.v1.EventEnvelope.health_updated:type_name -> traffic.v1.HealthState
-	14, // 14: traffic.v1.EventEnvelope.audit_appended:type_name -> traffic.v1.AuditEvent
-	5,  // 15: traffic.v1.Simulation.ValidateState:input_type -> traffic.v1.TrafficState
-	19, // 16: traffic.v1.Simulation.Reset:input_type -> traffic.v1.RunCommand
-	20, // 17: traffic.v1.Simulation.GetState:input_type -> traffic.v1.RunRequest
-	5,  // 18: traffic.v1.Intelligence.ValidateState:input_type -> traffic.v1.TrafficState
-	5,  // 19: traffic.v1.Intelligence.Predict:input_type -> traffic.v1.TrafficState
-	21, // 20: traffic.v1.Simulation.ValidateState:output_type -> traffic.v1.ValidationResult
-	5,  // 21: traffic.v1.Simulation.Reset:output_type -> traffic.v1.TrafficState
-	5,  // 22: traffic.v1.Simulation.GetState:output_type -> traffic.v1.TrafficState
-	21, // 23: traffic.v1.Intelligence.ValidateState:output_type -> traffic.v1.ValidationResult
-	6,  // 24: traffic.v1.Intelligence.Predict:output_type -> traffic.v1.Forecast
-	20, // [20:25] is the sub-list for method output_type
-	15, // [15:20] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	16, // 1: traffic.v1.TrafficState.signals:type_name -> traffic.v1.SignalState
+	7,  // 2: traffic.v1.Recommendation.changes:type_name -> traffic.v1.TimingChange
+	7,  // 3: traffic.v1.OperatorAction.modifications:type_name -> traffic.v1.TimingChange
+	12, // 4: traffic.v1.HealthState.components:type_name -> traffic.v1.ComponentHealth
+	7,  // 5: traffic.v1.AuditEvent.before:type_name -> traffic.v1.TimingChange
+	7,  // 6: traffic.v1.AuditEvent.after:type_name -> traffic.v1.TimingChange
+	5,  // 7: traffic.v1.EventEnvelope.network_state:type_name -> traffic.v1.TrafficState
+	16, // 8: traffic.v1.EventEnvelope.junction_state:type_name -> traffic.v1.SignalState
+	6,  // 9: traffic.v1.EventEnvelope.forecast_updated:type_name -> traffic.v1.Forecast
+	8,  // 10: traffic.v1.EventEnvelope.recommendation_created:type_name -> traffic.v1.Recommendation
+	8,  // 11: traffic.v1.EventEnvelope.recommendation_updated:type_name -> traffic.v1.Recommendation
+	10, // 12: traffic.v1.EventEnvelope.incident_updated:type_name -> traffic.v1.Incident
+	11, // 13: traffic.v1.EventEnvelope.emergency_updated:type_name -> traffic.v1.EmergencyEvent
+	13, // 14: traffic.v1.EventEnvelope.health_updated:type_name -> traffic.v1.HealthState
+	14, // 15: traffic.v1.EventEnvelope.audit_appended:type_name -> traffic.v1.AuditEvent
+	5,  // 16: traffic.v1.Simulation.ValidateState:input_type -> traffic.v1.TrafficState
+	19, // 17: traffic.v1.Simulation.Reset:input_type -> traffic.v1.RunCommand
+	20, // 18: traffic.v1.Simulation.GetState:input_type -> traffic.v1.RunRequest
+	20, // 19: traffic.v1.Simulation.StreamState:input_type -> traffic.v1.RunRequest
+	20, // 20: traffic.v1.Simulation.Stop:input_type -> traffic.v1.RunRequest
+	5,  // 21: traffic.v1.Intelligence.ValidateState:input_type -> traffic.v1.TrafficState
+	5,  // 22: traffic.v1.Intelligence.Predict:input_type -> traffic.v1.TrafficState
+	21, // 23: traffic.v1.Simulation.ValidateState:output_type -> traffic.v1.ValidationResult
+	5,  // 24: traffic.v1.Simulation.Reset:output_type -> traffic.v1.TrafficState
+	5,  // 25: traffic.v1.Simulation.GetState:output_type -> traffic.v1.TrafficState
+	5,  // 26: traffic.v1.Simulation.StreamState:output_type -> traffic.v1.TrafficState
+	21, // 27: traffic.v1.Simulation.Stop:output_type -> traffic.v1.ValidationResult
+	21, // 28: traffic.v1.Intelligence.ValidateState:output_type -> traffic.v1.ValidationResult
+	6,  // 29: traffic.v1.Intelligence.Predict:output_type -> traffic.v1.Forecast
+	23, // [23:30] is the sub-list for method output_type
+	16, // [16:23] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_twin_proto_init() }

@@ -1,15 +1,10 @@
-"""Epic 1 contract endpoint. Simulation/optimizer RPCs remain UNIMPLEMENTED."""
+"""Private gRPC services; the browser communicates through Go only."""
 import argparse
 from concurrent import futures
 import grpc
 import twin_pb2 as pb
 import twin_pb2_grpc as rpc
 from services.shared.validation import validate_state
-
-class Simulation(rpc.SimulationServicer):
-    def ValidateState(self, request, context):
-        errors = validate_state(request)
-        return pb.ValidationResult(valid=not errors, errors=errors)
 
 class Intelligence(rpc.IntelligenceServicer):
     def ValidateState(self, request, context):
@@ -19,7 +14,9 @@ class Intelligence(rpc.IntelligenceServicer):
 def serve(kind, port):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=4), options=[('grpc.max_receive_message_length', 1048576)])
     if kind == 'simulation':
-        rpc.add_SimulationServicer_to_server(Simulation(), server)
+        from services.simulation.service import Simulation
+        simulation = Simulation()
+        rpc.add_SimulationServicer_to_server(simulation, server)
     else:
         rpc.add_IntelligenceServicer_to_server(Intelligence(), server)
     if not server.add_insecure_port(f'127.0.0.1:{port}'):
@@ -30,6 +27,9 @@ def serve(kind, port):
         server.wait_for_termination()
     except KeyboardInterrupt:
         server.stop(2).wait()
+    finally:
+        if kind == 'simulation':
+            simulation.engine.close()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

@@ -22,6 +22,8 @@ const (
 	Simulation_ValidateState_FullMethodName = "/traffic.v1.Simulation/ValidateState"
 	Simulation_Reset_FullMethodName         = "/traffic.v1.Simulation/Reset"
 	Simulation_GetState_FullMethodName      = "/traffic.v1.Simulation/GetState"
+	Simulation_StreamState_FullMethodName   = "/traffic.v1.Simulation/StreamState"
+	Simulation_Stop_FullMethodName          = "/traffic.v1.Simulation/Stop"
 )
 
 // SimulationClient is the client API for Simulation service.
@@ -31,6 +33,8 @@ type SimulationClient interface {
 	ValidateState(ctx context.Context, in *TrafficState, opts ...grpc.CallOption) (*ValidationResult, error)
 	Reset(ctx context.Context, in *RunCommand, opts ...grpc.CallOption) (*TrafficState, error)
 	GetState(ctx context.Context, in *RunRequest, opts ...grpc.CallOption) (*TrafficState, error)
+	StreamState(ctx context.Context, in *RunRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TrafficState], error)
+	Stop(ctx context.Context, in *RunRequest, opts ...grpc.CallOption) (*ValidationResult, error)
 }
 
 type simulationClient struct {
@@ -71,6 +75,35 @@ func (c *simulationClient) GetState(ctx context.Context, in *RunRequest, opts ..
 	return out, nil
 }
 
+func (c *simulationClient) StreamState(ctx context.Context, in *RunRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TrafficState], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Simulation_ServiceDesc.Streams[0], Simulation_StreamState_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[RunRequest, TrafficState]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Simulation_StreamStateClient = grpc.ServerStreamingClient[TrafficState]
+
+func (c *simulationClient) Stop(ctx context.Context, in *RunRequest, opts ...grpc.CallOption) (*ValidationResult, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ValidationResult)
+	err := c.cc.Invoke(ctx, Simulation_Stop_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SimulationServer is the server API for Simulation service.
 // All implementations must embed UnimplementedSimulationServer
 // for forward compatibility.
@@ -78,6 +111,8 @@ type SimulationServer interface {
 	ValidateState(context.Context, *TrafficState) (*ValidationResult, error)
 	Reset(context.Context, *RunCommand) (*TrafficState, error)
 	GetState(context.Context, *RunRequest) (*TrafficState, error)
+	StreamState(*RunRequest, grpc.ServerStreamingServer[TrafficState]) error
+	Stop(context.Context, *RunRequest) (*ValidationResult, error)
 	mustEmbedUnimplementedSimulationServer()
 }
 
@@ -96,6 +131,12 @@ func (UnimplementedSimulationServer) Reset(context.Context, *RunCommand) (*Traff
 }
 func (UnimplementedSimulationServer) GetState(context.Context, *RunRequest) (*TrafficState, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetState not implemented")
+}
+func (UnimplementedSimulationServer) StreamState(*RunRequest, grpc.ServerStreamingServer[TrafficState]) error {
+	return status.Error(codes.Unimplemented, "method StreamState not implemented")
+}
+func (UnimplementedSimulationServer) Stop(context.Context, *RunRequest) (*ValidationResult, error) {
+	return nil, status.Error(codes.Unimplemented, "method Stop not implemented")
 }
 func (UnimplementedSimulationServer) mustEmbedUnimplementedSimulationServer() {}
 func (UnimplementedSimulationServer) testEmbeddedByValue()                    {}
@@ -172,6 +213,35 @@ func _Simulation_GetState_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Simulation_StreamState_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(RunRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(SimulationServer).StreamState(m, &grpc.GenericServerStream[RunRequest, TrafficState]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Simulation_StreamStateServer = grpc.ServerStreamingServer[TrafficState]
+
+func _Simulation_Stop_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RunRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SimulationServer).Stop(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Simulation_Stop_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SimulationServer).Stop(ctx, req.(*RunRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Simulation_ServiceDesc is the grpc.ServiceDesc for Simulation service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -191,8 +261,18 @@ var Simulation_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetState",
 			Handler:    _Simulation_GetState_Handler,
 		},
+		{
+			MethodName: "Stop",
+			Handler:    _Simulation_Stop_Handler,
+		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StreamState",
+			Handler:       _Simulation_StreamState_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "twin.proto",
 }
 

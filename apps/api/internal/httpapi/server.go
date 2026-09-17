@@ -28,6 +28,7 @@ type Server struct {
 	Store         *store.Store
 	mu            sync.RWMutex
 	state         *pb.TrafficState
+	sim           *simulationLink
 }
 type apiError struct {
 	Error   string `json:"error"`
@@ -74,7 +75,7 @@ func (s *Server) Handler() http.Handler {
 	r.Get("/api/v1/state", func(w http.ResponseWriter, r *http.Request) {
 		s.mu.RLock()
 		defer s.mu.RUnlock()
-		if s.state == nil {
+		if s.state == nil || (s.sim != nil && (time.Since(s.sim.received) > 2500*time.Millisecond || s.sim.fault != "")) {
 			problem(w, 503, "Simulation not connected; no traffic measurements available")
 			return
 		}
@@ -164,8 +165,8 @@ func (s *Server) Handler() http.Handler {
 		problem(w, 501, "This operation requires a later epic; no simulation or signal change was applied")
 	}
 	r.Post("/api/v1/recommendations/{id}/{action}", unavailable)
-	r.Post("/api/v1/scenarios/{type}/start", unavailable)
-	r.Post("/api/v1/scenarios/reset", unavailable)
+	r.Post("/api/v1/scenarios/{type}/start", s.startScenario)
+	r.Post("/api/v1/scenarios/reset", s.resetScenario)
 	r.Post("/api/v1/mode/{mode}", unavailable)
 	r.Get("/ws/v1/live", s.live)
 	return r
@@ -228,7 +229,8 @@ func (s *Server) health(ctx context.Context) *pb.HealthState {
 			dbMessage = "PostgreSQL connection failed"
 		}
 	}
-	return &pb.HealthState{Timestamp: time.Now().UTC().Format(time.RFC3339Nano), Components: []*pb.ComponentHealth{{Component: "api", Status: "normal", Message: "Go API connected"}, {Component: "database", Status: dbStatus, Message: dbMessage}, {Component: "simulation", Status: "unavailable", Message: "Simulation execution not implemented in Epic 1"}, {Component: "intelligence", Status: "unavailable", Message: "Prediction and optimization not implemented in Epic 1"}, {Component: "signal_controller", Status: "unavailable", Message: "No live signal control"}}}
+	simStatus, simMessage := s.simulationHealth()
+	return &pb.HealthState{Timestamp: time.Now().UTC().Format(time.RFC3339Nano), Components: []*pb.ComponentHealth{{Component: "api", Status: "normal", Message: "Go API connected"}, {Component: "database", Status: dbStatus, Message: dbMessage}, {Component: "simulation", Status: simStatus, Message: simMessage}, {Component: "intelligence", Status: "unavailable", Message: "Prediction and optimization not implemented in Epic 1"}, {Component: "signal_controller", Status: "unavailable", Message: "No live signal control"}}}
 }
 func (s *Server) live(w http.ResponseWriter, r *http.Request) {
 	options := &websocket.AcceptOptions{}
@@ -241,28 +243,62 @@ func (s *Server) live(w http.ResponseWriter, r *http.Request) {
 	}
 	defer c.CloseNow()
 	ctx := c.CloseRead(r.Context())
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
+	frames := make(chan *pb.TrafficState, 1)
+	s.mu.Lock()
+	if s.sim != nil {
+		s.sim.subscribers[frames] = struct{}{}
+		if s.state != nil && time.Since(s.sim.received) < 2500*time.Millisecond && s.sim.fault == "" {
+			frames <- proto.Clone(s.state).(*pb.TrafficState)
+		}
+	}
+	s.mu.Unlock()
+	defer func() {
+		s.mu.Lock()
+		if s.sim != nil {
+			delete(s.sim.subscribers, frames)
+		}
+		s.mu.Unlock()
+	}()
 	sequence := uint64(0)
-	for {
+	write := func(kind string, payload proto.Message) error {
 		sequence++
+		b, e := (protojson.MarshalOptions{UseProtoNames: true, EmitUnpopulated: true}).Marshal(payload)
+		if e != nil {
+			return e
+		}
 		event := struct {
 			Version   string          `json:"schema_version"`
 			Type      string          `json:"type"`
 			Sequence  string          `json:"sequence"`
 			Timestamp string          `json:"timestamp"`
-			Health    *pb.HealthState `json:"payload"`
-		}{"1.0", "health.updated", strconv.FormatUint(sequence, 10), time.Now().UTC().Format(time.RFC3339Nano), s.health(ctx)}
-		writeCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
-		e = wsjson.Write(writeCtx, c, event)
-		cancel()
-		if e != nil {
-			return
-		}
+			Payload   json.RawMessage `json:"payload"`
+		}{"1.0", kind, strconv.FormatUint(sequence, 10), time.Now().UTC().Format(time.RFC3339Nano), b}
+		writeCtx, cancel := context.WithTimeout(ctx, time.Second)
+		defer cancel()
+		return wsjson.Write(writeCtx, c, event)
+	}
+	if write("health.updated", s.health(ctx)) != nil {
+		return
+	}
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
 		select {
 		case <-ctx.Done():
 			return
+		case frame := <-frames:
+			if write("network.state", frame) != nil {
+				return
+			}
+			for _, signal := range frame.Signals {
+				if write("junction.state", signal) != nil {
+					return
+				}
+			}
 		case <-ticker.C:
+			if write("health.updated", s.health(ctx)) != nil {
+				return
+			}
 		}
 	}
 }

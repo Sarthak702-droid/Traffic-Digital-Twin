@@ -449,6 +449,21 @@
         "waiting_age_s": {
           "type": "number",
           "minimum": 0
+        },
+        "vehicle_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "arrivals_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "departures_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "permission": {
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -461,7 +476,11 @@
         "occupancy_ratio",
         "downstream_capacity_veh",
         "current_phase_id",
-        "waiting_age_s"
+        "waiting_age_s",
+        "vehicle_count",
+        "arrivals_total",
+        "departures_total",
+        "permission"
       ]
     },
     "TrafficState": {
@@ -488,6 +507,35 @@
           "items": {
             "$ref": "#/$defs/MovementState"
           }
+        },
+        "signals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SignalState"
+          }
+        },
+        "vehicles_in_network": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "inserted_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "arrived_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "teleported_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scenario_type": {
+          "type": "string"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0
         }
       },
       "additionalProperties": false,
@@ -497,7 +545,14 @@
         "timestamp",
         "simulation_time_s",
         "source",
-        "movements"
+        "movements",
+        "signals",
+        "vehicles_in_network",
+        "inserted_total",
+        "arrived_total",
+        "teleported_total",
+        "scenario_type",
+        "seed"
       ]
     },
     "Forecast": {
@@ -875,6 +930,12 @@
         "remaining_s": {
           "type": "number",
           "minimum": 0
+        },
+        "permitted_movement_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "additionalProperties": false,
@@ -882,7 +943,8 @@
         "node_id",
         "phase_id",
         "indication",
-        "remaining_s"
+        "remaining_s",
+        "permitted_movement_ids"
       ]
     },
     "ComparisonResult": {
@@ -984,6 +1046,9 @@
         },
         "mode": {
           "type": "string"
+        },
+        "run_id": {
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -991,7 +1056,8 @@
         "schema_version",
         "scenario_type",
         "seed",
-        "mode"
+        "mode",
+        "run_id"
       ]
     },
     "RunRequest": {

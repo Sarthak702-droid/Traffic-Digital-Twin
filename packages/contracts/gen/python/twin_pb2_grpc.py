@@ -49,6 +49,16 @@ class SimulationStub:
                 request_serializer=twin__pb2.RunRequest.SerializeToString,
                 response_deserializer=twin__pb2.TrafficState.FromString,
                 _registered_method=True)
+        self.StreamState = channel.unary_stream(
+                '/traffic.v1.Simulation/StreamState',
+                request_serializer=twin__pb2.RunRequest.SerializeToString,
+                response_deserializer=twin__pb2.TrafficState.FromString,
+                _registered_method=True)
+        self.Stop = channel.unary_unary(
+                '/traffic.v1.Simulation/Stop',
+                request_serializer=twin__pb2.RunRequest.SerializeToString,
+                response_deserializer=twin__pb2.ValidationResult.FromString,
+                _registered_method=True)
 
 
 class SimulationServicer:
@@ -72,6 +82,18 @@ class SimulationServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def StreamState(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Stop(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_SimulationServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -89,6 +111,16 @@ def add_SimulationServicer_to_server(servicer, server):
                     servicer.GetState,
                     request_deserializer=twin__pb2.RunRequest.FromString,
                     response_serializer=twin__pb2.TrafficState.SerializeToString,
+            ),
+            'StreamState': grpc.unary_stream_rpc_method_handler(
+                    servicer.StreamState,
+                    request_deserializer=twin__pb2.RunRequest.FromString,
+                    response_serializer=twin__pb2.TrafficState.SerializeToString,
+            ),
+            'Stop': grpc.unary_unary_rpc_method_handler(
+                    servicer.Stop,
+                    request_deserializer=twin__pb2.RunRequest.FromString,
+                    response_serializer=twin__pb2.ValidationResult.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -172,6 +204,60 @@ class Simulation:
             '/traffic.v1.Simulation/GetState',
             twin__pb2.RunRequest.SerializeToString,
             twin__pb2.TrafficState.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StreamState(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/traffic.v1.Simulation/StreamState',
+            twin__pb2.RunRequest.SerializeToString,
+            twin__pb2.TrafficState.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Stop(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/traffic.v1.Simulation/Stop',
+            twin__pb2.RunRequest.SerializeToString,
+            twin__pb2.ValidationResult.FromString,
             options,
             channel_credentials,
             insecure,
