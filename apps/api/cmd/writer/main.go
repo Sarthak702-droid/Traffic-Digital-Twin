@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"time"
@@ -35,9 +36,29 @@ func main() {
 	if addr == "" {
 		addr = "127.0.0.1:8083"
 	}
-	server := http.Server{Addr: addr, Handler: store.New(pool).WriterHandler(token), ReadHeaderTimeout: 3 * time.Second, ReadTimeout: 5 * time.Second, WriteTimeout: 6 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 16384}
+	var listener net.Listener
+	for attempt := 0; attempt < 15; attempt++ {
+		listener, e = net.Listen("tcp", addr)
+		if e == nil {
+			break
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	if e != nil {
+		panic(e)
+	}
+	defer listener.Close()
+
+	server := http.Server{
+		Handler: store.New(pool).WriterHandler(token),
+		ReadHeaderTimeout: 3 * time.Second,
+		ReadTimeout: 5 * time.Second,
+		WriteTimeout: 6 * time.Second,
+		IdleTimeout: 30 * time.Second,
+		MaxHeaderBytes: 16384,
+	}
 	slog.Info("Private Go writer ready", "address", addr)
-	if e = server.ListenAndServe(); e != nil {
+	if e = server.Serve(listener); e != nil && e != http.ErrServerClosed {
 		panic(e)
 	}
 }

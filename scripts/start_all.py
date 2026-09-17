@@ -156,7 +156,7 @@ def find_executable(name: str, fallback_paths: list[str]) -> str:
 
 def cleanup_stale_services():
     # Clean up lingering local processes on digital twin service ports
-    ports = [8081, 8082, 8083, 50051, 50052, 3100]
+    ports = [8081, 8082, 8083, 8085, 8086, 50051, 50052, 3100]
     for p in ports:
         try:
             out = subprocess.check_output(["lsof", "-t", f"-i:{p}"], stderr=subprocess.DEVNULL)
@@ -169,6 +169,17 @@ def cleanup_stale_services():
                         pass
         except Exception:
             pass
+        try:
+            subprocess.run(["fuser", "-k", "-9", f"{p}/tcp"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
+
+    # Wait for ports to be released by kernel
+    for p in ports:
+        for _ in range(25):
+            if not check_port("127.0.0.1", p, timeout=0.08):
+                break
+            time.sleep(0.08)
 
 
 def main():

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -95,13 +96,26 @@ func run() error {
 	if e = app.ConnectIntelligence(simCtx, intAddress); e != nil {
 		return e
 	}
-	server := &http.Server{Addr: addr, Handler: app.Handler(), ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second}
+	var listener net.Listener
+	for attempt := 0; attempt < 15; attempt++ {
+		listener, e = net.Listen("tcp", addr)
+		if e == nil {
+			break
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	if e != nil {
+		return e
+	}
+	defer listener.Close()
+
+	server := &http.Server{Handler: app.Handler(), ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	done := make(chan error, 1)
 	go func() {
 		slog.Info("Go API ready", "address", addr, "config", network.ID)
-		done <- server.ListenAndServe()
+		done <- server.Serve(listener)
 	}()
 	select {
 	case e := <-done:
