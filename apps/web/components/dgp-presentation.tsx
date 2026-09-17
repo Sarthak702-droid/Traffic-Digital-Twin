@@ -44,11 +44,6 @@ const steps: Step[] = [
     ],
     takeaway: "CCTV shows what is happening now. This twin provides the data foundation to estimate what will happen next.",
     icon: NetworkIcon,
-    metrics: [
-      { label: "Corridor Nodes", value: "6 Nodes", note: "C1-C6 topology" },
-      { label: "Controlled Junctions", value: "2 Signals", note: "C1 & C3 virtual" },
-      { label: "Refresh Cadence", value: "1 Hz", note: "Sub-500ms latency" },
-    ],
   },
   {
     id: 2,
@@ -57,16 +52,11 @@ const steps: Step[] = [
     headline: "Predicting queue buildup 30 seconds to 5 minutes ahead",
     body: [
       "Using vehicle conservation physics (arrivals, departures, downstream receiver space), the engine forecasts queues at +30s, +60s, +120s, and +300s.",
-      "When C3 discharges a northbound platoon towards C1, the twin calculates the exact travel-time window (74–96 seconds).",
+      "Travel-time and spillback estimates are available in fresh forecast responses; unavailable estimates must be shown as unknown.",
       "Spillback risks are flagged before the queue spills into upstream intersections, rather than reacting after gridlock occurs.",
     ],
     takeaway: "Operators receive early warning before congestion becomes unmanageable.",
     icon: Activity,
-    metrics: [
-      { label: "Forecast Horizons", value: "+30s to +5m", note: "Conservation model" },
-      { label: "Platoon Detection", value: "Deterministic", note: "Travel time physics" },
-      { label: "Spillback Alert", value: "Prior Notice", note: "Upstream storage tracking" },
-    ],
   },
   {
     id: 3,
@@ -75,16 +65,11 @@ const steps: Step[] = [
     headline: "AI-guided signal adjustments bounded by strict safety envelopes",
     body: [
       "Instead of isolated local timers, the system computes coordinated multi-junction green splits.",
-      "Every candidate timing plan is checked against hard safety rules: minimum green (15s), maximum green (55s), amber clearance (3s), and zero conflicting greens.",
+      "Configured bounds and clearance rules are checked on the server before application. A proposed plan still requires fresh validation.",
       "The operator is presented with a clear explanation: what changed, why it helps, and which safety rules were validated.",
     ],
     takeaway: "The system assists the operator with safe, coordinated interventions rather than black-box automation.",
     icon: Sparkles,
-    metrics: [
-      { label: "Coordination", value: "C1 + C3", note: "Corridor green waves" },
-      { label: "Safety Limits", value: "100% Enforced", note: "Min/max green bounds" },
-      { label: "Conflict Matrix", value: "Zero Conflicts", note: "Independent validator" },
-    ],
   },
   {
     id: 4,
@@ -92,17 +77,12 @@ const steps: Step[] = [
     badge: "VIRTUAL TEST BEFORE ACTION",
     headline: "Simulate the recommendation in the digital twin before taking action",
     body: [
-      "Operators can click 'Simulate' to fork the exact current simulation state and run a forward rollout.",
-      "Both candidate and baseline branches share identical random seeds and initial vehicle positions.",
+      "Operators can request an aggregate conservation-model comparison from the current snapshot.",
+      "Baseline and candidate use the same aggregate initial state and seed; this is not paired vehicle-level trajectory playback.",
       "The operator reviews 4 objective outcome metrics: maximum queue reduction, average delay, spillback duration, and vehicle stops.",
     ],
-    takeaway: "Every proposed action is proven effective in the twin before the operator confirms it.",
+    takeaway: "Review the measured comparison, including unchanged or worse outcomes, before making a decision.",
     icon: Layers,
-    metrics: [
-      { label: "Queue Reduction", value: "-24%", note: "Candidate vs baseline" },
-      { label: "Delay Saved", value: "-18s / veh", note: "Smoothed progression" },
-      { label: "Initial Seed", value: "Synchronized", note: "Scientific comparison" },
-    ],
   },
   {
     id: 5,
@@ -110,35 +90,25 @@ const steps: Step[] = [
     badge: "BOTTLENECK MANAGEMENT",
     headline: "Proactive upstream metering during unexpected capacity reduction",
     body: [
-      "In the C3 Incident scenario, roadway capacity is unexpectedly cut by 50% due to an obstruction or lane closure.",
-      "Traditional timers cause rapid spillback reaching upstream nodes in less than 2 minutes.",
+      "The configured C3 incident retains 35% capacity while active; inspect current state for the actual lifecycle.",
+      "Use forecast evidence to inspect upstream queues; no fixed spillback time is guaranteed.",
       "The digital twin detects the bottleneck, meters inflow from C6, and adjusts C1 cycle timing to clear the bottleneck corridor.",
     ],
     takeaway: "Dynamic response protects the broader network from localized lane blockages.",
     icon: TrafficCone,
-    metrics: [
-      { label: "Capacity Drop", value: "-50%", note: "Bottleneck link" },
-      { label: "Mitigation", value: "Upstream Metering", note: "Controlled feeder flow" },
-      { label: "Recovery Time", value: "3 Cycles", note: "Predictable clearance" },
-    ],
   },
   {
     id: 6,
     title: "Ambulance Corridor Priority",
     badge: "EMERGENCY PRE-EMPTION",
-    headline: "Guaranteed emergency green wave with bounded cross-traffic recovery",
+    headline: "Simulated emergency priority with monitored cross-traffic recovery",
     body: [
-      "When an emergency vehicle approaches along C6 → C3 → C1 → C2, the twin initiates proactive signal clearance.",
+      "The simulated route is C6 → C3 → C1 → C2; only C1 and C3 are configured signal-controlled junctions.",
       "Cross-traffic is brought to a safe amber-to-red halt with proper pedestrian clearance before the vehicle arrives.",
       "Once the ambulance passes, the controller automatically transitions into a bounded recovery plan so cross-traffic queues clear smoothly.",
     ],
-    takeaway: "Life-saving emergency preemption without causing permanent gridlock after the vehicle passes.",
+    takeaway: "Inspect priority, clearance and recovery states; this demonstration never controls physical signals.",
     icon: Siren,
-    metrics: [
-      { label: "Route", value: "C6→C3→C1→C2", note: "Full corridor route" },
-      { label: "Pre-clearance", value: "Dynamic ETA", note: "Zero red stops" },
-      { label: "Recovery", value: "2-3 Cycles", note: "Automatic equalization" },
-    ],
   },
   {
     id: 7,
@@ -148,33 +118,23 @@ const steps: Step[] = [
     body: [
       "The operator holds absolute authority: they can Approve, Modify timing within safety boundaries, or Reject recommendations with a reason.",
       "Manual mode allows immediate disabling of all AI recommendations with a single click.",
-      "Every single action is appended to an immutable audit trail in PostgreSQL, recording timestamp, actor, before/after values, and safety checks.",
+      "Inspect the recorded outcome and audit for each command; an unavailable or uncertain write must not be treated as confirmed success.",
     ],
     takeaway: "Full accountability: who made what decision, why, and what the system predicted.",
     icon: ShieldCheck,
-    metrics: [
-      { label: "Operator Control", value: "Absolute", note: "Approve / Modify / Reject" },
-      { label: "Audit Storage", value: "PostgreSQL", note: "Durable & sequential" },
-      { label: "Manual Mode", value: "1-Click", note: "Immediate override" },
-    ],
   },
   {
     id: 8,
     title: "Shadow-Pilot Recommendation",
     badge: "PATH TO PRODUCTION",
-    headline: "Ready for shadow-pilot deployment in the police control room",
+    headline: "Evaluate evidence before considering a shadow pilot",
     body: [
-      "Phase 1 Demonstration is complete: architecture proven, deterministic physics validated, and operator ergonomics verified.",
+      "Production acceptance requires real routing, persistence, safety, failure recovery and accessibility evidence. This briefing does not certify completion.",
       "We recommend a Shadow-Pilot in the Odisha Traffic Police control room: ingesting sample camera feeds to compare twin recommendations against manual decisions.",
       "No signal controllers are actuated until formal safety certification and departmental approval.",
     ],
-    takeaway: "A safe, risk-free transition from demonstration to real-world decision support.",
+    takeaway: "Any future pilot requires an independent review, authorization and documented operating limits.",
     icon: ShieldAlert,
-    metrics: [
-      { label: "Current Status", value: "Demo MVP", note: "Synthetic & offline safe" },
-      { label: "Next Step", value: "Shadow Pilot", note: "Advisory-only evaluation" },
-      { label: "Safety Risk", value: "Zero", note: "No live actuation" },
-    ],
   },
 ];
 
@@ -256,7 +216,7 @@ export function DgpPresentationModal({
           </nav>
 
           {/* Main Slide Content */}
-          <main className="dgp-slide-body">
+          <main className="dgp-slide-body"><p role="note">Explanatory briefing · not live operational evidence. DEMONSTRATION MODE · SYNTHETIC TRAFFIC DATA · NO LIVE SIGNAL CONTROL</p>
             <div className="dgp-slide-banner">
               <div className="dgp-icon-circle">
                 <StepIcon size={28} />

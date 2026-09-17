@@ -1,13 +1,25 @@
+> **Revalidation notice — 2026-09-17:** Historical demo implementation/test evidence follows. It is not acceptance of the revised Python gateway/Go writer architecture or production UX. See [current audit](UX-PRODUCTION-AUDIT.md) and [revised stories](DELIVERY-PLAN.md); prior S01–S15 completion is retained under `historical_acceptance` in delivery-status.json, with revised gates reopened. Remediation subsequently began; current evidence is in [REMEDIATION-STATUS.md](REMEDIATION-STATUS.md).
+
 # Epic 5 Delivery Status: Safety Envelope & Human Authority
 
 **Epic ID:** `E05`  
 **Owner:** Backend + Frontend  
-**Status:** Completed  
+**Status:** In progress — revised production acceptance pending
 **Branch:** `epic5`  
 **Target Completion:** Day 9  
 **PRD References:** §§8.3, 18.3, 22–23; `AGENT.MD`: Safety validator, Recommendation actions  
 
 ---
+
+## Current acceptance checkpoint — 2026-09-17
+
+The implementation and results below are historical demo evidence, not current production acceptance. `scripts/verify-epic5.mjs` intercepts `/api/v1/**` using mocked responses; it does not establish gateway/writer/database integration.
+
+Current checks: 35 UI tests, TypeScript, six gateway unit checks and the Go suite with real PostgreSQL passed in the remediation checkpoint. Database checks cover canonical modes, lock/audit rollback and command actor/payload deduplication.
+
+Still required for revised S13–S15 acceptance: lock restoration and concurrent application; mode hydration across restart/reconnect through Python; durable reconciliation after lost responses; cross-tab command handling; draft retention across unavailable analysis; deliberate reason selection; authenticated full-stack operator flows. No production completion is claimed.
+
+## Historical implementation report
 
 ## 1. Executive Summary
 

@@ -32,7 +32,7 @@ class Engine:
         self.thread=None
 
     def reset(self, command):
-        if command.schema_version!='1.0' or not command.run_id or command.mode not in ('observe','recommend') or command.seed<1 or command.scenario_type not in {s['id'] for s in self.config['scenarios']}:
+        if command.schema_version!='1.0' or not command.run_id or command.mode not in ('observe','recommend','manual') or command.seed<1 or command.scenario_type not in {s['id'] for s in self.config['scenarios']}:
             raise ValueError('Invalid version, scenario, seed, mode or run ID')
         with self.lock:
             self.running=False

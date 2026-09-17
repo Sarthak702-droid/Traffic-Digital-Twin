@@ -2,9 +2,11 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"os"
+	"strings"
 	"testing"
 	"time"
 	"traffic.local/twin/apps/api/internal/config"
@@ -77,6 +79,54 @@ func TestPostgresDurabilityAndAtomicAudit(t *testing.T) {
 	if e = s.SaveConfig(ctx, n); e == nil {
 		t.Fatal("immutable config overwritten")
 	}
+	// Revised writer controls use real PostgreSQL, including every canonical mode.
+	for _, mode := range []string{"observe", "manual", "recommend"} {
+		if e := s.SaveControl(ctx, "mode", ControlWrite{RunID: run.ID.String(), Mode: mode}); e != nil {
+			t.Fatal(e)
+		}
+		var savedMode string
+		if e := s.Pool.QueryRow(ctx, "SELECT mode FROM scenario_runs WHERE id=$1", run.ID).Scan(&savedMode); e != nil || savedMode != mode {
+			t.Fatalf("mode %s: %s %v", mode, savedMode, e)
+		}
+	}
+	if e := s.SaveControl(ctx, "lock", ControlWrite{RunID: run.ID.String(), Target: "unknown", Locked: true}); e == nil {
+		t.Fatal("unknown lock accepted")
+	}
+	target := n.Phases[0].ID
+	if e := s.SaveControl(ctx, "lock", ControlWrite{RunID: run.ID.String(), Target: target, Locked: true}); e != nil {
+		t.Fatal(e)
+	}
+	if _, e := s.Pool.Exec(ctx, "ALTER TABLE audit_events ADD CONSTRAINT reject_unlock CHECK(event_type <> 'lock.released') NOT VALID"); e != nil {
+		t.Fatal(e)
+	}
+	if e := s.SaveControl(ctx, "lock", ControlWrite{RunID: run.ID.String(), Target: target}); e == nil {
+		t.Fatal("unlock succeeded without audit")
+	}
+	var locked bool
+	if e := s.Pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM control_locks WHERE target=$1)", target).Scan(&locked); e != nil || !locked {
+		t.Fatal("lock not retained on audit failure", e)
+	}
+	command := CommandWrite{ID: "test-command-123", Hash: strings.Repeat("a", 64)}
+	assertCommand := func(op, expected string, v CommandWrite, actor string) {
+		t.Helper()
+		result, err := s.Command(WithActor(ctx, actor), op, v)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if result.(map[string]any)["status"] != expected {
+			t.Fatalf("%s: %v", op, result)
+		}
+	}
+	assertCommand("command.reserve", "reserved", command, "operator")
+	assertCommand("command.reserve", "pending", command, "operator")
+	assertCommand("command.get", "conflict", command, "another-operator")
+	changed := command
+	changed.Hash = strings.Repeat("b", 64)
+	assertCommand("command.reserve", "conflict", changed, "operator")
+	command.HTTPStatus = 200
+	command.Response = json.RawMessage(`{"confirmed":true}`)
+	assertCommand("command.finish", "completed", command, "operator")
+	assertCommand("command.reserve", "completed", command, "operator")
 	// Force audit insertion failure and prove the run transaction rolls back.
 	if _, e = s.Pool.Exec(ctx, "ALTER TABLE audit_events ADD CONSTRAINT test_reject CHECK(event_type <> 'run.prepared') NOT VALID"); e != nil {
 		t.Fatal(e)

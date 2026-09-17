@@ -1,5 +1,8 @@
 # Traffic Digital Twin - DGP Demonstration MVP
 
+> **Requirements revision — 2026-09-17:** The requested target uses a Python API gateway, owning Go domain services and a dedicated Go DB writer. The repository currently implements Next.js → Go → Python compute/ PostgreSQL; the migration is not implemented. Sections 9–11 and 32–34 are authoritative for the revised architecture and production gates. Earlier roadmap dates and historical completion claims are not current acceptance. See [evidence-based audit](docs/UX-PRODUCTION-AUDIT.md) and [all epics/stories](docs/DELIVERY-PLAN.md). This revision changes planning documents only. No live physical signal control is authorized.
+
+
 **Document type:** Product Requirements Document (PRD)  
 **Target build window:** 10-15 calendar days  
 **Primary audience:** Founder/Product, Frontend, Go Backend, ML/Simulation, QA/Demo team  
@@ -573,112 +576,75 @@ Degraded components should never be hidden.
 
 ---
 
-## 9. Backend architecture
+## 9. Backend architecture — revised target, not current implementation
 
-The backend must be **Go-first**.
+The browser uses a **Python API gateway** for all product REST and WebSocket traffic. Existing Next.js same-origin routing may remain, with its upstream changed to the Python gateway during implementation. The gateway selects the owning Go service using an explicit method/path registry. Go performs domain validation, safety and computation orchestration; existing private Python SUMO/intelligence workers remain Go dependencies.
 
-### 9.1 Go stack
+For durable commands the required path is:
 
-- **Go 1.24+**
-- **chi** router
-- **pgx** for PostgreSQL
-- **sqlc** for typed query generation
-- **nhooyr/websocket** or equivalent maintained WebSocket package
-- **zap** or **slog** for structured logging
-- **OpenTelemetry** instrumentation hooks
-- **JWT/session auth** only if needed for demo; otherwise a single seeded operator account is acceptable.
+`Frontend → Python gateway → owning Go service → Python gateway → Go DB writer → PostgreSQL → commit acknowledgment → Python gateway → frontend`.
 
-### 9.2 Responsibilities of Go backend
+Only the Go DB writer commits business database mutations. The gateway and domain services must not also write the result directly. Reads use a documented Go query owner with read-only database access. High-frequency state and WebSocket delivery do not implicitly create database writes. See §32 for persistence classes, command phases and exceptions.
 
-Go is the authoritative application/orchestration layer.
+### 9.1 Service roles and stack
 
-It owns:
+- Frontend: existing Next.js/React/TypeScript, React Query and Zustand.
+- Python gateway: separate ingress responsibility from existing Python compute; versioned routing, authentication, request/deadline propagation, response/error handling, bounded connections, health-aware routing and WebSocket proxying. Select the HTTP framework during implementation; none is claimed present today.
+- Go traffic/domain service: existing chi handlers organized by configuration/query, lifecycle, decisions/safety, mode/locks and replay owners. Logical owners may initially share one deployment; do not invent one microservice per endpoint.
+- Go DB writer: dedicated internal service using existing PostgreSQL/pgx/sqlc patterns, migrations, typed writes, idempotency and transactional audit/status/outcome persistence.
+- Private Python simulation/intelligence: existing gRPC compute and SUMO/TraCI, not public HTTP ingress and not database writers.
+- Go gateway clients and service connections use authenticated private boundaries outside an isolated local demo; production must not rely solely on loopback or Origin checks.
 
-- REST API.
-- WebSocket gateway.
-- session/scenario lifecycle.
-- live network state cache.
-- validation of commands.
-- human approval/modify/reject workflow.
-- safety envelope enforcement at application level.
-- audit logging.
-- persistence.
-- system health aggregation.
-- replay/presentation mode.
-- API integration point for future CCTV/controller systems.
+### 9.2 Responsibility boundaries
 
-Go should **not** perform neural-network inference.
+Go remains authoritative for domain rules, current run ownership, safety validation, operator decisions, configuration and replay. Python gateway owns public transport, route selection, authenticated request context, downstream orchestration and response delivery. Go writer owns write authorization, persisted command state, transaction boundaries and audit integrity. The gateway may orchestrate persistence phases but cannot invent safety approval or convert an unconfirmed result into success.
+
+The original seeded demo operator is acceptable only in an explicitly isolated synthetic demo. Shared deployment requires server-enforced operator/supervisor/viewer permissions and authenticated audit identity (§33). Physical actuation remains excluded.
 
 ---
 
 ## 10. Python intelligence/simulation services
 
-Use Python only where the ecosystem is materially stronger.
-
 ### 10.1 Simulation service
 
-- Python 3.12+
-- SUMO
-- TraCI
-- Pydantic data models
-- gRPC to Go
-
-Responsibilities:
-
-- run C1-C6 traffic simulation,
-- apply synthetic demand profiles,
-- expose aggregate state every second,
-- apply signal plans in simulation,
-- clone/reset scenarios,
-- run baseline and candidate simulations,
-- deterministic replay using seeds.
+Retain Python/SUMO/TraCI, seeded demand, aggregate 1 Hz stream, virtual phase progression, reset and safe plan application behind the owning Go domain service. Validate run/config identity and canonical mode contracts. Preserve deterministic seeds and clearance intervals through retries and owner changes. Actual aggregate comparison must not be described as cloned vehicle trajectories unless those trajectories are implemented and verified.
 
 ### 10.2 Intelligence service
 
-- Python 3.12+
-- NumPy
-- SciPy
-- NetworkX (optional, mainly graph utilities)
-- ONNX Runtime / PyTorch for CV/ML where needed
-- gRPC to Go
+Retain conservation forecasts, platoon propagation, bounded candidate evaluation, comparison and structured explanations behind Go. No unsupported trained-ML, confidence or performance claims. Response provenance includes run, snapshot, horizon, model/config version and recommendation identity. An unavailable worker must produce visible unavailable state, not healthy/fabricated fallback data.
 
-Responsibilities:
-
-- short-horizon traffic prediction,
-- platoon/arrival estimation,
-- spillback risk,
-- recommendation/optimization,
-- explanation payload generation,
-- CV aggregation.
-
-Do not expose Python services directly to the browser.
+The Python **gateway** is a separate responsibility from these workers. The browser must never directly address private simulation, intelligence, Go domain or writer ports.
 
 ---
 
-## 11. Service communication
+## 11. Service communication and routing
 
 ```mermaid
 flowchart LR
-  UI[Next.js UI] <-- REST/WebSocket --> GO[Go Backend]
-  GO <-- gRPC --> SIM[SUMO Simulation Service]
-  GO <-- gRPC --> AI[Intelligence Service]
-  AI --> CV[CV Pipeline]
-  GO --> DB[(PostgreSQL)]
+  UI[Frontend / same-origin Next proxy] <-- REST and WebSocket --> GW[Python API gateway]
+  GW <-- typed domain requests/results --> GO[Owning Go domain service]
+  GO <-- private gRPC --> SIM[Python SUMO simulation]
+  GO <-- private gRPC --> AI[Python intelligence]
+  GW <-- typed writes and commit acknowledgments --> WR[Go DB writer]
+  WR --> DB[(PostgreSQL)]
+  GO --> Q[Read-only query access]
+  Q --> DB
 ```
 
-### Rules
-
-- Browser talks only to Go.
-- Go validates every operator action.
-- Python services are replaceable implementation details.
-- Go owns audit and persistence.
-- Go sends only safe/validated signal plans to simulation.
+- Preserve `/api/v1` and `/ws/v1/live` public paths unless a versioned migration explicitly changes them. Enumerate every method/path, including aliases, owner, authorization, downstream RPC, response schema and persistence class.
+- Go validates commands and service outputs before any durable result or operator-visible actionable state. Writer validates typed write envelopes again; never accept arbitrary SQL/table names from clients.
+- Commit required durable command results before reporting durable success. Virtual signal dispatch uses durable intent and reconciliation rather than pretending an RPC and SQL transaction are atomic.
+- Route run-specific commands and sockets to a single authoritative Go run owner. Add durable ownership/fencing and recovery before horizontal scaling; round-robin alone is not sufficient.
+- Service deadlines, bounded retry, stream backpressure, tracing, idempotency and load/failure acceptance are mandatory (§32).
+- [Audit route inventory](docs/UX-PRODUCTION-AUDIT.md) records every current handler and caller. Current implementation has no Python gateway or separate writer; this diagram is a target.
 
 ---
 
 ## 12. Database
 
 ### 12.1 MVP database
+
+**Revised ownership:** the following domain tables are requirements, not proof that all exist. The Go writer owns all schema/config/business mutations; domain reads use least-privilege read-only access. High-frequency frames remain transient and only explicitly declared aggregates/events are persisted. Existing direct Go-handler writes must migrate without uncontrolled dual writes. See §32.
 
 Use **PostgreSQL 16+**.
 
@@ -836,6 +802,9 @@ Do not save every one-second sample forever. For the demo, save 5-second aggrega
 
 ### 13.1 REST
 
+**Ingress and completeness:** every route below must pass through the Python gateway to its named Go owner in the route registry. Also include existing GET/POST `/api/v1/runs`, GET `/api/v1/analysis`, GET `/api/v1/mode`, POST `/api/v1/mode/{mode}` (canonical recommend/observe/manual and compatibility recommendation alias), GET `/api/v1/locks`, POST/DELETE `/api/v1/locks/{id}`, and POST `/api/v1/replay/{scenario}`. These exist in Go with varying contract coverage; this statement does not claim a gateway exists. Define a permissioned command-outcome read operation during implementation for timeout/retry reconciliation; it is currently absent. Unknown route/action/method must fail explicitly. Use action-specific request/response schemas and route parity tests (§34).
+
+
 `GET /api/v1/network`
 
 Returns nodes, links, geometry, signal metadata.
@@ -846,7 +815,7 @@ Returns latest aggregate network state.
 
 `GET /api/v1/junctions/{id}`
 
-Current and forecast state for one node.
+Current and forecast state for one node is the target; the current Go handler returns configuration-only node/phases. Update the contract or implementation explicitly and do not report configured values as current measurements.
 
 `GET /api/v1/recommendations/active`
 
@@ -1438,6 +1407,9 @@ This is a fail-safe, not the primary demo mode.
 
 ## 26. Proposed repo structure
 
+**Revision:** retain existing directories, adding a Python gateway and Go DB-writer entrypoint/service during implementation. Final paths are assigned in E13; no directories or services were added by this audit. Existing Python simulation/intelligence remain private compute. Do not infer that the historical layout below already includes the target ingress/persistence architecture.
+
+
 ```text
 traffic-digital-twin/
   apps/
@@ -1469,6 +1441,9 @@ traffic-digital-twin/
 ---
 
 ## 27. 15-day build plan
+
+**Historical planning baseline only:** the gateway/writer migration and production UX acceptance extend the original scope. Re-estimate delivery; neither this schedule nor the 10-day alternative establishes readiness. The revised 14-epic, 45-story backlog in `docs/backlog.json` / `docs/DELIVERY-PLAN.md` is authoritative for acceptance.
+
 
 ### Day 1
 
@@ -1664,3 +1639,80 @@ The MVP should feel like an operational decision system, not an AI science proje
 **Memory:** audit trail.
 
 That separation should be visible in the architecture, codebase, UI, and DGP narrative.
+
+
+## 32. Gateway, durable result and load-balancing requirements
+
+### 32.1 Route and write ownership
+
+The current frontend-to-Go flow is evidence, not the requested target. Implement the following explicit route owners; they may be Go modules within the existing traffic service initially:
+
+| Route family | Go domain owner | Downstream dependency | Persistence policy |
+|---|---|---|---|
+| network, junctions, state, analysis, active recommendation | Configuration/state/intelligence query | Config, current run owner, private Python analysis | Read/transient; no write merely because an HTTP result exists |
+| runs GET, audit GET, command outcome GET (new contract required) | Query owner | PostgreSQL read-only role | No mutation |
+| runs POST, scenario start/reset | Lifecycle owner | Private simulation Reset; writer intent/run/status/audit | Durable business command |
+| recommendation simulate/approve/modify/reject | Decision/safety owner | Private Compare/ApplyPlan; writer | Durable command result/audit; actuation intent before dispatch |
+| mode and locks writes | Control owner | Writer plus current run owner | Durable mode/lock/result/audit before acknowledgment |
+| replay start | Replay owner | Verified replay files; writer run/lifecycle | Durable lifecycle; frames transient |
+| health | Gateway plus Go health aggregation | Domain owner, writer, compute and database health | Read; sampled health transitions only under an explicit policy |
+| WebSocket live | Owning Go run/stream service via gateway | Simulation state, analysis, audit events | Frames transient; lifecycle/audit persistence is separate |
+
+"Write Go results" means validated durable business-command outputs and audit/status records, not blindly storing arbitrary response bodies or every telemetry frame. This preserves the existing requirement to avoid frame-by-frame PostgreSQL writes. Define a persistence class for every new result; no double-write path is permitted.
+
+### 32.2 Durable command protocol
+
+1. Gateway authenticates and validates the public envelope; assign/propagate request ID, command ID, principal, deadline and target run/config/expected state version.
+2. Go owner validates domain/safety/permissions and produces a typed result or intent. It returns a versioned write description through the gateway; private compute returns through its Go owner, not directly to the database.
+3. Writer validates service identity, allowed command type, actor, schema, run ownership and payload hash. Use a database uniqueness constraint on command identity and atomically persist required domain changes, result/status and append-only audit. Same ID/same payload returns stored outcome; same ID/different payload returns conflict.
+4. Pure durable commands are acknowledged to the frontend only after commit. A timeout after commit is an unknown transport outcome, not proof of rollback; use a permissioned outcome lookup.
+5. For simulator effects, first persist validated intent, then dispatch using a durable payload-bound idempotency identity. Recheck fresh safety/run ownership immediately before dispatch. Persist applied/failed/unknown outcome after observation/acknowledgment. Accepted/pending-safe-boundary and applied are distinct states. Reconcile lost responses, restart and final-audit failure; do not roll back or repeat actuation blindly.
+6. Expose useful operator recovery with command/run IDs and audit links, preserving drafts. Error responses retain structured code, retryability, dependency and whether an effect is known, absent or uncertain; internal stack details must not leak.
+
+Only writer credentials can insert/update/delete business data; migrations/config initialization also have an explicit writer/deployment identity. Other services may have documented read-only credentials. Migration must inventory current inline SQL/sqlc call sites and cut over with one write authority at a time, tested rollback compatibility and backfill validation. Never introduce uncontrolled dual writes.
+
+### 32.3 Load balancing and failure behavior
+
+- Separate stateless gateway/query balancing from stateful run ownership. Current singleton Go state and Python Engine cannot safely be duplicated without ownership design.
+- Use a durable run-owner lease/epoch, fencing of stale owners and deterministic routing for run commands/streams. Persist/reconstruct modes, locks and command outcomes. Define safe stop/recovery if the owner disappears; never allow two live controllers for one synthetic run.
+- Gateway dispatch uses healthy upstreams, bounded connection/concurrency limits and readiness; unhealthy/overloaded services return explicit unavailable/rate-limit outcomes. The writer transaction and simulator CPU are measurable bottlenecks, not solved just by adding a proxy.
+- Propagate one end-to-end deadline budget through gateway, Go, compute and writer. Cancel obsolete reads. Retry reads only within bounds with jitter; mutations require command idempotency/reconciliation. Define stream heartbeats, bounded fanout queues, drain/reconnect, event ordering and durable audit-cursor recovery.
+- Preserve route/version compatibility and carry trace/request/command/run IDs through every hop. Log outcomes, not unnecessary full payloads.
+- Benchmark at named client counts and replica topology, including at least two gateways, owner loss, writer loss, timeout-after-commit, duplicate commands and reconnect storms. Record p50/p95, throughput, errors, reconnect/recovery time, CPU/memory and DB pool/commit behavior. Targets in §25 remain targets until measured through the full revised path.
+- No Kafka/Kubernetes/Redis/service mesh is mandated. Existing no-unrelated-microservices scope remains, with the user-required gateway/writer boundaries explicitly in scope.
+
+## 33. Production UX acceptance contract
+
+Apply this contract to Command Center, Network/comparison, junction drawer, Incidents, Emergency, Vision, Audit & Health, top-bar modes/locks and briefing. UI implementation is currently partial; see the audit for evidence.
+
+| State or flow | Required acceptance |
+|---|---|
+| Loading / valid empty | Show bounded progress and meaningful empty actions; do not display zero/normal metrics as substitutes for missing data. |
+| API / invalid payload / unexpected render error | Preserve status/code/request ID; validate response shapes; use a recoverable error boundary, visible error and safe next action. |
+| Offline / slow / timeout | Distinguish internet-offline from local gateway/compute/DB failure, show stale timestamp/source, cancel obsolete requests, preserve drafts and provide bounded retry/reconciliation. |
+| Service unavailable / maintenance / overload | Explicit degraded/maintenance/rate-limit state, affected capability, retry guidance and reachable replay when its dependencies are available. Missing health is unknown. |
+| Authentication / permission / expiry | Shared production authenticates roles at gateway and Go; deny unauthorized commands server-side. 401 reauthentication and 403 denied flows preserve drafts and revalidate before submission. Demo persona selection is not auth. |
+| Forms and submissions | Validate integer bounds/reasons using config; bind draft to run/recommendation version; disable conflicting pending/unsafe/stale/replay actions; retain input after failure and announce outcomes. |
+| Destructive/replacing actions | Confirm scenario replacement/reset and draft loss; provide a known reset/recovery outcome. Do not promise undo for effects that cannot safely be undone. |
+| Duplicate and uncertain commands | Stable payload-bound command identity across retry/reload; reconcile persisted outcome after a lost response. Distinguish pending, applied, rejected and unknown. |
+| Navigation | Define URL/deep-link/back/refresh behavior, restore server mode/locks, manage focus and guard unsaved drafts. |
+| Data truth and provenance | Every metric/explanation has actual run/model/config/horizon provenance; no static gains, fallback comparisons, healthy defaults or unconditional safety claims. Distinguish pending validation from applied safe result. |
+| Audit history | Paginate all events, refresh external changes, link command/recommendation/run and show before/after/reason/actor/result. Never label ascending first 50 as latest 50. |
+| Accessibility / responsive | Test narrow widths, long content, 200% text, 400% zoom and virtual keyboard; labels, keyboard tabs/dialog Escape/focus return, screen-reader announcements, measured contrast/target size, non-color statuses and reduced motion. Record measurement rather than assume compliance. |
+| Theme | Dark-only remains allowed per existing product design; all controls/dialogs/error states must remain readable and consistent. Light/system theme is not automatically required. |
+| Payments / device permissions | Not applicable: no such product flows were found. If later added, define success/failure/interruption or requested/denied/permanently-denied recovery before release. Do not invent implementations now. |
+
+Run-scoped data must be invalidated when run or recommendation changes. A stale analysis cannot remain actionable merely because cached data exists. A comparison must match the active run/recommendation and immutable initial state; aggregate metrics must not masquerade as paired vehicle trajectories. Incident capacity, emergency stage/ETA/recovery and timing bounds come from real config/service outputs. Optional CV must explicitly say unavailable until implemented.
+
+## 34. Evidence, revised epics and release gates
+
+The 2026-09-17 audit status is **not production ready**. [UX-PRODUCTION-AUDIT.md](docs/UX-PRODUCTION-AUDIT.md) contains 20 prioritized source-backed findings, the exhaustive current API inventory, screen/checklist coverage, actual tests and unverified areas. Historical demo acceptance is not erased, but does not pass revised requirements.
+
+- **E01–E12:** all 35 original stories receive architecture/UX-specific acceptance and finding links. IDs are preserved; historical absent S20/S23/S24 remain absent.
+- **E13/S39–S43:** Python gateway, exhaustive routing contracts, isolated Go writer with idempotency, state ownership/stream continuity, and measured multi-replica/failure/cutover acceptance.
+- **E14/S44–S48:** truthful screen states, recoverable operator journeys, production roles/session recovery, accessibility/responsive verification, and final evidence-based reacceptance.
+- PRD, `docs/backlog.json`, `docs/DELIVERY-PLAN.md` and `docs/delivery-status.json` must agree. Prior S01–S15 acceptance is retained under historical_acceptance; revised completion remains blocked pending implementation and evidence. Backlog status does not deny partial existing code.
+
+Mandatory release evidence includes every endpoint's route owner and response contract; real frontend → gateway → Go/compute → gateway/writer → PostgreSQL execution; writer-only privileges; all three seeded scenario journeys; mode/locks/audit beyond 100 records; timeout-after-commit/retry/concurrent-client/owner-failure cases; offline/replay and service-loss drills; accessibility/viewport evidence; and measured performance/soak results. API mocks and component tests remain useful but cannot establish integrated acceptance.
+
+Close applicable Critical/High findings and critical-journey Medium gaps before production. Record each fix revision, owner, test command, actual result and limitations. Payments and browser device permissions remain explicitly not applicable until scoped. User authorization for this revision covers audit and planning documents only: **do not implement fixes as part of this audit**.

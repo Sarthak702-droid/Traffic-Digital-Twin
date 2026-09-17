@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Activity,
   Check,
@@ -36,6 +36,9 @@ export function TopBar({
   const { role, setRole, setDgpModalOpen } = useWorkspace();
   const [clock, setClock] = useState("00:00:00");
   const [healthOpen, setHealthOpen] = useState(false);
+  const healthButton=useRef<HTMLButtonElement>(null);
+  const healthDialog=useRef<HTMLDivElement>(null);
+  useEffect(()=>{if(!healthOpen)return;const el=healthDialog.current;el?.querySelector<HTMLButtonElement>("button")?.focus();const keys=(e:KeyboardEvent)=>{if(e.key==="Escape"){setHealthOpen(false);healthButton.current?.focus()}if(e.key==="Tab"){const buttons=el?.querySelectorAll<HTMLButtonElement>("button");if(buttons?.length){e.preventDefault();buttons[0].focus()}}};window.addEventListener("keydown",keys);return()=>window.removeEventListener("keydown",keys)},[healthOpen]);
 
   useEffect(() => {
     const tick = () =>
@@ -55,7 +58,8 @@ export function TopBar({
   const hasFailure = components.some(
     (c) => c.status !== "normal" && c.component !== "signal_controller",
   );
-  const healthStatusText = hasFailure ? "Degraded" : "Normal";
+  const healthKnown=!!health?.timestamp && Date.now()-Date.parse(health.timestamp)<20000 && components.length>0;
+  const healthStatusText = !healthKnown ? "Unknown" : hasFailure ? "Degraded" : "Normal";
 
   return (
     <header className="product-topbar" aria-label="Command center top bar">
@@ -69,7 +73,7 @@ export function TopBar({
           </span>
         </div>
 
-        {/* Environment & Policy Chips (PRD §8.1) */}
+        {/* Environment & Policy Chips */}
         <div className="topbar-chips" aria-label="Operating constraints">
           <span className="chip chip-mode" title="Operating mode">
             DEMONSTRATION MODE
@@ -87,24 +91,24 @@ export function TopBar({
         {/* System Health Popover Button */}
         <div className="health-badge-wrapper">
           <button
-            className="topbar-health-btn"
+            ref={healthButton} aria-expanded={healthOpen} aria-controls="health-details" className="topbar-health-btn"
             onClick={() => setHealthOpen(!healthOpen)}
             aria-label={`System health: ${healthStatusText}`}
             title="Inspect component health"
           >
             <span
-              className={`status-dot ${hasFailure ? "unknown" : "normal"}`}
+              className={`status-dot ${!healthKnown || hasFailure ? "unknown" : "normal"}`}
             />
             <span className="health-label">System: {healthStatusText}</span>
           </button>
 
           {healthOpen && (
-            <div className="health-popover" role="dialog" aria-label="Component Health Status">
+            <div ref={healthDialog} id="health-details" className="health-popover" role="dialog" aria-modal="true" aria-label="Component Health Status">
               <div className="popover-heading">
                 <strong>Component Availability</strong>
                 <button
                   className="icon-button close-button"
-                  onClick={() => setHealthOpen(false)}
+                  onClick={() => {setHealthOpen(false);healthButton.current?.focus()}}
                   aria-label="Close health details"
                 >
                   ×
@@ -134,7 +138,7 @@ export function TopBar({
         </div>
 
         {/* Three-Mode Segmented Control (Story S14 & PRD §22) */}
-        <div className="mode-segmented-control" role="group" aria-label="Operational Mode Selection (PRD §22)">
+        <div className="mode-segmented-control" role="group" aria-label="Operational Mode Selection">
           <button
             type="button"
             className={`mode-segment-btn ${mode === "recommend" ? "active" : ""}`}
@@ -193,16 +197,7 @@ export function TopBar({
             Active User Role
           </label>
           <User size={13} />
-          <select
-            id="user-role-select"
-            value={role}
-            onChange={(e) => setRole(e.target.value as UserRole)}
-            aria-label="Select user role"
-          >
-            <option value="operator">Operator</option>
-            <option value="supervisor">Supervisor</option>
-            <option value="viewer">Executive (DGP)</option>
-          </select>
+          <span id="user-role-select">{role} · authenticated role</span>
         </div>
 
         {/* START DGP DEMONSTRATION Button (PRD §5, §8.1) */}

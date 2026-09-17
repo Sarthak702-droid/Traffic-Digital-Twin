@@ -116,14 +116,14 @@ describe("Epic 4 (S11 & S12): Forecasts, Platoons & Spillback Intelligence", () 
     );
 
     // Click on +1m tab (60s)
-    fireEvent.click(screen.getByRole("tab", { name: "+1m" }));
+    fireEvent.click(screen.getByRole("button", { name: "+1m" }));
     expect(screen.getByText("Predicted Queue")).toBeInTheDocument();
     expect(screen.getByText("12.4 veh")).toBeInTheDocument();
     expect(screen.getByText("55%")).toBeInTheDocument();
     expect(screen.getAllByText("16.0 veh").length).toBeGreaterThanOrEqual(1);
 
     // Click on +5m tab (300s)
-    fireEvent.click(screen.getByRole("tab", { name: "+5m" }));
+    fireEvent.click(screen.getByRole("button", { name: "+5m" }));
     expect(screen.getByText("22.1 veh")).toBeInTheDocument();
     expect(screen.getByText("94%")).toBeInTheDocument();
     expect(screen.getByText("CRITICAL RISK")).toBeInTheDocument();
@@ -155,10 +155,10 @@ describe("Epic 4 (S11 & S12): Forecasts, Platoons & Spillback Intelligence", () 
     );
 
     // Switch to +2m horizon
-    fireEvent.click(screen.getByRole("tab", { name: "+2m" }));
+    fireEvent.click(screen.getByRole("button", { name: "+2m" }));
 
     // Verify platoon waveform with ETA tolerance
-    expect(screen.getByText(/Platoon Arrival \(ETA ±5s\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Modeled arrivals/)).toBeInTheDocument();
     expect(screen.getAllByText("36.0 veh").length).toBeGreaterThanOrEqual(1);
 
     // Verify deterministic explanation facts include upstream source
@@ -204,12 +204,12 @@ describe("Epic 4 (S11 & S12): Forecasts, Platoons & Spillback Intelligence", () 
     );
 
     // Click on +1m horizon button
-    fireEvent.click(screen.getByRole("button", { name: "+1m" }));
-    expect(screen.getByText(/Horizon: \+1m/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "+60s" }));
+    expect(screen.getByRole("button", { name: "+60s" })).toHaveAttribute("aria-pressed", "true");
 
     // Switch to Before vs After split mode
-    fireEvent.click(screen.getByRole("button", { name: "Before vs After Split Mode" }));
-    expect(screen.getByText("BASELINE STRATEGY")).toBeInTheDocument();
-    expect(screen.getByText("CANDIDATE PLAN")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Before vs After · Aggregate comparison" }));
+    expect(screen.getByText("28.00")).toBeInTheDocument();
+    expect(screen.getByText("14.00")).toBeInTheDocument();
   });
 });

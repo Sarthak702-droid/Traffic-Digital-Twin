@@ -2,64 +2,323 @@
   "schema_version": "1.0",
   "tasks": {
     "S01": {
-      "status": "completed",
-      "evidence": "docs/epic1-acceptance.md"
+      "status": "blocked",
+      "historical_acceptance": {
+        "status": "completed",
+        "evidence": "docs/epic1-acceptance.md"
+      },
+      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
+      "audit_findings": [
+        "A01",
+        "A13",
+        "A19",
+        "A20"
+      ]
     },
     "S02": {
-      "status": "completed",
-      "evidence": "docs/epic1-acceptance.md"
+      "status": "blocked",
+      "historical_acceptance": {
+        "status": "completed",
+        "evidence": "docs/epic1-acceptance.md"
+      },
+      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
+      "audit_findings": [
+        "A01",
+        "A07",
+        "A12",
+        "A18"
+      ]
     },
     "S03": {
-      "status": "completed",
-      "evidence": "docs/epic1-acceptance.md"
+      "status": "blocked",
+      "historical_acceptance": {
+        "status": "completed",
+        "evidence": "docs/epic1-acceptance.md"
+      },
+      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
+      "audit_findings": [
+        "A03"
+      ]
     },
     "S04": {
-      "status": "completed",
-      "evidence": "docs/epic1-acceptance.md"
+      "status": "blocked",
+      "historical_acceptance": {
+        "status": "completed",
+        "evidence": "docs/epic1-acceptance.md"
+      },
+      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
+      "audit_findings": [
+        "A01",
+        "A09",
+        "A18"
+      ]
     },
     "S05": {
-      "status": "completed",
-      "evidence": "docs/epic2-status.md"
+      "status": "blocked",
+      "historical_acceptance": {
+        "status": "completed",
+        "evidence": "docs/epic2-status.md"
+      },
+      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
+      "audit_findings": [
+        "A07",
+        "A14"
+      ]
     },
     "S06": {
-      "status": "completed",
-      "evidence": "docs/epic2-status.md"
+      "status": "blocked",
+      "historical_acceptance": {
+        "status": "completed",
+        "evidence": "docs/epic2-status.md"
+      },
+      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
+      "audit_findings": [
+        "A01",
+        "A06",
+        "A09",
+        "A12",
+        "A18"
+      ]
     },
     "S07": {
-      "status": "completed",
-      "evidence": "docs/epic2-status.md"
+      "status": "blocked",
+      "historical_acceptance": {
+        "status": "completed",
+        "evidence": "docs/epic2-status.md"
+      },
+      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
+      "audit_findings": [
+        "A14"
+      ]
     },
     "S08": {
-      "status": "completed",
-      "evidence": "docs/epic3-status.md"
+      "status": "blocked",
+      "historical_acceptance": {
+        "status": "completed",
+        "evidence": "docs/epic3-status.md"
+      },
+      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
+      "audit_findings": [
+        "A03",
+        "A04",
+        "A13",
+        "A15",
+        "A16",
+        "A20"
+      ]
     },
     "S09": {
-      "status": "completed",
-      "evidence": "docs/epic3-status.md"
+      "status": "blocked",
+      "historical_acceptance": {
+        "status": "completed",
+        "evidence": "docs/epic3-status.md"
+      },
+      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
+      "audit_findings": [
+        "A04",
+        "A06"
+      ]
     },
     "S10": {
-      "status": "completed",
-      "evidence": "docs/epic3-status.md"
+      "status": "blocked",
+      "historical_acceptance": {
+        "status": "completed",
+        "evidence": "docs/epic3-status.md"
+      },
+      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
+      "audit_findings": [
+        "A03",
+        "A04",
+        "A06",
+        "A15",
+        "A16"
+      ]
     },
     "S11": {
-      "status": "completed",
-      "evidence": "docs/epic4-status.md"
+      "status": "blocked",
+      "historical_acceptance": {
+        "status": "completed",
+        "evidence": "docs/epic4-status.md"
+      },
+      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
+      "audit_findings": []
     },
     "S12": {
-      "status": "completed",
-      "evidence": "docs/epic4-status.md"
+      "status": "blocked",
+      "historical_acceptance": {
+        "status": "completed",
+        "evidence": "docs/epic4-status.md"
+      },
+      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
+      "audit_findings": [
+        "A03"
+      ]
     },
     "S13": {
-      "status": "completed",
-      "evidence": "docs/epic5-status.md"
+      "status": "blocked",
+      "historical_acceptance": {
+        "status": "completed",
+        "evidence": "docs/epic5-status.md"
+      },
+      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
+      "audit_findings": [
+        "A03",
+        "A08",
+        "A09"
+      ]
     },
     "S14": {
-      "status": "completed",
-      "evidence": "docs/epic5-status.md"
+      "status": "blocked",
+      "historical_acceptance": {
+        "status": "completed",
+        "evidence": "docs/epic5-status.md"
+      },
+      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
+      "audit_findings": [
+        "A05",
+        "A06",
+        "A07",
+        "A08",
+        "A13"
+      ]
     },
     "S15": {
-      "status": "completed",
-      "evidence": "docs/epic5-status.md"
+      "status": "blocked",
+      "historical_acceptance": {
+        "status": "completed",
+        "evidence": "docs/epic5-status.md"
+      },
+      "reason": "Prior demo acceptance does not cover revised gateway/writer and UX release gates.",
+      "audit_findings": [
+        "A05",
+        "A06",
+        "A09",
+        "A13",
+        "A15"
+      ]
+    },
+    "S16": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S17": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S18": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S19": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S21": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S22": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S25": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S26": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S27": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S28": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S29": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S30": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S31": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S32": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S33": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S34": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S35": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S36": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S37": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S38": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S39": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S40": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S41": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S42": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S43": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S44": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S45": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S46": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S47": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
+    },
+    "S48": {
+      "status": "backlog",
+      "reason": "Revised acceptance pending; no completion verified by this audit."
     }
-  }
+  },
+  "audit_date": "2026-09-17",
+  "release_status": "not_production_ready",
+  "note": "Revised requirements require reacceptance. Historical records below are retained, not erased; blocked indicates unfulfilled revised acceptance, not implementation in progress."
 }

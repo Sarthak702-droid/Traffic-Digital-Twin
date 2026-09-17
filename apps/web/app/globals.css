@@ -2957,3 +2957,23 @@ tr:last-child td {
   font-size: 10px;
   color: #64748b;
 }
+
+/* Production recovery controls and readable responsive states. */
+.session-panel { padding: 16px; border: 1px solid var(--border); margin-bottom: 16px; border-radius: 10px; }
+.session-panel form { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+.session-panel form h2, .session-panel form p { flex-basis: 100%; }
+.session-panel label { display: flex; flex-direction: column; gap: 6px; }
+.session-panel input[type=checkbox] { width: 24px; height: 24px; }
+button, .button, .action-btn, .mode-segment-btn, .ts-btn, .horizon-tab, .icon-button, .sheet-close { min-height: 44px; min-width: 44px; }
+pre, code { overflow-wrap: anywhere; white-space: pre-wrap; }
+.context-panel, .action-rail, .app-main, .product-content { min-width: 0; }
+input, textarea, select { max-width: 100%; font-size: 1rem; }
+.health-popover { max-width: min(360px, calc(100vw - 32px)); }
+@media (max-width: 520px) {
+ .mode-segmented-control { flex-wrap: wrap; }
+ .product-content { padding: 12px; }
+ .session-panel form, .session-panel label { width: 100%; }
+ .dgp-modal-content { width: calc(100vw - 16px); max-height: 95dvh; }
+ .rec-actions-grid { grid-template-columns: 1fr; }
+ .health-popover { position: fixed; top: 16px; left: 16px; right: 16px; max-height: 80dvh; overflow: auto; }
+}

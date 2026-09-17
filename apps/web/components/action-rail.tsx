@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Activity,
   AlertOctagon,
@@ -68,6 +68,8 @@ export function ActionRail({
   comparisonResult,
   onClearComparison,
   manualMode,
+  canAct = true,
+  onDirty,
 }: {
   network: Network;
   frame: TrafficState | null;
@@ -97,12 +99,14 @@ export function ActionRail({
   };
   onSimulate: () => void;
   onApprove: () => void;
-  onModify: (reason: string, changes: TimingChange[]) => void;
-  onReject: (reason: string) => void;
+  onModify: (reason: string, changes: TimingChange[]) => void | Promise<unknown>;
+  onReject: (reason: string) => void | Promise<unknown>;
   decisionPending: boolean;
   comparisonResult?: ComparisonResult | null;
   onClearComparison?: () => void;
   manualMode?: boolean;
+  canAct?: boolean;
+  onDirty?: (dirty:boolean)=>void;
 }) {
   const [formError, setFormError] = useState("");
   const [modifyOpen, setModifyOpen] = useState(false);
@@ -111,6 +115,7 @@ export function ActionRail({
   const [decisionReason, setDecisionReason] = useState("");
   const [edits, setEdits] = useState<Record<string, number>>({});
 
+  useEffect(()=>{onDirty?.(modifyOpen||rejectOpen)},[modifyOpen,rejectOpen,onDirty]);
   const rec = analysis?.recommendation;
   const forecasts = analysis?.forecasts ?? [];
 
@@ -122,23 +127,23 @@ export function ActionRail({
   const hasOutOfBounds = rec?.changes.some((c) => {
     const val = edits[c.phase_id] ?? c.green_s;
     const { min, max } = getPhaseBounds(c.phase_id);
-    return val < min || val > max || isNaN(val);
+    return val < min || val > max || !Number.isInteger(val);
   });
 
   // Determine highest-priority alert
   let alertSeverity: "critical" | "warning" | "emergency" | "normal" = "normal";
-  let alertTitle = "Network Flow Nominal";
-  let alertDesc = "All C1–C6 links operating within normal capacity envelopes.";
+  let alertTitle = liveFresh && analysis ? "No modeled alert" : "Traffic status unavailable";
+  let alertDesc = liveFresh && analysis ? "No elevated risk in this fresh analysis." : "Fresh traffic and intelligence are required before assessing risk.";
   let alertIcon = ShieldCheck;
 
-  if (frame?.emergency?.id && frame.emergency.status === "active") {
+  if (frame?.emergency?.id && ["pre_clearance", "priority"].includes(frame.emergency.status)) {
     alertSeverity = "emergency";
     alertTitle = "Emergency Corridor Active";
     alertDesc = `Ambulance en route (${frame.emergency.route_node_ids.join(" → ")}). Signal pre-clearance engaged.`;
     alertIcon = Siren;
   } else if (frame?.incident?.id && frame.incident.status === "active") {
     alertSeverity = "critical";
-    alertTitle = "C3 Incident · 50% Capacity Cut";
+    alertTitle = `C3 Incident · ${Math.round(frame.incident.capacity_ratio*100)}% remaining capacity`;
     alertDesc = "Lane obstruction active at C3. Metering upstream feeders to prevent spillback.";
     alertIcon = TrafficCone;
   } else {
@@ -155,9 +160,9 @@ export function ActionRail({
   const nextIssueForecast = forecasts.find(
     (f) => f.risk === "critical" || f.risk === "warning",
   );
-  let nextIssueTitle = "No imminent risk";
-  let nextIssueEta = "Clean horizon";
-  let nextIssueNote = "Next 5 minutes projected stable under current timing.";
+  let nextIssueTitle = analysis ? "No elevated forecast risk" : "Forecast unavailable";
+  let nextIssueEta = analysis ? "Evaluated horizon" : "Unknown";
+  let nextIssueNote = analysis ? "No warning in the returned forecast. This is a model estimate." : "No stability or safety conclusion is inferred.";
 
   if (nextIssueForecast) {
     nextIssueTitle = `Congestion at ${nextIssueForecast.movement_id}`;
@@ -174,10 +179,11 @@ export function ActionRail({
     }
     setFormError("");
     resetMutation.reset();
+    if(frame && !window.confirm("Replace the active run? Unsent changes will be discarded.")) return;
     prepareMutation.mutate();
   }
 
-  function submitModify() {
+  async function submitModify() {
     if (!rec) return;
     const fullReason = decisionReason.trim()
       ? `${reasonCategory}: ${decisionReason.trim()}`
@@ -190,12 +196,10 @@ export function ActionRail({
       ...c,
       green_s: edits[c.phase_id] ?? c.green_s,
     }));
-    onModify(fullReason, changes);
-    setModifyOpen(false);
-    setDecisionReason("");
+    try {await onModify(fullReason, changes);setModifyOpen(false);setDecisionReason("");setEdits({});setFormError("")} catch(error){setFormError(error instanceof Error ? error.message : "Modification not confirmed; notes retained.")}
   }
 
-  function submitReject() {
+  async function submitReject() {
     if (!rec) return;
     const fullReason = decisionReason.trim()
       ? `${reasonCategory}: ${decisionReason.trim()}`
@@ -204,14 +208,12 @@ export function ActionRail({
       setFormError("Reason is required when rejecting a recommendation.");
       return;
     }
-    onReject(fullReason);
-    setRejectOpen(false);
-    setDecisionReason("");
+    try {await onReject(fullReason);setRejectOpen(false);setDecisionReason("");setFormError("")} catch(error){setFormError(error instanceof Error ? error.message : "Rejection not confirmed; notes retained.")}
   }
 
   return (
     <aside className="action-rail" aria-label="Command center operational action rail">
-      {/* 1. HIGHEST-PRIORITY ALERT (PRD §8.1) */}
+      {/* 1. HIGHEST-PRIORITY ALERT */}
       <section className={`action-card alert-card ${alertSeverity}`} data-testid="priority-alert">
         <div className="action-card-header">
           <span className="card-badge alert-badge">{alertSeverity.toUpperCase()} ALERT</span>
@@ -221,7 +223,7 @@ export function ActionRail({
         <p>{alertDesc}</p>
       </section>
 
-      {/* 2. CURRENT RECOMMENDATION CARD (PRD §8.1) */}
+      {/* 2. CURRENT RECOMMENDATION CARD */}
       <section className="action-card rec-card" data-testid="current-recommendation">
         <div className="action-card-header">
           <span className="card-badge rec-badge">
@@ -258,13 +260,13 @@ export function ActionRail({
               <p className="rec-fact">{rec.explanation_facts[0]}</p>
             )}
 
-            {/* Quick Decision Actions (PRD §8.3) */}
+            {/* Quick Decision Actions */}
             <div className="rec-actions-grid">
               <Button
                 variant="outline"
                 className="action-btn simulate-btn"
                 onClick={onSimulate}
-                disabled={decisionPending}
+                disabled={decisionPending || !canAct}
                 title="Simulate before and after rollout in digital twin"
               >
                 <Layers size={14} /> Simulate
@@ -273,7 +275,7 @@ export function ActionRail({
                 variant="default"
                 className="action-btn approve-btn"
                 onClick={onApprove}
-                disabled={decisionPending}
+                disabled={decisionPending || !canAct}
                 title="Approve candidate plan inside digital twin"
               >
                 <Check size={14} /> Approve in Twin
@@ -285,7 +287,7 @@ export function ActionRail({
                   setModifyOpen(!modifyOpen);
                   setRejectOpen(false);
                 }}
-                disabled={decisionPending}
+                disabled={decisionPending || !canAct}
               >
                 Modify
               </Button>
@@ -296,7 +298,7 @@ export function ActionRail({
                   setRejectOpen(!rejectOpen);
                   setModifyOpen(false);
                 }}
-                disabled={decisionPending}
+                disabled={decisionPending || !canAct}
               >
                 Reject
               </Button>
@@ -305,7 +307,7 @@ export function ActionRail({
             {/* Modify Sub-panel (PRD §8.3 & S15) */}
             {modifyOpen && (
               <div className="decision-subpanel modify-subpanel" role="region" aria-label="Bounded Plan Modification">
-                <div className="overline">BOUNDED MODIFICATION (PRD §8.3)</div>
+                <div className="overline">BOUNDED MODIFICATION</div>
                 <div className="timing-inputs-list">
                   {rec.changes.map((c) => {
                     const bounds = getPhaseBounds(c.phase_id);
@@ -345,7 +347,7 @@ export function ActionRail({
                 </div>
 
                 <div className="reason-field-group">
-                  <label htmlFor="modify-reason-category">Mandatory Reason (PRD §8.3)</label>
+                  <label htmlFor="modify-reason-category">Mandatory Reason</label>
                   <select
                     id="modify-reason-category"
                     aria-label="Modification reason category"
@@ -382,14 +384,12 @@ export function ActionRail({
                     <li className={!hasOutOfBounds ? "valid" : "invalid"}>
                       <Check size={11} /> Configured min/max boundaries satisfied
                     </li>
+                    <li>Conflict matrix requires fresh server validation</li>
                     <li className="valid">
-                      <Check size={11} /> Conflict matrix satisfied (n.Conflicts checked in Go)
+                      Downstream capacity requires fresh server validation
                     </li>
                     <li className="valid">
-                      <Check size={11} /> Downstream receiving capacity respected
-                    </li>
-                    <li className="valid">
-                      <Check size={11} /> Pedestrian & cross-road clearance guaranteed
+                      Clearance constraints require fresh server validation
                     </li>
                   </ul>
                 </div>
@@ -398,7 +398,7 @@ export function ActionRail({
                   variant="default"
                   className="submit-modify-btn"
                   onClick={submitModify}
-                  disabled={decisionPending || hasOutOfBounds}
+                  disabled={decisionPending || !canAct || hasOutOfBounds}
                 >
                   <CheckCircle2 size={14} /> Confirm Modification & Apply
                 </Button>
@@ -408,7 +408,7 @@ export function ActionRail({
             {/* Reject Sub-panel (PRD §8.3 & S15) */}
             {rejectOpen && (
               <div className="decision-subpanel reject-subpanel" role="region" aria-label="Recommendation Rejection">
-                <div className="overline">REJECTION REASON (PRD §8.3 MANDATORY)</div>
+                <div className="overline">REJECTION REASON</div>
                 <div className="reason-field-group">
                   <label htmlFor="reject-reason-category">Reason Category</label>
                   <select
@@ -439,7 +439,7 @@ export function ActionRail({
                   variant="outline"
                   className="reject-confirm-btn"
                   onClick={submitReject}
-                  disabled={decisionPending}
+                  disabled={decisionPending || !canAct}
                 >
                   <AlertOctagon size={14} /> Confirm Rejection
                 </Button>
@@ -450,13 +450,13 @@ export function ActionRail({
           <div className="rec-idle-state">
             <p>
               {liveFresh
-                ? "Current traffic is balanced under active signal plans. Next recommendation will appear if congestion rises."
+                ? "No actionable recommendation is available. Check operating mode, freshness and service health."
                 : "Awaiting active simulation. Start a scenario below to generate real-time recommendations."}
             </p>
           </div>
         )}
 
-        {/* 4 Outcome Metrics Simulated Comparison (PRD §8.4) */}
+        {/* 4 Outcome Metrics Simulated Comparison */}
         {comparisonResult && (
           <div className="simulation-comparison-card" role="region" aria-label="Simulated Comparison Outcome">
             <div className="comparison-header">
@@ -473,7 +473,7 @@ export function ActionRail({
             <table className="comparison-table">
               <thead>
                 <tr>
-                  <th>Metric (PRD §8.4)</th>
+                  <th>Metric</th>
                   <th>Baseline</th>
                   <th>Candidate</th>
                   <th>Outcome</th>
@@ -518,7 +518,7 @@ export function ActionRail({
         )}
       </section>
 
-      {/* 3. NEXT PREDICTED ISSUE (PRD §8.1) */}
+      {/* 3. NEXT PREDICTED ISSUE */}
       <section className="action-card issue-card" data-testid="next-predicted-issue">
         <div className="action-card-header">
           <span className="card-badge issue-badge">FORWARD HORIZON</span>
@@ -584,7 +584,7 @@ export function ActionRail({
 
         <Button
           variant="outline"
-          onClick={() => resetMutation.mutate()}
+          onClick={() => {if(window.confirm("Reset this scenario to its seed? This creates a new run."))resetMutation.mutate()}}
           disabled={!frame || resetMutation.isPending || prepareMutation.isPending || !dbReady}
         >
           {resetMutation.isPending ? "Resetting…" : "Reset same seed"}
@@ -608,7 +608,7 @@ export function ActionRail({
         )}
         {prepareMutation.isSuccess && (
           <p className="form-success" role="status">
-            Simulation started. Seed {seed}.
+            Simulation start acknowledged. Inspect the live run and seed below.
           </p>
         )}
       </section>

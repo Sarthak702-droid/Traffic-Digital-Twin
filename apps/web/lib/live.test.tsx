@@ -62,7 +62,7 @@ describe("live reconnection", () => {
     expect(result.current.fresh).toBe(false);
     act(() => socket.close());
     expect(result.current.connected).toBe(false);
-    act(() => vi.advanceTimersByTime(1000));
+    act(() => vi.advanceTimersByTime(1500));
     expect(FakeSocket.sockets).toHaveLength(2);
     unmount();
     act(() => vi.advanceTimersByTime(2000));

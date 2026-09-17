@@ -1,3 +1,5 @@
+> **Production readiness — 2026-09-17: not ready.** Gateway/writer and UX remediation are in progress. See [verified implementation checkpoint](docs/REMEDIATION-STATUS.md) for passing checks and remaining blockers. The [audit](docs/UX-PRODUCTION-AUDIT.md) records the pre-fix baseline; historical epic acceptance does not approve production.
+
 # Traffic Digital Twin
 
 Local, synthetic demonstration software. **No live signal control.** Epic 1 provides a validated network foundation, shared contracts, durable scenario preparation and a working configuration UI. Traffic simulation, forecasts and recommendations belong to subsequent epics.
@@ -14,21 +16,19 @@ go mod download
 docker compose up -d --wait postgres
 ```
 
-Start Go from the repository root (migrations run transactionally on startup):
+Prepare the new local gateway/writer stack (the writer owns migrations):
 
 ```sh
-DATABASE_URL='postgres://traffic:traffic_demo@127.0.0.1:5433/traffic?sslmode=disable' go run ./apps/api/cmd/api
+python3 scripts/bootstrap-local.py
+python3 scripts/create-gateway-user.py .runtime/users.json operator --role operator
+docker compose exec -T postgres psql -U traffic -d traffic < scripts/init-local-db.sql
+npm run build
+python3 scripts/dev-stack.py
 ```
 
-In another terminal:
+Bootstrap preserves an existing environment. Password entry is interactive. Generated secrets remain in ignored `.runtime` files. Open **http://127.0.0.1:3100** and sign in. Public gateway: **8080**; private Go domain: **8081**; internal gateway: **8082**; Go writer: **8083**. PostgreSQL: **5433**. The domain uses a read-only database account; only the writer uses write credentials. These are development startup instructions; full-stack acceptance and production deployment remain pending.
 
-```sh
-npm run dev
-```
-
-Open **http://127.0.0.1:3100**. Go defaults to **127.0.0.1:8081**; PostgreSQL to **127.0.0.1:5433**. `.env.example` documents overrides. Next's API proxy reads `API_ORIGIN`; if changing it, rebuild/restart Next. Keep the API process running while using the UI. With no `DATABASE_URL`, the API serves validated configuration but run/history writes return unavailable.
-
-For production locally: `npm run build`, then `npm run start -w apps/web`. Webpack is selected explicitly for compiler compatibility in restricted desktop environments.
+`.env.example` documents overrides. Next's proxy reads `API_ORIGIN`; rebuild Next when changing it. Keep private services on loopback. Local HTTP does not establish a production transport-security pass.
 
 The existing delivery dashboard is separate: `node server.mjs` from the repository root, or `npm run dashboard`. It reads `docs/backlog.json` (the versioned copy of the original independent planning project) and repository completion evidence in `docs/delivery-status.json`. The legacy `docs/planning-dashboard` checkout remains untouched and is not required to run this project.
 

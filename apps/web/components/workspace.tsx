@@ -26,7 +26,8 @@ import { Sheet } from "@/components/ui/sheet";
 import { getNetwork, request } from "@/lib/api";
 import { useLive } from "@/lib/live";
 import { LiveSummary } from "@/components/live-panel";
-import { DecisionPanel } from "@/components/decision-panel";
+import { SessionPanel, useSession } from "@/components/session-panel";
+import { comparisonSchema } from "@/lib/response-schemas";
 import { useWorkspace } from "@/lib/state";
 import { TopBar } from "@/components/top-bar";
 import { KpiStrip } from "@/components/kpi-strip";
@@ -71,10 +72,18 @@ const scenarioLabels: Record<Scenario["id"], string> = {
 
 export function Workspace() {
   const live = useLive();
-  const [view, setView] = useState<View>("command");
+  const session = useSession();
+  const canWrite = session.isSuccess && !session.isError && session.data.role !== "viewer";
+  const [dirty, setDirty] = useState(false);
+  const [online,setOnline]=useState(true);
+  const [auditAfter,setAuditAfter]=useState(0);
+  const [auditPages,setAuditPages]=useState<number[]>([]);
+  const [view, setViewState] = useState<View>("command");
+  const setView=(next:View)=>{if(dirty&&!window.confirm("Discard unsent decision draft and change section?"))return;setDirty(false);setViewState(next);const url=new URL(location.href);url.searchParams.set("view",next);history.pushState(null,"",url)};
+  useEffect(()=>{const read=()=>{const next=new URL(location.href).searchParams.get("view");if(sections.some(s=>s.id===next))setViewState(next as View)};read();const back=()=>{if(!dirty||window.confirm("Leave the unsent draft?")){setDirty(false);read()}};const connectivity=()=>setOnline(navigator.onLine);connectivity();window.addEventListener("popstate",back);window.addEventListener("online",connectivity);window.addEventListener("offline",connectivity);const leave=(e:BeforeUnloadEvent)=>{if(dirty){e.preventDefault();e.returnValue=""}};window.addEventListener("beforeunload",leave);return()=>{window.removeEventListener("popstate",back);window.removeEventListener("online",connectivity);window.removeEventListener("offline",connectivity);window.removeEventListener("beforeunload",leave)}},[dirty]);
   const [scenarioID, setScenarioID] = useState<Scenario["id"]>("peak_surge");
   const [seed, setSeed] = useState("1101");
-  const [manual, setManual] = useState(false);
+
 
   const {
     selectedNode,
@@ -86,7 +95,7 @@ export function Workspace() {
   } = useWorkspace();
 
   const client = useQueryClient();
-  const network = useQuery({ queryKey: ["network"], queryFn: getNetwork });
+  const network = useQuery({ queryKey: ["network"], queryFn: getNetwork, enabled: session.isSuccess && !session.isError });
   const health = useQuery({
     queryKey: ["health"],
     queryFn: () => request<HealthState>("/health"),
@@ -97,29 +106,33 @@ export function Workspace() {
     queryFn: () => request<Run[]>("/runs"),
   });
   const audit = useQuery({
-    queryKey: ["audit"],
+    queryKey: ["audit", auditAfter],
     queryFn: () =>
-      request<{ events: AuditRecord[]; next_after: number }>("/audit?limit=50"),
+      request<{ events: AuditRecord[]; next_after: number }>(`/audit?limit=50&after=${auditAfter}`),
+    refetchInterval: 5000,
     enabled: view === "audit",
   });
 
   // Real-time analysis query (forecasts, recommendations, comparisons)
   const analysisQuery = useQuery({
     queryKey: ["analysis", live.frame?.run_id],
-    queryFn: () => request<Analysis>("/analysis"),
+    queryFn: ({signal}) => request<Analysis>("/analysis", {signal}),
+    enabled: live.fresh && session.isSuccess,
     refetchInterval: 2000,
     retry: false,
   });
 
   const analysis: Analysis | null =
-    analysisQuery.data && (!live.frame?.run_id || analysisQuery.data.run_id === live.frame.run_id)
+    live.fresh && !analysisQuery.isError && analysisQuery.data && live.frame && analysisQuery.data.run_id === live.frame.run_id && live.frame.simulation_time_s - analysisQuery.data.simulation_time_s <= 10 && live.frame.simulation_time_s >= analysisQuery.data.simulation_time_s
       ? analysisQuery.data
       : null;
 
   const [simulationComparison, setSimulationComparison] = useState<ComparisonResult | null>(null);
-  const [systemMode, setSystemMode] = useState<"recommend" | "observe" | "manual">(
-    manual ? "manual" : "recommend",
-  );
+  const modeQuery=useQuery({queryKey:["mode"],queryFn:()=>request<{mode:"recommend"|"observe"|"manual";locks:string[]}>("/mode"),refetchInterval:3000,enabled:session.isSuccess});
+  const systemMode=modeQuery.data?.mode ?? "observe";
+  const manual=systemMode==="manual";
+  useEffect(()=>{setSimulationComparison(null);setDirty(false)},[live.frame?.run_id,analysis?.recommendation?.id]);
+  useEffect(()=>{const refreshAudit=()=>client.invalidateQueries({queryKey:["audit"]});window.addEventListener("audit-updated",refreshAudit);return()=>window.removeEventListener("audit-updated",refreshAudit)},[client]);
 
   // Decision mutation (Story S15: Simulate, Approve, Modify, Reject)
   const decision = useMutation({
@@ -133,7 +146,7 @@ export function Workspace() {
       changes?: TimingChange[];
     }) => {
       const rec = analysis?.recommendation;
-      if (!rec) throw Error("No active recommendation to act upon");
+      if (!rec || !canWrite || !live.fresh || live.frame?.replay || modeQuery.isError || systemMode!=="recommend") throw Error("Fresh authorized recommendation required");
       return {
         action,
         result: await request<ComparisonResult>(
@@ -150,7 +163,7 @@ export function Workspace() {
     },
     onSuccess: (data) => {
       if (data.action === "simulate") {
-        setSimulationComparison(data.result);
+        setSimulationComparison(comparisonSchema.parse(data.result));
       } else {
         setSimulationComparison(null);
       }
@@ -167,9 +180,7 @@ export function Workspace() {
         body: "{}",
       }),
     onSuccess: (data) => {
-      const nextManual = !manual;
-      setManual(nextManual);
-      setSystemMode(nextManual ? "manual" : "recommend");
+      client.invalidateQueries({queryKey:["mode"]});
       setSimulationComparison(null);
       client.invalidateQueries({ queryKey: ["analysis"] });
       client.invalidateQueries({ queryKey: ["audit"] });
@@ -185,8 +196,7 @@ export function Workspace() {
     },
     onSuccess: (data) => {
       const m = (data.mode === "manual" ? "manual" : data.mode === "observe" ? "observe" : "recommend") as "recommend" | "observe" | "manual";
-      setSystemMode(m);
-      setManual(m === "manual");
+      client.invalidateQueries({queryKey:["mode"]});
       setSimulationComparison(null);
       client.invalidateQueries({ queryKey: ["analysis"] });
       client.invalidateQueries({ queryKey: ["audit"] });
@@ -200,7 +210,7 @@ export function Workspace() {
         body: JSON.stringify({
           schema_version: "1.0",
           seed: Number(seed),
-          mode: manual ? "observe" : "recommend",
+          mode: systemMode,
         }),
       }),
     onSuccess: () => {
@@ -221,10 +231,14 @@ export function Workspace() {
 
   const data = network.data;
   const chosen = data?.nodes.find((n) => n.id === selectedNode);
-  const dbReady = health.data?.components.some(
+  const dbReady = !health.isError && !modeQuery.isError && canWrite && online && health.data?.components.some(
     (c) => c.component === "database" && c.status === "normal",
   );
 
+  const replay=useMutation({mutationFn:()=>request(`/replay/${scenarioID}`,{method:"POST",body:"{}"}),onSuccess:()=>{setSimulationComparison(null);client.invalidateQueries()}});
+  const lock=useMutation({mutationFn:({target,locked}:{target:string;locked:boolean})=>request(`/locks/${target}`,{method:locked?"POST":"DELETE",body:"{}"}),onSuccess:()=>client.invalidateQueries()});
+  const anyCommandPending=decision.isPending||modeMutation.isPending||changeModeMutation.isPending||prepare.isPending||reset.isPending||replay.isPending||lock.isPending;
+  const decisionReady=!!analysis && live.fresh && !live.frame?.replay && !!dbReady && systemMode==="recommend" && canWrite && !anyCommandPending;
   const refresh = () => {
     client.invalidateQueries();
   };
@@ -277,15 +291,15 @@ export function Workspace() {
       <div className="app-main">
         {/* TopBar with Chips, Health, Clock, Role Switcher, and DGP Launcher (Story S08, S14) */}
         <TopBar
-          health={health.data}
+          health={health.isError ? undefined : health.data}
           manual={manual}
           mode={systemMode}
           onChangeMode={(m) => changeModeMutation.mutate(m)}
           onToggleManual={() => modeMutation.mutate()}
-          isPendingManual={modeMutation.isPending || changeModeMutation.isPending}
+          isPendingManual={anyCommandPending || !canWrite || !live.frame || live.frame.replay || !online}
         />
 
-        {/* Prominent Disclosure Banner (PRD §8.1) */}
+        {/* Prominent Disclosure Banner */}
         <div className="disclosure" role="region" aria-label="Operating Mode Disclosure">
           <ShieldCheck size={14} />
           <span>
@@ -294,7 +308,14 @@ export function Workspace() {
         </div>
 
         <main className="product-content">
-          {/* Role-Specific Executive / Supervisor Banner (PRD §4) */}
+          <SessionPanel/>
+          {!online&&<p role="alert">Offline. Measurements may be stale; commands are disabled.</p>}
+          {network.data?.provenance==="bundled-offline"&&<p role="alert">Bundled offline topology only. This configuration is not a live service response.</p>}
+          {(decision.error||modeMutation.error||changeModeMutation.error||replay.error||lock.error)&&<p className="form-error" role="alert">{(decision.error||modeMutation.error||changeModeMutation.error||replay.error||lock.error)?.message}</p>}
+          {decision.isSuccess&&<p role="status">{decision.data.action} acknowledged. Inspect the returned plan and audit; accepted timing waits for its safe phase boundary.</p>}
+          {!analysis&&live.frame&&<p role="status">Fresh intelligence unavailable. Forecasts and decisions are disabled until recovery.</p>}
+
+          {/* Role-Specific Executive / Supervisor Banner */}
           {role === "viewer" && (
             <div className="role-banner viewer-banner" role="status">
               <div>
@@ -318,11 +339,11 @@ export function Workspace() {
               <div>
                 <strong>SUPERVISOR OVERSIGHT MODE</strong>
                 <p>
-                  Safety limits strictly validated: min green 15s, max green 55s, yellow/all-red clearance enforced. Full PostgreSQL audit trail enabled.
+                  Inspect configured timing bounds, current safety results and persisted audit outcomes. Missing evidence is unavailable.
                 </p>
               </div>
               <span className="safety-pill">
-                <Check size={12} /> All Safety Envelopes Intact
+                <Check size={12} /> Review current safety evidence
               </span>
             </div>
           )}
@@ -385,7 +406,7 @@ export function Workspace() {
                     {/* Status Pill */}
                     <div className="workspace-status">
                       <span className="status-pill">
-                        <Check size={13} /> Configuration validated
+                        <Check size={13} /> {data.provenance === "bundled-offline" ? "Bundled topology" : "Configuration validated"}
                       </span>
                       <span>
                         <span
@@ -456,6 +477,9 @@ export function Workspace() {
 
                       {/* 4-column Action Rail (Story S09 / PRD §8.1) */}
                       <ActionRail
+                        key={`${live.frame?.run_id || "none"}:${analysis?.recommendation?.id || "none"}`}
+                        canAct={decisionReady}
+                        onDirty={setDirty}
                         network={data}
                         frame={live.fresh ? live.frame : null}
                         analysis={analysis}
@@ -470,15 +494,15 @@ export function Workspace() {
                         onSimulate={() => decision.mutate({ action: "simulate" })}
                         onApprove={() => decision.mutate({ action: "approve" })}
                         onModify={(reason, changes) =>
-                          decision.mutate({ action: "modify", reason, changes })
+                          decision.mutateAsync({ action: "modify", reason, changes })
                         }
                         onReject={(reason) =>
-                          decision.mutate({ action: "reject", reason })
+                          decision.mutateAsync({ action: "reject", reason })
                         }
-                        decisionPending={decision.isPending}
-                        comparisonResult={simulationComparison}
+                        decisionPending={anyCommandPending}
+                        comparisonResult={simulationComparison?.run_id===live.frame?.run_id && simulationComparison?.recommendation_id===analysis?.recommendation?.id ? simulationComparison : null}
                         onClearComparison={() => setSimulationComparison(null)}
-                        manualMode={manual || systemMode === "manual"}
+                        manualMode={manual}
                       />
                     </div>
 
@@ -490,6 +514,12 @@ export function Workspace() {
 
                     {/* Live Stream Health & Signal Summary */}
                     <LiveSummary live={live} />
+                    <section className="context-panel"><h2>Recovery and timing locks</h2>
+                    <p>{live.frame?.replay ? "Prerecorded replay · signal decisions disabled" : "Replay is a prerecorded fallback; it still requires the local gateway and database."}</p>
+                    <Button disabled={!dbReady||anyCommandPending} onClick={()=>{if(!live.frame||window.confirm("Replace the current run with prerecorded replay?"))replay.mutate()}}>Start golden replay</Button>
+                    <h3>Configured timing locks</h3><p>Locks persist across restarts and are checked before operator plan changes. Emergency scheduling remains separately protected.</p>
+                    {data.phases.map(p=><Button key={p.id} variant="outline" disabled={!dbReady||!live.fresh||!!live.frame?.replay||anyCommandPending} onClick={()=>lock.mutate({target:p.id,locked:!modeQuery.data?.locks.includes(p.id)})}>{modeQuery.data?.locks.includes(p.id)?"Unlock":"Lock"} {p.id}</Button>)}
+                    </section>
 
                     {/* Configuration / Topology Summary Strip */}
                     <div className="configuration-strip">
@@ -531,7 +561,7 @@ export function Workspace() {
                   </>
                 )}
 
-                {/* 2. NETWORK SCREEN (PRD §8.4) */}
+                {/* 2. NETWORK SCREEN */}
                 {view === "network" && (
                   <NetworkView
                     network={data}
@@ -563,9 +593,10 @@ export function Workspace() {
                     <aside className="action-rail">
                       <section className="context-panel">
                         <div className="overline">INCIDENT_C3 / BOTTLENECK</div>
-                        <h2>C3 Capacity Cut to 50%</h2>
+                        {live.fresh && live.frame?.scenario_type==="incident_c3" && live.frame.incident?.id ? <p role="status">Stage: {live.frame.incident.status} · remaining capacity {Math.round(live.frame.incident.capacity_ratio*100)}% · configured recovery countdown {live.frame.incident.recovery_cycles} cycles. This countdown is not a measured queue-clearance estimate.</p> : <p role="status">No fresh incident run. Launch the configured scenario to inspect its lifecycle.</p>}
+                        <h2>C3 configured remaining capacity: {Math.round((data.scenarios.find(s=>s.id==="incident_c3")?.capacity_ratio ?? 0)*100)}%</h2>
                         <p>
-                          Simulates a lane blockage at C3. In normal fixed timing, queue spillback reaches C6 within 90 seconds. With coordinated decision support, C6 green time is metered and C1 clears northbound traffic.
+                          Configured capacity reduction at C3. Inspect actual upstream queues and forecast evidence; C6 is a boundary without signal control.
                         </p>
                         <Button
                           variant="default"
@@ -607,9 +638,10 @@ export function Workspace() {
                     <aside className="action-rail">
                       <section className="context-panel">
                         <div className="overline">AMBULANCE_CORRIDOR</div>
-                        <h2>Guaranteed Emergency Green Wave</h2>
+                        {live.fresh && live.frame?.scenario_type==="ambulance_corridor" && live.frame.emergency?.id ? <div role="status"><p>Stage: {live.frame.emergency.status} · recovery countdown {live.frame.emergency.recovery_cycles_remaining} cycles</p><ul>{live.frame.emergency.route_node_ids.map((n,i)=><li key={n}>{n}: {live.frame?.emergency?.eta_s[i] != null ? `${Math.round(live.frame.emergency.eta_s[i])}s modeled ETA` : "ETA unavailable"}</li>)}</ul></div> : <p role="status">No fresh emergency run. Launch the configured scenario to inspect stages and ETAs.</p>}
+                        <h2>Simulated emergency priority</h2>
                         <p>
-                          Pre-clears cross-traffic along C6 → C3 → C1 → C2 before vehicle arrival. Following clearance, bounded recovery cycles restore equilibrium to cross-traffic without permanent gridlock.
+                          Priority is applied only at configured controlled junctions, subject to clearance and receiving capacity. Observe actual stage and recovery; passage time is not guaranteed.
                         </p>
                         <Button
                           variant="default"
@@ -630,10 +662,10 @@ export function Workspace() {
                 {view === "vision" && (
                   <section className="feature-empty">
                     <Video size={40} />
-                    <div className="overline">VISION ANALYTICS (PRD §8.5)</div>
+                    <div className="overline">VISION ANALYTICS</div>
                     <h2>Sample Video Traffic Extraction</h2>
                     <p>
-                      Camera feeds extract aggregate counts and vehicle tracks without facial recognition, ANPR, or citizen surveillance. Demonstrates real-world bridge from CCTV cameras to machine-readable digital twin inputs.
+                      Optional sample-video extraction is not implemented. No camera feed, vehicle tracks or analytics are available. Core synthetic scenarios and replay remain independent of this feature.
                     </p>
                     <Button variant="outline" onClick={() => setView("command")}>
                       Return to Command Center <ArrowRight size={16} />
@@ -648,7 +680,7 @@ export function Workspace() {
                       <div className="panel-heading">
                         <div>
                           <h2>Durable Audit Trail</h2>
-                          <span>PostgreSQL Sequential Record · Latest 50 events</span>
+                          <span>PostgreSQL history · oldest first · pages of 50</span>
                         </div>
                         <ShieldCheck size={18} />
                       </div>
@@ -687,6 +719,7 @@ export function Workspace() {
                                     <span>Actor: <strong>{a.actor}</strong></span>
                                     <span>Safety Result: <strong className={isApproved ? "text-success" : isRejected ? "text-danger" : ""}>{a.safety_result}</strong></span>
                                   </div>
+                                  <details><summary>Decision evidence</summary><p>Recommendation: {a.recommendation_id || "Not applicable"}</p><pre>Before: {JSON.stringify(a.before_values,null,2)}{"\n"}After: {JSON.stringify(a.after_values,null,2)}</pre></details>
                                   <div className="audit-run-id">
                                     <code>Run: {a.run_id}</code>
                                   </div>
@@ -703,6 +736,7 @@ export function Workspace() {
                     </section>
 
                     <section className="context-panel">
+                      <h2>Audit pages</h2><Button disabled={auditPages.length===0} onClick={()=>{const previous=[...auditPages];setAuditAfter(previous.pop()||0);setAuditPages(previous)}}>Previous events</Button><Button disabled={!audit.data||audit.data.events.length<50} onClick={()=>{setAuditPages([...auditPages,auditAfter]);setAuditAfter(audit.data!.next_after)}}>Next events</Button><Button onClick={()=>{setAuditPages([]);setAuditAfter(0)}}>First page</Button>
                       <div className="overline">COMPONENT HEALTH</div>
                       <h2>System Availability</h2>
                       {health.isError ? (
@@ -790,7 +824,7 @@ export function Workspace() {
 
           <footer className="product-footer">
             <span>
-              TRAFFIC DIGITAL TWIN <span>/ COMMAND CENTER & JUNCTION INTELLIGENCE (EPIC 3)</span>
+              TRAFFIC DIGITAL TWIN <span>/ SYNTHETIC DEMONSTRATION</span>
             </span>
             <span>
               Demonstration mode · Synthetic traffic · Zero live signal control.

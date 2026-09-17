@@ -104,12 +104,12 @@ export function useLive() {
     let socket: WebSocket;
     let timer: ReturnType<typeof setTimeout>;
     let disposed = false;
+ let attempts=0;
     const connect = () => {
       socket = new WebSocket(
         `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/ws/v1/live`,
       );
-      socket.onopen = () =>
-        useLiveStore.getState().set({ connected: true, failed: false });
+      socket.onopen = () => { attempts=0;useLiveStore.getState().set({ connected: true, failed: false }); };
       socket.onmessage = (event) => {
         try {
           const envelope = JSON.parse(event.data);
@@ -117,6 +117,8 @@ export function useLive() {
             throw Error("Unsupported event");
           if (envelope.type === "network.state") {
             const frame = liveSchema.parse(envelope.payload);
+ const previous=useLiveStore.getState().frame;
+ if(previous?.run_id===frame.run_id && previous.simulation_time_s>frame.simulation_time_s)return;
             const latency = Math.max(
               0,
               Date.now() - Date.parse(frame.timestamp),
@@ -124,6 +126,7 @@ export function useLive() {
             useLiveStore
               .getState()
               .set({ frame, received: Date.now(), latency, failed: false });
+          } else if(envelope.type==="audit.appended"){window.dispatchEvent(new Event("audit-updated"));
           } else if (envelope.type === "health.updated") {
             const simulation = envelope.payload.components?.find(
               (c: { component: string }) => c.component === "simulation",
@@ -138,7 +141,7 @@ export function useLive() {
       socket.onerror = () => socket.close();
       socket.onclose = () => {
         useLiveStore.getState().set({ connected: false });
-        if (!disposed) timer = setTimeout(connect, 1000);
+        if (!disposed) timer = setTimeout(connect, Math.min(30000,1000*2**attempts++)+Math.random()*500);
       };
     };
     connect();

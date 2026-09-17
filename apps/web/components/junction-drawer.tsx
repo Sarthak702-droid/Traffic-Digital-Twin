@@ -77,19 +77,7 @@ export function JunctionDrawerContent({
     phases.some((p) => p.id === c.phase_id),
   );
 
-  // Plain language explanation generation
-  let explanationText = "";
-  if (spillbackForecast?.explanation_facts?.length) {
-    explanationText = spillbackForecast.explanation_facts.join(" ");
-  } else if (chosen.id === "C1") {
-    explanationText =
-      "C3 is expected to discharge a northbound platoon towards C1. Based on current free-flow travel times (185m at 25 km/h), the platoon will reach C1 in approximately 74–96 seconds. C1 storage utilization is projected to exceed 80% if green splits remain unadjusted.";
-  } else if (chosen.id === "C3") {
-    explanationText =
-      "C3 serves as the primary feeder node from C6 into the C1 corridor. Upstream demand surge creates sustained approach queues on the southbound-to-northbound through movements.";
-  } else {
-    explanationText = `Node ${chosen.id} is a configured network boundary handling entry and exit traffic for the corridor.`;
-  }
+  const explanationText = spillbackForecast?.explanation_facts?.join(" ") || (chosen.kind === "boundary" ? `Node ${chosen.id} is a configured boundary; it has no controlled signal.` : "No fresh causal explanation is available for this junction.");
 
   const currentHorizonObj = horizons.find((h) => h.seconds === selectedHorizon) ?? horizons[0];
 
@@ -131,16 +119,16 @@ export function JunctionDrawerContent({
       {/* HORIZON SELECTOR (Story S10) */}
       <section className="drawer-horizon-section" aria-label="Forecast horizons">
         <div className="section-header-row">
-          <div className="overline">FORWARD HORIZONS (PRD §8.2)</div>
+          <div className="overline">FORWARD HORIZONS</div>
           <span className="horizon-badge">{currentHorizonObj.tag}</span>
         </div>
 
-        <div className="horizon-tabs" role="tablist">
+        <div className="horizon-tabs" role="group" aria-label="Select forecast horizon">
           {horizons.map((h) => (
             <button
               key={h.seconds}
-              role="tab"
-              aria-selected={selectedHorizon === h.seconds}
+
+              aria-pressed={selectedHorizon === h.seconds}
               className={`horizon-tab ${selectedHorizon === h.seconds ? "active" : ""}`}
               onClick={() => setSelectedHorizon(h.seconds)}
             >
@@ -241,9 +229,9 @@ export function JunctionDrawerContent({
                     </div>
                   </div>
                   {/* Platoon Waveform & Storage Progress (Story S11, S12) */}
-                  <div className="platoon-progression-bar" title="Platoon arrival waveform with ±5s ETA tolerance">
+                  <div className="platoon-progression-bar" title="Modeled arrivals over the selected horizon">
                     <div className="bar-labels">
-                      <span className="wave-label"><GitBranch size={11} /> Platoon Arrival (ETA ±5s)</span>
+                      <span className="wave-label"><GitBranch size={11} /> Modeled arrivals</span>
                       <span className="wave-val">{f.arrivals_veh.toFixed(1)} veh</span>
                     </div>
                     <div className="bar-track">
@@ -271,7 +259,7 @@ export function JunctionDrawerContent({
               <Activity size={18} />
               <p>
                 Forecast for +{selectedHorizon}s is calculating or outside active horizon window.
-                Awaiting next 1 Hz analysis cycle.
+                Analysis is refreshed separately from the traffic stream; retry when intelligence is available.
               </p>
             </div>
           )
@@ -280,7 +268,7 @@ export function JunctionDrawerContent({
 
       {/* WHY THIS IS HAPPENING (Story S10) */}
       <section className="drawer-why-section">
-        <div className="overline">DETERMINISTIC CAUSE ANALYSIS (PRD §8.2)</div>
+        <div className="overline">DETERMINISTIC CAUSE ANALYSIS</div>
         <h3>Why this is happening</h3>
         <p className="drawer-narrative-text">{explanationText}</p>
 
@@ -301,13 +289,13 @@ export function JunctionDrawerContent({
 
       {/* RECOMMENDATION SUMMARY (Story S10) */}
       <section className="drawer-rec-section">
-        <div className="overline">RECOMMENDATION IMPACT (PRD §8.2)</div>
+        <div className="overline">RECOMMENDATION IMPACT</div>
         <h3>Proposed signal timing adjustment</h3>
         {junctionChanges && junctionChanges.length > 0 ? (
           <div className="rec-impact-card">
             <div className="rec-header">
               <span className="rec-status-badge">Candidate Plan</span>
-              <span className="safety-guarantee">Safety Verified</span>
+              <span className="safety-guarantee">{recommendation?.safety_status || "Not validated"}</span>
             </div>
             <ul className="rec-changes-list">
               {junctionChanges.map((c) => (
@@ -317,25 +305,11 @@ export function JunctionDrawerContent({
                 </li>
               ))}
             </ul>
-            <div className="impact-stats">
-              <div className="impact-item">
-                <TrendingDown size={14} className="impact-icon green" />
-                <span>Queue reduction: ~24% projected</span>
-              </div>
-              <div className="impact-item">
-                <CheckCircle2 size={14} className="impact-icon green" />
-                <span>Prevents C1 northbound spillback</span>
-              </div>
-            </div>
-            <div className="safety-checklist">
-              <span className="check-item">✓ Min green (15s) guaranteed</span>
-              <span className="check-item">✓ Clearance intervals preserved</span>
-              <span className="check-item">✓ Zero conflicting greens</span>
-            </div>
+            <p>Safety status: {recommendation?.safety_status || "Requires fresh validation"}. Impact is available only in a matching aggregate comparison.</p>
           </div>
         ) : (
           <p className="drawer-note-text">
-            No active timing changes recommended for {chosen.id}. Current baseline plan meets safety and flow requirements.
+            No active timing changes recommended for {chosen.id}. No safety or traffic-flow conclusion is inferred from missing recommendations.
           </p>
         )}
       </section>

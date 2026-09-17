@@ -38,11 +38,31 @@ func (s *Server) ConnectSimulation(ctx context.Context, address string) error {
 		if e == nil {
 			for _, r := range runs {
 				if r.Status == "running" {
+					s.manual = r.Mode == "manual"
 					id, _ := r.ID.Value()
 					s.sim.command = &pb.RunCommand{SchemaVersion: "1.0", RunId: id.(string), ScenarioType: r.ScenarioType, Seed: uint32(r.Seed), Mode: r.Mode}
 					break
 				}
 			}
+		}
+	}
+	if s.Store != nil {
+		rows, e := s.Store.Pool.Query(ctx, "SELECT target FROM control_locks")
+		if e != nil {
+			return e
+		}
+		s.locks = map[string]bool{}
+		for rows.Next() {
+			var target string
+			if e = rows.Scan(&target); e != nil {
+				rows.Close()
+				return e
+			}
+			s.locks[target] = true
+		}
+		rows.Close()
+		if rows.Err() != nil {
+			return rows.Err()
 		}
 	}
 	go func() {
@@ -60,6 +80,10 @@ func (s *Server) ConnectSimulation(ctx context.Context, address string) error {
 					accept := s.sim.command != nil && frame.RunId == s.sim.command.RunId
 					s.mu.RUnlock()
 					if accept {
+						if err := contracts.ValidateState(frame); err != nil {
+							e = err
+							break
+						}
 						if err := s.persistLifecycle(frame); err != nil {
 							e = err
 							break
@@ -198,21 +222,9 @@ func (s *Server) resetScenario(w http.ResponseWriter, r *http.Request) {
 	s.launch(w, r, command, "Reset to identical seed and initial SUMO conditions")
 }
 func (s *Server) launch(w http.ResponseWriter, r *http.Request, command *pb.RunCommand, reason string) {
-	s.mu.Lock()
-	if s.replayCancel != nil {
-		s.replayCancel()
-		s.replayCancel = nil
-	}
-	s.replaying = false
-	s.manual = command.Mode == "manual"
-	s.analysis = nil
-	s.mu.Unlock()
 	ctx, cancel := context.WithTimeout(r.Context(), 4500*time.Millisecond)
 	defer cancel()
 	dbMode := command.Mode
-	if dbMode == "manual" {
-		dbMode = "observe"
-	}
 	run, e := s.Store.CreateRun(ctx, s.Network.ID, command.ScenarioType, dbMode, int64(command.Seed))
 	if e != nil {
 		problem(w, 503, "Could not prepare run; simulation unchanged")
@@ -249,6 +261,14 @@ func (s *Server) launch(w http.ResponseWriter, r *http.Request, command *pb.RunC
 		return
 	}
 	s.mu.Lock()
+	if s.replayCancel != nil {
+		s.replayCancel()
+		s.replayCancel = nil
+	}
+	s.replaying = false
+	s.manual = command.Mode == "manual"
+	s.analysis = nil
+	s.analysisFault = ""
 	s.sim.command = proto.Clone(command).(*pb.RunCommand)
 	s.state = nil
 	s.mu.Unlock()

@@ -199,7 +199,7 @@ describe("Epic 3 S08: Product Shell & Disclosure", () => {
     expect(screen.getByText(/System: Normal/)).toBeInTheDocument();
   });
 
-  it("supports role selector in TopBar", () => {
+  it("shows server-assigned role without a privilege selector", () => {
     render(
       <TopBar
         health={mockHealth}
@@ -208,10 +208,8 @@ describe("Epic 3 S08: Product Shell & Disclosure", () => {
       />,
     );
 
-    const select = screen.getByRole("combobox", { name: "Select user role" });
-    expect(select).toBeInTheDocument();
-    fireEvent.change(select, { target: { value: "viewer" } });
-    expect(select).toHaveValue("viewer");
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.getByText(/authenticated role/)).toBeInTheDocument();
   });
 
   it("renders and navigates 8-step DGP demonstration modal", () => {
@@ -337,11 +335,11 @@ describe("Epic 3 S10: Junction Intelligence Drawer & Horizons", () => {
     expect(screen.getByText("14s remaining")).toBeInTheDocument();
 
     // Horizon tabs: NOW, +30s, +1m, +2m, +5m
-    expect(screen.getByRole("tab", { name: /NOW/ })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /\+30s/ })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /\+1m/ })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /\+2m/ })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /\+5m/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /NOW/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /\+30s/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /\+1m/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /\+2m/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /\+5m/ })).toBeInTheDocument();
 
     // Plain-language cause and spillback alert
     expect(screen.getByText(/Spillback ETA: 82 seconds/)).toBeInTheDocument();
@@ -349,17 +347,17 @@ describe("Epic 3 S10: Junction Intelligence Drawer & Horizons", () => {
 
     // Recommendation impact and safety check
     expect(screen.getByText(/Proposed signal timing adjustment/)).toBeInTheDocument();
-    expect(screen.getByText(/Min green \(15s\) guaranteed/)).toBeInTheDocument();
+    expect(screen.getByText(/Safety status:/)).toBeInTheDocument();
 
     // Switch horizon to +30s
-    fireEvent.click(screen.getByRole("tab", { name: /\+30s/ }));
+    fireEvent.click(screen.getByRole("button", { name: /\+30s/ }));
     expect(screen.getByText("Predicted Queue")).toBeInTheDocument();
     expect(screen.getByText("11.2 veh")).toBeInTheDocument();
   });
 });
 
 describe("Epic 3 Network Screen Before-vs-After Mode (PRD §8.4)", () => {
-  it("switches to Before-vs-After split mode and displays the 4 outcome metrics", () => {
+  it("displays verified aggregate comparison metrics without unsupported guarantees", () => {
     const frame = makeSampleState();
     const analysis = makeSampleAnalysis();
 
@@ -373,18 +371,11 @@ describe("Epic 3 Network Screen Before-vs-After Mode (PRD §8.4)", () => {
     );
 
     // Switch to Before vs After mode
-    fireEvent.click(screen.getByRole("button", { name: /Before vs After Split Mode/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Before vs After · Aggregate comparison/ }));
 
-    expect(screen.getByText("BASELINE STRATEGY")).toBeInTheDocument();
-    expect(screen.getByText("CANDIDATE PLAN")).toBeInTheDocument();
-
-    // Check all 4 mandated outcome metrics
-    expect(screen.getByText("1. Maximum Queue")).toBeInTheDocument();
-    expect(screen.getByText("2. Average Modeled Delay")).toBeInTheDocument();
-    expect(screen.getByText("3. Spillback Occurrence")).toBeInTheDocument();
-    expect(screen.getByText("4. Modeled Stops / Vehicle")).toBeInTheDocument();
-
-    // Check net improvements
-    expect(screen.getByText("100% Spillback Eliminated")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Aggregate comparison result" })).toBeInTheDocument();
+    expect(screen.getByText("16.50")).toBeInTheDocument();
+    expect(screen.getByText("11.20")).toBeInTheDocument();
+    expect(screen.queryByText("100% Spillback Eliminated")).not.toBeInTheDocument();
   });
 });

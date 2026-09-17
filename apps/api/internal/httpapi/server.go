@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 	"traffic.local/twin/apps/api/internal/config"
 	"traffic.local/twin/apps/api/internal/contracts"
@@ -23,6 +24,9 @@ import (
 )
 
 type Server struct {
+	ServiceToken       string
+	RequireOwner       bool
+	ownerReady         atomic.Bool
 	intelligence       pb.IntelligenceClient
 	analysis           *pb.Analysis
 	analysisFault      string
@@ -63,7 +67,7 @@ func (s *Server) SetState(state *pb.TrafficState) error {
 }
 func (s *Server) Handler() http.Handler {
 	r := chi.NewRouter()
-	r.Use(middleware.RequestID, middleware.Recoverer)
+	r.Use(middleware.RequestID, middleware.Recoverer, s.access)
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -78,6 +82,9 @@ func (s *Server) Handler() http.Handler {
 			}
 			next.ServeHTTP(w, r)
 		})
+	})
+	r.Get("/internal/ready", func(w http.ResponseWriter, r *http.Request) {
+		send(w, 200, map[string]bool{"ready": s.ownerReady.Load()})
 	})
 	r.Get("/api/v1/network", func(w http.ResponseWriter, r *http.Request) { send(w, 200, s.Network) })
 	r.Get("/api/v1/state", func(w http.ResponseWriter, r *http.Request) {

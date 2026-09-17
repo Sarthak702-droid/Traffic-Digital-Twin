@@ -102,10 +102,10 @@ describe("Epic 5: Safety Envelope & Human Authority (S13, S14, S15)", () => {
       fireEvent.click(modifyBtn);
 
       // Verify bounded modification header and checklist
-      expect(screen.getByText("BOUNDED MODIFICATION (PRD §8.3)")).toBeDefined();
+      expect(screen.getByText("BOUNDED MODIFICATION")).toBeDefined();
       expect(screen.getByLabelText("Safety Envelope Verification")).toBeDefined();
       expect(screen.getByText("Configured min/max boundaries satisfied")).toBeDefined();
-      expect(screen.getByText("Conflict matrix satisfied (n.Conflicts checked in Go)")).toBeDefined();
+      expect(screen.getByText("Conflict matrix requires fresh server validation")).toBeDefined();
 
       // Check input for C1-EW
       const input = screen.getByLabelText("Green seconds C1-EW") as HTMLInputElement;
@@ -350,7 +350,7 @@ describe("Epic 5: Safety Envelope & Human Authority (S13, S14, S15)", () => {
 
       fireEvent.click(screen.getByRole("button", { name: /^reject$/i }));
 
-      expect(screen.getByText("REJECTION REASON (PRD §8.3 MANDATORY)")).toBeDefined();
+      expect(screen.getByText("REJECTION REASON")).toBeDefined();
 
       const reasonSelect = screen.getByLabelText("Rejection reason category");
       fireEvent.change(reasonSelect, { target: { value: "Emergency vehicle" } });

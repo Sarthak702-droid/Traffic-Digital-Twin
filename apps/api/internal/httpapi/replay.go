@@ -35,7 +35,11 @@ func (s *Server) startReplay(w http.ResponseWriter, r *http.Request) {
 		problem(w, 400, "Unknown replay scenario")
 		return
 	}
-	if !s.db(w) || s.sim == nil {
+	if !s.db(w) {
+		return
+	}
+	if s.sim == nil {
+		problem(w, 503, "Replay stream service unavailable")
 		return
 	}
 	directory := os.Getenv("REPLAY_DIR")

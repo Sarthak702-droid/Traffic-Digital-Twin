@@ -1,3 +1,5 @@
+> **Revalidation notice — 2026-09-17:** Historical demo implementation/test evidence follows. It is not acceptance of the revised Python gateway/Go writer architecture or production UX. See [current audit](UX-PRODUCTION-AUDIT.md) and [revised stories](DELIVERY-PLAN.md); prior S01–S15 completion is retained under `historical_acceptance` in delivery-status.json, with revised gates reopened. No fixes were implemented by this audit.
+
 # Implement Epic 1 foundation and shared contracts
 
 The repository previously contained only planning artifacts. This change implements S01–S04: a configuration-driven Next.js network inspector, versioned Go/Python/TypeScript contracts, validated C1–C6 topology, and a chi/pgx API with transactional PostgreSQL persistence.

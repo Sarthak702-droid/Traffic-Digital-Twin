@@ -45,7 +45,7 @@ export function KpiStrip({
   const spillbackForecasts = (analysis?.forecasts ?? []).filter(
     (fc) => fc.spillback_eta_s != null && fc.spillback_eta_s > 0,
   );
-  let spillbackEtaText = "None predicted";
+  let spillbackEtaText = analysis ? "None predicted" : "Unavailable";
   let spillbackRisk = "normal";
   if (spillbackForecasts.length > 0) {
     spillbackForecasts.sort(
@@ -95,7 +95,7 @@ export function KpiStrip({
           <small className="kpi-unit">veh / approach</small>
         </strong>
         <span className="kpi-subtext">
-          {f ? `${totalQueue} total queued` : "No queue buildup"}
+          {f ? `${totalQueue} total queued` : "Measurements unavailable"}
         </span>
       </div>
 
@@ -104,13 +104,13 @@ export function KpiStrip({
         <strong
           className={`kpi-value ${criticalNodesCount > 0 ? "warning" : "healthy"}`}
         >
-          {f ? criticalNodesCount : "0"}
+          {f ? criticalNodesCount : "—"}
           <small className="kpi-unit">of 2 controlled</small>
         </strong>
         <span className="kpi-subtext">
           {criticalNodesCount > 0
             ? Array.from(criticalNodesSet).join(", ") + " congested"
-            : "All junctions nominal"}
+            : f ? "No threshold exceeded" : "Measurements unavailable"}
         </span>
       </div>
 
@@ -130,7 +130,7 @@ export function KpiStrip({
         <span className="kpi-subtext">
           {spillbackForecasts.length > 0
             ? "Upstream storage overflow risk"
-            : "No spillback in horizon"}
+            : analysis ? "No spillback in evaluated horizon" : "Fresh forecast unavailable"}
         </span>
       </div>
     </section>

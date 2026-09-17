@@ -1,3 +1,15 @@
+# Architecture revision — 2026-09-17
+
+**Current implementation:** Browser → Next.js same-origin proxy → Go API/orchestrator → private Python simulation/intelligence and PostgreSQL. Go currently writes directly. This is verified source behavior, not the user-requested target.
+
+**Required target (not implemented):** Browser → Python API gateway → owning Go domain service → Python gateway → Go DB writer → PostgreSQL for durable business-command results. Existing Python SUMO/intelligence remain private Go dependencies. Reads and transient streams have explicit non-writing routes. Go enforces domain/safety; writer commits result/status/audit; gateway waits for commit before reporting durable success. Signal application uses durable intent and reconciliation.
+
+See [PRD §§9–11, 32–34](PRD.md), [all routes and findings](UX-PRODUCTION-AUDIT.md), and E13/S39–S43 in [delivery plan](DELIVERY-PLAN.md). Run ownership, durable idempotency, fencing, service identity, deadlines and measured replica/failure tests are mandatory before claiming load balancing. Logical Go owners need not each be a new microservice.
+
+The foundation notes below are preserved historical scope. Their Go-only browser ingress and direct persistence statements describe the old design; revised requirements above supersede them. Later simulation/intelligence code now exists; these notes are not a current feature-completion report.
+
+---
+
 # Epic 1 — architecture and scope freeze
 
 Sources: [PRD](PRD.md), root `AGENT.MD`, stories S01–S04 in the delivery backlog.

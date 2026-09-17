@@ -3,11 +3,15 @@ package db
 import (
 	"context"
 	_ "embed"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 //go:embed migrations/001_foundation.sql
 var foundation string
+
+//go:embed migrations/002_control.sql
+var control string
 
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	tx, e := pool.Begin(ctx)
@@ -28,11 +32,24 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 			return e
 		}
 		if applied {
-			return tx.Commit(ctx)
+			return applyControl(ctx, tx)
 		}
 	}
 	if _, e = tx.Exec(ctx, foundation); e != nil {
 		return e
+	}
+	return applyControl(ctx, tx)
+}
+
+func applyControl(ctx context.Context, tx pgx.Tx) error {
+	var done bool
+	if err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=2)").Scan(&done); err != nil {
+		return err
+	}
+	if !done {
+		if _, err := tx.Exec(ctx, control); err != nil {
+			return err
+		}
 	}
 	return tx.Commit(ctx)
 }

@@ -12,11 +12,13 @@ import (
 )
 
 type Store struct {
-	Pool *pgxpool.Pool
-	Q    *queries.Queries
+	Pool    *pgxpool.Pool
+	Q       *queries.Queries
+	Gateway string
+	Token   string
 }
 
-func New(pool *pgxpool.Pool) *Store { return &Store{pool, queries.New(pool)} }
+func New(pool *pgxpool.Pool) *Store { return &Store{Pool: pool, Q: queries.New(pool)} }
 func UUID() pgtype.UUID {
 	var b [16]byte
 	if _, e := rand.Read(b[:]); e != nil {
@@ -27,6 +29,9 @@ func UUID() pgtype.UUID {
 	return pgtype.UUID{Bytes: b, Valid: true}
 }
 func (s *Store) SaveConfig(ctx context.Context, n config.Network) error {
+	if s.Gateway != "" {
+		return s.Write(ctx, "config", n, nil)
+	}
 	b, e := json.Marshal(n)
 	if e != nil {
 		return e
@@ -49,6 +54,11 @@ func (s *Store) SaveConfig(ctx context.Context, n config.Network) error {
 	return nil
 }
 func (s *Store) CreateRun(ctx context.Context, configID, scenario, mode string, seed int64) (queries.ScenarioRun, error) {
+	if s.Gateway != "" {
+		var out queries.ScenarioRun
+		err := s.Write(ctx, "run.prepare", map[string]any{"config_id": configID, "scenario": scenario, "mode": mode, "seed": seed}, &out)
+		return out, err
+	}
 	tx, e := s.Pool.Begin(ctx)
 	if e != nil {
 		return queries.ScenarioRun{}, e
@@ -63,7 +73,7 @@ func (s *Store) CreateRun(ctx context.Context, configID, scenario, mode string, 
 	if e != nil {
 		return run, e
 	}
-	_, e = q.AppendAudit(ctx, queries.AppendAuditParams{ID: UUID(), RunID: run.ID, Actor: "demo-operator", EventType: "run.prepared", BeforeValues: []byte(`{}`), AfterValues: after, Reason: "Deterministic scenario prepared; simulation is not started", SafetyResult: "not_applied"})
+	_, e = q.AppendAudit(ctx, queries.AppendAuditParams{ID: UUID(), RunID: run.ID, Actor: Actor(ctx), EventType: "run.prepared", BeforeValues: []byte(`{}`), AfterValues: after, Reason: "Deterministic scenario prepared; simulation is not started", SafetyResult: "not_applied"})
 	if e != nil {
 		return run, e
 	}
@@ -71,6 +81,11 @@ func (s *Store) CreateRun(ctx context.Context, configID, scenario, mode string, 
 }
 
 func (s *Store) Activate(ctx context.Context, id pgtype.UUID, reason string) (queries.ScenarioRun, error) {
+	if s.Gateway != "" {
+		var out queries.ScenarioRun
+		err := s.Write(ctx, "run.activate", map[string]any{"id": id, "reason": reason}, &out)
+		return out, err
+	}
 	tx, e := s.Pool.Begin(ctx)
 	if e != nil {
 		return queries.ScenarioRun{}, e
@@ -88,7 +103,7 @@ func (s *Store) Activate(ctx context.Context, id pgtype.UUID, reason string) (qu
 	if e != nil {
 		return run, e
 	}
-	_, e = q.AppendAudit(ctx, queries.AppendAuditParams{ID: UUID(), RunID: run.ID, Actor: "demo-operator", EventType: "scenario.started", BeforeValues: []byte(`{}`), AfterValues: after, Reason: reason, SafetyResult: "virtual_configured_plan"})
+	_, e = q.AppendAudit(ctx, queries.AppendAuditParams{ID: UUID(), RunID: run.ID, Actor: Actor(ctx), EventType: "scenario.started", BeforeValues: []byte(`{}`), AfterValues: after, Reason: reason, SafetyResult: "virtual_configured_plan"})
 	if e != nil {
 		return run, e
 	}

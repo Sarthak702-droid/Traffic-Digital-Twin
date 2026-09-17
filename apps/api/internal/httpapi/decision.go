@@ -66,26 +66,43 @@ func (s *Server) ConnectIntelligence(ctx context.Context, address string) error 
 					analysis.Alternatives = nil
 				}
 				// Keep an actionable recommendation stable long enough for operator review.
-				if s.analysis != nil && s.analysis.RunId == analysis.RunId && s.analysis.Recommendation != nil && s.analysis.Recommendation.Status == "pending" && state.SimulationTimeS-s.recommendationTime < 30 {
+				if !s.manual && s.sim.command != nil && s.sim.command.Mode == "recommend" && s.analysis != nil && s.analysis.RunId == analysis.RunId && s.analysis.Recommendation != nil && s.analysis.Recommendation.Status == "pending" && state.SimulationTimeS-s.recommendationTime < 30 {
 					analysis.Recommendation = proto.Clone(s.analysis.Recommendation).(*pb.Recommendation)
+					if s.analysis.Comparison != nil {
+						analysis.Comparison = proto.Clone(s.analysis.Comparison).(*pb.ComparisonResult)
+					}
+					analysis.Alternatives = nil
 				} else {
 					s.recommendationTime = state.SimulationTimeS
 				}
-				s.analysis = analysis
 				persisted := proto.Clone(analysis).(*pb.Analysis)
 				s.mu.Unlock()
 				if s.Store != nil && persisted.Recommendation != nil {
 					saveCtx, saveCancel := context.WithTimeout(ctx, time.Second)
-					_, err := s.Store.Pool.Exec(saveCtx, "INSERT INTO recommendations(id,run_id,status,payload) VALUES($1,$2,$3,$4) ON CONFLICT(id) DO NOTHING", persisted.Recommendation.Id, persisted.RunId, persisted.Recommendation.Status, jsonProto(persisted.Recommendation))
+					err := s.Store.Write(saveCtx, "recommendation", json.RawMessage(jsonProto(persisted.Recommendation)), nil)
 					saveCancel()
 					if err != nil {
 						s.mu.Lock()
-						if s.analysis != nil && s.analysis.RunId == persisted.RunId {
-							s.analysisFault = "Recommendation persistence failed"
-						}
+						s.analysisFault = "Recommendation persistence failed"
 						s.mu.Unlock()
+						continue
 					}
 				}
+				s.mu.Lock()
+				if s.state != nil && s.state.RunId == persisted.RunId && !s.replaying {
+					// Persistence can overlap an operator command; never resurrect its pending state.
+					if s.manual || s.sim.command == nil || s.sim.command.Mode != "recommend" {
+						persisted.Recommendation = nil
+						persisted.Comparison = nil
+						persisted.Alternatives = nil
+					} else if s.analysis != nil && s.analysis.Recommendation != nil && persisted.Recommendation != nil && s.analysis.Recommendation.Id == persisted.Recommendation.Id && s.analysis.Recommendation.Status != "pending" {
+						persisted.Recommendation = proto.Clone(s.analysis.Recommendation).(*pb.Recommendation)
+						persisted.Comparison = nil
+						persisted.Alternatives = nil
+					}
+					s.analysis = persisted
+				}
+				s.mu.Unlock()
 			}
 		}
 	}()
@@ -226,7 +243,7 @@ func (s *Server) getAnalysis(w http.ResponseWriter, r *http.Request) {
 func (s *Server) activeRecommendation(w http.ResponseWriter, r *http.Request) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	if s.sim == nil || time.Since(s.sim.received) > 2500*time.Millisecond || s.sim.fault != "" || s.manual || s.analysis == nil || s.analysis.Recommendation == nil || s.analysisFault != "" {
+	if s.sim == nil || time.Since(s.sim.received) > 2500*time.Millisecond || s.sim.fault != "" || s.manual || s.analysis == nil || s.analysis.Recommendation == nil || s.analysisFault != "" || s.state == nil || s.analysis.RunId != s.state.RunId || s.state.SimulationTimeS-s.recommendationTime > 30 {
 		problem(w, 503, "No active recommendation")
 		return
 	}
@@ -287,7 +304,10 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 	}
 	if action != "reject" {
 		if e := validateChanges(s.Network, state, changes, s.getLocks()); e != nil {
-			s.auditDecision(r.Context(), rec, state, action, body.Reason, "rejected: "+e.Error(), changes)
+			if err := s.auditDecision(r.Context(), rec, state, action, body.Reason, "rejected: "+e.Error(), changes); err != nil {
+				problem(w, 503, "Unsafe plan refused; audit write not confirmed")
+				return
+			}
 			problem(w, 409, e.Error())
 			return
 		}
@@ -315,12 +335,11 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if action == "reject" {
+		rec.Status = "rejected"
 		if e := s.auditDecision(ctx, rec, state, action, body.Reason, "rejected_by_operator", changes); e != nil {
 			problem(w, 503, "Decision could not be persisted")
 			return
 		}
-		rec.Status = "rejected"
-		s.Store.Pool.Exec(ctx, "UPDATE recommendations SET status=$1,payload=$2 WHERE id=$3", rec.Status, jsonProto(rec), rec.Id)
 	} else {
 		// Durable intent precedes virtual actuation; ambiguous RPC failure is never reported as success.
 		if e := s.auditDecision(ctx, rec, state, action, body.Reason, "validated_pending_application", changes); e != nil {
@@ -329,14 +348,21 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 		}
 		result, e := s.sim.client.ApplyPlan(ctx, &pb.PlanCommand{RunId: state.RunId, Changes: changes, CommandId: rec.Id})
 		if e != nil || !result.Valid {
-			s.auditDecision(context.Background(), rec, state, action, body.Reason, "application_failed_or_unconfirmed", changes)
+			auditCtx, auditCancel := context.WithTimeout(context.Background(), time.Second)
+			auditCtx = store.WithActor(auditCtx, store.Actor(r.Context()))
+			auditErr := s.auditDecision(auditCtx, rec, state, action, body.Reason, "application_failed_or_unconfirmed", changes)
+			auditCancel()
+			if auditErr != nil {
+				problem(w, 503, "Application and audit outcome unknown; reconcile command before retrying")
+				return
+			}
 			problem(w, 503, "Application not confirmed; inspect audit and current plan")
 			return
 		}
 		rec.Status = "approved"
 		rec.Changes = changes
-		rec.SafetyStatus = "applied_at_safe_boundary"
-		if e := s.auditDecision(ctx, rec, state, action, body.Reason, "accepted_at_safe_boundary", changes); e != nil {
+		rec.SafetyStatus = "accepted_pending_safe_boundary"
+		if e := s.auditDecision(ctx, rec, state, action, body.Reason, "accepted_pending_safe_boundary", changes); e != nil {
 			problem(w, 503, "Virtual plan accepted but final audit failed; durable intent exists")
 			return
 		}
@@ -350,26 +376,9 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonProto(rec))
 }
 func (s *Server) auditDecision(ctx context.Context, rec *pb.Recommendation, state *pb.TrafficState, action, reason, result string, changes []*pb.TimingChange) error {
-	tx, e := s.Store.Pool.Begin(ctx)
-	if e != nil {
-		return e
-	}
-	defer tx.Rollback(ctx)
-	_, e = tx.Exec(ctx, "INSERT INTO recommendations(id,run_id,status,payload) VALUES($1,$2,$3,$4) ON CONFLICT(id) DO UPDATE SET status=EXCLUDED.status,payload=EXCLUDED.payload", rec.Id, rec.RunId, rec.Status, jsonProto(rec))
-	if e != nil {
-		return e
-	}
 	before, _ := json.Marshal(state.ActivePlan)
 	after, _ := json.Marshal(changes)
-	_, e = tx.Exec(ctx, "INSERT INTO operator_actions(id,run_id,recommendation_id,actor,action,reason,payload) VALUES($1,$2,$3,'demo-operator',$4,$5,$6)", store.UUID(), rec.RunId, rec.Id, action, reason, after)
-	if e != nil {
-		return e
-	}
-	_, e = tx.Exec(ctx, "INSERT INTO audit_events(id,run_id,recommendation_id,actor,event_type,before_values,after_values,reason,safety_result) VALUES($1,$2,$3,'demo-operator',$4,$5,$6,$7,$8)", store.UUID(), rec.RunId, rec.Id, "recommendation."+action, before, after, reason, result)
-	if e != nil {
-		return e
-	}
-	return tx.Commit(ctx)
+	return s.Store.Write(ctx, "decision", store.DecisionWrite{Recommendation: jsonProto(rec), Before: before, After: after, Action: action, Reason: reason, Result: result}, nil)
 }
 
 func (s *Server) getLocks() map[string]bool {
@@ -396,57 +405,57 @@ func (s *Server) listLocks(w http.ResponseWriter, r *http.Request) {
 	send(w, 200, map[string]any{"locks": list})
 }
 
-func (s *Server) setLock(w http.ResponseWriter, r *http.Request) {
+func (s *Server) setLock(w http.ResponseWriter, r *http.Request)    { s.changeLock(w, r, true) }
+func (s *Server) deleteLock(w http.ResponseWriter, r *http.Request) { s.changeLock(w, r, false) }
+func (s *Server) changeLock(w http.ResponseWriter, r *http.Request, locked bool) {
 	id := chi.URLParam(r, "id")
-	if id == "" {
-		problem(w, 400, "Lock target identifier required")
+	valid := false
+	for _, p := range s.Network.Phases {
+		if p.ID == id {
+			valid = true
+		}
+	}
+	for _, m := range s.Network.Movements {
+		if m.ID == id {
+			valid = true
+		}
+	}
+	if !valid {
+		problem(w, 400, "Unknown configured lock target")
 		return
 	}
 	if !s.db(w) {
+		return
+	}
+	if s.sim == nil {
+		problem(w, 503, "Simulation unavailable")
+		return
+	}
+	s.sim.commands.Lock()
+	defer s.sim.commands.Unlock()
+	s.mu.RLock()
+	runID := ""
+	if s.sim.command != nil {
+		runID = s.sim.command.RunId
+	}
+	s.mu.RUnlock()
+	if runID == "" {
+		problem(w, 409, "Start a scenario first")
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+	if err := s.Store.Write(ctx, "lock", store.ControlWrite{RunID: runID, Target: id, Locked: locked}, nil); err != nil {
+		problem(w, 503, "Lock not confirmed; reconcile command before retrying")
 		return
 	}
 	s.mu.Lock()
 	if s.locks == nil {
-		s.locks = make(map[string]bool)
+		s.locks = map[string]bool{}
 	}
-	s.locks[id] = true
-	runId := ""
-	if s.sim != nil && s.sim.command != nil {
-		runId = s.sim.command.RunId
-	}
+	s.locks[id] = locked
 	s.mu.Unlock()
-	if runId != "" {
-		ctx, cancel := context.WithTimeout(r.Context(), time.Second)
-		defer cancel()
-		s.Store.Pool.Exec(ctx, "INSERT INTO audit_events(id,run_id,actor,event_type,before_values,after_values,reason,safety_result) VALUES($1,$2,'demo-operator','lock.applied','{}',$3,'Operator locked movement or phase timing','manual_lock_honored')", store.UUID(), runId, []byte(fmt.Sprintf(`{"target":%q}`, id)))
-	}
-	send(w, 200, map[string]any{"target": id, "locked": true})
-}
-
-func (s *Server) deleteLock(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	if id == "" {
-		problem(w, 400, "Lock target identifier required")
-		return
-	}
-	if !s.db(w) {
-		return
-	}
-	s.mu.Lock()
-	if s.locks != nil {
-		delete(s.locks, id)
-	}
-	runId := ""
-	if s.sim != nil && s.sim.command != nil {
-		runId = s.sim.command.RunId
-	}
-	s.mu.Unlock()
-	if runId != "" {
-		ctx, cancel := context.WithTimeout(r.Context(), time.Second)
-		defer cancel()
-		s.Store.Pool.Exec(ctx, "INSERT INTO audit_events(id,run_id,actor,event_type,before_values,after_values,reason,safety_result) VALUES($1,$2,'demo-operator','lock.released','{}',$3,'Operator released manual lock','manual_lock_released')", store.UUID(), runId, []byte(fmt.Sprintf(`{"target":%q}`, id)))
-	}
-	send(w, 200, map[string]any{"target": id, "locked": false})
+	send(w, 200, map[string]any{"target": id, "locked": locked})
 }
 
 func (s *Server) getMode(w http.ResponseWriter, r *http.Request) {
@@ -492,39 +501,22 @@ func (s *Server) setMode(w http.ResponseWriter, r *http.Request) {
 		problem(w, 409, "Start a scenario first")
 		return
 	}
-	canonicalMode := "recommend"
-	dbMode := "recommend"
-	isManual := false
-	if mode == "manual" {
-		canonicalMode = "manual"
-		dbMode = "observe"
-		isManual = true
-	} else if mode == "observe" {
-		canonicalMode = "observe"
-		dbMode = "observe"
-		isManual = false
+	canonicalMode := mode
+	if mode == "recommendation" {
+		canonicalMode = "recommend"
 	}
-	tx, e := s.Store.Pool.Begin(r.Context())
-	if e != nil {
-		problem(w, 503, "Mode persistence unavailable")
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+	if e := s.Store.Write(ctx, "mode", store.ControlWrite{RunID: s.sim.command.RunId, Mode: canonicalMode}, nil); e != nil {
+		problem(w, 503, "Mode change not confirmed; inspect command outcome")
 		return
 	}
-	defer tx.Rollback(r.Context())
-	_, e = tx.Exec(r.Context(), "UPDATE scenario_runs SET mode=$1 WHERE id=$2", dbMode, s.sim.command.RunId)
-	if e == nil {
-		_, e = tx.Exec(r.Context(), "INSERT INTO audit_events(id,run_id,actor,event_type,before_values,after_values,reason,safety_result) VALUES($1,$2,'demo-operator','mode.changed','{}',$3,'Operator changed mode to '+canonicalMode,'no_actuation')", store.UUID(), s.sim.command.RunId, []byte(fmt.Sprintf(`{"mode":%q}`, canonicalMode)))
-	}
-	if e != nil || tx.Commit(r.Context()) != nil {
-		problem(w, 503, "Mode audit failed")
-		return
-	}
-	s.manual = isManual
-	s.sim.command.Mode = dbMode
-	if isManual || canonicalMode == "observe" {
-		if s.analysis != nil {
-			s.analysis.Recommendation = nil
-			s.analysis.Alternatives = nil
-		}
+	s.manual = canonicalMode == "manual"
+	s.sim.command.Mode = canonicalMode
+	if canonicalMode != "recommend" && s.analysis != nil {
+		s.analysis.Recommendation = nil
+		s.analysis.Alternatives = nil
+		s.analysis.Comparison = nil
 	}
 	send(w, 200, map[string]string{"mode": canonicalMode})
 }
