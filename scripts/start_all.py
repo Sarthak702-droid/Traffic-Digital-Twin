@@ -141,17 +141,88 @@ def ensure_local_env() -> dict:
     return merged
 
 
+import shutil
+
+def find_executable(name: str, fallback_paths: list[str]) -> str:
+    resolved = shutil.which(name)
+    if resolved:
+        return resolved
+    for p in fallback_paths:
+        expanded = os.path.expanduser(p)
+        if os.path.isfile(expanded) and os.access(expanded, os.X_OK):
+            return expanded
+    return name
+
+
+def cleanup_stale_services():
+    # Clean up lingering local processes on digital twin service ports
+    ports = [8081, 8082, 8083, 50051, 50052, 3100]
+    for p in ports:
+        try:
+            out = subprocess.check_output(["lsof", "-t", f"-i:{p}"], stderr=subprocess.DEVNULL)
+            pids = [int(x.strip()) for x in out.decode().split() if x.strip()]
+            for pid in pids:
+                if pid != os.getpid():
+                    try:
+                        os.kill(pid, signal.SIGKILL)
+                    except OSError:
+                        pass
+        except Exception:
+            pass
+
+
 def main():
+    cleanup_stale_services()
     ensure_postgres()
     env = ensure_local_env()
 
+    # Root-level resolution for required tools
+    go_bin = find_executable("go", [
+        "/usr/local/go/bin/go",
+        "~/.local/bin/go",
+        "~/go/bin/go",
+        "/usr/bin/go",
+        "/snap/bin/go",
+    ])
+    if not (shutil.which(go_bin) or (os.path.isfile(go_bin) and os.access(go_bin, os.X_OK))):
+        raise RuntimeError(
+            "Go compiler ('go') is required but was not found in PATH or standard paths.\n"
+            "Please ensure Go is installed (https://go.dev/dl/)."
+        )
+
+    venv_py = ROOT / ".venv" / "bin" / "python"
+    py_bin = str(venv_py) if venv_py.exists() else sys.executable
+
+    npm_bin = find_executable("npm", [
+        "/usr/local/bin/npm",
+        "~/.nvm/versions/node/v24.18.0/bin/npm",
+        "~/.nvm/current/bin/npm",
+        "/usr/bin/npm",
+        "~/.local/bin/npm",
+    ])
+
+    # Ensure binary directories are in PATH for child processes
+    extra_paths = [
+        os.path.dirname(go_bin),
+        os.path.expanduser("~/go/bin"),
+        os.path.dirname(npm_bin),
+        os.path.expanduser("~/.local/bin"),
+        "/usr/local/bin",
+        "/usr/bin",
+        "/bin",
+    ]
+    cur_path = env.get("PATH", "")
+    to_add = [p for p in extra_paths if os.path.isdir(p) and p not in cur_path.split(":")]
+    if to_add:
+        env["PATH"] = ":".join(to_add) + (":" + cur_path if cur_path else "")
+
     commands = [
-        ("Go DB Writer", ["go", "run", "./apps/api/cmd/writer"]),
-        ("Python API Gateway", [".venv/bin/python", "-m", "services.gateway.server"]),
-        ("Python Simulation gRPC", [".venv/bin/python", "-m", "services.shared.server", "simulation", "--port", "50051"]),
-        ("Python Intelligence gRPC", [".venv/bin/python", "-m", "services.shared.server", "intelligence", "--port", "50052"]),
-        ("Go Domain API", ["go", "run", "./apps/api/cmd/api"]),
-        ("Frontend Web (Vite)", ["npm", "run", "dev", "-w", "apps/web"]),
+        ("Go DB Writer", [go_bin, "run", "./apps/api/cmd/writer"]),
+        ("Python API Gateway", [py_bin, "-m", "services.gateway.server"]),
+        ("Python Simulation gRPC", [py_bin, "-m", "services.shared.server", "simulation", "--port", "50051"]),
+        ("Python Intelligence gRPC", [py_bin, "-m", "services.shared.server", "intelligence", "--port", "50052"]),
+        ("Go Domain API", [go_bin, "run", "./apps/api/cmd/api"]),
+        ("Frontend Web (Vite)", [npm_bin, "run", "dev", "-w", "apps/web"]),
     ]
 
     children = []
@@ -201,13 +272,14 @@ def main():
                 else:
                     raise RuntimeError("Python API Gateway did not become ready")
 
+        gw_p = env.get("GATEWAY_PORT", "8080")
         print(
-            """
+            f"""
 \033[1;32m========================================================================\033[0m
 \033[1;32m🚦 TRAFFIC DIGITAL TWIN IS LIVE!\033[0m
 \033[1;32m========================================================================\033[0m
   \033[1mFrontend:\033[0m       \033[34mhttp://127.0.0.1:3100\033[0m
-  \033[1mAPI Gateway:\033[0m    http://127.0.0.1:8080
+  \033[1mAPI Gateway:\033[0m    http://127.0.0.1:{gw_p}
   \033[1mDatabase:\033[0m       PostgreSQL on 127.0.0.1:5433 (traffic)
 
   \033[1mDemo Accounts:\033[0m
@@ -218,7 +290,7 @@ def main():
   \033[1mServices:\033[0m
   [✓] PostgreSQL 16 (Docker)
   [✓] Go DB Writer (:8083)
-  [✓] Python Gateway (:8080 public, :8082 internal)
+  [✓] Python Gateway (:{gw_p} public, :8082 internal)
   [✓] Python Simulation (:50051)
   [✓] Python Intelligence (:50052)
   [✓] Go Domain API (:8081)
