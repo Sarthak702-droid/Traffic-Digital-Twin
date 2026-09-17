@@ -67,21 +67,43 @@ def write_demand(config, scenario_id, seed, directory):
     ET.SubElement(route_root,'vType',id='ambulance',vClass='emergency',sigma='0',length='5',minGap='2.5',speedFactor='1')
     routes=boundary_routes(config)
     for i,edges in enumerate(routes):ET.SubElement(route_root,'route',id=f'route-{i}',edges=' '.join(edges))
+    # Arrival process is per boundary approach. Routing draws the configured
+    # conditional turn at every controlled junction, rather than one flow per path.
+    route_index = {tuple(edges): i for i, edges in enumerate(routes)}
+    links = {l['id']: l for l in config['links']}
+    boundaries = {n['id'] for n in config['nodes'] if n['kind'] == 'boundary'}
+    by_incoming = {}
+    for m in config['movements']:
+        by_incoming.setdefault(m['incoming_link_id'], []).append(m)
     demand=[]
-    for i,edges in enumerate(routes):
+    for edge, link in sorted(links.items()):
+        if link['from_node'] not in boundaries:
+            continue
         t=0.0
-        while t<900:
-            feeder=edges[0].startswith(scenario['route_node_ids'][0]+'-')
-            rate=(.55 if feeder and 30<=t<180 else .17 if feeder else .07)
-            if scenario_id=='incident_c3' and feeder:rate=.4
-            t+=rng.expovariate(rate)
-            if t<900:demand.append((round(t,3),i,'car'))
+        feeder=link['from_node']==scenario['route_node_ids'][0]
+        ceiling=max(scenario['base_rate_vps'],scenario['feeder_rate_vps'],scenario['surge_rate_vps'])
+        while True:
+            t += rng.expovariate(ceiling)
+            if t >= scenario['demand_duration_s']:
+                break
+            rate = scenario['base_rate_vps']
+            if feeder:
+                rate = scenario['surge_rate_vps'] if scenario['surge_start_s'] <= t < scenario['surge_end_s'] else scenario['feeder_rate_vps']
+            if rng.random() > rate/ceiling:
+                continue
+            path=[edge]
+            while links[path[-1]]['to_node'] not in boundaries:
+                choices=by_incoming[path[-1]]
+                move=rng.choices(choices,weights=[m['turning_ratio'] for m in choices])[0]
+                path.append(move['outgoing_link_id'])
+                if len(path)>len(links):
+                    raise ValueError('Cyclic route is unsupported by demo routing')
+            demand.append((round(t,3),route_index[tuple(path)],'car'))
     if scenario_id=='ambulance_corridor':
         emergency_edges=[a+'-'+b for a,b in zip(scenario['route_node_ids'],scenario['route_node_ids'][1:])]
-        emergency_index=routes.index(emergency_edges)
-        demand.append((25.0,emergency_index,'ambulance'))
+        demand.append((scenario['emergency_depart_s'],routes.index(emergency_edges),'ambulance'))
     for index,(depart,route,vtype) in enumerate(sorted(demand)):
-        ET.SubElement(route_root,'vehicle',id=f'veh-{index}',type=vtype,route=f'route-{route}',depart=str(depart),departLane='best',departSpeed='max')
+        ET.SubElement(route_root,'vehicle',id='ambulance' if vtype=='ambulance' else f'veh-{index}',type=vtype,route=f'route-{route}',depart=str(depart),departLane='best',departSpeed='max')
     path=Path(directory)/'demand.rou.xml'
     ET.ElementTree(route_root).write(path,encoding='utf-8')
     return path

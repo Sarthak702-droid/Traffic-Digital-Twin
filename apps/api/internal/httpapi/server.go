@@ -23,12 +23,19 @@ import (
 )
 
 type Server struct {
-	AllowedOrigin string
-	Network       config.Network
-	Store         *store.Store
-	mu            sync.RWMutex
-	state         *pb.TrafficState
-	sim           *simulationLink
+	intelligence       pb.IntelligenceClient
+	analysis           *pb.Analysis
+	analysisFault      string
+	recommendationTime float64
+	manual             bool
+	replaying          bool
+	replayCancel       context.CancelFunc
+	AllowedOrigin      string
+	Network            config.Network
+	Store              *store.Store
+	mu                 sync.RWMutex
+	state              *pb.TrafficState
+	sim                *simulationLink
 }
 type apiError struct {
 	Error   string `json:"error"`
@@ -158,16 +165,13 @@ func (s *Server) Handler() http.Handler {
 			Next   int64                `json:"next_after"`
 		}{rows, next})
 	})
-	r.Get("/api/v1/recommendations/active", func(w http.ResponseWriter, r *http.Request) {
-		problem(w, 503, "Recommendation engine is not connected")
-	})
-	unavailable := func(w http.ResponseWriter, r *http.Request) {
-		problem(w, 501, "This operation requires a later epic; no simulation or signal change was applied")
-	}
-	r.Post("/api/v1/recommendations/{id}/{action}", unavailable)
+	r.Get("/api/v1/recommendations/active", s.activeRecommendation)
+	r.Get("/api/v1/analysis", s.getAnalysis)
+	r.Post("/api/v1/recommendations/{id}/{action}", s.decision)
 	r.Post("/api/v1/scenarios/{type}/start", s.startScenario)
 	r.Post("/api/v1/scenarios/reset", s.resetScenario)
-	r.Post("/api/v1/mode/{mode}", unavailable)
+	r.Post("/api/v1/mode/{mode}", s.setMode)
+	r.Post("/api/v1/replay/{scenario}", s.startReplay)
 	r.Get("/ws/v1/live", s.live)
 	return r
 }
@@ -230,7 +234,14 @@ func (s *Server) health(ctx context.Context) *pb.HealthState {
 		}
 	}
 	simStatus, simMessage := s.simulationHealth()
-	return &pb.HealthState{Timestamp: time.Now().UTC().Format(time.RFC3339Nano), Components: []*pb.ComponentHealth{{Component: "api", Status: "normal", Message: "Go API connected"}, {Component: "database", Status: dbStatus, Message: dbMessage}, {Component: "simulation", Status: simStatus, Message: simMessage}, {Component: "intelligence", Status: "unavailable", Message: "Prediction and optimization not implemented in Epic 1"}, {Component: "signal_controller", Status: "unavailable", Message: "No live signal control"}}}
+	s.mu.RLock()
+	intStatus, intMessage := "unavailable", "No fresh intelligence"
+	if s.analysis != nil && s.analysisFault == "" && s.state != nil && s.analysis.RunId == s.state.RunId && s.state.SimulationTimeS-s.analysis.SimulationTimeS <= 10 {
+		intStatus = "normal"
+		intMessage = "Conservation forecasts and bounded network candidates"
+	}
+	s.mu.RUnlock()
+	return &pb.HealthState{Timestamp: time.Now().UTC().Format(time.RFC3339Nano), Components: []*pb.ComponentHealth{{Component: "api", Status: "normal", Message: "Go API connected"}, {Component: "database", Status: dbStatus, Message: dbMessage}, {Component: "simulation", Status: simStatus, Message: simMessage}, {Component: "intelligence", Status: intStatus, Message: intMessage}, {Component: "signal_controller", Status: "unavailable", Message: "No live signal control"}}}
 }
 func (s *Server) live(w http.ResponseWriter, r *http.Request) {
 	options := &websocket.AcceptOptions{}
@@ -260,6 +271,12 @@ func (s *Server) live(w http.ResponseWriter, r *http.Request) {
 		s.mu.Unlock()
 	}()
 	sequence := uint64(0)
+	auditSequence := int64(0)
+	lastRecommendation := ""
+	lastAnalysisKey := ""
+	if s.Store != nil {
+		s.Store.Pool.QueryRow(ctx, "SELECT COALESCE(MAX(sequence),0) FROM audit_events").Scan(&auditSequence)
+	}
 	write := func(kind string, payload proto.Message) error {
 		sequence++
 		b, e := (protojson.MarshalOptions{UseProtoNames: true, EmitUnpopulated: true}).Marshal(payload)
@@ -290,12 +307,74 @@ func (s *Server) live(w http.ResponseWriter, r *http.Request) {
 			if write("network.state", frame) != nil {
 				return
 			}
+			if frame.Incident != nil && frame.Incident.Id != "" {
+				if write("incident.updated", frame.Incident) != nil {
+					return
+				}
+			}
+			if frame.Emergency != nil && frame.Emergency.Id != "" {
+				if write("emergency.updated", frame.Emergency) != nil {
+					return
+				}
+			}
 			for _, signal := range frame.Signals {
 				if write("junction.state", signal) != nil {
 					return
 				}
 			}
 		case <-ticker.C:
+			s.mu.RLock()
+			var analysis *pb.Analysis
+			if s.analysis != nil && s.analysisFault == "" {
+				analysis = proto.Clone(s.analysis).(*pb.Analysis)
+			}
+			s.mu.RUnlock()
+			if analysis != nil {
+				key := analysis.RunId + ":" + strconv.FormatFloat(analysis.SimulationTimeS, 'f', 0, 64)
+				if key != lastAnalysisKey {
+					lastAnalysisKey = key
+					for _, f := range analysis.Forecasts {
+						if write("forecast.updated", f) != nil {
+							return
+						}
+					}
+				}
+				if analysis.Recommendation != nil {
+					kind := "recommendation.updated"
+					if lastRecommendation != analysis.Recommendation.Id {
+						kind = "recommendation.created"
+						lastRecommendation = analysis.Recommendation.Id
+					}
+					if write(kind, analysis.Recommendation) != nil {
+						return
+					}
+				}
+			}
+			if s.Store != nil {
+				auditCtx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
+				rows, err := s.Store.Q.ListAudit(auditCtx, queries.ListAuditParams{Sequence: auditSequence, Limit: 100})
+				cancel()
+				if err == nil {
+					for _, row := range rows {
+						auditSequence = row.Sequence
+						event := &pb.AuditEvent{Actor: row.Actor, EventType: row.EventType, Timestamp: row.CreatedAt.Time.UTC().Format(time.RFC3339Nano), Reason: row.Reason, SafetyResult: row.SafetyResult}
+						if id, _ := row.ID.Value(); id != nil {
+							event.Id = id.(string)
+						}
+						if id, _ := row.RunID.Value(); id != nil {
+							event.RunId = id.(string)
+						}
+						if id, _ := row.RecommendationID.Value(); id != nil {
+							event.RecommendationId = id.(string)
+						}
+						json.Unmarshal(row.BeforeValues, &event.Before)
+						json.Unmarshal(row.AfterValues, &event.After)
+						if write("audit.appended", event) != nil {
+							return
+						}
+					}
+				}
+			}
 			if write("health.updated", s.health(ctx)) != nil {
 				return
 			}

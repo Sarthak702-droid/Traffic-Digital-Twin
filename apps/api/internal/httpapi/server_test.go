@@ -41,7 +41,7 @@ func TestRejectInvalidCommands(t *testing.T) {
 		}
 	}
 }
-func TestCrossOriginAndFutureActions(t *testing.T) {
+func TestCrossOriginAndUnavailableActions(t *testing.T) {
 	h := app(t).Handler()
 	r := httptest.NewRequest("POST", "http://localhost/api/v1/runs", strings.NewReader(`{}`))
 	r.Header.Set("Origin", "https://other.example")
@@ -52,7 +52,7 @@ func TestCrossOriginAndFutureActions(t *testing.T) {
 	}
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, httptest.NewRequest("POST", "/api/v1/recommendations/example/approve", nil))
-	if w.Code != 501 {
+	if w.Code != 503 {
 		t.Fatal(w.Code)
 	}
 }

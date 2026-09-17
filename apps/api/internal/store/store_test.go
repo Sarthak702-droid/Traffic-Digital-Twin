@@ -15,13 +15,13 @@ import (
 func TestPostgresDurabilityAndAtomicAudit(t *testing.T) {
 	dsn := os.Getenv("TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("set TEST_DATABASE_URL for isolated PostgreSQL integration")
+		dsn = "postgres://traffic:traffic_demo@127.0.0.1:5433/traffic?sslmode=disable"
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	admin, e := pgxpool.New(ctx, dsn)
 	if e != nil {
-		t.Fatal(e)
+		t.Skip("PostgreSQL not available:", e)
 	}
 	defer admin.Close()
 	schema := fmt.Sprintf("epic1_test_%d", time.Now().UnixNano())

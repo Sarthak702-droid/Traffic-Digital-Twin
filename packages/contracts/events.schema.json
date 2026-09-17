@@ -399,6 +399,14 @@
         "all_red_s": {
           "type": "number",
           "minimum": 0
+        },
+        "pedestrian_clearance_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_red_s": {
+          "type": "number",
+          "minimum": 0
         }
       },
       "additionalProperties": false,
@@ -409,7 +417,9 @@
         "min_green_s",
         "max_green_s",
         "amber_s",
-        "all_red_s"
+        "all_red_s",
+        "pedestrian_clearance_s",
+        "max_red_s"
       ]
     },
     "MovementState": {
@@ -536,6 +546,35 @@
         "seed": {
           "type": "integer",
           "minimum": 0
+        },
+        "incident": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Incident"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "emergency": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EmergencyEvent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "active_plan": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimingChange"
+          }
+        },
+        "replay": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false,
@@ -552,7 +591,9 @@
         "arrived_total",
         "teleported_total",
         "scenario_type",
-        "seed"
+        "seed",
+        "active_plan",
+        "replay"
       ]
     },
     "Forecast": {
@@ -748,6 +789,10 @@
         },
         "status": {
           "type": "string"
+        },
+        "recovery_cycles": {
+          "type": "integer",
+          "minimum": 0
         }
       },
       "additionalProperties": false,
@@ -757,7 +802,8 @@
         "node_id",
         "kind",
         "capacity_ratio",
-        "status"
+        "status",
+        "recovery_cycles"
       ]
     },
     "EmergencyEvent": {
@@ -783,6 +829,13 @@
           "items": {
             "type": "number"
           }
+        },
+        "recovery_cycles_remaining": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "vehicle_id": {
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -791,7 +844,9 @@
         "run_id",
         "route_node_ids",
         "status",
-        "eta_s"
+        "eta_s",
+        "recovery_cycles_remaining",
+        "vehicle_id"
       ]
     },
     "ComponentHealth": {
@@ -971,6 +1026,35 @@
         "candidate_avg_delay_s": {
           "type": "number",
           "minimum": 0
+        },
+        "initial_time_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "model_version": {
+          "type": "string"
+        },
+        "baseline_spillback_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "candidate_spillback_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "baseline_stops_per_vehicle": {
+          "type": "number"
+        },
+        "candidate_stops_per_vehicle": {
+          "type": "number"
+        },
+        "horizon_s": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0
         }
       },
       "additionalProperties": false,
@@ -980,7 +1064,15 @@
         "baseline_max_queue_veh",
         "candidate_max_queue_veh",
         "baseline_avg_delay_s",
-        "candidate_avg_delay_s"
+        "candidate_avg_delay_s",
+        "initial_time_s",
+        "model_version",
+        "baseline_spillback_s",
+        "candidate_spillback_s",
+        "baseline_stops_per_vehicle",
+        "candidate_stops_per_vehicle",
+        "horizon_s",
+        "seed"
       ]
     },
     "EventEnvelope": {
@@ -997,31 +1089,94 @@
           "type": "string"
         },
         "network_state": {
-          "$ref": "#/$defs/TrafficState"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TrafficState"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "junction_state": {
-          "$ref": "#/$defs/SignalState"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SignalState"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "forecast_updated": {
-          "$ref": "#/$defs/Forecast"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Forecast"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "recommendation_created": {
-          "$ref": "#/$defs/Recommendation"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Recommendation"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "recommendation_updated": {
-          "$ref": "#/$defs/Recommendation"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Recommendation"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "incident_updated": {
-          "$ref": "#/$defs/Incident"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Incident"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "emergency_updated": {
-          "$ref": "#/$defs/EmergencyEvent"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EmergencyEvent"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "health_updated": {
-          "$ref": "#/$defs/HealthState"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HealthState"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "audit_appended": {
-          "$ref": "#/$defs/AuditEvent"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AuditEvent"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false,
@@ -1089,6 +1244,109 @@
       "required": [
         "valid",
         "errors"
+      ]
+    },
+    "PlanCommand": {
+      "type": "object",
+      "properties": {
+        "run_id": {
+          "type": "string"
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimingChange"
+          }
+        },
+        "command_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "changes",
+        "command_id"
+      ]
+    },
+    "Analysis": {
+      "type": "object",
+      "properties": {
+        "run_id": {
+          "type": "string"
+        },
+        "simulation_time_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "forecasts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Forecast"
+          }
+        },
+        "recommendation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Recommendation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "comparison": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ComparisonResult"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "alternatives": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Recommendation"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "simulation_time_s",
+        "forecasts",
+        "alternatives"
+      ]
+    },
+    "CompareCommand": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TrafficState"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimingChange"
+          }
+        },
+        "recommendation_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "changes",
+        "recommendation_id"
       ]
     }
   }

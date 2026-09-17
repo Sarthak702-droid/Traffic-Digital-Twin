@@ -6,10 +6,7 @@ import twin_pb2 as pb
 import twin_pb2_grpc as rpc
 from services.shared.validation import validate_state
 
-class Intelligence(rpc.IntelligenceServicer):
-    def ValidateState(self, request, context):
-        errors = validate_state(request)
-        return pb.ValidationResult(valid=not errors, errors=errors)
+from services.intelligence.service import Intelligence
 
 def serve(kind, port):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=4), options=[('grpc.max_receive_message_length', 1048576)])

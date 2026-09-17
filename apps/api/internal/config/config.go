@@ -33,19 +33,31 @@ type Movement struct {
 	Ratio    float64 `json:"turning_ratio"`
 }
 type Phase struct {
-	ID        string   `json:"id"`
-	Node      string   `json:"node_id"`
-	Movements []string `json:"movement_ids"`
-	Min       float64  `json:"min_green_s"`
-	Max       float64  `json:"max_green_s"`
-	Amber     float64  `json:"amber_s"`
-	AllRed    float64  `json:"all_red_s"`
+	Pedestrian float64  `json:"pedestrian_clearance_s"`
+	MaxRed     float64  `json:"max_red_s"`
+	ID         string   `json:"id"`
+	Node       string   `json:"node_id"`
+	Movements  []string `json:"movement_ids"`
+	Min        float64  `json:"min_green_s"`
+	Max        float64  `json:"max_green_s"`
+	Amber      float64  `json:"amber_s"`
+	AllRed     float64  `json:"all_red_s"`
 }
 type Scenario struct {
-	ID       string   `json:"id"`
-	Seed     int64    `json:"seed"`
-	Route    []string `json:"route_node_ids"`
-	Capacity float64  `json:"capacity_ratio"`
+	Duration        float64  `json:"demand_duration_s"`
+	BaseRate        float64  `json:"base_rate_vps"`
+	FeederRate      float64  `json:"feeder_rate_vps"`
+	SurgeRate       float64  `json:"surge_rate_vps"`
+	SurgeStart      float64  `json:"surge_start_s"`
+	SurgeEnd        float64  `json:"surge_end_s"`
+	IncidentStart   float64  `json:"incident_start_s"`
+	IncidentEnd     float64  `json:"incident_end_s"`
+	EmergencyDepart float64  `json:"emergency_depart_s"`
+	RecoveryCycles  int      `json:"recovery_cycles"`
+	ID              string   `json:"id"`
+	Seed            int64    `json:"seed"`
+	Route           []string `json:"route_node_ids"`
+	Capacity        float64  `json:"capacity_ratio"`
 }
 type Network struct {
 	Version   string            `json:"schema_version"`
@@ -136,7 +148,7 @@ func (n Network) Validate() error {
 	phaseIDs := map[string]bool{}
 	covered := map[string]bool{}
 	for _, p := range n.Phases {
-		if p.ID == "" || phaseIDs[p.ID] || nodes[p.Node].Kind != "controlled" || len(p.Movements) == 0 || !finite(p.Min) || !finite(p.Max) || !finite(p.Amber) || !finite(p.AllRed) || p.Min <= 0 || p.Max < p.Min || p.Amber <= 0 || p.AllRed <= 0 {
+		if p.ID == "" || phaseIDs[p.ID] || nodes[p.Node].Kind != "controlled" || len(p.Movements) == 0 || !finite(p.Min) || !finite(p.Max) || !finite(p.Amber) || !finite(p.AllRed) || p.Min <= 0 || p.Max < p.Min || p.Amber <= 0 || p.AllRed <= 0 || !finite(p.Pedestrian) || p.Pedestrian < 0 || p.AllRed < p.Pedestrian || !finite(p.MaxRed) || p.MaxRed <= 0 {
 			return fail("phase timing/node/id")
 		}
 		phaseIDs[p.ID] = true

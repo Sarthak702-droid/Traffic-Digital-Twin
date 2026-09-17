@@ -3,7 +3,7 @@
   "info": {
     "title": "Traffic Digital Twin API",
     "version": "1.0.0",
-    "description": "Local synthetic demonstration. Epic 1 config, preparation and history are functional; reserved execution routes return 501/503."
+    "description": "Local synthetic demonstration: SUMO simulation, conservation-model forecasts, audited operator decisions and prerecorded replay. No live signal control."
   },
   "servers": [
     {
@@ -250,54 +250,84 @@
     },
     "/api/v1/recommendations/active": {
       "get": {
-        "summary": "Reserved for recommendation engine",
-        "x-implementation-status": "future epic",
+        "summary": "Active recommendation; unavailable in manual mode or on service failure",
         "responses": {
-          "503": {
-            "description": "Engine not implemented",
+          "200": {
+            "description": "Successful operation",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/Recommendation"
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
           }
         }
       }
     },
     "/api/v1/recommendations/{id}/simulate": {
       "post": {
-        "summary": "Reserved contract; requires later implementation",
-        "x-implementation-status": "future epic",
+        "summary": "Compare a frozen current state over 120 seconds",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        },
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
-        "responses": {
-          "501": {
-            "description": "Not implemented; no state change",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OperatorAction"
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  },
+                  "changes": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TimingChange"
+                    }
+                  }
+                },
+                "required": []
               }
             }
           }
@@ -306,36 +336,58 @@
     },
     "/api/v1/recommendations/{id}/approve": {
       "post": {
-        "summary": "Reserved contract; requires later implementation",
-        "x-implementation-status": "future epic",
+        "summary": "Approve a validated plan for virtual signals at safe clearance boundaries",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recommendation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        },
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
-        "responses": {
-          "501": {
-            "description": "Not implemented; no state change",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OperatorAction"
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  },
+                  "changes": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TimingChange"
+                    }
+                  }
+                },
+                "required": []
               }
             }
           }
@@ -344,36 +396,60 @@
     },
     "/api/v1/recommendations/{id}/modify": {
       "post": {
-        "summary": "Reserved contract; requires later implementation",
-        "x-implementation-status": "future epic",
+        "summary": "Validate, compare and apply bounded manual timings with a reason",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recommendation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        },
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
-        "responses": {
-          "501": {
-            "description": "Not implemented; no state change",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OperatorAction"
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  },
+                  "changes": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TimingChange"
+                    }
+                  }
+                },
+                "required": [
+                  "reason"
+                ]
               }
             }
           }
@@ -382,36 +458,60 @@
     },
     "/api/v1/recommendations/{id}/reject": {
       "post": {
-        "summary": "Reserved contract; requires later implementation",
-        "x-implementation-status": "future epic",
+        "summary": "Retain current safe plan and record operator reason",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recommendation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        },
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
-        "responses": {
-          "501": {
-            "description": "Not implemented; no state change",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OperatorAction"
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  },
+                  "changes": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TimingChange"
+                    }
+                  }
+                },
+                "required": [
+                  "reason"
+                ]
               }
             }
           }
@@ -420,25 +520,62 @@
     },
     "/api/v1/scenarios/{type}/start": {
       "post": {
-        "summary": "Reserved contract; requires later implementation",
-        "x-implementation-status": "future epic",
+        "summary": "Start a seeded SUMO scenario and persist activation/audit",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        },
         "parameters": [
           {
             "name": "type",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "enum": [
+                "peak_surge",
+                "incident_c3",
+                "ambulance_corridor"
+              ]
             }
           }
         ],
-        "responses": {
-          "501": {
-            "description": "Not implemented; no state change",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "schema_version",
+                  "seed",
+                  "mode"
+                ],
+                "properties": {
+                  "schema_version": {
+                    "const": "1.0"
+                  },
+                  "seed": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 4294967295
+                  },
+                  "mode": {
+                    "enum": [
+                      "observe",
+                      "recommend"
+                    ]
+                  }
                 }
               }
             }
@@ -448,59 +585,118 @@
     },
     "/api/v1/scenarios/reset": {
       "post": {
-        "summary": "Reserved contract; requires later implementation",
-        "x-implementation-status": "future epic",
-        "parameters": [],
+        "summary": "Repeat the current scenario and seed with a new audited run ID",
         "responses": {
-          "501": {
-            "description": "Not implemented; no state change",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+          "200": {
+            "description": "Successful operation"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
           }
         }
       }
     },
     "/api/v1/mode/manual": {
       "post": {
-        "summary": "Reserved contract; requires later implementation",
-        "x-implementation-status": "future epic",
-        "parameters": [],
+        "summary": "Set manual mode and audit the transition",
         "responses": {
-          "501": {
-            "description": "Not implemented; no state change",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+          "200": {
+            "description": "Successful operation"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
           }
         }
       }
     },
     "/api/v1/mode/recommendation": {
       "post": {
-        "summary": "Reserved contract; requires later implementation",
-        "x-implementation-status": "future epic",
-        "parameters": [],
+        "summary": "Set recommendation mode and audit the transition",
         "responses": {
-          "501": {
-            "description": "Not implemented; no state change",
+          "200": {
+            "description": "Successful operation"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        }
+      }
+    },
+    "/api/v1/analysis": {
+      "get": {
+        "summary": "Fresh forecasts, recommendation, alternatives and equal-state comparison",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/Analysis"
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
           }
         }
+      }
+    },
+    "/api/v1/replay/{scenario}": {
+      "post": {
+        "summary": "Start a checksummed eight-minute recording through the same state/WebSocket pipeline; actuation disabled",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Stale, locked, unsafe or already decided"
+          },
+          "503": {
+            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "scenario",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "peak_surge",
+                "incident_c3",
+                "ambulance_corridor"
+              ]
+            }
+          }
+        ]
       }
     }
   },
@@ -631,6 +827,14 @@
           "all_red_s": {
             "type": "number",
             "minimum": 0
+          },
+          "pedestrian_clearance_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "max_red_s": {
+            "type": "number",
+            "minimum": 0
           }
         },
         "additionalProperties": false,
@@ -641,7 +845,9 @@
           "min_green_s",
           "max_green_s",
           "amber_s",
-          "all_red_s"
+          "all_red_s",
+          "pedestrian_clearance_s",
+          "max_red_s"
         ]
       },
       "MovementState": {
@@ -681,6 +887,21 @@
           "waiting_age_s": {
             "type": "number",
             "minimum": 0
+          },
+          "vehicle_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "arrivals_total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "departures_total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "permission": {
+            "type": "string"
           }
         },
         "additionalProperties": false,
@@ -693,7 +914,11 @@
           "occupancy_ratio",
           "downstream_capacity_veh",
           "current_phase_id",
-          "waiting_age_s"
+          "waiting_age_s",
+          "vehicle_count",
+          "arrivals_total",
+          "departures_total",
+          "permission"
         ]
       },
       "TrafficState": {
@@ -720,6 +945,64 @@
             "items": {
               "$ref": "#/components/schemas/MovementState"
             }
+          },
+          "signals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SignalState"
+            }
+          },
+          "vehicles_in_network": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "inserted_total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "arrived_total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "teleported_total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "scenario_type": {
+            "type": "string"
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "incident": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Incident"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "emergency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmergencyEvent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active_plan": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimingChange"
+            }
+          },
+          "replay": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false,
@@ -729,7 +1012,16 @@
           "timestamp",
           "simulation_time_s",
           "source",
-          "movements"
+          "movements",
+          "signals",
+          "vehicles_in_network",
+          "inserted_total",
+          "arrived_total",
+          "teleported_total",
+          "scenario_type",
+          "seed",
+          "active_plan",
+          "replay"
         ]
       },
       "Forecast": {
@@ -925,6 +1217,10 @@
           },
           "status": {
             "type": "string"
+          },
+          "recovery_cycles": {
+            "type": "integer",
+            "minimum": 0
           }
         },
         "additionalProperties": false,
@@ -934,7 +1230,8 @@
           "node_id",
           "kind",
           "capacity_ratio",
-          "status"
+          "status",
+          "recovery_cycles"
         ]
       },
       "EmergencyEvent": {
@@ -960,6 +1257,13 @@
             "items": {
               "type": "number"
             }
+          },
+          "recovery_cycles_remaining": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "vehicle_id": {
+            "type": "string"
           }
         },
         "additionalProperties": false,
@@ -968,7 +1272,9 @@
           "run_id",
           "route_node_ids",
           "status",
-          "eta_s"
+          "eta_s",
+          "recovery_cycles_remaining",
+          "vehicle_id"
         ]
       },
       "ComponentHealth": {
@@ -1107,6 +1413,12 @@
           "remaining_s": {
             "type": "number",
             "minimum": 0
+          },
+          "permitted_movement_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "additionalProperties": false,
@@ -1114,7 +1426,8 @@
           "node_id",
           "phase_id",
           "indication",
-          "remaining_s"
+          "remaining_s",
+          "permitted_movement_ids"
         ]
       },
       "ComparisonResult": {
@@ -1141,6 +1454,35 @@
           "candidate_avg_delay_s": {
             "type": "number",
             "minimum": 0
+          },
+          "initial_time_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "model_version": {
+            "type": "string"
+          },
+          "baseline_spillback_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "candidate_spillback_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "baseline_stops_per_vehicle": {
+            "type": "number"
+          },
+          "candidate_stops_per_vehicle": {
+            "type": "number"
+          },
+          "horizon_s": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 0
           }
         },
         "additionalProperties": false,
@@ -1150,7 +1492,15 @@
           "baseline_max_queue_veh",
           "candidate_max_queue_veh",
           "baseline_avg_delay_s",
-          "candidate_avg_delay_s"
+          "candidate_avg_delay_s",
+          "initial_time_s",
+          "model_version",
+          "baseline_spillback_s",
+          "candidate_spillback_s",
+          "baseline_stops_per_vehicle",
+          "candidate_stops_per_vehicle",
+          "horizon_s",
+          "seed"
         ]
       },
       "EventEnvelope": {
@@ -1167,31 +1517,94 @@
             "type": "string"
           },
           "network_state": {
-            "$ref": "#/components/schemas/TrafficState"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrafficState"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "junction_state": {
-            "$ref": "#/components/schemas/SignalState"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignalState"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "forecast_updated": {
-            "$ref": "#/components/schemas/Forecast"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Forecast"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "recommendation_created": {
-            "$ref": "#/components/schemas/Recommendation"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Recommendation"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "recommendation_updated": {
-            "$ref": "#/components/schemas/Recommendation"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Recommendation"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "incident_updated": {
-            "$ref": "#/components/schemas/Incident"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Incident"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "emergency_updated": {
-            "$ref": "#/components/schemas/EmergencyEvent"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmergencyEvent"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "health_updated": {
-            "$ref": "#/components/schemas/HealthState"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HealthState"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "audit_appended": {
-            "$ref": "#/components/schemas/AuditEvent"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuditEvent"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -1208,22 +1621,17 @@
             "const": "1.0"
           },
           "scenario_type": {
-            "enum": [
-              "peak_surge",
-              "incident_c3",
-              "ambulance_corridor"
-            ]
+            "type": "string"
           },
           "seed": {
             "type": "integer",
-            "minimum": 1,
-            "maximum": 4294967295
+            "minimum": 0
           },
           "mode": {
-            "enum": [
-              "observe",
-              "recommend"
-            ]
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
           }
         },
         "additionalProperties": false,
@@ -1231,7 +1639,8 @@
           "schema_version",
           "scenario_type",
           "seed",
-          "mode"
+          "mode",
+          "run_id"
         ]
       },
       "RunRequest": {
@@ -1465,6 +1874,109 @@
             "type": "string"
           }
         }
+      },
+      "PlanCommand": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimingChange"
+            }
+          },
+          "command_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "run_id",
+          "changes",
+          "command_id"
+        ]
+      },
+      "Analysis": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "simulation_time_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "forecasts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Forecast"
+            }
+          },
+          "recommendation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Recommendation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "comparison": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComparisonResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alternatives": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Recommendation"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "run_id",
+          "simulation_time_s",
+          "forecasts",
+          "alternatives"
+        ]
+      },
+      "CompareCommand": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrafficState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimingChange"
+            }
+          },
+          "recommendation_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "changes",
+          "recommendation_id"
+        ]
       }
     }
   }

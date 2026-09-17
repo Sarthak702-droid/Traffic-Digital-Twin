@@ -33,6 +33,8 @@ export interface SignalPhase {
   max_green_s: number;
   amber_s: number;
   all_red_s: number;
+  pedestrian_clearance_s: number;
+  max_red_s: number;
 }
 
 export interface MovementState {
@@ -65,6 +67,10 @@ export interface TrafficState {
   teleported_total: number;
   scenario_type: string;
   seed: number;
+  incident?: Incident | null;
+  emergency?: EmergencyEvent | null;
+  active_plan: TimingChange[];
+  replay: boolean;
 }
 
 export interface Forecast {
@@ -117,6 +123,7 @@ export interface Incident {
   kind: string;
   capacity_ratio: number;
   status: string;
+  recovery_cycles: number;
 }
 
 export interface EmergencyEvent {
@@ -125,6 +132,8 @@ export interface EmergencyEvent {
   route_node_ids: string[];
   status: string;
   eta_s: number[];
+  recovery_cycles_remaining: number;
+  vehicle_id: string;
 }
 
 export interface ComponentHealth {
@@ -174,21 +183,29 @@ export interface ComparisonResult {
   candidate_max_queue_veh: number;
   baseline_avg_delay_s: number;
   candidate_avg_delay_s: number;
+  initial_time_s: number;
+  model_version: string;
+  baseline_spillback_s: number;
+  candidate_spillback_s: number;
+  baseline_stops_per_vehicle: number;
+  candidate_stops_per_vehicle: number;
+  horizon_s: number;
+  seed: number;
 }
 
 export interface EventEnvelope {
   schema_version: "1.0";
   sequence: string;
   timestamp: string;
-  network_state?: TrafficState;
-  junction_state?: SignalState;
-  forecast_updated?: Forecast;
-  recommendation_created?: Recommendation;
-  recommendation_updated?: Recommendation;
-  incident_updated?: Incident;
-  emergency_updated?: EmergencyEvent;
-  health_updated?: HealthState;
-  audit_appended?: AuditEvent;
+  network_state?: TrafficState | null;
+  junction_state?: SignalState | null;
+  forecast_updated?: Forecast | null;
+  recommendation_created?: Recommendation | null;
+  recommendation_updated?: Recommendation | null;
+  incident_updated?: Incident | null;
+  emergency_updated?: EmergencyEvent | null;
+  health_updated?: HealthState | null;
+  audit_appended?: AuditEvent | null;
 }
 
 export interface RunCommand {
@@ -206,6 +223,27 @@ export interface RunRequest {
 export interface ValidationResult {
   valid: boolean;
   errors: string[];
+}
+
+export interface PlanCommand {
+  run_id: string;
+  changes: TimingChange[];
+  command_id: string;
+}
+
+export interface Analysis {
+  run_id: string;
+  simulation_time_s: number;
+  forecasts: Forecast[];
+  recommendation?: Recommendation | null;
+  comparison?: ComparisonResult | null;
+  alternatives: Recommendation[];
+}
+
+export interface CompareCommand {
+  state?: TrafficState | null;
+  changes: TimingChange[];
+  recommendation_id: string;
 }
 
 export type LiveEvent =

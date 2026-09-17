@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "id": "c1-c6-v1",
+  "id": "c1-c6-v3",
   "name": "C1\u2013C6 demonstration network",
   "units": {
     "coordinates": "canvas units",
@@ -259,7 +259,9 @@
       "min_green_s": 10,
       "max_green_s": 55,
       "amber_s": 3,
-      "all_red_s": 2
+      "all_red_s": 2,
+      "pedestrian_clearance_s": 2,
+      "max_red_s": 200
     },
     {
       "id": "C1-FROM-C3",
@@ -272,7 +274,9 @@
       "min_green_s": 10,
       "max_green_s": 55,
       "amber_s": 3,
-      "all_red_s": 2
+      "all_red_s": 2,
+      "pedestrian_clearance_s": 2,
+      "max_red_s": 200
     },
     {
       "id": "C1-FROM-C4",
@@ -285,7 +289,9 @@
       "min_green_s": 10,
       "max_green_s": 55,
       "amber_s": 3,
-      "all_red_s": 2
+      "all_red_s": 2,
+      "pedestrian_clearance_s": 2,
+      "max_red_s": 200
     },
     {
       "id": "C1-FROM-C5",
@@ -298,7 +304,9 @@
       "min_green_s": 10,
       "max_green_s": 55,
       "amber_s": 3,
-      "all_red_s": 2
+      "all_red_s": 2,
+      "pedestrian_clearance_s": 2,
+      "max_red_s": 200
     },
     {
       "id": "C3-FROM-C1",
@@ -309,7 +317,9 @@
       "min_green_s": 10,
       "max_green_s": 55,
       "amber_s": 3,
-      "all_red_s": 2
+      "all_red_s": 2,
+      "pedestrian_clearance_s": 2,
+      "max_red_s": 200
     },
     {
       "id": "C3-FROM-C6",
@@ -320,7 +330,9 @@
       "min_green_s": 10,
       "max_green_s": 55,
       "amber_s": 3,
-      "all_red_s": 2
+      "all_red_s": 2,
+      "pedestrian_clearance_s": 2,
+      "max_red_s": 200
     }
   ],
   "conflicts": [
@@ -554,7 +566,17 @@
         "C3",
         "C1"
       ],
-      "capacity_ratio": 1
+      "capacity_ratio": 1,
+      "demand_duration_s": 900,
+      "base_rate_vps": 0.21,
+      "feeder_rate_vps": 0.51,
+      "surge_rate_vps": 1.65,
+      "surge_start_s": 30,
+      "surge_end_s": 180,
+      "incident_start_s": 30,
+      "incident_end_s": 150,
+      "emergency_depart_s": 25,
+      "recovery_cycles": 2
     },
     {
       "id": "incident_c3",
@@ -564,7 +586,17 @@
         "C3",
         "C1"
       ],
-      "capacity_ratio": 0.35
+      "capacity_ratio": 0.35,
+      "demand_duration_s": 900,
+      "base_rate_vps": 0.21,
+      "feeder_rate_vps": 0.51,
+      "surge_rate_vps": 1.65,
+      "surge_start_s": 30,
+      "surge_end_s": 180,
+      "incident_start_s": 30,
+      "incident_end_s": 150,
+      "emergency_depart_s": 25,
+      "recovery_cycles": 2
     },
     {
       "id": "ambulance_corridor",
@@ -575,7 +607,17 @@
         "C1",
         "C2"
       ],
-      "capacity_ratio": 1
+      "capacity_ratio": 1,
+      "demand_duration_s": 900,
+      "base_rate_vps": 0.21,
+      "feeder_rate_vps": 0.51,
+      "surge_rate_vps": 1.65,
+      "surge_start_s": 30,
+      "surge_end_s": 180,
+      "incident_start_s": 30,
+      "incident_end_s": 150,
+      "emergency_depart_s": 25,
+      "recovery_cycles": 1
     }
   ]
 }

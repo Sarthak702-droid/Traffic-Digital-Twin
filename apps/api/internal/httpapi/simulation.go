@@ -60,6 +60,10 @@ func (s *Server) ConnectSimulation(ctx context.Context, address string) error {
 					accept := s.sim.command != nil && frame.RunId == s.sim.command.RunId
 					s.mu.RUnlock()
 					if accept {
+						if err := s.persistLifecycle(frame); err != nil {
+							e = err
+							break
+						}
 						if err := s.acceptFrame(frame); err != nil {
 							e = err
 							break
@@ -68,7 +72,9 @@ func (s *Server) ConnectSimulation(ctx context.Context, address string) error {
 				}
 			}
 			s.mu.Lock()
-			s.sim.fault = "Simulation stream disconnected"
+			if !s.replaying {
+				s.sim.fault = "Simulation stream disconnected"
+			}
 			s.mu.Unlock()
 			select {
 			case <-ctx.Done():
@@ -125,6 +131,9 @@ func (s *Server) simulationHealth() (string, string) {
 	}
 	if time.Since(s.sim.received) > 2500*time.Millisecond {
 		return "unavailable", "Simulator state is stale"
+	}
+	if s.replaying {
+		return "normal", "GOLDEN REPLAY · prerecorded synthetic traffic"
 	}
 	return "normal", "SUMO/TraCI stream connected at 1 Hz"
 }
@@ -189,6 +198,15 @@ func (s *Server) resetScenario(w http.ResponseWriter, r *http.Request) {
 	s.launch(w, r, command, "Reset to identical seed and initial SUMO conditions")
 }
 func (s *Server) launch(w http.ResponseWriter, r *http.Request, command *pb.RunCommand, reason string) {
+	s.mu.Lock()
+	if s.replayCancel != nil {
+		s.replayCancel()
+		s.replayCancel = nil
+	}
+	s.replaying = false
+	s.manual = command.Mode == "observe"
+	s.analysis = nil
+	s.mu.Unlock()
 	ctx, cancel := context.WithTimeout(r.Context(), 4500*time.Millisecond)
 	defer cancel()
 	run, e := s.Store.CreateRun(ctx, s.Network.ID, command.ScenarioType, command.Mode, int64(command.Seed))

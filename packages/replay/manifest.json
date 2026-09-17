@@ -1,0 +1,21 @@
+{
+  "config_id": "c1-c6-v3",
+  "model_version": "conservation-v2",
+  "recordings": {
+    "peak_surge": {
+      "seed": 1101,
+      "frames": 480,
+      "sha256": "e21e7a809ef25050fa41423e06233f4a895ce8e812e820f478b5fea6527c0f87"
+    },
+    "incident_c3": {
+      "seed": 2202,
+      "frames": 480,
+      "sha256": "7afb70ef81706e0015eb0e0e0ac405d1df1a40ffdc17ead3db15c2bd4a02316a"
+    },
+    "ambulance_corridor": {
+      "seed": 3303,
+      "frames": 480,
+      "sha256": "42c102050ec5e12b7ac3a25c3e2058390299cd5a271d1afcd19b8bd33e9d2c47"
+    }
+  }
+}

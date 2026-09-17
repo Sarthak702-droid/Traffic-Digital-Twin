@@ -18,9 +18,22 @@
         "avg_speed_kph": 0.0,
         "occupancy_ratio": 0.0,
         "downstream_capacity_veh": 0.0,
-        "waiting_age_s": 0.0
+        "waiting_age_s": 0.0,
+        "vehicle_count": 0,
+        "arrivals_total": 0,
+        "departures_total": 0,
+        "permission": ""
       }
     ],
-    "simulation_time_s": 0.0
+    "simulation_time_s": 0.0,
+    "signals": [],
+    "vehicles_in_network": 0,
+    "inserted_total": 0,
+    "arrived_total": 0,
+    "teleported_total": 0,
+    "scenario_type": "",
+    "seed": 0,
+    "active_plan": [],
+    "replay": false
   }
 }

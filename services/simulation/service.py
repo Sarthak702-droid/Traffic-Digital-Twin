@@ -31,6 +31,12 @@ class Simulation(rpc.SimulationServicer):
                     if not request.run_id or request.run_id==self.engine.latest.run_id:value=self.engine.copy_state()
                 else:self.engine.changed.wait(timeout=.2)
             if value is not None:yield value
+    def ApplyPlan(self,request,context):
+        try:
+            self.engine.apply_plan(request)
+            return pb.ValidationResult(valid=True)
+        except ValueError as error:
+            return pb.ValidationResult(valid=False,errors=[str(error)])
     def Stop(self,request,context):
         with self.engine.lock:
             if request.run_id and self.engine.latest and request.run_id!=self.engine.latest.run_id:context.abort(grpc.StatusCode.NOT_FOUND,'Run is not active')

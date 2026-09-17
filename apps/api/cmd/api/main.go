@@ -61,11 +61,18 @@ func run() error {
 	}
 	simCtx, stopSimulation := context.WithCancel(context.Background())
 	defer stopSimulation()
-	simAddress := os.Getenv("SIMULATION_GRPC_ADDR")
+	simAddress := os.Getenv("SIMULATION_ADDR")
 	if simAddress == "" {
 		simAddress = "127.0.0.1:50051"
 	}
 	if e = app.ConnectSimulation(simCtx, simAddress); e != nil {
+		return e
+	}
+	intAddress := os.Getenv("INTELLIGENCE_ADDR")
+	if intAddress == "" {
+		intAddress = "127.0.0.1:50052"
+	}
+	if e = app.ConnectIntelligence(simCtx, intAddress); e != nil {
 		return e
 	}
 	server := &http.Server{Addr: addr, Handler: app.Handler(), ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second}
