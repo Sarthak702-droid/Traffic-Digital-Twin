@@ -172,7 +172,7 @@ func (s *Server) startScenario(w http.ResponseWriter, r *http.Request) {
 		problem(w, 503, "Simulation service is not configured")
 		return
 	}
-	if !s.db(w) {
+	if !s.db(w) || !s.requireLease(w) {
 		return
 	}
 	var body struct {
@@ -256,7 +256,7 @@ func (s *Server) resetScenario(w http.ResponseWriter, r *http.Request) {
 		problem(w, 503, "Simulation service is not configured")
 		return
 	}
-	if !s.db(w) {
+	if !s.db(w) || !s.requireLease(w) {
 		return
 	}
 	s.sim.commands.Lock()

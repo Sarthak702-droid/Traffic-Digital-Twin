@@ -40,6 +40,7 @@ type Server struct {
 	mu                 sync.RWMutex
 	state              *pb.TrafficState
 	sim                *simulationLink
+	Lease              *LeaseManager
 }
 type apiError struct {
 	Code    string `json:"code"`
@@ -92,7 +93,7 @@ func (s *Server) Handler() http.Handler {
 			next.ServeHTTP(w, req)
 		})
 	})
-	r.Use(middleware.Recoverer, s.access)
+	r.Use(middleware.Recoverer, s.access, s.idempotency)
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -216,6 +217,10 @@ func (s *Server) Handler() http.Handler {
 	r.Delete("/api/v1/locks/{id}", s.deleteLock)
 	r.Post("/api/v1/replay/{scenario}", s.startReplay)
 	r.Get("/api/v1/vision/{id}", s.getVisionState)
+	r.Get("/api/v1/commands/{id}", s.getCommand)
+	r.Get("/api/v1/session", s.getSession)
+	r.Post("/api/v1/session/login", s.loginSession)
+	r.Post("/api/v1/session/logout", s.logoutSession)
 	r.Get("/ws/v1/live", s.live)
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) { problem(w, http.StatusNotFound, "Unknown API route") })
 	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
@@ -230,7 +235,17 @@ func (s *Server) db(w http.ResponseWriter) bool {
 	}
 	return true
 }
+func (s *Server) requireLease(w http.ResponseWriter) bool {
+	if s.Lease != nil && !s.Lease.IsAuthoritative() {
+		problem(w, 503, "Replica is not the authoritative run owner; stateful commands must be routed to the leaseholder")
+		return false
+	}
+	return true
+}
 func (s *Server) createRun(w http.ResponseWriter, r *http.Request) {
+	if !s.requireLease(w) {
+		return
+	}
 	var command struct {
 		Version  string `json:"schema_version"`
 		Scenario string `json:"scenario_type"`
@@ -331,7 +346,13 @@ func (s *Server) live(w http.ResponseWriter, r *http.Request) {
 	lastRecommendation := ""
 	lastAnalysisKey := ""
 	if s.Store != nil {
-		s.Store.Pool.QueryRow(ctx, "SELECT COALESCE(MAX(sequence),0) FROM audit_events").Scan(&auditSequence)
+		if x := r.URL.Query().Get("after_audit"); x != "" {
+			if seq, err := strconv.ParseInt(x, 10, 64); err == nil && seq >= 0 {
+				auditSequence = seq
+			}
+		} else {
+			s.Store.Pool.QueryRow(ctx, "SELECT COALESCE(MAX(sequence),0) FROM audit_events").Scan(&auditSequence)
+		}
 	}
 	write := func(kind string, payload proto.Message) error {
 		sequence++
@@ -352,6 +373,31 @@ func (s *Server) live(w http.ResponseWriter, r *http.Request) {
 	}
 	if write("health.updated", s.health(ctx)) != nil {
 		return
+	}
+	if r.URL.Query().Get("after_audit") != "" && s.Store != nil {
+		flushCtx, flushCancel := context.WithTimeout(ctx, time.Second)
+		rows, err := s.Store.Q.ListAudit(flushCtx, queries.ListAuditParams{Sequence: auditSequence, Limit: 100})
+		flushCancel()
+		if err == nil {
+			for _, row := range rows {
+				auditSequence = row.Sequence
+				event := &pb.AuditEvent{Actor: row.Actor, EventType: row.EventType, Timestamp: row.CreatedAt.Time.UTC().Format(time.RFC3339Nano), Reason: row.Reason, SafetyResult: row.SafetyResult}
+				if id, _ := row.ID.Value(); id != nil {
+					event.Id = id.(string)
+				}
+				if id, _ := row.RunID.Value(); id != nil {
+					event.RunId = id.(string)
+				}
+				if id, _ := row.RecommendationID.Value(); id != nil {
+					event.RecommendationId = id.(string)
+				}
+				json.Unmarshal(row.BeforeValues, &event.Before)
+				json.Unmarshal(row.AfterValues, &event.After)
+				if write("audit.appended", event) != nil {
+					return
+				}
+			}
+		}
 	}
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
