@@ -58,7 +58,7 @@ export const liveSchema = z.object({
       id: z.string(),
       run_id: z.string(),
       route_node_ids: z.array(z.string()),
-      status: z.string(),
+      status: z.enum(["scheduled", "pre_clearance", "priority", "recovery", "complete"]),
       eta_s: z.array(nonnegative),
       recovery_cycles_remaining: nonnegative.int(),
       vehicle_id: z.string(),

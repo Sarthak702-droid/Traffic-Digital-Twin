@@ -101,6 +101,25 @@ func TestStartResetFailureAndAuditedLifecycle(t *testing.T) {
 	if e = pool.QueryRow(ctx, "SELECT count(*) FROM audit_events WHERE event_type='scenario.started'").Scan(&count); e != nil || count != 3 {
 		t.Fatal("missing start/reset audit", e, count)
 	}
+	// A manual timing protection must prevent the emergency command from
+	// reaching Python, and the rejected command must remain inspectable.
+	s.locks = map[string]bool{"C3-FROM-C6": true}
+	w = post("/api/v1/scenarios/ambulance_corridor/start", `{"schema_version":"1.0","seed":3303,"mode":"recommend"}`)
+	if w.Code != 409 || fake.last.ScenarioType != "incident_c3" {
+		t.Fatalf("locked emergency was scheduled: %d %s", w.Code, w.Body.String())
+	}
+	if e = pool.QueryRow(ctx, "SELECT count(*) FROM audit_events WHERE event_type='emergency.rejected'").Scan(&count); e != nil || count != 1 {
+		t.Fatal("missing rejected emergency audit", e, count)
+	}
+	w = post("/api/v1/scenarios/ambulance_corridor/start", `{"schema_version":"1.0","seed":3303,"mode":"manual"}`)
+	if w.Code != 409 {
+		t.Fatalf("manual-mode emergency was scheduled: %d %s", w.Code, w.Body.String())
+	}
+	s.locks = map[string]bool{}
+	w = post("/api/v1/scenarios/ambulance_corridor/start", `{"schema_version":"1.0","seed":3303,"mode":"recommend"}`)
+	if w.Code != 200 || fake.last.ScenarioType != "ambulance_corridor" {
+		t.Fatalf("unlocked emergency did not start: %d %s", w.Code, w.Body.String())
+	}
 	// Stop the server to force the real gRPC failure path without data races.
 	rpc.Stop()
 	w = post("/api/v1/scenarios/reset", "{}")
@@ -108,7 +127,7 @@ func TestStartResetFailureAndAuditedLifecycle(t *testing.T) {
 		t.Fatal(w.Code)
 	}
 	pool.QueryRow(ctx, "SELECT count(*) FROM audit_events WHERE event_type='scenario.started'").Scan(&count)
-	if count != 3 {
+	if count != 4 {
 		t.Fatal("failed reset recorded as successful")
 	}
 }

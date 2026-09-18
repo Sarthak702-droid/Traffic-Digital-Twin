@@ -344,6 +344,86 @@ h3 {
   display: grid;
   gap: 16px;
 }
+.emergency-corridor-panel {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.emergency-corridor-panel > :not(.panel-heading) {
+  margin-left: 18px;
+  margin-right: 18px;
+}
+.emergency-heading .overline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #bba8e6;
+}
+.emergency-heading h2 { margin-top: 8px; }
+.quiet-badge.emergency-stage-pre_clearance,
+.quiet-badge.emergency-stage-priority {
+  color: #cdbcf3;
+  border-color: #685889;
+  background: #312644;
+}
+.emergency-location {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 11px;
+  border: 1px solid #493d60;
+  border-radius: 9px;
+  background: #221d2e;
+  color: #cbb9ef;
+}
+.emergency-location div { display: grid; gap: 3px; }
+.emergency-location span,
+.corridor-row span,
+.emergency-recovery-grid span { color: #9daab5; font-size: 10px; text-transform: uppercase; letter-spacing: .55px; }
+.emergency-location strong { color: #e0d6f5; font-size: 12px; line-height: 1.45; }
+.emergency-stage-track {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+  list-style: none;
+  margin: 0 18px;
+  padding: 0;
+}
+.emergency-stage-track li { min-width: 0; display: grid; gap: 5px; color: #667682; }
+.emergency-stage-track li::before { content: ""; height: 2px; width: 100%; background: #34434e; grid-area: 1 / 1; align-self: center; }
+.emergency-stage-track li:first-child::before { width: 50%; justify-self: end; }
+.emergency-stage-track li:last-child::before { width: 50%; }
+.emergency-stage-track li span { grid-area: 1 / 1; z-index: 1; display: grid; place-items: center; width: 20px; height: 20px; border: 1px solid #4a5964; border-radius: 50%; background: #17222a; font-size: 10px; }
+.emergency-stage-track li.reached { color: #c5b4eb; }
+.emergency-stage-track li.reached::before { background: #806bb4; }
+.emergency-stage-track li.reached span { border-color: #9a84d0; background: #3d3155; color: #f2ecff; }
+.emergency-stage-track small { overflow: hidden; text-overflow: ellipsis; text-transform: capitalize; font-size: 9px; white-space: nowrap; }
+.corridor-list { display: grid; gap: 6px; }
+.corridor-row { display: grid; grid-template-columns: 1.05fr .55fr 1.35fr; gap: 8px; align-items: center; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; background: #121d25; }
+.corridor-row > div { display: grid; gap: 3px; min-width: 0; }
+.corridor-row strong { color: #d1dbe0; font-size: 11px; overflow-wrap: anywhere; text-transform: capitalize; }
+.corridor-row > div:first-child strong { color: #d9c9f7; font-size: 13px; }
+.emergency-recovery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.emergency-recovery-grid > div { display: grid; gap: 5px; padding: 10px; border-radius: 8px; background: #17222a; border: 1px solid var(--border); }
+.emergency-recovery-grid strong { color: #d9e2e6; font-size: 13px; }
+.emergency-safety-note, .emergency-blocked { display: flex; gap: 8px; align-items: flex-start; padding: 10px; margin-bottom: 0; border-radius: 8px; font-size: 11px; line-height: 1.55; }
+.emergency-safety-note { background: #162620; border: 1px solid #315243; color: #aad0ba; }
+.emergency-safety-note p, .emergency-blocked { margin-top: 0; margin-bottom: 0; }
+.emergency-blocked { background: #302417; border: 1px solid #72563a; color: #edcb91; }
+.emergency-empty { display: flex; gap: 10px; padding: 12px; border: 1px dashed #4a5964; border-radius: 8px; color: #9dacb8; font-size: 12px; line-height: 1.55; }
+.emergency-empty p { margin: 0; }
+.emergency-actions { display: flex; gap: 8px; padding-bottom: 18px; }
+@media (max-width: 520px) {
+  .emergency-corridor-panel > :not(.panel-heading) { margin-left: 13px; margin-right: 13px; }
+  .emergency-stage-track { margin-left: 13px; margin-right: 13px; }
+  .corridor-row { grid-template-columns: 1fr 1fr; }
+  .corridor-row > div:last-child { grid-column: 1 / -1; }
+  .emergency-recovery-grid { grid-template-columns: 1fr; }
+  .emergency-actions { flex-direction: column; }
+}
 .incident-control-grid,
 .incident-stat-grid {
   display: grid;

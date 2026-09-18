@@ -38,6 +38,7 @@ import { NetworkView } from "@/components/network-view";
 import { JunctionDrawerContent } from "@/components/junction-drawer";
 import { DgpPresentationModal } from "@/components/dgp-presentation";
 import { IncidentRecoveryPanel } from "@/components/incident-recovery-panel";
+import { EmergencyCorridorPanel } from "@/components/emergency-corridor-panel";
 import type {
   Network,
   Run,
@@ -335,6 +336,21 @@ export function Workspace() {
     },
   });
 
+  const startEmergency = useMutation({
+    mutationFn: () => request<Run>("/scenarios/ambulance_corridor/start", {
+      method: "POST",
+      body: JSON.stringify({ schema_version: "1.0", seed: 3303, mode: systemMode }),
+    }),
+    onSuccess: () => {
+      setScenarioID("ambulance_corridor");
+      setSeed("3303");
+      setSimulationComparison(null);
+      client.invalidateQueries({ queryKey: ["runs"] });
+      client.invalidateQueries({ queryKey: ["audit"] });
+      client.invalidateQueries({ queryKey: ["analysis"] });
+    },
+  });
+
   const data = network.data;
   const chosen = data?.nodes.find((n) => n.id === selectedNode);
   const dbReady = !health.isError && !modeQuery.isError && canWrite && online && health.data?.components.some(
@@ -343,7 +359,7 @@ export function Workspace() {
 
   const replay=useMutation({mutationFn:()=>request(`/replay/${scenarioID}`,{method:"POST",body:"{}"}),onSuccess:()=>{setSimulationComparison(null);client.invalidateQueries()}});
   const lock=useMutation({mutationFn:({target,locked}:{target:string;locked:boolean})=>request(`/locks/${target}`,{method:locked?"POST":"DELETE",body:"{}"}),onSuccess:()=>client.invalidateQueries()});
-  const anyCommandPending=decision.isPending||modeMutation.isPending||changeModeMutation.isPending||prepare.isPending||reset.isPending||startIncident.isPending||replay.isPending||lock.isPending||resolveDecisionMutation.isPending;
+  const anyCommandPending=decision.isPending||modeMutation.isPending||changeModeMutation.isPending||prepare.isPending||reset.isPending||startIncident.isPending||startEmergency.isPending||replay.isPending||lock.isPending||resolveDecisionMutation.isPending;
   const decisionReady=!!analysis && live.fresh && !live.frame?.replay && !!dbReady && systemMode==="recommend" && canWrite && !anyCommandPending;
   const refresh = () => {
     client.invalidateQueries();
@@ -421,7 +437,7 @@ export function Workspace() {
           <SessionPanel/>
           {!online&&<p role="alert">Offline. Measurements may be stale; commands are disabled.</p>}
           {network.data?.provenance==="bundled-offline"&&<p role="alert">Bundled offline topology only. This configuration is not a live service response.</p>}
-          {(decision.error||modeMutation.error||changeModeMutation.error||startIncident.error||replay.error||lock.error)&&<p className="form-error" role="alert">{(decision.error||modeMutation.error||changeModeMutation.error||startIncident.error||replay.error||lock.error)?.message}</p>}
+          {(decision.error||modeMutation.error||changeModeMutation.error||startIncident.error||startEmergency.error||replay.error||lock.error)&&<p className="form-error" role="alert">{(decision.error||modeMutation.error||changeModeMutation.error||startIncident.error||startEmergency.error||replay.error||lock.error)?.message}</p>}
           {decision.isSuccess&&<p role="status">{decision.data.action} acknowledged. Inspect the returned plan and audit; accepted timing waits for its safe phase boundary.</p>}
           {!analysis&&live.frame&&<p role="status">Fresh intelligence unavailable. Forecasts and decisions are disabled until recovery.</p>}
 
@@ -780,24 +796,16 @@ export function Workspace() {
                       />
                     </section>
                     <aside className="action-rail">
-                      <section className="context-panel">
-                        <div className="overline">AMBULANCE_CORRIDOR</div>
-                        {live.fresh && live.frame?.scenario_type==="ambulance_corridor" && live.frame.emergency?.id ? <div role="status"><p>Stage: {live.frame.emergency.status} · recovery countdown {live.frame.emergency.recovery_cycles_remaining} cycles</p><ul>{live.frame.emergency.route_node_ids.map((n,i)=><li key={n}>{n}: {live.frame?.emergency?.eta_s[i] != null ? `${Math.round(live.frame.emergency.eta_s[i])}s modeled ETA` : "ETA unavailable"}</li>)}</ul></div> : <p role="status">No fresh emergency run. Launch the configured scenario to inspect stages and ETAs.</p>}
-                        <h2>Simulated emergency priority</h2>
-                        <p>
-                          Priority is applied only at configured controlled junctions, subject to clearance and receiving capacity. Observe actual stage and recovery; passage time is not guaranteed.
-                        </p>
-                        <Button
-                          variant="default"
-                          onClick={() => {
-                            setScenarioID("ambulance_corridor");
-                            setSeed("3303");
-                            setView("command");
-                          }}
-                        >
-                          Launch in Command Center <ArrowRight size={15} />
-                        </Button>
-                      </section>
+                      <EmergencyCorridorPanel
+                        network={data}
+                        frame={live.fresh ? live.frame : null}
+                        canOperate={!!dbReady}
+                        pending={anyCommandPending}
+                        locked={!!modeQuery.data?.locks.length || manual}
+                        error={startEmergency.error?.message || reset.error?.message}
+                        onLaunch={() => startEmergency.mutate()}
+                        onReset={() => { if (window.confirm("Reset the virtual emergency corridor to the configured seed?")) reset.mutate(); }}
+                      />
                     </aside>
                   </div>
                 )}

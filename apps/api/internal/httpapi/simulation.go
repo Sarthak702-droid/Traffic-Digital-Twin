@@ -205,6 +205,27 @@ func (s *Server) startScenario(w http.ResponseWriter, r *http.Request) {
 		problem(w, 400, "Valid scenario, schema_version, seed and mode (recommend/observe/manual) required")
 		return
 	}
+	// Emergency priority is a virtual schedule, never an override of the
+	// operator's manual protection. Reject before a run is prepared so Python
+	// cannot receive a command which conflicts with the Go-owned lock state.
+	if scenario == "ambulance_corridor" {
+		s.mu.RLock()
+		manual := s.manual
+		locked := len(s.locks) > 0
+		s.mu.RUnlock()
+		if manual || locked || body.Mode == "manual" {
+			reason := "Emergency corridor was not scheduled because a manual mode or timing lock remains active"
+			ctx, cancel := context.WithTimeout(r.Context(), time.Second)
+			err := s.Store.RecordSafetyRejection(ctx, "emergency.rejected", reason)
+			cancel()
+			if err != nil {
+				problem(w, 503, "Emergency safety rejection could not be audited")
+				return
+			}
+			problem(w, 409, reason)
+			return
+		}
+	}
 	if body.Incident != nil && scenario != "incident_c3" {
 		problem(w, 400, "Incident controls are only available for incident_c3")
 		return
