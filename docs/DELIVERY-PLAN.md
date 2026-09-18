@@ -551,7 +551,7 @@ Acceptance criteria:
 
 Incident behavior must protect storage and show recovery, not just extend green.
 
-**Release gate:** Reaccept every story against revised gateway/writer ownership and applicable UX states; historical completion is not production acceptance.
+**Release gate:** accepted against the direct public Go API, private simulation/intelligence gRPC boundary, in-process Go persistence and applicable UI states; evidence in docs/epic9-status.md.
 
 **Findings:** A03, A17
 
@@ -561,17 +561,17 @@ As an operator, I want a configurable C3 incident, so that I can demonstrate cap
 
 **Owner:** Simulation + Frontend · **Provisional days:** 10–10 · **Depends on:** S05, S09, S25
 
-**Status:** backlog — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic9-status.md.
 
 **Audit findings:** A03, A17
 
 Acceptance criteria:
 
 - Default C3 capacity to 35% of normal; offer incident type and severity/capacity controls.
-- Start/reset through Python gateway → Go lifecycle; persist incident lifecycle through gateway → Go writer and display affected links and upstream queues.
+- Start/reset through the public Go API and private simulation gRPC; persist incident lifecycle through the in-process Go persistence module and display affected links and upstream queues.
 - Reset reproducibly restores the original capacity and seed.
 - Render actual remaining capacity from config/state (default 35%), lifecycle and affected links; remove hardcoded 50% and C6-controlled-signal copy.
-- Add typed permissioned severity/type controls through gateway if implemented, with validation, pending/error/reset confirmation and writer-backed incident audit.
+- Add typed permissioned severity/type controls through the Go API with validation, pending/error/reset confirmation and Go persistence-backed incident audit.
 
 ### S30 — Gate release and estimate recovery cycles [P0]
 
@@ -579,7 +579,7 @@ As an operator, I want a network recovery strategy, so that the incident does no
 
 **Owner:** Intelligence · **Provisional days:** 10–10 · **Depends on:** S29, S18, S22
 
-**Status:** backlog — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic9-status.md.
 
 **Audit findings:** A17
 

@@ -37,6 +37,12 @@ class Engine:
     def reset(self, command):
         if command.schema_version!='1.0' or not command.run_id or command.mode not in ('observe','recommend','manual') or command.seed<1 or command.scenario_type not in {s['id'] for s in self.config['scenarios']}:
             raise ValueError('Invalid version, scenario, seed, mode or run ID')
+        if command.scenario_type!='incident_c3' and (command.incident_kind or command.incident_capacity_ratio):
+            raise ValueError('Incident controls are only valid for incident_c3')
+        if command.incident_kind and command.incident_kind!='capacity_reduction':
+            raise ValueError('Unsupported incident kind')
+        if command.incident_capacity_ratio and not .1<=command.incident_capacity_ratio<=.9:
+            raise ValueError('Incident capacity must be between 10% and 90%')
         with self.lock:
             self.running=False
             route=write_demand(self.config,command.scenario_type,command.seed,self.directory)
@@ -56,6 +62,8 @@ class Engine:
                     if None in ids or len(ids)!=1:raise ValueError('Unmapped SUMO signal connection')
                     self.indices[node].append(next(iter(ids)))
             self.scenario=next(s for s in self.config['scenarios'] if s['id']==command.scenario_type)
+            self.incident_kind=command.incident_kind or 'capacity_reduction'
+            self.incident_capacity_ratio=command.incident_capacity_ratio or self.scenario['capacity_ratio']
             self.scheduler=Signals(self.config)
             self.applied_commands=set()
             self.vehicle_routes={}
@@ -106,12 +114,12 @@ class Engine:
         ratio=1.0
         if self.command.scenario_type=='incident_c3':
             active=scenario['incident_start_s']<=tick<scenario['incident_end_s']
-            ratio=scenario['capacity_ratio'] if active else 1.0
+            ratio=self.incident_capacity_ratio if active else 1.0
             end=scenario['incident_end_s']
             cycle=max(sum(self.scheduler.plan[p['id']]+p['amber_s']+p['all_red_s'] for p in ps) for ps in self.phases.values())
             recovery=max(0,scenario['recovery_cycles']-int(max(0,tick-end)//cycle)) if tick>=end else scenario['recovery_cycles']
             status='scheduled' if tick<scenario['incident_start_s'] else 'active' if active else 'recovering' if recovery else 'resolved'
-            incident=pb.Incident(id=self.command.run_id+'-incident',run_id=self.command.run_id,node_id='C3',kind='capacity_reduction',capacity_ratio=ratio,status=status,recovery_cycles=recovery)
+            incident=pb.Incident(id=self.command.run_id+'-incident',run_id=self.command.run_id,node_id='C3',kind=self.incident_kind,capacity_ratio=ratio,status=status,recovery_cycles=recovery)
         self.capacity_ratio=ratio
         # A metered virtual entry at C3 implements reduced discharge capacity.
         # Blocked intervals remain red; SUMO itself enforces physical receiving space.

@@ -81,17 +81,24 @@ func TestStartResetFailureAndAuditedLifecycle(t *testing.T) {
 	}
 	var first map[string]any
 	json.Unmarshal(w.Body.Bytes(), &first)
+	w = post("/api/v1/scenarios/incident_c3/start", `{"schema_version":"1.0","seed":2202,"mode":"recommend","incident":{"kind":"capacity_reduction","capacity_ratio":0.5}}`)
+	if w.Code != 200 || fake.last == nil || fake.last.IncidentKind != "capacity_reduction" || fake.last.IncidentCapacityRatio != 0.5 {
+		t.Fatalf("incident override was not validated and forwarded: %d %s %#v", w.Code, w.Body.String(), fake.last)
+	}
+	if w = post("/api/v1/scenarios/incident_c3/start", `{"schema_version":"1.0","seed":2202,"mode":"recommend","incident":{"kind":"closure","capacity_ratio":0.5}}`); w.Code != 400 {
+		t.Fatalf("invalid incident control accepted: %d", w.Code)
+	}
 	w = post("/api/v1/scenarios/reset", "{}")
 	if w.Code != 200 {
 		t.Fatal(w.Body.String())
 	}
 	var reset map[string]any
 	json.Unmarshal(w.Body.Bytes(), &reset)
-	if first["run_id"] == reset["run_id"] || reset["seed"] != float64(1101) {
+	if first["run_id"] == reset["run_id"] || reset["seed"] != float64(2202) || fake.last.IncidentCapacityRatio != 0.5 {
 		t.Fatal("reset identity/seed")
 	}
 	var count int
-	if e = pool.QueryRow(ctx, "SELECT count(*) FROM audit_events WHERE event_type='scenario.started'").Scan(&count); e != nil || count != 2 {
+	if e = pool.QueryRow(ctx, "SELECT count(*) FROM audit_events WHERE event_type='scenario.started'").Scan(&count); e != nil || count != 3 {
 		t.Fatal("missing start/reset audit", e, count)
 	}
 	// Stop the server to force the real gRPC failure path without data races.
@@ -101,7 +108,7 @@ func TestStartResetFailureAndAuditedLifecycle(t *testing.T) {
 		t.Fatal(w.Code)
 	}
 	pool.QueryRow(ctx, "SELECT count(*) FROM audit_events WHERE event_type='scenario.started'").Scan(&count)
-	if count != 2 {
+	if count != 3 {
 		t.Fatal("failed reset recorded as successful")
 	}
 }

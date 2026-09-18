@@ -102,12 +102,12 @@
       "evidence": "docs/epic8-status.md"
     },
     "S29": {
-      "status": "backlog",
-      "reason": "Revised acceptance pending; no completion verified by this audit."
+      "status": "completed",
+      "evidence": "docs/epic9-status.md"
     },
     "S30": {
-      "status": "backlog",
-      "reason": "Revised acceptance pending; no completion verified by this audit."
+      "status": "completed",
+      "evidence": "docs/epic9-status.md"
     },
     "S31": {
       "status": "backlog",
