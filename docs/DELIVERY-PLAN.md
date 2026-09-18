@@ -469,7 +469,7 @@ Acceptance criteria:
 
 Reliability and traceability must grow with the system, not wait until the final rehearsal.
 
-**Release gate:** Reaccept every story against revised gateway/writer ownership and applicable UX states; historical completion is not production acceptance.
+**Release gate:** accepted against the direct public Go API, in-process Go persistence, private Python gRPC intelligence boundary and applicable UI states; evidence in docs/epic8-status.md.
 
 **Findings:** A04, A05, A08, A09, A10, A11, A12, A14
 
@@ -479,16 +479,16 @@ As a supervisor, I want an append-only decision history, so that I can trace who
 
 **Owner:** Backend · **Provisional days:** 2–4 · **Depends on:** S04
 
-**Status:** backlog — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic8-status.md.
 
 **Audit findings:** A05, A08, A09, A10
 
 Acceptance criteria:
 
 - Record recommendations and operator actions including timestamp, actor, recommendation ID, before/after, reason, safety result and run ID.
-- Serve paginated audit through Python gateway → Go query service; expose audit.appended through the owning Go stream and gateway.
+- Serve paginated audit from the public Go API; expose `audit.appended` through the same Go WebSocket contract.
 - Test successful and rejected decisions, persistence and association with the correct scenario.
-- Writer commits command outcome/status/audit together; retain durable intent before dispatch and reconcile unknown/final-audit-failure states after restart. No ignored write errors may appear as success.
+- The Go API commits command outcome/status/audit together through its in-process persistence module; retain durable intent before dispatch and reconcile unknown/final-audit-failure states after restart. No ignored write errors may appear as success.
 - Use authenticated actor for shared production, validate lifecycle before saving, deduplicate per command/payload and verify append-only history through real DB failures.
 
 ### S26 — Expose health and safe degraded states [P0]
@@ -497,7 +497,7 @@ As an operator, I want visible component health, so that a failed service cannot
 
 **Owner:** Backend + Frontend · **Provisional days:** 4–13 · **Depends on:** S06, S08
 
-**Status:** backlog — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic8-status.md.
 
 **Audit findings:** A04, A11, A12
 
@@ -506,7 +506,7 @@ Acceptance criteria:
 - Show Go, simulation, intelligence, CV and database availability with timestamps/staleness.
 - Show controller NOT CONNECTED, CCTV DEMO/SAMPLE and emergency API SIMULATED.
 - Stop recommendations when intelligence fails; display missing/low-confidence state and explain absent optional CV.
-- Show gateway, Go owner, writer, Python compute and DB health with fresh timestamps; missing or stale health is unknown/unavailable, never Normal.
+- Show the public Go API, simulation, private Python intelligence service and database health with a fresh report timestamp; missing or stale health is unknown/unavailable, never Normal.
 - Define offline, maintenance, rate-limit, timeout and recovery states; suppress recommendations without fresh analysis even while stream continues. Optional CV remains explicitly unavailable.
 
 ### S27 — Build golden replay through the real delivery path [P0]
@@ -515,17 +515,17 @@ As a presenter, I want a deterministic replay fallback, so that the demo survive
 
 **Owner:** Backend + QA · **Provisional days:** 3–14 · **Depends on:** S02, S06
 
-**Status:** backlog — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic8-status.md.
 
 **Audit findings:** A11, A14
 
 Acceptance criteria:
 
-- Implement live/replay selection behind a presenter/admin control; replay travels through owning Go service → Python gateway → the same frontend WebSocket contracts.
+- Implement live/replay selection behind a presenter/admin control; replay travels through the public Go API and the same frontend WebSocket contracts.
 - Replay/reset preserve event order, timing and scenario/run identity; visibly indicate replay.
 - Capture a known-good eight-minute event stream once scenarios stabilize and verify failure switch-over.
 - Expose replay controls in the active Workspace; label all replay-derived views and disable live mutations while replay runs.
-- Test SUMO/intelligence failure, replay end/restart, checksum/config mismatch and gateway reconnect. Database loss must show a limitation rather than claiming database-independent replay.
+- Test SUMO/intelligence failure, replay end/restart, checksum/config mismatch and WebSocket reconnect. Database loss must show a limitation rather than claiming database-independent replay.
 
 ### S28 — Provide audit and health inspection [P0]
 
@@ -533,7 +533,7 @@ As a supervisor, I want an inspectable event timeline and health panel, so that 
 
 **Owner:** Frontend · **Provisional days:** 9–13 · **Depends on:** S15, S25, S26
 
-**Status:** backlog — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Verified and accepted; evidence in docs/epic8-status.md.
 
 **Audit findings:** A10
 

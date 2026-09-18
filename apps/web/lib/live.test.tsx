@@ -24,6 +24,7 @@ afterEach(() => {
     connected: false,
     failed: false,
     received: 0,
+    health: null,
   });
 });
 describe("live reconnection", () => {
@@ -73,6 +74,23 @@ describe("live reconnection", () => {
     vi.stubGlobal("WebSocket", FakeSocket);
     const { result } = renderHook(() => useLive());
     act(() => FakeSocket.sockets[0].onmessage({ data: "invalid" }));
+    expect(result.current.failed).toBe(true);
+  });
+  it("retains the latest health report and stops treating an unavailable simulator as fresh", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("WebSocket", FakeSocket);
+    const { result } = renderHook(() => useLive());
+    act(() => FakeSocket.sockets[0].onmessage({
+      data: JSON.stringify({
+        schema_version: "1.0",
+        type: "health.updated",
+        payload: {
+          timestamp: new Date().toISOString(),
+          components: [{ component: "simulation", status: "unavailable", message: "Simulator state is stale" }],
+        },
+      }),
+    }));
+    expect(result.current.health?.components[0].message).toBe("Simulator state is stale");
     expect(result.current.failed).toBe(true);
   });
 });
