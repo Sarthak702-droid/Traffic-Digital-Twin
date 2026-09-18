@@ -238,7 +238,10 @@ def main():
 
     venv_dir = ROOT / ".venv"
     venv_py = venv_dir / "bin" / "python"
-    py_bin = str(venv_py.resolve()) if venv_py.exists() else sys.executable
+    # IMPORTANT: Do NOT .resolve() — that follows symlinks to /usr/bin/python3
+    # which bypasses venv site-packages. The unresolved path lets Python detect
+    # pyvenv.cfg in the parent directory and activate the venv properly.
+    py_bin = str(venv_py) if venv_py.exists() else sys.executable
 
     # Activate venv for child processes so grpcio and other packages are found
     if venv_dir.exists():
