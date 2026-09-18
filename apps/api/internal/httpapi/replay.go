@@ -24,6 +24,9 @@ type replayRecord struct {
 }
 
 func (s *Server) startReplay(w http.ResponseWriter, r *http.Request) {
+	if !s.requireLease(w) {
+		return
+	}
 	scenario := chi.URLParam(r, "scenario")
 	var seed uint32
 	for _, c := range s.Network.Scenarios {

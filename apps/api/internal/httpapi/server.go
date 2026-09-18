@@ -118,6 +118,9 @@ func (s *Server) Handler() http.Handler {
 	})
 	r.Get("/api/v1/network", func(w http.ResponseWriter, r *http.Request) { send(w, 200, s.Network) })
 	r.Get("/api/v1/state", func(w http.ResponseWriter, r *http.Request) {
+		if !s.requireLease(w) {
+			return
+		}
 		s.mu.RLock()
 		defer s.mu.RUnlock()
 		if s.state == nil || (s.sim != nil && (time.Since(s.sim.received) > 2500*time.Millisecond || s.sim.fault != "")) {
@@ -236,11 +239,15 @@ func (s *Server) db(w http.ResponseWriter) bool {
 	return true
 }
 func (s *Server) requireLease(w http.ResponseWriter) bool {
-	if s.Lease != nil && !s.Lease.IsAuthoritative() {
+	if !s.requireLeaseSilent() {
 		problem(w, 503, "Replica is not the authoritative run owner; stateful commands must be routed to the leaseholder")
 		return false
 	}
 	return true
+}
+
+func (s *Server) requireLeaseSilent() bool {
+	return s.Lease == nil || s.Lease.IsAuthoritative()
 }
 func (s *Server) createRun(w http.ResponseWriter, r *http.Request) {
 	if !s.requireLease(w) {
@@ -315,6 +322,9 @@ func (s *Server) health(ctx context.Context) *pb.HealthState {
 	}}
 }
 func (s *Server) live(w http.ResponseWriter, r *http.Request) {
+	if !s.requireLease(w) {
+		return
+	}
 	options := &websocket.AcceptOptions{}
 	if s.AllowedOrigin != "" {
 		options.OriginPatterns = []string{s.AllowedOrigin}

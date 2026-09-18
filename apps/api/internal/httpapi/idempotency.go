@@ -69,7 +69,10 @@ func (s *Server) idempotency(next http.Handler) http.Handler {
 			Route: r.URL.Path,
 		})
 		if err != nil {
-			next.ServeHTTP(w, r)
+			// A write whose durable command identity could not be reserved is
+			// intentionally not dispatched. Retrying blindly could duplicate a
+			// virtual control action after a transient database failure.
+			problem(w, http.StatusServiceUnavailable, "Command identity could not be reserved; no action was dispatched")
 			return
 		}
 
@@ -118,12 +121,17 @@ func (s *Server) idempotency(next http.Handler) http.Handler {
 					if len(raw) == 0 {
 						raw = json.RawMessage(`{}`)
 					}
-					_, _ = s.Store.Command(r.Context(), "command.finish", store.CommandWrite{
+					if _, err := s.Store.Command(r.Context(), "command.finish", store.CommandWrite{
 						ID:         key,
 						Hash:       hash,
 						HTTPStatus: capture.statusCode,
 						Response:   raw,
-					})
+					}); err != nil {
+						// The business handler may already have atomically committed its
+						// own outcome. Leave it recoverable through GET /commands/{id};
+						// never emit a second business command to compensate here.
+						w.Header().Set("Idempotency-Outcome", "unknown")
+					}
 				}
 				return
 			}

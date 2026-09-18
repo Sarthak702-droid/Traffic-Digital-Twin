@@ -64,12 +64,17 @@ func run() error {
 	if app.Store == nil {
 		return fmt.Errorf("DATABASE_URL required; Go owns durable persistence")
 	}
+	// PostgreSQL is the durable authority for the single active-run lease. Start
+	// it before subscribing to private compute so a standby gateway never owns
+	// a stream or stateful command by accident.
+	app.Lease = httpapi.NewLeaseManager(app)
 	addr := os.Getenv("API_ADDR")
 	if addr == "" {
 		addr = "127.0.0.1:8081"
 	}
 	simCtx, stopSimulation := context.WithCancel(context.Background())
 	defer stopSimulation()
+	app.Lease.Start(simCtx)
 	simAddress := os.Getenv("SIMULATION_ADDR")
 	if simAddress == "" {
 		simAddress = "127.0.0.1:50051"
