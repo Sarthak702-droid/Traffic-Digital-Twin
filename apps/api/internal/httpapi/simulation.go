@@ -211,7 +211,13 @@ func (s *Server) startScenario(w http.ResponseWriter, r *http.Request) {
 	if scenario == "ambulance_corridor" {
 		s.mu.RLock()
 		manual := s.manual
-		locked := len(s.locks) > 0
+		locked := false
+		for _, lk := range s.locks {
+			if lk {
+				locked = true
+				break
+			}
+		}
 		s.mu.RUnlock()
 		if manual || locked || body.Mode == "manual" {
 			reason := "Emergency corridor was not scheduled because a manual mode or timing lock remains active"

@@ -1020,6 +1020,11 @@ export function Workspace() {
       <DgpPresentationModal
         open={dgpModalOpen}
         onOpenChange={setDgpModalOpen}
+        frame={live.fresh ? live.frame : null}
+        analysis={analysis}
+        health={health.data}
+        activeRun={runs.data?.[0]}
+        auditCount={audit.data?.events?.length}
       />
     </div>
   );

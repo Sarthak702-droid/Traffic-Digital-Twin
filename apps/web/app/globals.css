@@ -2792,6 +2792,298 @@ tr:last-child td {
   color: #7a8e9b;
 }
 
+/* Header Meta & Live Status Pill */
+.dgp-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.dgp-status-pill {
+  font-family: ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.dgp-status-pill.live {
+  background: #143525;
+  color: #8fc7ad;
+  border: 1px solid #2e5942;
+}
+.dgp-status-pill.replay {
+  background: #281a3d;
+  color: #c7a7ea;
+  border: 1px solid #4f3675;
+}
+.dgp-status-pill.offline {
+  background: #192732;
+  color: #8aa1af;
+  border: 1px solid #2c3f4e;
+}
+
+/* Header Action Buttons */
+.dgp-aux-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #15222d !important;
+  border: 1px solid #2d4150 !important;
+  color: #abc1cf !important;
+  font-size: 11px !important;
+  padding: 4px 10px !important;
+  border-radius: 6px !important;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.dgp-aux-btn:hover {
+  background: #1d303f !important;
+  color: #e2eef5 !important;
+  border-color: #426177 !important;
+}
+.dgp-aux-btn.active {
+  background: #1f3d2e !important;
+  border-color: #3b7457 !important;
+  color: #92e0b9 !important;
+}
+.dgp-check-pill {
+  font-size: 9px;
+  background: #254a37;
+  color: #8ee2b8;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 700;
+}
+
+/* Mandatory Synthetic Disclosure Banner (PRD §111) */
+.dgp-mandatory-disclosure {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #14202a;
+  border: 1px solid #2d4253;
+  border-left: 3px solid #63a0bf;
+  border-radius: 6px;
+  padding: 8px 14px;
+  margin-bottom: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  color: #9dbbd0;
+}
+.disclosure-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #63a0bf;
+  box-shadow: 0 0 6px #63a0bf88;
+}
+
+/* Speaker Talking Points Card */
+.dgp-speaker-card {
+  margin-top: 20px;
+  background: #121c25;
+  border: 1px solid #2a3c4a;
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dgp-speaker-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #1f2f3c;
+  padding-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dgp-speaker-timing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #8fc7ad;
+}
+.cue-badge {
+  font-size: 10px;
+  background: #1c2b36;
+  color: #8da4b4;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+.dgp-speaker-pitch label,
+.dgp-speaker-tech label,
+.dgp-speaker-faq label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: #7b94a3;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 4px;
+}
+.dgp-speaker-pitch p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #d1e2ec;
+  font-style: italic;
+  margin: 0;
+}
+.dgp-speaker-tech p {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #8fa5b4;
+  margin: 0;
+}
+.dgp-speaker-faq p {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #adc2d1;
+  margin: 2px 0 0;
+}
+
+/* Preflight Checklist Panel */
+.dgp-preflight-panel {
+  padding: 24px 32px;
+  overflow-y: auto;
+  flex: 1;
+}
+.dgp-preflight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #253644;
+  padding-bottom: 14px;
+}
+.dgp-preflight-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #d8e6ee;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+}
+.dgp-preflight-subtitle {
+  font-size: 12px;
+  color: #8aa0ae;
+  margin: 0;
+}
+.dgp-preflight-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.dgp-preflight-card {
+  background: #131e28;
+  border: 1px solid #283a48;
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dgp-preflight-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dgp-preflight-card-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #1b2a36;
+  color: #8fc7ad;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.dgp-preflight-card-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.dgp-preflight-card-text strong {
+  font-size: 12px;
+  color: #d4e3eb;
+}
+.target-badge {
+  font-size: 10px;
+  color: #7991a0;
+  font-family: ui-monospace, monospace;
+}
+.status-indicator.ready {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #8ee2b8;
+  background: #173727;
+  border: 1px solid #2a583e;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.dgp-preflight-card-desc {
+  font-size: 11px;
+  color: #869ba9;
+  line-height: 1.5;
+  margin: 0;
+}
+.dgp-preflight-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #142820;
+  border: 1px solid #2e5440;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  color: #8ee2b8;
+}
+
+/* Footer elements */
+.dgp-footer-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.dgp-script-toggle-inline {
+  background: transparent;
+  border: none;
+  font-size: 10px;
+  color: #8fc7ad;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+.dgp-script-toggle-inline:hover {
+  color: #b2ebd2;
+}
+.rail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.rail-source {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #8fc7ad;
+  background: #172a21;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
 /* Executive Role Banner (PRD §4.3) */
 .role-banner {
   padding: 12px 18px;
