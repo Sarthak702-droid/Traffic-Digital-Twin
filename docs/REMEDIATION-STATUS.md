@@ -1,13 +1,13 @@
-# Remediation checkpoint — 2026-09-17
+# Remediation checkpoint — 2026-09-18
 
 **Not production-ready. No audit gap is declared fully closed by this checkpoint.**
-The original audit is a historical source review. Implementation is now authorized and in progress. Existing PRD §§32–34, epics and revised story acceptance remain the target; passing component checks does not satisfy those release gates.
+The original audit is a historical source review. The supplied backend and API-concepts specifications now control implementation: Go is the public gateway and persistence owner; Python is private gRPC compute. Passing component checks does not satisfy remaining release gates.
 
 ## Verified checks in this continuation
 
 - `npm run test -w apps/web -- --reporter=json --outputFile=/tmp/traffic-ui-results.json`: **35 passed, 0 failed**. Updated outdated assertions and added absent-comparison and signed/zero-baseline outcome checks.
 - `npm run typecheck -w apps/web`: **passed**.
-- `python3 -m unittest services.gateway.test_gateway`: **6 passed**. Covers invalid private envelopes, malformed login shape, truncated request bodies, session tampering/revocation, independent stream/write capacity, and representative routing for every registered public Go route family. This is not an exhaustive OpenAPI or full-stack parity test.
+- The Python public-gateway test has been retired because a Python public gateway is out of scope. `scripts/verify-epic5-integration.py` now exercises the direct Go gateway, private Python gRPC compute, migration, and audited scenario-start path in a local Docker runtime.
 - `GOCACHE=/tmp/traffic-audit-go-cache go test ./apps/api/... ./db/...`: **passed**, with local network permission and real PostgreSQL. Extended the isolated-schema persistence test for all three modes, invalid lock targets, rollback when unlock audit fails, actor/payload command conflicts and completed-command deduplication.
 - Python syntax compilation passed for gateway and startup/bootstrap scripts.
 

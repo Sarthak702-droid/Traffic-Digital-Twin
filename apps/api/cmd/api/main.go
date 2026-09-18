@@ -15,6 +15,7 @@ import (
 	"traffic.local/twin/apps/api/internal/config"
 	"traffic.local/twin/apps/api/internal/httpapi"
 	"traffic.local/twin/apps/api/internal/store"
+	"traffic.local/twin/db"
 )
 
 func main() {
@@ -36,18 +37,12 @@ func run() error {
 	if origin == "" {
 		origin = "http://127.0.0.1:3100"
 	}
-	token := os.Getenv("DOMAIN_TOKEN")
-	gateway := os.Getenv("GATEWAY_INTERNAL_ORIGIN")
-	writerToken := os.Getenv("DOMAIN_WRITE_TOKEN")
-	if len(token) < 32 || len(writerToken) < 32 || gateway == "" {
-		return fmt.Errorf("DOMAIN_TOKEN, DOMAIN_WRITE_TOKEN (32+ characters), GATEWAY_INTERNAL_ORIGIN required")
-	}
 	computeToken := os.Getenv("COMPUTE_TOKEN")
 	if len(computeToken) < 32 {
 		return fmt.Errorf("COMPUTE_TOKEN (32+ characters) required")
 	}
-	app := &httpapi.Server{ComputeToken: computeToken, Network: network, AllowedOrigin: origin, ServiceToken: token, RequireOwner: true}
-	if dsn := os.Getenv("READ_DATABASE_URL"); dsn != "" {
+	app := &httpapi.Server{ComputeToken: computeToken, Network: network, AllowedOrigin: origin}
+	if dsn := os.Getenv("DATABASE_URL"); dsn != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		pool, e := pgxpool.New(ctx, dsn)
@@ -58,22 +53,16 @@ func run() error {
 		if e = pool.Ping(ctx); e != nil {
 			return e
 		}
-		var readonly bool
-		if e = pool.QueryRow(ctx, "SELECT NOT has_table_privilege(current_user,'scenario_runs','INSERT,UPDATE,DELETE')").Scan(&readonly); e != nil {
+		if e = db.Migrate(ctx, pool); e != nil {
 			return e
 		}
-		if !readonly {
-			return fmt.Errorf("domain database role must be read-only")
-		}
 		app.Store = store.New(pool)
-		app.Store.Gateway = gateway
-		app.Store.Token = writerToken
 		if e = app.Store.SaveConfig(ctx, network); e != nil {
 			return e
 		}
 	}
 	if app.Store == nil {
-		return fmt.Errorf("READ_DATABASE_URL required; all persistence uses the Go writer")
+		return fmt.Errorf("DATABASE_URL required; Go owns durable persistence")
 	}
 	addr := os.Getenv("API_ADDR")
 	if addr == "" {
@@ -81,7 +70,6 @@ func run() error {
 	}
 	simCtx, stopSimulation := context.WithCancel(context.Background())
 	defer stopSimulation()
-	go app.MaintainOwnership(simCtx, "http://"+addr)
 	simAddress := os.Getenv("SIMULATION_ADDR")
 	if simAddress == "" {
 		simAddress = "127.0.0.1:50051"

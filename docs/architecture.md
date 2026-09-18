@@ -1,9 +1,10 @@
-# Architecture revision — 2026-09-17
+# Backend architecture aligned to the supplied specifications
 
-**Implemented Architecture:** Browser → Python API Gateway (`services/gateway`) → owning Go Domain Service (`apps/api/cmd/api`) → Python Gateway (`/internal/write`) → Go DB Writer (`apps/api/cmd/writer`) → PostgreSQL for durable business-command results.
-Python SUMO simulation (`services/simulation`) and intelligence (`services/intelligence`) run as private gRPC dependencies. Domain API connection is strictly read-only (`traffic_reader`), enforced at startup. All transactional writes, migrations, and audit entries are exclusively committed by the private Go writer service (`apps/api/cmd/writer`) using `WRITE_DATABASE_URL` under mutual service token authentication. Reads and transient streams have explicit non-writing routes. Go enforces domain/safety; writer commits result/status/audit; gateway waits for commit before reporting durable success. Signal application uses durable intent, crash-safe receipts, and supervisor reconciliation.
+**Implemented architecture:** Browser → Go API gateway and orchestration (`apps/api/cmd/api`) → PostgreSQL through Go persistence modules. Private Python simulation (`services/simulation`) and intelligence (`services/intelligence`) services are reached only through typed gRPC/Protobuf calls from Go.
 
-See [PRD §§9–11, 32–34](PRD.md), [all routes and findings](UX-PRODUCTION-AUDIT.md), and E01 in [delivery plan](DELIVERY-PLAN.md).
+The Go process owns public REST and WebSocket ingress, request/correlation IDs, validation, operator authorization, safety validation, audit records, migrations, and transactional durable writes through pgx/sqlc-backed repositories. Python computes forecasts, candidate plans, SUMO simulations, and CV aggregates; it never exposes the public API or writes authoritative business data. The MVP deliberately has no Python HTTP gateway and no separately deployed Go DB-writer service.
+
+See [API and architecture alignment](API-ARCHITECTURE-SPEC-ALIGNMENT.md), [delivery plan](DELIVERY-PLAN.md), and the supplied backend and API-concepts specifications.
 
 The foundation notes below detail the component layout, contracts, and data-driven configuration.
 

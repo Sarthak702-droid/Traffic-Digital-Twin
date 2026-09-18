@@ -1,4 +1,4 @@
-> **Revalidation notice — 2026-09-17:** Revalidated and accepted against revised gateway/writer boundaries, forecasting models, and production release gates. Conservation-based forecasting, Robertson platoon dispersion, ETA tolerance, and advance spillback prediction are active and verified. Stories S11–S12 are completed.
+> **Architecture alignment notice — 2026-09-18:** This historical forecasting evidence is now governed by the supplied Go-control-plane and private-Python-compute specifications. It does not authorize a Python public gateway or separate DB writer.
 
 # Epic 4 Delivery Status: Forecasts, Platoons & Spillback
 

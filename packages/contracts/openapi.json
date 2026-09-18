@@ -1863,12 +1863,24 @@
       "Error": {
         "type": "object",
         "required": [
-          "error",
+          "code",
           "message"
         ],
         "properties": {
-          "error": {
-            "type": "string"
+          "code": {
+            "type": "string",
+            "enum": [
+              "VALIDATION_ERROR",
+              "UNAUTHORIZED",
+              "FORBIDDEN",
+              "NOT_FOUND",
+              "CONFLICT",
+              "RATE_LIMITED",
+              "INTELLIGENCE_TIMEOUT",
+              "SIMULATION_UNAVAILABLE",
+              "DATABASE_UNAVAILABLE",
+              "INTERNAL_ERROR"
+            ]
           },
           "message": {
             "type": "string"

@@ -26,6 +26,11 @@ const makeFrame = (overrides: Partial<TrafficState> = {}): TrafficState => ({
   source: "synthetic",
   movements: [],
   signals: [],
+  vehicles_in_network: 0,
+  inserted_total: 0,
+  arrived_total: 0,
+  teleported_total: 0,
+  replay: false,
   active_plan: mockNetwork.phases.map((p) => ({
     node_id: p.node_id,
     phase_id: p.id,

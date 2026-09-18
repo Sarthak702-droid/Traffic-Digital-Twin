@@ -47,6 +47,7 @@
     <div class="card-bottom"><span>Days ${t.days.join('–')}</span><button data-task="${esc(t.id)}">Open task ↗</button></div></article>`;}
   function empty(){return '<div class="empty"><strong>No matching tasks</strong><br>Try a different epic, keyword, priority or status.<br><button data-reset>Clear filters</button></div>';}
   function renderChrome(){
+    $('epic-count').textContent=`${plan.epics.length} epics`;
     const verified=tasks.filter(t=>t.status==='completed'&&t.evidence).length;
     $('notice').querySelector('strong').textContent=verified?'Repository completion recorded':'Start with the foundation';
     $('notice').querySelector('p').textContent=verified?`${verified} tasks completed with repository acceptance evidence. Other task changes are personal tracking.`:'Unverified stories remain proposed. Personal tracking does not verify implementation.';

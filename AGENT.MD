@@ -1,4 +1,4 @@
-> **2026-09-17 requirements update:** Read PRD §§9–11 and 32–34 and `docs/UX-PRODUCTION-AUDIT.md` first. The user now requires a Python public API gateway and dedicated Go DB writer. These requirements supersede the historical Go-only browser ingress/direct Go persistence/no-extra-services statements below only for the gateway/writer migration. Existing Python compute stays private. The original audit was documentation-only. The subsequent user request authorizes remediation; see `docs/REMEDIATION-STATUS.md`. Historical completion requires revised acceptance.
+> **2026-09-18 requirements update:** The supplied Backend Architecture and API Concepts specifications supersede the earlier gateway/writer revision. Use a public Go API gateway with modular in-process Go persistence; retain Python only as private gRPC simulation and intelligence compute. Do not deploy a Python HTTP gateway or dedicated Go DB-writer service for the MVP. See `docs/API-ARCHITECTURE-SPEC-ALIGNMENT.md`.
 
 # AGENT.md — Traffic Digital Twin MVP
 

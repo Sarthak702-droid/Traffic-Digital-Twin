@@ -18,7 +18,7 @@ func (s *Server) ReconcileDecisions(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if s.Store == nil || s.sim == nil || (s.RequireOwner && !s.ownerReady.Load()) {
+			if s.Store == nil || s.sim == nil {
 				continue
 			}
 			s.reconcileDecisions(ctx)

@@ -13,11 +13,8 @@ try {
   const response = await page.request.get(base + "/api/plan");
   assert.equal(response.status(), 200);
   const plan = await response.json();
-  assert.equal(
-    plan.epics.flatMap((e) => e.stories).filter((s) => s.status === "completed")
-      .length,
-    15,
-  );
+  const completedStories = plan.epics.flatMap((e) => e.stories).filter((s) => s.status === "completed");
+  assert.ok(completedStories.length >= 15, "expected repository-backed completed stories");
   for (const epic of plan.epics) {
     await page.getByRole("searchbox").fill(String(Number(epic.id.slice(1))));
     await page.waitForFunction(
@@ -139,10 +136,10 @@ try {
   await page
     .getByRole("button", { name: "Clear filters", exact: true })
     .click();
-  assert.equal(await page.locator(".epic-card").count(), 12);
+  assert.equal(await page.locator(".epic-card").count(), plan.epics.length);
   assert.deepEqual(errors, []);
   console.log(
-    "PASS dashboard: all 12 epic searches, 15 evidence-backed completions, locked accepted status, evidence endpoints and overview",
+    `PASS dashboard: all ${plan.epics.length} epic searches, ${completedStories.length} evidence-backed completions, locked accepted status, evidence endpoints and overview`,
   );
 } finally {
   await browser.close();

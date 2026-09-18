@@ -3,17 +3,16 @@
 
 Starts:
 1. PostgreSQL database container (Docker Compose) and verifies database readiness.
-2. Go DB Writer service (runs schema migrations).
-3. Python API Gateway & WebSocket tunnel.
-4. Python Simulation gRPC service (:50051).
-5. Python Intelligence gRPC service (:50052).
-6. Go Domain API service (:8081).
-7. Frontend Vite Web server (:3100).
+2. Python Simulation gRPC service (:50051).
+3. Python Intelligence gRPC service (:50052).
+4. Go API gateway, orchestration and persistence service (:8081).
+5. Frontend Vite Web server (:3100).
 """
 import hashlib
 import json
 import os
 import secrets
+import shutil
 import signal
 import socket
 import subprocess
@@ -28,7 +27,6 @@ os.chdir(ROOT)
 RUNTIME_DIR = ROOT / ".runtime"
 RUNTIME_DIR.mkdir(exist_ok=True)
 ENV_FILE = RUNTIME_DIR / "local-env.json"
-USERS_FILE = RUNTIME_DIR / "users.json"
 
 
 def log(msg: str):
@@ -43,15 +41,28 @@ def check_port(host: str, port: int, timeout: float = 1.0) -> bool:
         return False
 
 
+def _find_docker() -> str:
+    """Locate the docker binary, searching PATH and common install locations."""
+    resolved = shutil.which("docker")
+    if resolved:
+        return resolved
+    for p in ["/usr/bin/docker", "/usr/local/bin/docker", "/snap/bin/docker",
+              os.path.expanduser("~/.local/bin/docker"), "/opt/docker/bin/docker"]:
+        if os.path.isfile(p) and os.access(p, os.X_OK):
+            return p
+    return "docker"  # fallback; will raise a clear error if not found
+
+
 def ensure_postgres():
     log("Checking PostgreSQL database...")
     if check_port("127.0.0.1", 5433, timeout=0.5):
         log("PostgreSQL is already running on 127.0.0.1:5433.")
         return
 
+    docker_bin = _find_docker()
     log("Starting PostgreSQL via Docker Compose...")
     try:
-        subprocess.run(["docker", "compose", "up", "-d", "postgres"], check=True, cwd=ROOT)
+        subprocess.run([docker_bin, "compose", "up", "-d", "postgres"], check=True, cwd=ROOT)
     except Exception as e:
         log(f"\033[33mWarning:\033[0m could not launch docker compose: {e}")
 
@@ -63,34 +74,16 @@ def ensure_postgres():
     else:
         raise RuntimeError("PostgreSQL did not become available on port 5433.")
 
-    # Initialize reader role if needed
-    init_sql = ROOT / "scripts" / "init-local-db.sql"
-    if init_sql.exists():
-        try:
-            subprocess.run(
-                ["docker", "compose", "exec", "-T", "postgres", "psql", "-U", "traffic", "-d", "traffic"],
-                input=init_sql.read_bytes(),
-                check=False,
-                cwd=ROOT,
-            )
-        except Exception:
-            pass
-
-
 def ensure_local_env() -> dict:
     if not ENV_FILE.exists():
         log("Generating private local environment secrets...")
         env_data = {
             key: secrets.token_hex(32)
-            for key in ["DOMAIN_TOKEN", "DOMAIN_WRITE_TOKEN", "WRITER_TOKEN", "SESSION_SECRET", "COMPUTE_TOKEN"]
+            for key in ["COMPUTE_TOKEN"]
         }
         env_data.update(
-            WRITE_DATABASE_URL="postgres://traffic:traffic_demo@127.0.0.1:5433/traffic?sslmode=disable",
-            READ_DATABASE_URL="postgres://traffic_reader:traffic_reader_demo@127.0.0.1:5433/traffic?sslmode=disable",
-            GATEWAY_INTERNAL_ORIGIN="http://127.0.0.1:8002",
-            GATEWAY_INTERNAL_PORT="8002",
-            GATEWAY_USERS_FILE=str(USERS_FILE),
-            API_ORIGIN="http://127.0.0.1:8080",
+            DATABASE_URL="postgres://traffic:traffic_demo@127.0.0.1:5433/traffic?sslmode=disable",
+            API_ORIGIN="http://127.0.0.1:8081",
             UI_ORIGIN="http://127.0.0.1:3100",
         )
         fd = os.open(ENV_FILE, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
@@ -99,52 +92,30 @@ def ensure_local_env() -> dict:
     else:
         env_data = json.loads(ENV_FILE.read_text())
 
-    # Ensure users exist
-    if not USERS_FILE.exists():
-        log("Provisioning default demo accounts (operator, supervisor, viewer)...")
-        default_users = {
-            "operator": ("operator_demo_password", "operator"),
-            "supervisor": ("supervisor_demo_password", "supervisor"),
-            "viewer": ("viewer_demo_password", "viewer"),
-        }
-        users_data = {}
-        for username, (password, role) in default_users.items():
-            salt = secrets.token_hex(24)
-            pwd_hash = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 600000).hex()
-            users_data[username] = {
-                "role": role,
-                "salt": salt,
-                "hash": pwd_hash,
-                "version": 1,
-            }
-        fd = os.open(USERS_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(fd, "w") as f:
-            json.dump(users_data, f, indent=2)
-        os.chmod(USERS_FILE, 0o600)
+    # Upgrade prior gateway/writer launcher state without requiring users to
+    # delete local demo data or secrets.
+    env_data.setdefault("COMPUTE_TOKEN", secrets.token_hex(32))
+    env_data.setdefault("DATABASE_URL", "postgres://traffic:traffic_demo@127.0.0.1:5433/traffic?sslmode=disable")
 
-    # Choose gateway port
-    gateway_port = int(os.environ.get("GATEWAY_PORT") or env_data.get("GATEWAY_PORT") or 8080)
-    if check_port("127.0.0.1", gateway_port, timeout=0.2):
-        # 8080 is in use by another service, search 8085+
+    # Choose the public Go API port before Vite starts so the proxy points to it.
+    api_port = int(os.environ.get("API_PORT") or env_data.get("API_PORT") or 8081)
+    if check_port("127.0.0.1", api_port, timeout=0.2):
         candidate = 8085
         while check_port("127.0.0.1", candidate, timeout=0.2):
             candidate += 1
-        log(f"Port {gateway_port} is busy; assigning API Gateway to port {candidate}")
-        gateway_port = candidate
+        log(f"Port {api_port} is busy; assigning Go API to port {candidate}")
+        api_port = candidate
 
     # Merge into process environment
     merged = dict(os.environ)
     merged.update(env_data)
     merged.setdefault("PYTHONPATH", ".:packages/contracts/gen/python")
-    merged["GATEWAY_PORT"] = str(gateway_port)
-    merged["GATEWAY_INTERNAL_PORT"] = str(int(env_data.get("GATEWAY_INTERNAL_PORT", 8002)))
-    merged["GATEWAY_INTERNAL_ORIGIN"] = f"http://127.0.0.1:{merged['GATEWAY_INTERNAL_PORT']}"
-    merged["API_ORIGIN"] = f"http://127.0.0.1:{gateway_port}"
+    merged["API_ADDR"] = f"127.0.0.1:{api_port}"
+    merged["API_ORIGIN"] = f"http://127.0.0.1:{api_port}"
     merged["UI_ORIGIN"] = "http://127.0.0.1:3100"
     return merged
 
 
-import shutil
 
 def find_executable(name: str, fallback_paths: list[str]) -> str:
     resolved = shutil.which(name)
@@ -159,7 +130,7 @@ def find_executable(name: str, fallback_paths: list[str]) -> str:
 
 def cleanup_stale_services():
     # Clean up lingering local processes on digital twin service ports
-    ports = [8081, 8082, 8002, 8083, 8085, 8086, 50051, 50052, 3100]
+    ports = [8081, 8085, 8086, 50051, 50052, 3100]
     for p in ports:
         try:
             out = subprocess.check_output(["lsof", "-t", f"-i:{p}"], stderr=subprocess.DEVNULL)
@@ -193,7 +164,6 @@ def main():
     # Root-level resolution for Go services (precompiled binary or Go compiler)
     bin_dir = ROOT / "bin"
     bin_dir.mkdir(exist_ok=True)
-    bin_writer = bin_dir / "writer"
     bin_api = bin_dir / "api"
 
     go_bin = find_executable("go", [
@@ -209,26 +179,14 @@ def main():
     go_available = bool(shutil.which(go_bin) or (os.path.isfile(go_bin) and os.access(go_bin, os.X_OK)))
 
     # If binaries do not exist and Go is available, compile them once
-    if go_available and (not bin_writer.exists() or not bin_api.exists()):
-        log("Compiling Go services to bin/ for instant startup...")
+    if go_available:
+        log("Compiling Go API to bin/ for instant startup...")
         try:
-            subprocess.run([go_bin, "build", "-o", str(bin_writer), "./apps/api/cmd/writer"], check=True, cwd=ROOT)
             subprocess.run([go_bin, "build", "-o", str(bin_api), "./apps/api/cmd/api"], check=True, cwd=ROOT)
         except Exception as e:
             log(f"Pre-compilation note: {e}")
 
-    # Determine command for Writer
-    if bin_writer.exists() and os.access(bin_writer, os.X_OK):
-        writer_cmd = [str(bin_writer)]
-    elif go_available:
-        writer_cmd = [go_bin, "run", "./apps/api/cmd/writer"]
-    else:
-        raise RuntimeError(
-            "Neither pre-compiled Go binaries (bin/writer, bin/api) nor the Go compiler ('go') were found.\n"
-            "Please install Go (https://go.dev/dl/) or ensure bin/writer and bin/api exist."
-        )
-
-    # Determine command for Domain API
+    # Determine command for the public Go API.
     if bin_api.exists() and os.access(bin_api, os.X_OK):
         api_cmd = [str(bin_api)]
     elif go_available:
@@ -276,11 +234,9 @@ def main():
         env["PATH"] = ":".join(to_add) + (":" + cur_path if cur_path else "")
 
     commands = [
-        ("Go DB Writer", writer_cmd),
-        ("Python API Gateway", [py_bin, "-m", "services.gateway.server"]),
         ("Python Simulation gRPC", [py_bin, "-m", "services.shared.server", "simulation", "--port", "50051"]),
         ("Python Intelligence gRPC", [py_bin, "-m", "services.shared.server", "intelligence", "--port", "50052"]),
-        ("Go Domain API", api_cmd),
+        ("Go API Gateway", api_cmd),
         ("Frontend Web (Vite)", [npm_bin, "run", "dev", "-w", "apps/web"]),
     ]
 
@@ -299,60 +255,32 @@ def main():
             proc = subprocess.Popen(cmd, env=env, cwd=str(ROOT), start_new_session=True)
             children.append((name, proc))
 
-            # Wait for writer readiness
-            if "writer" in name.lower():
+            if name == "Go API Gateway":
                 for _ in range(50):
                     try:
-                        req = urllib.request.Request(
-                            "http://127.0.0.1:8083/internal/write",
-                            data=b'{"operation":"ping","actor":"startup","payload":{}}',
-                            headers={"X-Service-Token": env["WRITER_TOKEN"], "Content-Type": "application/json"},
-                        )
+                        req = urllib.request.Request(env["API_ORIGIN"] + "/health/live")
                         urllib.request.urlopen(req, timeout=1).close()
                         break
                     except OSError:
                         time.sleep(0.2)
                 else:
-                    raise RuntimeError("Go DB Writer did not become ready on port 8083")
+                    raise RuntimeError("Go API Gateway did not become ready")
 
-            # Wait for gateway readiness
-            if "gateway" in name.lower():
-                for _ in range(50):
-                    try:
-                        req = urllib.request.Request(
-                            env["GATEWAY_INTERNAL_ORIGIN"] + "/internal/write",
-                            data=b'{"operation":"ping","actor":"startup","payload":{}}',
-                            headers={"X-Service-Token": env["DOMAIN_WRITE_TOKEN"], "Content-Type": "application/json"},
-                        )
-                        urllib.request.urlopen(req, timeout=1).close()
-                        break
-                    except OSError:
-                        time.sleep(0.2)
-                else:
-                    raise RuntimeError("Python API Gateway did not become ready")
-
-        gw_p = env.get("GATEWAY_PORT", "8080")
+        api_p = env["API_ADDR"].split(":")[-1]
         print(
             f"""
 \033[1;32m========================================================================\033[0m
 \033[1;32m🚦 TRAFFIC DIGITAL TWIN IS LIVE!\033[0m
 \033[1;32m========================================================================\033[0m
   \033[1mFrontend:\033[0m       \033[34mhttp://127.0.0.1:3100\033[0m
-  \033[1mAPI Gateway:\033[0m    http://127.0.0.1:{gw_p}
+  \033[1mGo API:\033[0m         http://127.0.0.1:{api_p}
   \033[1mDatabase:\033[0m       PostgreSQL on 127.0.0.1:5433 (traffic)
-
-  \033[1mDemo Accounts:\033[0m
-  • Operator:     \033[33moperator\033[0m   / \033[33moperator_demo_password\033[0m
-  • Supervisor:   \033[33msupervisor\033[0m / \033[33msupervisor_demo_password\033[0m
-  • Viewer:       \033[33mviewer\033[0m     / \033[33mviewer_demo_password\033[0m
 
   \033[1mServices:\033[0m
   [✓] PostgreSQL 16 (Docker)
-  [✓] Go DB Writer (:8083)
-  [✓] Python Gateway (:{gw_p} public, :8082 internal)
   [✓] Python Simulation (:50051)
   [✓] Python Intelligence (:50052)
-  [✓] Go Domain API (:8081)
+  [✓] Go API Gateway / Orchestrator / Persistence (:{api_p})
   [✓] Frontend Web UI (:3100)
 \033[1;32m========================================================================\033[0m
 Press \033[1;31mCtrl+C\033[0m to stop all services.
