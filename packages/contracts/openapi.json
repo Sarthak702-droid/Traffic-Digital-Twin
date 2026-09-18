@@ -718,6 +718,42 @@
           }
         ]
       }
+    },
+    "/api/v1/vision/{id}": {
+      "get": {
+        "summary": "Get sample video traffic aggregates, tracking states and upstream impacts for a camera-monitored intersection (C3)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Intersection identifier (e.g. C3)"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Force simulated offline state (e.g. status=offline)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Traffic aggregates from computer vision processing or explicit unavailable status"
+          },
+          "404": {
+            "description": "No vision camera configured for the requested junction"
+          },
+          "503": {
+            "description": "Vision service offline or dependency unavailable"
+          }
+        }
+      }
     }
   },
   "components": {

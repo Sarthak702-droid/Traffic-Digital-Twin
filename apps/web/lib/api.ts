@@ -94,7 +94,7 @@ export async function getNetwork() {
   try {
     return {...networkSchema.parse(await request<unknown>("/network")), provenance: "server" as const};
   } catch (error) {
-    if (!(error instanceof ApiError) || ![0,503,504].includes(error.status)) throw error;
+    if (!(error instanceof ApiError) || ![0, 500, 502, 503, 504].includes(error.status)) throw error;
     return {...networkSchema.parse(fallbackNetworkConfig), provenance: "bundled-offline" as const};
   }
 }

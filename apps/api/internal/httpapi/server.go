@@ -12,7 +12,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 	"traffic.local/twin/apps/api/internal/config"
@@ -213,6 +215,7 @@ func (s *Server) Handler() http.Handler {
 	r.Post("/api/v1/locks/{id}", s.setLock)
 	r.Delete("/api/v1/locks/{id}", s.deleteLock)
 	r.Post("/api/v1/replay/{scenario}", s.startReplay)
+	r.Get("/api/v1/vision/{id}", s.getVisionState)
 	r.Get("/ws/v1/live", s.live)
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) { problem(w, http.StatusNotFound, "Unknown API route") })
 	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
@@ -433,4 +436,61 @@ func (s *Server) live(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+}
+
+func (s *Server) getVisionState(w http.ResponseWriter, r *http.Request) {
+	junctionID := strings.ToUpper(chi.URLParam(r, "id"))
+	if junctionID != "C3" {
+		problem(w, 404, "No vision camera configured for this junction; sample video is available only at C3")
+		return
+	}
+	if status := r.URL.Query().Get("status"); status == "offline" || status == "unavailable" {
+		send(w, 200, map[string]any{
+			"available":          false,
+			"status":             "unavailable",
+			"camera_id":          "CAM-C3-NORTH",
+			"junction_id":        "C3",
+			"target_junction_id": "C1",
+			"sample_video_label": "Intersection C3 North Approach (Non-Odisha Sample Feed)",
+			"sample_provenance":  "Controlled demonstration video footage",
+			"message":            "Optional sample-video extraction is currently disconnected or offline. Core synthetic scenarios and golden replay remain 100% independent.",
+			"reason":             "Camera feed offline or pipeline disconnected",
+			"privacy_disclosure": "Camera-local temporary IDs only; zero ANPR; zero facial recognition; no cross-camera identity tracking.",
+			"is_calibrated":      false,
+			"speed_disclaimer":   "Uncalibrated demo speed estimate; not for legal or certified enforcement.",
+		})
+		return
+	}
+
+	paths := []string{
+		"packages/replay/c3_vision_aggregates.json",
+		"../../packages/replay/c3_vision_aggregates.json",
+		"../../../../packages/replay/c3_vision_aggregates.json",
+	}
+	var data []byte
+	var err error
+	for _, p := range paths {
+		data, err = os.ReadFile(p)
+		if err == nil {
+			break
+		}
+	}
+
+	if err != nil {
+		send(w, 200, map[string]any{
+			"available":          false,
+			"status":             "unavailable",
+			"camera_id":          "CAM-C3-NORTH",
+			"junction_id":        "C3",
+			"target_junction_id": "C1",
+			"sample_video_label": "Intersection C3 North Approach (Non-Odisha Sample Feed)",
+			"message":            "Optional sample-video extraction is unavailable. Video aggregates file has not yet been processed.",
+			"reason":             "Aggregates not generated",
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
