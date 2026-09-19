@@ -256,7 +256,7 @@ func (s *Server) activeRecommendation(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonProto(s.analysis.Recommendation))
 }
 func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
-	if !s.db(w) {
+	if !s.db(w) || !s.requireLease(w) {
 		return
 	}
 	if s.sim == nil || s.intelligence == nil {
@@ -510,7 +510,7 @@ func (s *Server) changeLock(w http.ResponseWriter, r *http.Request, locked bool)
 		problem(w, 400, "Unknown configured lock target")
 		return
 	}
-	if !s.db(w) {
+	if !s.db(w) || !s.requireLease(w) {
 		return
 	}
 	if s.sim == nil {

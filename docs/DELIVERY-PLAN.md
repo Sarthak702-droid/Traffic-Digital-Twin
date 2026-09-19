@@ -782,7 +782,7 @@ As the release team, I want one Go public gateway and private Python compute bou
 
 **Owner:** Platform · **Provisional days:** 1–15 · **Depends on:** S01, S02
 
-**Status:** backlog — Not implemented by this audit; acceptance pending.
+**Status:** completed — Completed and verified; evidence in docs/epic13-status.md.
 
 **Audit findings:** A01, A12, A13
 
@@ -798,7 +798,7 @@ As the release team, I want to make endpoint ownership and contracts exhaustive,
 
 **Owner:** Platform + QA · **Provisional days:** 1–15 · **Depends on:** S02, S39
 
-**Status:** backlog — Not implemented by this audit; acceptance pending.
+**Status:** completed — Completed and verified; evidence in docs/epic13-status.md.
 
 **Audit findings:** A01, A07, A18
 
@@ -814,7 +814,7 @@ As the release team, I want Go persistence modules to commit domain results, so 
 
 **Owner:** Backend · **Provisional days:** 1–15 · **Depends on:** S04, S39, S40
 
-**Status:** backlog — Not implemented by this audit; acceptance pending.
+**Status:** completed — Completed and verified; evidence in docs/epic13-status.md.
 
 **Audit findings:** A01, A08, A09, A14
 
@@ -831,7 +831,7 @@ As the release team, I want to preserve state ownership and stream continuity ac
 
 **Owner:** Platform · **Provisional days:** 1–15 · **Depends on:** S06, S39, S41
 
-**Status:** backlog — Not implemented by this audit; acceptance pending.
+**Status:** completed — Completed and verified; evidence in docs/epic13-status.md.
 
 **Audit findings:** A01, A10, A11, A12
 
@@ -847,7 +847,7 @@ As the release team, I want to verify Go gateway routing and persistence, so tha
 
 **Owner:** QA + Platform · **Provisional days:** 1–15 · **Depends on:** S40, S41, S42
 
-**Status:** backlog — Not implemented by this audit; acceptance pending.
+**Status:** completed — Completed and verified; evidence in docs/epic13-status.md.
 
 **Audit findings:** A01, A09, A14, A19
 

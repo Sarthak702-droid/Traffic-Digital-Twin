@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 	"traffic.local/twin/apps/api/internal/config"
+	"traffic.local/twin/apps/api/internal/store"
 	pb "traffic.local/twin/packages/contracts/gen/go"
 )
 
@@ -20,6 +21,19 @@ func app(t *testing.T) *Server {
 		t.Fatal(e)
 	}
 	return &Server{Network: n}
+}
+
+func TestNonAuthoritativeLeaseRejectsStateAndLiveStream(t *testing.T) {
+	s := app(t)
+	s.Store = &store.Store{}
+	s.Lease = &LeaseManager{server: s, instanceID: "standby", isOwner: false}
+	for _, path := range []string{"/api/v1/state", "/ws/v1/live"} {
+		w := httptest.NewRecorder()
+		s.Handler().ServeHTTP(w, httptest.NewRequest("GET", path, nil))
+		if w.Code != http.StatusServiceUnavailable || !strings.Contains(w.Body.String(), "authoritative run owner") {
+			t.Fatalf("%s accepted by standby: %d %s", path, w.Code, w.Body.String())
+		}
+	}
 }
 func TestReadAndUnavailable(t *testing.T) {
 	h := app(t).Handler()

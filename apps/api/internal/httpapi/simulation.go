@@ -85,7 +85,10 @@ func (s *Server) ConnectSimulation(ctx context.Context, address string) error {
 					s.mu.RLock()
 					accept := s.sim.command != nil && frame.RunId == s.sim.command.RunId
 					s.mu.RUnlock()
-					if accept {
+					// Only the current durable leaseholder may make a private frame
+					// authoritative or fan it out. Standby gateways keep their gRPC
+					// connection but discard frames until they acquire the lease.
+					if accept && s.requireLeaseSilent() {
 						if err := contracts.ValidateState(frame); err != nil {
 							e = err
 							break
@@ -172,7 +175,7 @@ func (s *Server) startScenario(w http.ResponseWriter, r *http.Request) {
 		problem(w, 503, "Simulation service is not configured")
 		return
 	}
-	if !s.db(w) {
+	if !s.db(w) || !s.requireLease(w) {
 		return
 	}
 	var body struct {
@@ -256,7 +259,7 @@ func (s *Server) resetScenario(w http.ResponseWriter, r *http.Request) {
 		problem(w, 503, "Simulation service is not configured")
 		return
 	}
-	if !s.db(w) {
+	if !s.db(w) || !s.requireLease(w) {
 		return
 	}
 	s.sim.commands.Lock()
