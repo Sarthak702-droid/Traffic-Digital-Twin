@@ -129,6 +129,30 @@ try {
     200,
   );
   await page.keyboard.press("Escape");
+  await page.getByRole("searchbox").fill("12");
+  await page.waitForFunction(
+    () => document.querySelectorAll(".task-card").length === 3,
+  );
+  assert.equal(
+    await page
+      .locator(".task-card .badge")
+      .filter({ hasText: "COMPLETED" })
+      .count(),
+    3,
+  );
+  await page
+    .getByRole("button", {
+      name: "Convert one sample video into traffic aggregates",
+      exact: true,
+    })
+    .click();
+  await page.getByRole("dialog").waitFor();
+  assert.equal(await page.locator("#task-status").isDisabled(), true);
+  assert.equal(
+    (await page.request.get(base + "/evidence/epic12")).status(),
+    200,
+  );
+  await page.keyboard.press("Escape");
   await page.getByRole("searchbox").fill("8");
   await page.waitForFunction(
     () => document.querySelectorAll(".task-card").length === 4,

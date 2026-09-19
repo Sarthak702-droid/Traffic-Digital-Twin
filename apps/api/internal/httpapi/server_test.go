@@ -131,3 +131,35 @@ func TestWebSocketConfiguredOrigin(t *testing.T) {
 		t.Fatal("invalid websocket event")
 	}
 }
+
+func TestVisionEndpoint(t *testing.T) {
+	h := app(t).Handler()
+
+	// 1. Unknown junction returns 404
+	w1 := httptest.NewRecorder()
+	h.ServeHTTP(w1, httptest.NewRequest("GET", "/api/v1/vision/C1", nil))
+	if w1.Code != 404 {
+		t.Fatalf("expected 404 for C1 vision, got %d", w1.Code)
+	}
+
+	// 2. C3 offline query returns 200 with available: false
+	w2 := httptest.NewRecorder()
+	h.ServeHTTP(w2, httptest.NewRequest("GET", "/api/v1/vision/c3?status=offline", nil))
+	if w2.Code != 200 {
+		t.Fatalf("expected 200 for C3 offline vision, got %d", w2.Code)
+	}
+	if !strings.Contains(w2.Body.String(), `"available":false`) || !strings.Contains(w2.Body.String(), `"unavailable"`) {
+		t.Fatalf("expected unavailable status, got: %s", w2.Body.String())
+	}
+
+	// 3. C3 active endpoint returns 200
+	w3 := httptest.NewRecorder()
+	h.ServeHTTP(w3, httptest.NewRequest("GET", "/api/v1/vision/C3", nil))
+	if w3.Code != 200 {
+		t.Fatalf("expected 200 for C3 vision, got %d", w3.Code)
+	}
+	body := w3.Body.String()
+	if !strings.Contains(body, "CAM-C3-NORTH") && !strings.Contains(body, "unavailable") {
+		t.Fatalf("unexpected vision body: %s", body)
+	}
+}

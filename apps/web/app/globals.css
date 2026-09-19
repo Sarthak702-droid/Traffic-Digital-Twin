@@ -3716,3 +3716,500 @@ input, textarea, select { max-width: 100%; font-size: 1rem; }
   font-size: 11px;
   color: #f59e0b;
 }
+
+/* ==========================================================================
+   Epic 12: Vision Analytics & Presentation Polish (S36, S37, S38)
+   ========================================================================== */
+
+.vision-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+
+/* Header & Disclaimers */
+.vision-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--surface, #141c24);
+  border: 1px solid var(--border, #233541);
+  border-radius: 12px;
+  padding: 20px 24px;
+}
+.vision-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.vision-title-group h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e5edf5;
+  margin: 4px 0;
+  letter-spacing: -0.3px;
+}
+.vision-title-group p {
+  font-size: 13px;
+  color: #8fa5b5;
+  margin: 0;
+  max-width: 780px;
+  line-height: 1.5;
+}
+.vision-disclaimer-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid #1f2f3c;
+}
+.vision-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.vision-badge-primary {
+  background: #142a3e;
+  border: 1px solid #23547e;
+  color: #64b5f6;
+}
+.vision-badge-warning {
+  background: #2a2012;
+  border: 1px solid #6b4d1b;
+  color: #ffb74d;
+}
+.vision-badge-success {
+  background: #122b20;
+  border: 1px solid #1e6644;
+  color: #81c784;
+}
+.vision-badge-neutral {
+  background: #18222c;
+  border: 1px solid #293a49;
+  color: #a4b9c9;
+}
+
+/* Two-column layout */
+.vision-main-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 1024px) {
+  .vision-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Video Player Card */
+.vision-video-panel {
+  background: var(--surface, #141c24);
+  border: 1px solid var(--border, #233541);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.vision-video-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid #1f2f3c;
+  background: #10171e;
+}
+.vision-video-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #d1e2f0;
+}
+.vision-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #0d1217;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.vision-canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Overlay Toggles & Transport */
+.vision-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  background: #111820;
+  border-top: 1px solid #1f2f3c;
+}
+.vision-toggles-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.vision-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  min-height: 36px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  background: #19232d;
+  color: #9cb2c4;
+  border: 1px solid #263847;
+  transition: all 180ms ease-out;
+}
+.vision-toggle-btn:hover {
+  background: #223241;
+  color: #e5edf5;
+}
+.vision-toggle-btn.active {
+  background: #1e3a54;
+  color: #64b5f6;
+  border-color: #3b82f6;
+}
+.vision-toggle-btn:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+.vision-transport-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.vision-transport-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #1e2c39;
+  border: 1px solid #2d4254;
+  color: #e5edf5;
+  cursor: pointer;
+  transition: all 180ms ease-out;
+  flex-shrink: 0;
+}
+.vision-transport-btn:hover {
+  background: #2b3d4f;
+  border-color: #3b82f6;
+}
+.vision-transport-btn:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+.vision-scrubber {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.vision-scrubber input[type="range"] {
+  width: 100%;
+  accent-color: #3b82f6;
+  cursor: pointer;
+  height: 6px;
+}
+.vision-scrubber-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #7b94a6;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Metrics Column */
+.vision-metrics-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.vision-card {
+  background: var(--surface, #141c24);
+  border: 1px solid var(--border, #233541);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+.vision-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #1f2f3c;
+}
+.vision-card-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e5edf5;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Speed Banner (Demo Estimate) */
+.vision-speed-banner {
+  background: #172433;
+  border: 1px solid #234566;
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.vision-speed-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #64b5f6;
+  font-variant-numeric: tabular-nums;
+}
+.vision-speed-note {
+  font-size: 11px;
+  color: #9cb5c9;
+  text-align: right;
+}
+.vision-speed-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  background: #2a2012;
+  border: 1px solid #6b4d1b;
+  color: #fbc02d;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 4px;
+  margin-bottom: 2px;
+}
+
+/* 5 Vehicle Classes List */
+.vision-classes-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+@media (max-width: 600px) {
+  .vision-classes-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.vision-class-item {
+  background: #101820;
+  border: 1px solid #213241;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.vision-class-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8da5b8;
+  text-transform: capitalize;
+}
+.vision-class-count {
+  font-size: 18px;
+  font-weight: 700;
+  color: #e5edf5;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Lane Metrics Table */
+.vision-lane-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.vision-lane-table th {
+  text-align: left;
+  padding: 8px 10px;
+  color: #7b94a6;
+  font-weight: 600;
+  border-bottom: 1px solid #1f2f3c;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.vision-lane-table td {
+  padding: 10px;
+  border-bottom: 1px solid #192733;
+  color: #d1e2f0;
+  font-variant-numeric: tabular-nums;
+}
+.vision-lane-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Upstream C1 Impact Section */
+.vision-upstream-card {
+  background: var(--surface, #141c24);
+  border: 1px solid var(--border, #233541);
+  border-radius: 12px;
+  padding: 22px 24px;
+}
+.vision-upstream-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 14px;
+}
+@media (max-width: 900px) {
+  .vision-upstream-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.vision-upstream-box {
+  background: #101820;
+  border: 1px solid #213241;
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.vision-upstream-box-label {
+  font-size: 11px;
+  color: #8da5b8;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+.vision-upstream-box-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e5edf5;
+  font-variant-numeric: tabular-nums;
+}
+.vision-upstream-box-sub {
+  font-size: 11px;
+  color: #6e8697;
+}
+
+/* Offline / Error / Unavailable Card */
+.vision-offline-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 24px;
+  background: var(--surface, #141c24);
+  border: 1px dashed var(--border, #2d4254);
+  border-radius: 14px;
+  gap: 16px;
+  max-width: 680px;
+  margin: 30px auto;
+}
+.vision-offline-icon {
+  width: 56px;
+  height: 56px;
+  color: #dfb677;
+  background: #2a2012;
+  border: 1px solid #6b4d1b;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vision-offline-container h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e5edf5;
+  margin: 0;
+}
+.vision-offline-container p {
+  font-size: 13px;
+  color: #8da5b8;
+  line-height: 1.5;
+  max-width: 520px;
+  margin: 0;
+}
+
+/* Single Pulse Alert (Story S38: critical alerts pulse once rather than continuously) */
+@keyframes single-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+}
+.pulse-once {
+  animation: single-pulse 300ms cubic-bezier(0.16, 1, 0.3, 1) 1 forwards;
+}
+
+/* Story S38: Restrained motion & prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .vision-toggle-btn,
+  .vision-transport-btn,
+  .vision-badge,
+  .pulse-once {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Mobile Responsiveness (390px viewport standard) */
+@media (max-width: 768px) {
+  .vision-container {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    gap: 14px;
+  }
+  .vision-header {
+    padding: 14px 16px;
+  }
+  .vision-transport-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .vision-scrubber {
+    min-width: 100%;
+    order: 2;
+  }
+  .vision-classes-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .vision-upstream-grid {
+    grid-template-columns: 1fr;
+  }
+  .vision-lane-table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+

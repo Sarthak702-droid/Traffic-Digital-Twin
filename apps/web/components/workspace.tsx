@@ -39,6 +39,7 @@ import { JunctionDrawerContent } from "@/components/junction-drawer";
 import { DgpPresentationModal } from "@/components/dgp-presentation";
 import { IncidentRecoveryPanel } from "@/components/incident-recovery-panel";
 import { EmergencyCorridorPanel } from "@/components/emergency-corridor-panel";
+import { VisionAnalyticsPanel } from "@/components/vision-analytics-panel";
 import type {
   Network,
   Run,
@@ -508,7 +509,9 @@ export function Workspace() {
             </Button>
           </div>
 
-          {network.isPending ? (
+          {view === "vision" ? (
+            <VisionAnalyticsPanel onReturn={() => setView("command")} />
+          ) : network.isPending ? (
             <div className="loading-panel" role="status">
               <div className="skeleton" />
               <p>Loading network configuration…</p>
@@ -808,21 +811,6 @@ export function Workspace() {
                       />
                     </aside>
                   </div>
-                )}
-
-                {/* 5. VISION ANALYTICS VIEW */}
-                {view === "vision" && (
-                  <section className="feature-empty">
-                    <Video size={40} />
-                    <div className="overline">VISION ANALYTICS</div>
-                    <h2>Sample Video Traffic Extraction</h2>
-                    <p>
-                      Optional sample-video extraction is not implemented. No camera feed, vehicle tracks or analytics are available. Core synthetic scenarios and replay remain independent of this feature.
-                    </p>
-                    <Button variant="outline" onClick={() => setView("command")}>
-                      Return to Command Center <ArrowRight size={16} />
-                    </Button>
-                  </section>
                 )}
 
                 {/* 6. AUDIT & HEALTH VIEW */}
