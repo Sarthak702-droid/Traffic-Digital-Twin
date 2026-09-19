@@ -71,6 +71,8 @@ def test_incident_capacity_and_emergency_recovery(engine):
     statuses=set();previous={}
     for _ in range(800):
         state=engine.step();statuses.add(state.emergency.status)
+        assert len(state.emergency.eta_s)==len(state.emergency.route_node_ids)
+        assert all(value>=0 for value in state.emergency.eta_s)
         for signal in state.signals:
             old=previous.get(signal.node_id)
             if old and old!=signal.indication:assert (old,signal.indication) in {('green','amber'),('amber','all_red'),('all_red','green')}

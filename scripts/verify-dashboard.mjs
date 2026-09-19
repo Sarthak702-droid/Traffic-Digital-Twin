@@ -81,6 +81,30 @@ try {
     200,
   );
   await page.keyboard.press("Escape");
+  await page.getByRole("searchbox").fill("10");
+  await page.waitForFunction(
+    () => document.querySelectorAll(".task-card").length === 2,
+  );
+  assert.equal(
+    await page
+      .locator(".task-card .badge")
+      .filter({ hasText: "COMPLETED" })
+      .count(),
+    2,
+  );
+  await page
+    .getByRole("button", {
+      name: "Track the simulated emergency route and ETA",
+      exact: true,
+    })
+    .click();
+  await page.getByRole("dialog").waitFor();
+  assert.equal(await page.locator("#task-status").isDisabled(), true);
+  assert.equal(
+    (await page.request.get(base + "/evidence/epic10")).status(),
+    200,
+  );
+  await page.keyboard.press("Escape");
   await page.getByRole("searchbox").fill("8");
   await page.waitForFunction(
     () => document.querySelectorAll(".task-card").length === 4,

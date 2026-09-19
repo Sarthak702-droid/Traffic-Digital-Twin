@@ -12,6 +12,8 @@ from services.simulation.safety import validate_config, Signals, validate_plan, 
 from services.simulation.receipts import Receipts
 from services.simulation.network import ROOT, binary, compile_network, write_demand
 
+EMERGENCY_STATUSES = {'scheduled', 'pre_clearance', 'priority', 'recovery', 'complete'}
+
 class Engine:
     def __init__(self, config_path=None, directory=None):
         self.config=json.loads(Path(config_path or ROOT/'packages/scenario-config/c1-c6.json').read_text())
@@ -155,14 +157,29 @@ class Engine:
                 if self.emergency_passed_at is None:self.emergency_passed_at=tick
                 self.scheduler.priority={}
                 status='recovery'
+                # SUMO has reported that the vehicle left the final edge: each
+                # configured route point is therefore passed, while recovery
+                # remains a separate signal-state concern.
+                eta=[0.0]*len(route)
                 cycle=max(sum(self.scheduler.plan[p['id']]+p['amber_s']+p['all_red_s'] for p in ps) for ps in self.phases.values())
                 remaining=max(0,scenario['recovery_cycles']-int((tick-self.emergency_passed_at)//cycle))
                 if remaining==0:status='complete'
                 self.scheduler.recovering=remaining>0
             else:
-                eta=[max(0,scenario['emergency_depart_s']-tick)]*len(route)
+                # Before insertion these are a deterministic dispatch schedule,
+                # not a claimed vehicle position. Once SUMO reports the vehicle,
+                # the branch above replaces them with measured route ETAs.
+                dispatch=max(0,scenario['emergency_depart_s']-tick)
+                eta=[dispatch]
+                elapsed=dispatch
+                for edge_id in [a+'-'+b for a,b in zip(route,route[1:])]:
+                    link=self.links[edge_id]
+                    elapsed+=link['length_m']/max(1,link['free_flow_speed_kph']/3.6)
+                    eta.append(elapsed)
                 remaining=scenario['recovery_cycles']
             remaining=scenario['recovery_cycles'] if self.emergency_passed_at is None else remaining
+            if status not in EMERGENCY_STATUSES:
+                raise SafetyViolation('Invalid emergency lifecycle status')
             emergency=pb.EmergencyEvent(id=self.command.run_id+'-emergency',run_id=self.command.run_id,route_node_ids=route,status=status,eta_s=eta,recovery_cycles_remaining=remaining,vehicle_id='ambulance')
         self.incident=incident
         self.emergency=emergency

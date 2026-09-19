@@ -94,3 +94,23 @@ func (s *Store) Activate(ctx context.Context, id pgtype.UUID, reason string) (qu
 	}
 	return run, tx.Commit(ctx)
 }
+
+// RecordSafetyRejection preserves a denied command as evidence without
+// inventing a scenario run. It is intentionally owned by the persistence
+// module so HTTP handlers do not write audit rows directly.
+func (s *Store) RecordSafetyRejection(ctx context.Context, eventType, reason string) error {
+	after, err := json.Marshal(map[string]bool{"accepted": false})
+	if err != nil {
+		return err
+	}
+	_, err = s.Q.AppendAudit(ctx, queries.AppendAuditParams{
+		ID:           UUID(),
+		Actor:         Actor(ctx),
+		EventType:     eventType,
+		BeforeValues: []byte(`{}`),
+		AfterValues:   after,
+		Reason:         reason,
+		SafetyResult:   "rejected: safety_protection",
+	})
+	return err
+}

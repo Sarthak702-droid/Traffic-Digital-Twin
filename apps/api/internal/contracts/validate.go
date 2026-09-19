@@ -35,5 +35,19 @@ func ValidateState(s *pb.TrafficState) error {
 	if len(s.Movements) == 0 {
 		return fmt.Errorf("at least one movement required")
 	}
+	if event := s.Emergency; event != nil && event.Id != "" {
+		if event.RunId != s.RunId || event.VehicleId == "" || len(event.RouteNodeIds) < 2 || len(event.EtaS) != len(event.RouteNodeIds) {
+			return fmt.Errorf("invalid emergency identity, route or ETA")
+		}
+		valid := map[string]bool{"scheduled": true, "pre_clearance": true, "priority": true, "recovery": true, "complete": true}
+		if !valid[event.Status] {
+			return fmt.Errorf("invalid emergency lifecycle status")
+		}
+		for _, eta := range event.EtaS {
+			if math.IsNaN(eta) || math.IsInf(eta, 0) || eta < 0 {
+				return fmt.Errorf("emergency ETA must be finite and nonnegative")
+			}
+		}
+	}
 	return nil
 }
