@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"traffic.local/twin/apps/api/internal/config"
 	pb "traffic.local/twin/packages/contracts/gen/go"
 )
@@ -111,12 +112,14 @@ func TestStreamFailureVisible(t *testing.T) {
 type resetSimulation struct {
 	pb.UnimplementedSimulationServer
 	fail bool
+	last *pb.RunCommand
 }
 
 func (f *resetSimulation) Reset(_ context.Context, c *pb.RunCommand) (*pb.TrafficState, error) {
 	if f.fail {
 		return nil, status.Error(codes.Unavailable, "SUMO unavailable")
 	}
+	f.last = proto.Clone(c).(*pb.RunCommand)
 	return &pb.TrafficState{SchemaVersion: "1.0", RunId: c.RunId, Timestamp: time.Now().UTC().Format(time.RFC3339Nano), ScenarioType: c.ScenarioType, Seed: c.Seed, Source: "synthetic", Movements: []*pb.MovementState{{MovementId: "C6-C3-C1", CurrentPhaseId: "C3-FROM-C6"}}}, nil
 }
 

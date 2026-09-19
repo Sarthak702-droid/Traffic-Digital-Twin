@@ -64,7 +64,8 @@ class Model:
                 receiver=max(0.,link['storage_capacity_veh']-occupied[out]-reserved[out])
                 capacity=.5*self.links[m['incoming_link_id']]['lanes']*m['turning_ratio']
                 now=state.simulation_time_s+t
-                if state.scenario_type=='incident_c3' and m['node_id']=='C3' and scenario['incident_start_s']<=now<scenario['incident_end_s']:capacity*=scenario['capacity_ratio']
+                if state.scenario_type=='incident_c3' and state.incident.status=='active' and m['node_id']=='C3' and scenario['incident_start_s']<=now<scenario['incident_end_s']:
+                    capacity*=state.incident.capacity_ratio
                 discharge=max(0.,min(q[mid],capacity,receiver)) if stage=='green' and pid==self.serving[mid] else 0.
                 q[mid]=max(0.,q[mid]-discharge);reserved[out]+=discharge
                 targets=[n for n in self.moves.values() if n['incoming_link_id']==out]

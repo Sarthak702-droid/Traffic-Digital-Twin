@@ -214,6 +214,8 @@ export interface RunCommand {
   seed: number;
   mode: string;
   run_id: string;
+  incident_kind: string;
+  incident_capacity_ratio: number;
 }
 
 export interface RunRequest {

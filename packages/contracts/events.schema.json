@@ -1204,6 +1204,12 @@
         },
         "run_id": {
           "type": "string"
+        },
+        "incident_kind": {
+          "type": "string"
+        },
+        "incident_capacity_ratio": {
+          "type": "number"
         }
       },
       "additionalProperties": false,
@@ -1212,7 +1218,9 @@
         "scenario_type",
         "seed",
         "mode",
-        "run_id"
+        "run_id",
+        "incident_kind",
+        "incident_capacity_ratio"
       ]
     },
     "RunRequest": {

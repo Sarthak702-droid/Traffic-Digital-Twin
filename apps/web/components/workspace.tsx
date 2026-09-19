@@ -37,6 +37,7 @@ import { NetworkCanvas } from "@/components/network-canvas";
 import { NetworkView } from "@/components/network-view";
 import { JunctionDrawerContent } from "@/components/junction-drawer";
 import { DgpPresentationModal } from "@/components/dgp-presentation";
+import { IncidentRecoveryPanel } from "@/components/incident-recovery-panel";
 import type {
   Network,
   Run,
@@ -85,6 +86,7 @@ export function Workspace() {
   useEffect(()=>{const read=()=>{const next=new URL(location.href).searchParams.get("view");if(sections.some(s=>s.id===next))setViewState(next as View);acceptedURL.current=location.href};read();const back=()=>{if(!dirty||window.confirm("Leave the unsent draft?")){setDirty(false);read()}else if(acceptedURL.current){history.pushState(null,"",acceptedURL.current)}};const connectivity=()=>setOnline(navigator.onLine);connectivity();window.addEventListener("popstate",back);window.addEventListener("online",connectivity);window.addEventListener("offline",connectivity);const leave=(e:BeforeUnloadEvent)=>{if(dirty){e.preventDefault();e.returnValue=""}};window.addEventListener("beforeunload",leave);return()=>{window.removeEventListener("popstate",back);window.removeEventListener("online",connectivity);window.removeEventListener("offline",connectivity);window.removeEventListener("beforeunload",leave)}},[dirty]);
   const [scenarioID, setScenarioID] = useState<Scenario["id"]>("peak_surge");
   const [seed, setSeed] = useState("1101");
+  const [incidentCapacity, setIncidentCapacity] = useState(0.35);
 
   const {
     selectedNode,
@@ -294,6 +296,7 @@ export function Workspace() {
           schema_version: "1.0",
           seed: Number(seed),
           mode: systemMode,
+          ...(scenarioID === "incident_c3" ? { incident: { kind: "capacity_reduction", capacity_ratio: incidentCapacity } } : {}),
         }),
       }),
     onSuccess: () => {
@@ -312,6 +315,26 @@ export function Workspace() {
     },
   });
 
+  const startIncident = useMutation({
+    mutationFn: () => request<Run>("/scenarios/incident_c3/start", {
+      method: "POST",
+      body: JSON.stringify({
+        schema_version: "1.0",
+        seed: 2202,
+        mode: systemMode,
+        incident: { kind: "capacity_reduction", capacity_ratio: incidentCapacity },
+      }),
+    }),
+    onSuccess: () => {
+      setScenarioID("incident_c3");
+      setSeed("2202");
+      setSimulationComparison(null);
+      client.invalidateQueries({ queryKey: ["runs"] });
+      client.invalidateQueries({ queryKey: ["audit"] });
+      client.invalidateQueries({ queryKey: ["analysis"] });
+    },
+  });
+
   const data = network.data;
   const chosen = data?.nodes.find((n) => n.id === selectedNode);
   const dbReady = !health.isError && !modeQuery.isError && canWrite && online && health.data?.components.some(
@@ -320,7 +343,7 @@ export function Workspace() {
 
   const replay=useMutation({mutationFn:()=>request(`/replay/${scenarioID}`,{method:"POST",body:"{}"}),onSuccess:()=>{setSimulationComparison(null);client.invalidateQueries()}});
   const lock=useMutation({mutationFn:({target,locked}:{target:string;locked:boolean})=>request(`/locks/${target}`,{method:locked?"POST":"DELETE",body:"{}"}),onSuccess:()=>client.invalidateQueries()});
-  const anyCommandPending=decision.isPending||modeMutation.isPending||changeModeMutation.isPending||prepare.isPending||reset.isPending||replay.isPending||lock.isPending||resolveDecisionMutation.isPending;
+  const anyCommandPending=decision.isPending||modeMutation.isPending||changeModeMutation.isPending||prepare.isPending||reset.isPending||startIncident.isPending||replay.isPending||lock.isPending||resolveDecisionMutation.isPending;
   const decisionReady=!!analysis && live.fresh && !live.frame?.replay && !!dbReady && systemMode==="recommend" && canWrite && !anyCommandPending;
   const refresh = () => {
     client.invalidateQueries();
@@ -398,7 +421,7 @@ export function Workspace() {
           <SessionPanel/>
           {!online&&<p role="alert">Offline. Measurements may be stale; commands are disabled.</p>}
           {network.data?.provenance==="bundled-offline"&&<p role="alert">Bundled offline topology only. This configuration is not a live service response.</p>}
-          {(decision.error||modeMutation.error||changeModeMutation.error||replay.error||lock.error)&&<p className="form-error" role="alert">{(decision.error||modeMutation.error||changeModeMutation.error||replay.error||lock.error)?.message}</p>}
+          {(decision.error||modeMutation.error||changeModeMutation.error||startIncident.error||replay.error||lock.error)&&<p className="form-error" role="alert">{(decision.error||modeMutation.error||changeModeMutation.error||startIncident.error||replay.error||lock.error)?.message}</p>}
           {decision.isSuccess&&<p role="status">{decision.data.action} acknowledged. Inspect the returned plan and audit; accepted timing waits for its safe phase boundary.</p>}
           {!analysis&&live.frame&&<p role="status">Fresh intelligence unavailable. Forecasts and decisions are disabled until recovery.</p>}
 
@@ -719,24 +742,17 @@ export function Workspace() {
                       />
                     </section>
                     <aside className="action-rail">
-                      <section className="context-panel">
-                        <div className="overline">INCIDENT_C3 / BOTTLENECK</div>
-                        {live.fresh && live.frame?.scenario_type==="incident_c3" && live.frame.incident?.id ? <p role="status">Stage: {live.frame.incident.status} · remaining capacity {Math.round(live.frame.incident.capacity_ratio*100)}% · configured recovery countdown {live.frame.incident.recovery_cycles} cycles. This countdown is not a measured queue-clearance estimate.</p> : <p role="status">No fresh incident run. Launch the configured scenario to inspect its lifecycle.</p>}
-                        <h2>C3 configured remaining capacity: {Math.round((data.scenarios.find(s=>s.id==="incident_c3")?.capacity_ratio ?? 0)*100)}%</h2>
-                        <p>
-                          Configured capacity reduction at C3. Inspect actual upstream queues and forecast evidence; C6 is a boundary without signal control.
-                        </p>
-                        <Button
-                          variant="default"
-                          onClick={() => {
-                            setScenarioID("incident_c3");
-                            setSeed("2202");
-                            setView("command");
-                          }}
-                        >
-                          Launch in Command Center <ArrowRight size={15} />
-                        </Button>
-                      </section>
+                      <IncidentRecoveryPanel
+                        network={data}
+                        frame={live.fresh ? live.frame : null}
+                        capacityRatio={incidentCapacity}
+                        onCapacityRatio={setIncidentCapacity}
+                        onLaunch={() => startIncident.mutate()}
+                        onReset={() => { if (window.confirm("Reset the C3 incident to the same seed and selected virtual capacity?")) reset.mutate(); }}
+                        canOperate={!!dbReady}
+                        pending={anyCommandPending}
+                        error={startIncident.error?.message || reset.error?.message}
+                      />
                     </aside>
                   </div>
                 )}

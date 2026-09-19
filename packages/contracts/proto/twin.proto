@@ -37,7 +37,10 @@ message EventEnvelope {
     AuditEvent audit_appended = 18;
   }
 }
-message RunCommand { string schema_version = 1; string scenario_type = 2; uint32 seed = 3; string mode = 4; string run_id = 5; }
+// Incident fields are valid only for the synthetic incident_c3 scenario. A zero
+// ratio means use the approved scenario configuration; the public Go API
+// validates non-default values before this private simulation command is sent.
+message RunCommand { string schema_version = 1; string scenario_type = 2; uint32 seed = 3; string mode = 4; string run_id = 5; string incident_kind = 6; double incident_capacity_ratio = 7; }
 message RunRequest { string run_id = 1; }
 message ValidationResult { bool valid = 1; repeated string errors = 2; }
 message PlanCommand { string run_id = 1; repeated TimingChange changes = 2; string command_id = 3; }

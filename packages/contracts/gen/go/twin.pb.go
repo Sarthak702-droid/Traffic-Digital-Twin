@@ -2008,15 +2008,20 @@ func (*EventEnvelope_HealthUpdated) isEventEnvelope_Event() {}
 
 func (*EventEnvelope_AuditAppended) isEventEnvelope_Event() {}
 
+// Incident fields are valid only for the synthetic incident_c3 scenario. A zero
+// ratio means use the approved scenario configuration; the public Go API
+// validates non-default values before this private simulation command is sent.
 type RunCommand struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SchemaVersion string                 `protobuf:"bytes,1,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
-	ScenarioType  string                 `protobuf:"bytes,2,opt,name=scenario_type,json=scenarioType,proto3" json:"scenario_type,omitempty"`
-	Seed          uint32                 `protobuf:"varint,3,opt,name=seed,proto3" json:"seed,omitempty"`
-	Mode          string                 `protobuf:"bytes,4,opt,name=mode,proto3" json:"mode,omitempty"`
-	RunId         string                 `protobuf:"bytes,5,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	SchemaVersion         string                 `protobuf:"bytes,1,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
+	ScenarioType          string                 `protobuf:"bytes,2,opt,name=scenario_type,json=scenarioType,proto3" json:"scenario_type,omitempty"`
+	Seed                  uint32                 `protobuf:"varint,3,opt,name=seed,proto3" json:"seed,omitempty"`
+	Mode                  string                 `protobuf:"bytes,4,opt,name=mode,proto3" json:"mode,omitempty"`
+	RunId                 string                 `protobuf:"bytes,5,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	IncidentKind          string                 `protobuf:"bytes,6,opt,name=incident_kind,json=incidentKind,proto3" json:"incident_kind,omitempty"`
+	IncidentCapacityRatio float64                `protobuf:"fixed64,7,opt,name=incident_capacity_ratio,json=incidentCapacityRatio,proto3" json:"incident_capacity_ratio,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *RunCommand) Reset() {
@@ -2082,6 +2087,20 @@ func (x *RunCommand) GetRunId() string {
 		return x.RunId
 	}
 	return ""
+}
+
+func (x *RunCommand) GetIncidentKind() string {
+	if x != nil {
+		return x.IncidentKind
+	}
+	return ""
+}
+
+func (x *RunCommand) GetIncidentCapacityRatio() float64 {
+	if x != nil {
+		return x.IncidentCapacityRatio
+	}
+	return 0
 }
 
 type RunRequest struct {
@@ -2642,14 +2661,16 @@ const file_twin_proto_rawDesc = "" +
 	"\x11emergency_updated\x18\x10 \x01(\v2\x1a.traffic.v1.EmergencyEventH\x00R\x10emergencyUpdated\x12@\n" +
 	"\x0ehealth_updated\x18\x11 \x01(\v2\x17.traffic.v1.HealthStateH\x00R\rhealthUpdated\x12?\n" +
 	"\x0eaudit_appended\x18\x12 \x01(\v2\x16.traffic.v1.AuditEventH\x00R\rauditAppendedB\a\n" +
-	"\x05event\"\x97\x01\n" +
+	"\x05event\"\xf4\x01\n" +
 	"\n" +
 	"RunCommand\x12%\n" +
 	"\x0eschema_version\x18\x01 \x01(\tR\rschemaVersion\x12#\n" +
 	"\rscenario_type\x18\x02 \x01(\tR\fscenarioType\x12\x12\n" +
 	"\x04seed\x18\x03 \x01(\rR\x04seed\x12\x12\n" +
 	"\x04mode\x18\x04 \x01(\tR\x04mode\x12\x15\n" +
-	"\x06run_id\x18\x05 \x01(\tR\x05runId\"#\n" +
+	"\x06run_id\x18\x05 \x01(\tR\x05runId\x12#\n" +
+	"\rincident_kind\x18\x06 \x01(\tR\fincidentKind\x126\n" +
+	"\x17incident_capacity_ratio\x18\a \x01(\x01R\x15incidentCapacityRatio\"#\n" +
 	"\n" +
 	"RunRequest\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\"@\n" +

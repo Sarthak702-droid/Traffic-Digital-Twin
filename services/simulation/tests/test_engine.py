@@ -55,6 +55,8 @@ def test_clearance_and_compatible_permissions(engine):
 
 def test_bad_command(engine):
     with pytest.raises(ValueError):engine.reset(command(seed=0))
+    with pytest.raises(ValueError):engine.reset(pb.RunCommand(schema_version='1.0',scenario_type='peak_surge',seed=1101,mode='recommend',run_id='bad-override',incident_capacity_ratio=.5))
+    with pytest.raises(ValueError):engine.reset(pb.RunCommand(schema_version='1.0',scenario_type='incident_c3',seed=2202,mode='recommend',run_id='bad-ratio',incident_capacity_ratio=.95))
 
 def test_incident_capacity_and_emergency_recovery(engine):
     engine.reset(command('incident_c3',2202))
@@ -74,6 +76,19 @@ def test_incident_capacity_and_emergency_recovery(engine):
             if old and old!=signal.indication:assert (old,signal.indication) in {('green','amber'),('amber','all_red'),('all_red','green')}
             previous[signal.node_id]=signal.indication
     assert {'scheduled','pre_clearance','priority','recovery','complete'}<=statuses
+
+def test_incident_override_is_deterministic_and_reflected_in_live_state(engine):
+    custom=pb.RunCommand(schema_version='1.0',scenario_type='incident_c3',seed=2202,mode='recommend',run_id='custom-incident',incident_kind='capacity_reduction',incident_capacity_ratio=.5)
+    engine.reset(custom)
+    snapshots=[]
+    for _ in range(80):
+        state=engine.step()
+        if state.incident.status=='active':
+            assert state.incident.kind=='capacity_reduction'
+            assert state.incident.capacity_ratio==.5
+        snapshots.append(deterministic(state))
+    engine.reset(custom)
+    assert [deterministic(engine.step()) for _ in range(80)]==snapshots
 
 def test_plan_application_idempotency_and_validation(engine):
     engine.reset(command())

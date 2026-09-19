@@ -573,8 +573,28 @@
                   "mode": {
                     "enum": [
                       "observe",
-                      "recommend"
+                      "recommend",
+                      "manual"
                     ]
+                  },
+                  "incident": {
+                    "type": "object",
+                    "description": "Optional virtual C3 incident override; valid only when type is incident_c3.",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind",
+                      "capacity_ratio"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "const": "capacity_reduction"
+                      },
+                      "capacity_ratio": {
+                        "type": "number",
+                        "minimum": 0.1,
+                        "maximum": 0.9
+                      }
+                    }
                   }
                 }
               }
@@ -1632,6 +1652,12 @@
           },
           "run_id": {
             "type": "string"
+          },
+          "incident_kind": {
+            "type": "string"
+          },
+          "incident_capacity_ratio": {
+            "type": "number"
           }
         },
         "additionalProperties": false,

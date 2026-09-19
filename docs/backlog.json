@@ -1080,6 +1080,8 @@
       ],
       "why": "Incident behavior must protect storage and show recovery, not just extend green.",
       "sources": [
+        "traffic_digital_twin_backend_architecture_spec.docx",
+        "traffic_digital_twin_api_concepts_spec.docx",
         "PRD §§8.6, 21.2",
         "AGENT.MD: Incident mode",
         "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
@@ -1102,10 +1104,10 @@
           "userStory": "As an operator, I want a configurable C3 incident, so that I can demonstrate capacity loss and propagation.",
           "acceptance": [
             "Default C3 capacity to 35% of normal; offer incident type and severity/capacity controls.",
-            "Start/reset through Python gateway → Go lifecycle; persist incident lifecycle through gateway → Go writer and display affected links and upstream queues.",
+            "Start/reset through the public Go API and private simulation gRPC; persist incident lifecycle through the in-process Go persistence module and display affected links and upstream queues.",
             "Reset reproducibly restores the original capacity and seed.",
             "Render actual remaining capacity from config/state (default 35%), lifecycle and affected links; remove hardcoded 50% and C6-controlled-signal copy.",
-            "Add typed permissioned severity/type controls through gateway if implemented, with validation, pending/error/reset confirmation and writer-backed incident audit."
+            "Add typed permissioned severity/type controls through the Go API with validation, pending/error/reset confirmation and Go persistence-backed incident audit."
           ],
           "dependencies": [
             "S05",
@@ -1121,7 +1123,7 @@
             "A03",
             "A17"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified; evidence in docs/epic9-status.md."
         },
         {
           "id": "S30",
@@ -1153,10 +1155,10 @@
           "auditFindings": [
             "A17"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified; evidence in docs/epic9-status.md."
         }
       ],
-      "releaseGate": "Reaccept every story against revised gateway/writer ownership and applicable UX states; historical completion is not production acceptance.",
+      "releaseGate": "Accepted against the direct public Go API, private simulation/intelligence gRPC boundary, in-process Go persistence and applicable UI states; evidence in docs/epic9-status.md.",
       "auditFindings": [
         "A03",
         "A17"

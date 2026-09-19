@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
@@ -175,9 +176,13 @@ func (s *Server) startScenario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Version string `json:"schema_version"`
-		Seed    uint32 `json:"seed"`
-		Mode    string `json:"mode"`
+		Version  string `json:"schema_version"`
+		Seed     uint32 `json:"seed"`
+		Mode     string `json:"mode"`
+		Incident *struct {
+			Kind          string  `json:"kind"`
+			CapacityRatio float64 `json:"capacity_ratio"`
+		} `json:"incident,omitempty"`
 	}
 	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096))
 	d.DisallowUnknownFields()
@@ -200,9 +205,24 @@ func (s *Server) startScenario(w http.ResponseWriter, r *http.Request) {
 		problem(w, 400, "Valid scenario, schema_version, seed and mode (recommend/observe/manual) required")
 		return
 	}
+	if body.Incident != nil && scenario != "incident_c3" {
+		problem(w, 400, "Incident controls are only available for incident_c3")
+		return
+	}
+	command := &pb.RunCommand{SchemaVersion: "1.0", ScenarioType: scenario, Seed: body.Seed, Mode: body.Mode}
+	reason := "Started a seeded SUMO scenario"
+	if body.Incident != nil {
+		if body.Incident.Kind != "capacity_reduction" || body.Incident.CapacityRatio < 0.1 || body.Incident.CapacityRatio > 0.9 {
+			problem(w, 400, "incident.kind must be capacity_reduction and capacity_ratio must be between 0.10 and 0.90")
+			return
+		}
+		command.IncidentKind = body.Incident.Kind
+		command.IncidentCapacityRatio = body.Incident.CapacityRatio
+		reason = fmt.Sprintf("Started C3 capacity_reduction scenario at %.0f%% virtual capacity", body.Incident.CapacityRatio*100)
+	}
 	s.sim.commands.Lock()
 	defer s.sim.commands.Unlock()
-	s.launch(w, r, &pb.RunCommand{SchemaVersion: "1.0", ScenarioType: scenario, Seed: body.Seed, Mode: body.Mode}, "Started a seeded SUMO scenario")
+	s.launch(w, r, command, reason)
 }
 func (s *Server) resetScenario(w http.ResponseWriter, r *http.Request) {
 	if s.sim == nil {
