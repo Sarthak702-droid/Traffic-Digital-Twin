@@ -30,6 +30,8 @@ const server = http.createServer(async (req,res) => {
     if(path === '/evidence/epic3' || path === '/evidence/e03') return send(200,await readFile(resolve(root,'docs/epic3-status.md'),'utf8'),'text/plain');
     if(path === '/evidence/epic4' || path === '/evidence/e04') return send(200,await readFile(resolve(root,'docs/epic4-status.md'),'utf8'),'text/plain');
     if(path === '/evidence/epic5' || path === '/evidence/e05') return send(200,await readFile(resolve(root,'docs/epic5-status.md'),'utf8'),'text/plain');
+    if(path === '/evidence/epic6' || path === '/evidence/e06') return send(200,await readFile(resolve(root,'docs/epic6-status.md'),'utf8'),'text/plain');
+    if(path === '/evidence/epic7' || path === '/evidence/e07') return send(200,await readFile(resolve(root,'docs/epic7-status.md'),'utf8'),'text/plain');
     if(path === '/evidence/epic8' || path === '/evidence/e08') return send(200,await readFile(resolve(root,'docs/epic8-status.md'),'utf8'),'text/plain');
     if(path === '/evidence/epic9' || path === '/evidence/e09') return send(200,await readFile(resolve(root,'docs/epic9-status.md'),'utf8'),'text/plain');
     if(path === '/evidence/epic10' || path === '/evidence/e10') return send(200,await readFile(resolve(root,'docs/epic10-status.md'),'utf8'),'text/plain');
