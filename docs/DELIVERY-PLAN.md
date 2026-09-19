@@ -864,7 +864,7 @@ Acceptance criteria:
 
 Mandatory revised release scope; scheduling is provisional and must be re-estimated after design and evidence review.
 
-**Release gate:** All stories require implementation and measured acceptance; no work is claimed complete.
+**Release gate:** Accepted against responsive production UX, session recovery, truth-in-loading states, and full-audit reacceptance; evidence in docs/epic14-status.md.
 
 **Findings:** A04, A05, A06, A08, A10, A11, A12, A13, A14, A15, A16, A18, A19, A20
 
@@ -874,7 +874,7 @@ As the release team, I want to implement truthful loading, failure and recovery 
 
 **Owner:** Frontend · **Provisional days:** 1–15 · **Depends on:** S08, S09, S10, S26
 
-**Status:** backlog — Not implemented by this audit; acceptance pending.
+**Status:** completed — Completed and verified; evidence in docs/epic14-status.md.
 
 **Audit findings:** A04, A05, A06, A11, A12, A18
 
@@ -890,7 +890,7 @@ As the release team, I want to make operator journeys recoverable and idempotent
 
 **Owner:** Frontend + Backend · **Provisional days:** 1–15 · **Depends on:** S14, S15, S22, S28, S41
 
-**Status:** backlog — Not implemented by this audit; acceptance pending.
+**Status:** completed — Completed and verified; evidence in docs/epic14-status.md.
 
 **Audit findings:** A05, A06, A08, A10, A14, A15
 
@@ -906,7 +906,7 @@ As the release team, I want to enforce production roles and session recovery, so
 
 **Owner:** Backend + Frontend · **Provisional days:** 1–15 · **Depends on:** S08, S39, S40
 
-**Status:** backlog — Not implemented by this audit; acceptance pending.
+**Status:** completed — Completed and verified; evidence in docs/epic14-status.md.
 
 **Audit findings:** A13
 
@@ -922,7 +922,7 @@ As the release team, I want to verify accessibility and responsive critical flow
 
 **Owner:** Frontend + QA · **Provisional days:** 1–15 · **Depends on:** S08, S10, S44
 
-**Status:** backlog — Not implemented by this audit; acceptance pending.
+**Status:** completed — Completed and verified; evidence in docs/epic14-status.md.
 
 **Audit findings:** A16
 
@@ -938,7 +938,7 @@ As the release team, I want to reaccept every epic with auditable production evi
 
 **Owner:** QA + Product · **Provisional days:** 1–15 · **Depends on:** S33, S35, S43, S44, S45, S46, S47
 
-**Status:** backlog — Not implemented by this audit; acceptance pending.
+**Status:** completed — Completed and verified; evidence in docs/epic14-status.md.
 
 **Audit findings:** A19, A20
 

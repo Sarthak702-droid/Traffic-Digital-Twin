@@ -14,7 +14,7 @@ try {
   assert.equal(response.status(), 200);
   const plan = await response.json();
   const completedStories = plan.epics.flatMap((e) => e.stories).filter((s) => s.status === "completed");
-  assert.ok(completedStories.length >= 30, "expected repository-backed completed stories");
+  assert.ok(completedStories.length >= 45, "expected repository-backed completed stories");
   for (const epic of plan.epics) {
     await page.getByRole("searchbox").fill(String(Number(epic.id.slice(1))));
     await page.waitForFunction(
@@ -174,6 +174,30 @@ try {
   assert.equal(await page.locator("#task-status").isDisabled(), true);
   assert.equal(
     (await page.request.get(base + "/evidence/epic13")).status(),
+    200,
+  );
+  await page.keyboard.press("Escape");
+  await page.getByRole("searchbox").fill("14");
+  await page.waitForFunction(
+    () => document.querySelectorAll(".task-card").length === 5,
+  );
+  assert.equal(
+    await page
+      .locator(".task-card .badge")
+      .filter({ hasText: "COMPLETED" })
+      .count(),
+    5,
+  );
+  await page
+    .getByRole("button", {
+      name: "Implement truthful loading, failure and recovery states",
+      exact: true,
+    })
+    .click();
+  await page.getByRole("dialog").waitFor();
+  assert.equal(await page.locator("#task-status").isDisabled(), true);
+  assert.equal(
+    (await page.request.get(base + "/evidence/epic14")).status(),
     200,
   );
   await page.keyboard.press("Escape");

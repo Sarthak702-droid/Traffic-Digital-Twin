@@ -1736,7 +1736,7 @@
         "E05",
         "E08"
       ],
-      "releaseGate": "All stories require implementation and measured acceptance; no work is claimed complete.",
+      "releaseGate": "Accepted against responsive production UX, session recovery, truth-in-loading states, and full-audit reacceptance; evidence in docs/epic14-status.md.",
       "auditFindings": [
         "A04",
         "A05",
@@ -1787,7 +1787,7 @@
             "A12",
             "A18"
           ],
-          "verificationStatus": "Not implemented by this audit; acceptance pending."
+          "verificationStatus": "Completed and verified; evidence in docs/epic14-status.md."
         },
         {
           "id": "S45",
@@ -1823,7 +1823,7 @@
             "A14",
             "A15"
           ],
-          "verificationStatus": "Not implemented by this audit; acceptance pending."
+          "verificationStatus": "Completed and verified; evidence in docs/epic14-status.md."
         },
         {
           "id": "S46",
@@ -1852,7 +1852,7 @@
           "auditFindings": [
             "A13"
           ],
-          "verificationStatus": "Not implemented by this audit; acceptance pending."
+          "verificationStatus": "Completed and verified; evidence in docs/epic14-status.md."
         },
         {
           "id": "S47",
@@ -1881,7 +1881,7 @@
           "auditFindings": [
             "A16"
           ],
-          "verificationStatus": "Not implemented by this audit; acceptance pending."
+          "verificationStatus": "Completed and verified; evidence in docs/epic14-status.md."
         },
         {
           "id": "S48",
@@ -1915,7 +1915,7 @@
             "A19",
             "A20"
           ],
-          "verificationStatus": "Not implemented by this audit; acceptance pending."
+          "verificationStatus": "Completed and verified; evidence in docs/epic14-status.md."
         }
       ]
     }
