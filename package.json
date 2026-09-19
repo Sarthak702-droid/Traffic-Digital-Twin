@@ -11,14 +11,14 @@
     "dev:web": "npm run dev -w apps/web",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
-    "build:bin": "mkdir -p bin && GOCACHE=${GOCACHE:-/tmp/traffic-go-build-cache} go build -o bin/api ./apps/api/cmd/api",
+    "build:bin": "mkdir -p bin && GOCACHE=${GOCACHE:-/tmp/traffic-go-build-cache} ./scripts/run-go.sh build -o bin/api ./apps/api/cmd/api",
     "build": "npm run build -w apps/web",
     "typecheck": "npm run typecheck -w apps/web",
     "test": "npm run test:ui && npm run test:python && npm run test:go",
     "test:all": "npm run test:ui && npm run test:python && npm run test:go",
     "test:ui": "npm run test -w apps/web",
     "test:python": "python3 scripts/run-python-tests.py",
-    "test:go": "(cd apps/api && go test ./...)",
+    "test:go": "(cd apps/api && ../../scripts/run-go.sh test ./...)",
     "dashboard": "node server.mjs"
   },
   "devDependencies": {
