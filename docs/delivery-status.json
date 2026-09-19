@@ -78,12 +78,12 @@
       "evidence": "docs/epic6-status.md"
     },
     "S21": {
-      "status": "backlog",
-      "reason": "Revised acceptance pending; no completion verified by this audit."
+      "status": "completed",
+      "evidence": "docs/epic7-status.md"
     },
     "S22": {
-      "status": "backlog",
-      "reason": "Revised acceptance pending; no completion verified by this audit."
+      "status": "completed",
+      "evidence": "docs/epic7-status.md"
     },
     "S25": {
       "status": "backlog",
@@ -142,16 +142,16 @@
       "reason": "Revised acceptance pending; no completion verified by this audit."
     },
     "S39": {
-      "status": "backlog",
-      "reason": "Revised acceptance pending; no completion verified by this audit."
+      "status": "in-progress",
+      "reason": "Go public gateway and private Python gRPC boundary implemented; direct runtime acceptance remains to be rerun locally."
     },
     "S40": {
-      "status": "backlog",
-      "reason": "Revised acceptance pending; no completion verified by this audit."
+      "status": "in-progress",
+      "reason": "Request IDs, stable error codes, readiness routes, OpenAPI updates and explicit route failures are implemented; full route-parity acceptance remains."
     },
     "S41": {
-      "status": "backlog",
-      "reason": "Revised acceptance pending; no completion verified by this audit."
+      "status": "in-progress",
+      "reason": "In-process Go persistence modules now own migrations and transactional writes; local database fault acceptance remains."
     },
     "S42": {
       "status": "backlog",
@@ -182,7 +182,7 @@
       "reason": "Revised acceptance pending; no completion verified by this audit."
     }
   },
-  "audit_date": "2026-09-17",
+  "audit_date": "2026-09-18",
   "release_status": "not_production_ready",
-  "note": "Revised requirements require reacceptance. Historical records below are retained, not erased; blocked indicates unfulfilled revised acceptance, not implementation in progress."
+  "note": "Supplied backend and API-concepts specifications require a Go public gateway, private Python gRPC compute, and modular Go persistence. Historical records are retained; in-progress means implementation exists but its local-runtime acceptance is not yet complete."
 }

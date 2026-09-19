@@ -1,4 +1,4 @@
-> **Revalidation notice — 2026-09-17:** Revalidated and accepted against revised gateway/writer boundaries, disclosure requirements, and production release gates. Command Center shell, six-item primary navigation, DGP presentation mode, and junction intelligence drawer are active and verified. Stories S08–S10 are completed.
+> **Architecture alignment notice — 2026-09-18:** This historical UI evidence is now governed by the supplied Go-control-plane and private-Python-compute specifications. It does not authorize a Python public gateway or separate DB writer.
 
 # Epic 3 Delivery Status: Command Center & Junction Intelligence
 

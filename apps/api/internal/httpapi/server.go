@@ -14,7 +14,6 @@ import (
 	"net/url"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 	"traffic.local/twin/apps/api/internal/config"
 	"traffic.local/twin/apps/api/internal/contracts"
@@ -25,9 +24,6 @@ import (
 
 type Server struct {
 	ComputeToken       string
-	ServiceToken       string
-	RequireOwner       bool
-	ownerReady         atomic.Bool
 	intelligence       pb.IntelligenceClient
 	analysis           *pb.Analysis
 	analysisFault      string
@@ -44,7 +40,7 @@ type Server struct {
 	sim                *simulationLink
 }
 type apiError struct {
-	Error   string `json:"error"`
+	Code    string `json:"code"`
 	Message string `json:"message"`
 }
 
@@ -55,7 +51,26 @@ func send(w http.ResponseWriter, status int, v any) {
 	json.NewEncoder(w).Encode(v)
 }
 func problem(w http.ResponseWriter, status int, message string) {
-	send(w, status, apiError{http.StatusText(status), message})
+	code := "INTERNAL_ERROR"
+	switch status {
+	case 400, 422:
+		code = "VALIDATION_ERROR"
+	case 401:
+		code = "UNAUTHORIZED"
+	case 403:
+		code = "FORBIDDEN"
+	case 404:
+		code = "NOT_FOUND"
+	case 409:
+		code = "CONFLICT"
+	case 429:
+		code = "RATE_LIMITED"
+	case 503:
+		code = "SIMULATION_UNAVAILABLE"
+	case 504:
+		code = "INTELLIGENCE_TIMEOUT"
+	}
+	send(w, status, apiError{code, message})
 }
 func (s *Server) SetState(state *pb.TrafficState) error {
 	if e := contracts.ValidateState(state); e != nil {
@@ -68,7 +83,14 @@ func (s *Server) SetState(state *pb.TrafficState) error {
 }
 func (s *Server) Handler() http.Handler {
 	r := chi.NewRouter()
-	r.Use(middleware.RequestID, middleware.Recoverer, s.access)
+	r.Use(middleware.RequestID)
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			w.Header().Set("X-Request-ID", middleware.GetReqID(req.Context()))
+			next.ServeHTTP(w, req)
+		})
+	})
+	r.Use(middleware.Recoverer, s.access)
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -84,8 +106,12 @@ func (s *Server) Handler() http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	})
-	r.Get("/internal/ready", func(w http.ResponseWriter, r *http.Request) {
-		send(w, 200, map[string]bool{"ready": s.ownerReady.Load()})
+	r.Get("/health/live", func(w http.ResponseWriter, r *http.Request) { send(w, 200, map[string]bool{"live": true}) })
+	r.Get("/health/ready", func(w http.ResponseWriter, r *http.Request) {
+		if !s.db(w) {
+			return
+		}
+		send(w, 200, s.health(r.Context()))
 	})
 	r.Get("/api/v1/network", func(w http.ResponseWriter, r *http.Request) { send(w, 200, s.Network) })
 	r.Get("/api/v1/state", func(w http.ResponseWriter, r *http.Request) {
@@ -188,6 +214,10 @@ func (s *Server) Handler() http.Handler {
 	r.Delete("/api/v1/locks/{id}", s.deleteLock)
 	r.Post("/api/v1/replay/{scenario}", s.startReplay)
 	r.Get("/ws/v1/live", s.live)
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) { problem(w, http.StatusNotFound, "Unknown API route") })
+	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
+		problem(w, http.StatusMethodNotAllowed, "HTTP method is not allowed for this route")
+	})
 	return r
 }
 func (s *Server) db(w http.ResponseWriter) bool {

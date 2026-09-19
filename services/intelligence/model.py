@@ -168,7 +168,9 @@ class Model:
         validate_plan(self.config,plan)
         return plan
 
-    def comparison(self,state,changes,rec_id=''):
+    def comparison(self,state,changes,rec_id='',recommendation_id=None):
+        if recommendation_id is not None:
+            rec_id = recommendation_id
         plan={c.phase_id:c.green_s for c in changes}
         if len(plan)!=len(changes):raise ValueError('Duplicate phase')
         for c in changes:

@@ -5,13 +5,13 @@
     "apps/web"
   ],
   "scripts": {
-    "start": "python3 scripts/start-all.py",
-    "dev": "python3 scripts/start-all.py",
-    "dev:all": "python3 scripts/start-all.py",
+    "start": "if [ -x .venv/bin/python ]; then .venv/bin/python scripts/start-all.py; else python3 scripts/start-all.py; fi",
+    "dev": "if [ -x .venv/bin/python ]; then .venv/bin/python scripts/start-all.py; else python3 scripts/start-all.py; fi",
+    "dev:all": "if [ -x .venv/bin/python ]; then .venv/bin/python scripts/start-all.py; else python3 scripts/start-all.py; fi",
     "dev:web": "npm run dev -w apps/web",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
-    "build:bin": "mkdir -p bin && go build -o bin/writer ./apps/api/cmd/writer && go build -o bin/api ./apps/api/cmd/api",
+    "build:bin": "mkdir -p bin && GOCACHE=${GOCACHE:-/tmp/traffic-go-build-cache} go build -o bin/api ./apps/api/cmd/api",
     "build": "npm run build -w apps/web",
     "typecheck": "npm run typecheck -w apps/web",
     "test:ui": "npm run test -w apps/web",

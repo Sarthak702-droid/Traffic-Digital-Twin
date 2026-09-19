@@ -140,6 +140,14 @@ export function Workspace() {
 
   const [simulationComparison, setSimulationComparison] = useState<ComparisonResult | null>(null);
   const [selectedAlternative, setSelectedAlternative] = useState<Recommendation | null>(null);
+  let activeComparison: ComparisonResult | null = null;
+  if (simulationComparison && simulationComparison.run_id === live.frame?.run_id &&
+    (simulationComparison.recommendation_id === analysis?.recommendation?.id || simulationComparison.recommendation_id === selectedAlternative?.id)) {
+    activeComparison = simulationComparison;
+  } else if (analysis?.comparison && analysis.comparison.run_id === live.frame?.run_id &&
+    (analysis.comparison.recommendation_id === analysis.recommendation?.id || analysis.comparison.recommendation_id === selectedAlternative?.id)) {
+    activeComparison = analysis.comparison;
+  }
   const modeQuery=useQuery({queryKey:["mode"],queryFn:()=>request<{mode:"recommend"|"observe"|"manual";locks:string[]}>("/mode"),refetchInterval:3000,enabled:session.isSuccess});
   const systemMode=modeQuery.data?.mode ?? "observe";
   const manual=systemMode==="manual";
@@ -613,7 +621,7 @@ export function Workspace() {
                           decision.mutateAsync({ action: "reject", reason })
                         }
                         decisionPending={anyCommandPending}
-                        comparisonResult={simulationComparison?.run_id===live.frame?.run_id && simulationComparison?.recommendation_id===analysis?.recommendation?.id ? simulationComparison : null}
+                        comparisonResult={activeComparison}
                         onClearComparison={() => setSimulationComparison(null)}
                         manualMode={manual}
                       />
@@ -682,6 +690,9 @@ export function Workspace() {
                     analysis={analysis}
                     onSelectNode={selectNode}
                     route={[]}
+                    comparisonResult={activeComparison}
+                    onSimulate={() => decision.mutate({ action: "simulate" })}
+                    isSimulating={decision.isPending}
                   />
                 )}
 

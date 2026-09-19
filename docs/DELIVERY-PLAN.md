@@ -1,18 +1,18 @@
 # Traffic Digital Twin — revised delivery plan
 
-Revision 2.0 · 2026-09-17 · **Not production ready.** Documentation-only audit: no fixes implemented.
+Revision 2.1 · 2026-09-18 · **Synthetic MVP only.** The supplied backend and API-concepts specifications replace the prior gateway/writer migration target.
 
-Sources: root `PRD` (also available through the `docs/PRD.md` symlink), `docs/UX-PRODUCTION-AUDIT.md`, and `docs/backlog.json`. The live delivery dashboard reads `docs/backlog.json` plus `docs/delivery-status.json`. `docs/planning-dashboard` is an archival standalone snapshot, not the current source.
+Sources: the supplied `traffic_digital_twin_backend_architecture_spec.docx`, `traffic_digital_twin_api_concepts_spec.docx`, root `PRD`, `docs/API-ARCHITECTURE-SPEC-ALIGNMENT.md`, and `docs/backlog.json`. The live delivery dashboard reads `docs/backlog.json` plus `docs/delivery-status.json`.
 
-All 35 original stories are retained with revised acceptance; E13 and E14 add 10 mandatory stories. S20/S23/S24 were already absent; IDs are deliberately not renumbered. Prior S01–S15 completion and evidence are retained as historical acceptance in delivery-status.json, with revised acceptance blocked pending implementation/revalidation. Remaining stories are backlog, not claimed unimplemented in every detail: existing partial code does not establish full acceptance.
+All original stories are retained. E13 is now the Go control-plane alignment epic. S20/S23/S24 were already absent; IDs are deliberately not renumbered. Existing evidence remains historical until it is rechecked against the supplied specifications.
 
 ## Priority and execution
 
-P0: mandatory release gate. P1: guided presentation can be simplified, but all displayed claims must remain truthful. P2: optional CV/polish, deferred before core reliability. Original days below and new 1–15 ranges are scheduling placeholders only; re-estimate the gateway/writer migration. The old 10-day compressed plan is not a valid commitment for this scope.
+P0: mandatory release gate. P1: guided presentation can be simplified, but all displayed claims must remain truthful. P2: optional CV/polish, deferred before core reliability. Original days are planning placeholders, not commitments.
 
-Sequence: fix false-safe/data/error UX → correct durable command and mode/lock behavior → migrate explicit gateway/writer boundaries with route parity → prove owner-based load balancing and recovery → complete access/accessibility and real scenario acceptance. Design and test work can overlap; dependencies are acceptance gates. No independent sub-agent work was used for this audit.
+Sequence: complete Go gateway contract parity → verify in-process Go persistence and idempotency → prove gRPC degradation and live-event behavior → complete access/accessibility and real scenario acceptance. Design and test work can overlap; dependencies are acceptance gates.
 
-Cross-cutting rules: browser ingress is Python gateway; Go owns domain validation/safety; only Go writer commits database mutations; private Python workers keep SUMO/intelligence; reads/streams have explicit owners and persistence exemptions; no invented results or physical signal control. Every story must distinguish source implementation, historical evidence and newly measured acceptance.
+Cross-cutting rules: browser ingress is the Go API gateway; Go owns domain validation, safety, persistence, audit and WebSocket delivery; Python workers keep private SUMO/intelligence computation; reads/streams have explicit owners and persistence exemptions; no invented results or physical signal control. Every story must distinguish source implementation, historical evidence and newly measured acceptance.
 
 ## E01 — Foundation & shared contracts [P0]
 
@@ -433,7 +433,7 @@ As an operator, I want baseline and candidate rollouts from one snapshot, so tha
 
 **Owner:** Simulation · **Provisional days:** 6–7 · **Depends on:** S05, S07, S13
 
-**Status:** backlog — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Equal-seed simulation branches with 4 outcome metrics, safety envelope enforcement, zero-mutation verified. Evidence: docs/epic7-status.md
 
 **Audit findings:** A02
 
@@ -451,7 +451,7 @@ As an operator, I want a synchronized split view, so that I can compare the prop
 
 **Owner:** Frontend · **Provisional days:** 8–8 · **Depends on:** S09, S19, S21
 
-**Status:** backlog — Revalidation required; no implementation performed by this audit.
+**Status:** completed — Split-screen dual canvas, 4 outcome metrics with SIMULATED badge, honest delta indicators, stale comparison rejection, simulation trigger. Evidence: docs/epic7-status.md
 
 **Audit findings:** A02, A06
 
@@ -766,19 +766,19 @@ Acceptance criteria:
 - Retain reduced-motion behavior and verify no looping or inaccessible alert motion; measure contrast/text/targets and avoid status conveyed only by color.
 - Optional polish cannot mask stale/unavailable data, add invented comparisons or block critical flows; scope and accept it only after mandatory gates.
 
-## E13 — Python gateway, Go writer & verified load balancing [P0]
+## E13 — Go control plane and API reliability [P0]
 
 **Owner:** Platform + Backend · **Provisional days:** 1–15 · **Epic inputs:** E01
 
-Mandatory revised release scope; scheduling is provisional and must be re-estimated after design and evidence review.
+Align the public Go gateway, in-process persistence, gRPC controls, and API contracts with the supplied specifications.
 
 **Release gate:** All stories require implementation and measured acceptance; no work is claimed complete.
 
 **Findings:** A01, A07, A08, A09, A10, A11, A12, A13, A14, A18, A19
 
-### S39 — Create the Python gateway and private service boundary [P0]
+### S39 — Establish the Go public gateway boundary [P0]
 
-As the release team, I want to create the Python gateway and private service boundary, so that the requested architecture and operator journeys are verifiable.
+As the release team, I want one Go public gateway and private Python compute boundary, so that requests, authority, and operations are verifiable.
 
 **Owner:** Platform · **Provisional days:** 1–15 · **Depends on:** S01, S02
 
@@ -788,9 +788,9 @@ As the release team, I want to create the Python gateway and private service bou
 
 Acceptance criteria:
 
-- Expose only versioned REST/WebSocket product ingress; route method/path to an allowlisted Go owner and preserve status, typed errors, correlation/principal/run IDs and deadline. No generic URL proxy or browser access to Go/compute/writer.
-- Implement bounded upstream pools, request limits, health/readiness, overload 429/503 and jittered read retries; no automatic unsafe mutation retries. Gateway and compute Python roles are distinct.
-- Test wrong methods/unknown routes, authenticated service identity, direct-access denial and bounded timeout; retain loopback-only demo configuration and no physical actuation.
+- Expose versioned REST and WebSocket ingress from the Go API; preserve stable status, typed errors, correlation/request IDs, principal, run ID, and deadline.
+- Keep Python private for simulation and intelligence gRPC only. Do not deploy a Python HTTP gateway or expose Python/database ports to browsers.
+- Test wrong methods, unknown routes, readiness, bounded timeouts, and loopback-only synthetic demo operation.
 
 ### S40 — Make endpoint ownership and contracts exhaustive [P0]
 
@@ -808,9 +808,9 @@ Acceptance criteria:
 - Generate/validate OpenAPI, protobuf and runtime response schemas; use canonical modes and distinct start/decision/comparison types. Unknown route/method and invalid versions fail explicitly.
 - Contract tests prove each route reaches its specified owner, wrong-owner requests fail, and reads/health/stream do not accidentally create writes.
 
-### S41 — Persist domain results through the Go writer [P0]
+### S41 — Persist domain results through the Go persistence module [P0]
 
-As the release team, I want to persist domain results through the Go writer, so that the requested architecture and operator journeys are verifiable.
+As the release team, I want Go persistence modules to commit domain results, so that durable operator workflows remain simple and auditable.
 
 **Owner:** Backend · **Provisional days:** 1–15 · **Depends on:** S04, S39, S40
 
@@ -820,12 +820,12 @@ As the release team, I want to persist domain results through the Go writer, so 
 
 Acceptance criteria:
 
-- Go owner returns validated typed result/intent to Python gateway; gateway sends a versioned write command to Go writer; writer alone holds write credentials and commits result/status/audit atomically. No arbitrary SQL or blind payload insertion.
+- Go domain modules use pgx/sqlc repositories and PostgreSQL transactions to commit typed result/status/audit records atomically. No arbitrary SQL or blind payload insertion.
 - Persist command ID, actor, run/config/owner version and payload hash with a uniqueness constraint; replay the stored outcome on identical retry and return conflict for same ID/different payload.
 - For actuation, commit intent before dispatch, then reconcile applied/failed/unknown and finalize audit; never imply a database transaction can atomically cover SUMO RPC. Expose a permissioned command-status read contract.
-- Inject database failure, writer failure before/after commit, lost acknowledgment and restart; prove no duplicate effects or silent successful writes. Classify frames/reads separately from durable business results.
+- Inject database failure, timeout after commit, lost acknowledgment and restart; prove no duplicate effects or silent successful writes. Classify frames/reads separately from durable business results.
 
-### S42 — Preserve state ownership and stream continuity across replicas [P0]
+### S42 — Preserve state ownership and live-stream continuity [P0]
 
 As the release team, I want to preserve state ownership and stream continuity across replicas, so that the requested architecture and operator journeys are verifiable.
 
@@ -841,9 +841,9 @@ Acceptance criteria:
 - Externalize or reconstruct run/mode/locks/command outcomes; distribute replay assets by verified config/hash; test reconnect, drain and failover without two simulators controlling the same run.
 - Bound fanout buffers and reconnect backoff; document transient frame loss versus durable audit cursor recovery. No multi-replica readiness claim until owner-loss tests pass.
 
-### S43 — Verify routing, persistence and load-balanced cutover [P0]
+### S43 — Verify Go gateway routing and persistence [P0]
 
-As the release team, I want to verify routing, persistence and load-balanced cutover, so that the requested architecture and operator journeys are verifiable.
+As the release team, I want to verify Go gateway routing and persistence, so that the documented operator journeys are verifiable.
 
 **Owner:** QA + Platform · **Provisional days:** 1–15 · **Depends on:** S40, S41, S42
 
@@ -853,9 +853,9 @@ As the release team, I want to verify routing, persistence and load-balanced cut
 
 Acceptance criteria:
 
-- Trace every frontend endpoint and durable write through real gateway/Go/writer/PostgreSQL with request/command IDs; verify Go and Python compute cannot bypass writer credentials.
-- Run concurrent clients and at least two gateway replicas plus declared Go owner/query/writer topology; kill/drain nodes, lose responses, inject timeouts and overload, and measure p95/error/recovery rates.
-- Cut over in stages with one write authority at a time, migration/backfill validation, rollback compatibility and a recorded recovery procedure; no uncontrolled dual writes.
+- Trace every frontend endpoint and durable write through the Go gateway, private Python gRPC when required, and PostgreSQL with request/command IDs.
+- Run concurrent clients, inject database and Python timeouts, and measure p95/error/recovery rates. The modular monolith is the declared MVP topology.
+- Verify migrations, idempotent command retries, rollback behavior, and a recorded recovery procedure; no uncontrolled dual writes.
 - Record machine, versions, dataset, replica/client counts, duration and raw output; failure/skip is not a pass. Revalidate all existing scenario and audit journeys.
 
 ## E14 — Production UX, access & acceptance [P0]

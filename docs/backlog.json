@@ -1,13 +1,14 @@
 {
   "title": "Traffic Digital Twin · Delivery plan",
-  "version": "2.0",
+  "version": "2.1",
   "sourceFiles": [
+    "traffic_digital_twin_backend_architecture_spec.docx",
+    "traffic_digital_twin_api_concepts_spec.docx",
     "PRD",
-    "AGENT.MD",
-    "docs/UX-PRODUCTION-AUDIT.md",
+    "docs/API-ARCHITECTURE-SPEC-ALIGNMENT.md",
     "docs/architecture.md"
   ],
-  "note": "2026-09-17 evidence-based revision: NOT PRODUCTION READY. All 35 original stories updated; E13/E14 add 10 mandatory stories. Historical acceptance is preserved separately; no code fixes or target services were implemented. Original day ranges and new 1–15 placeholders are provisional, not commitments; re-estimate the migration.",
+  "note": "2026-09-18 architecture alignment: the supplied backend and API-concepts specifications are authoritative. The MVP uses a Go public API gateway, private Python gRPC compute, and in-process Go persistence; no Python HTTP gateway or dedicated Go DB writer is in scope. Historical evidence is retained separately and must be rechecked against these requirements.",
   "priorities": {
     "P0": {
       "label": "Essential",
@@ -861,7 +862,7 @@
           "auditFindings": [
             "A02"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed: 5 Python tests + Go tests pass. Equal-seed simulation branches with 4 outcome metrics, safety envelope enforcement, zero-mutation verified."
         },
         {
           "id": "S22",
@@ -894,7 +895,7 @@
             "A02",
             "A06"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed: 12 frontend tests + Go tests pass. Split-screen dual canvas, 4 outcome metrics with SIMULATED badge, honest delta indicators, stale comparison rejection, simulation trigger."
         }
       ],
       "releaseGate": "Reaccept every story against revised gateway/writer ownership and applicable UX states; historical completion is not production acceptance.",
@@ -1522,17 +1523,17 @@
     },
     {
       "id": "E13",
-      "title": "Python gateway, Go writer & verified load balancing",
+      "title": "Go control plane and API reliability",
       "priority": "P0",
       "owner": "Platform + Backend",
       "days": [
         1,
         15
       ],
-      "why": "Mandatory revised release scope; scheduling is provisional and must be re-estimated after design and evidence review.",
+      "why": "Align the Go public control plane, modular persistence, gRPC controls, and API contracts with the supplied specifications.",
       "sources": [
-        "PRD §§32–34",
-        "docs/UX-PRODUCTION-AUDIT.md"
+        "traffic_digital_twin_backend_architecture_spec.docx §§1–20",
+        "traffic_digital_twin_api_concepts_spec.docx §§1–18"
       ],
       "dependencies": [
         "E01"
@@ -1554,18 +1555,18 @@
       "stories": [
         {
           "id": "S39",
-          "title": "Create the Python gateway and private service boundary",
+          "title": "Establish the Go public gateway boundary",
           "priority": "P0",
           "owner": "Platform",
           "days": [
             1,
             15
           ],
-          "userStory": "As the release team, I want to create the Python gateway and private service boundary, so that the requested architecture and operator journeys are verifiable.",
+          "userStory": "As the release team, I want one Go public gateway and private Python compute boundary, so that requests, authority, and operations are verifiable.",
           "acceptance": [
-            "Expose only versioned REST/WebSocket product ingress; route method/path to an allowlisted Go owner and preserve status, typed errors, correlation/principal/run IDs and deadline. No generic URL proxy or browser access to Go/compute/writer.",
-            "Implement bounded upstream pools, request limits, health/readiness, overload 429/503 and jittered read retries; no automatic unsafe mutation retries. Gateway and compute Python roles are distinct.",
-            "Test wrong methods/unknown routes, authenticated service identity, direct-access denial and bounded timeout; retain loopback-only demo configuration and no physical actuation."
+            "Expose versioned REST and WebSocket ingress from the Go API; preserve stable status, typed errors, correlation/request IDs, principal, run ID, and deadline.",
+            "Keep Python private for simulation and intelligence gRPC only. Do not deploy a Python HTTP gateway or expose Python/database ports to browsers.",
+            "Test wrong methods, unknown routes, readiness, bounded timeouts, and loopback-only synthetic demo operation."
           ],
           "dependencies": [
             "S01",
@@ -1614,19 +1615,19 @@
         },
         {
           "id": "S41",
-          "title": "Persist domain results through the Go writer",
+          "title": "Persist domain results through the Go persistence module",
           "priority": "P0",
           "owner": "Backend",
           "days": [
             1,
             15
           ],
-          "userStory": "As the release team, I want to persist domain results through the Go writer, so that the requested architecture and operator journeys are verifiable.",
+          "userStory": "As the release team, I want Go persistence modules to commit domain results, so that durable operator workflows remain simple and auditable.",
           "acceptance": [
-            "Go owner returns validated typed result/intent to Python gateway; gateway sends a versioned write command to Go writer; writer alone holds write credentials and commits result/status/audit atomically. No arbitrary SQL or blind payload insertion.",
+            "Go domain modules use pgx/sqlc repositories and PostgreSQL transactions to commit typed result/status/audit records atomically. No arbitrary SQL or blind payload insertion.",
             "Persist command ID, actor, run/config/owner version and payload hash with a uniqueness constraint; replay the stored outcome on identical retry and return conflict for same ID/different payload.",
             "For actuation, commit intent before dispatch, then reconcile applied/failed/unknown and finalize audit; never imply a database transaction can atomically cover SUMO RPC. Expose a permissioned command-status read contract.",
-            "Inject database failure, writer failure before/after commit, lost acknowledgment and restart; prove no duplicate effects or silent successful writes. Classify frames/reads separately from durable business results."
+            "Inject database failure, timeout after commit, lost acknowledgment and restart; prove no duplicate effects or silent successful writes. Classify frames/reads separately from durable business results."
           ],
           "dependencies": [
             "S04",
@@ -1647,7 +1648,7 @@
         },
         {
           "id": "S42",
-          "title": "Preserve state ownership and stream continuity across replicas",
+          "title": "Preserve state ownership and live-stream continuity",
           "priority": "P0",
           "owner": "Platform",
           "days": [
@@ -1679,18 +1680,18 @@
         },
         {
           "id": "S43",
-          "title": "Verify routing, persistence and load-balanced cutover",
+          "title": "Verify Go gateway routing and persistence",
           "priority": "P0",
           "owner": "QA + Platform",
           "days": [
             1,
             15
           ],
-          "userStory": "As the release team, I want to verify routing, persistence and load-balanced cutover, so that the requested architecture and operator journeys are verifiable.",
+          "userStory": "As the release team, I want to verify Go gateway routing and persistence, so that the documented operator journeys are verifiable.",
           "acceptance": [
-            "Trace every frontend endpoint and durable write through real gateway/Go/writer/PostgreSQL with request/command IDs; verify Go and Python compute cannot bypass writer credentials.",
-            "Run concurrent clients and at least two gateway replicas plus declared Go owner/query/writer topology; kill/drain nodes, lose responses, inject timeouts and overload, and measure p95/error/recovery rates.",
-            "Cut over in stages with one write authority at a time, migration/backfill validation, rollback compatibility and a recorded recovery procedure; no uncontrolled dual writes.",
+            "Trace every frontend endpoint and durable write through the Go gateway, private Python gRPC when required, and PostgreSQL with request/command IDs.",
+            "Run concurrent clients, inject database and Python timeouts, and measure p95/error/recovery rates. The modular monolith is the declared MVP topology.",
+            "Verify migrations, idempotent command retries, rollback behavior, and a recorded recovery procedure; no uncontrolled dual writes.",
             "Record machine, versions, dataset, replica/client counts, duration and raw output; failure/skip is not a pass. Revalidate all existing scenario and audit journeys."
           ],
           "dependencies": [

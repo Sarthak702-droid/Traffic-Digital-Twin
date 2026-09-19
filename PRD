@@ -1,6 +1,6 @@
 # Traffic Digital Twin - DGP Demonstration MVP
 
-> **Requirements revision — 2026-09-17:** The requested target uses a Python API gateway, owning Go domain services and a dedicated Go DB writer. The repository currently implements Next.js → Go → Python compute/ PostgreSQL; the migration is not implemented. Sections 9–11 and 32–34 are authoritative for the revised architecture and production gates. Earlier roadmap dates and historical completion claims are not current acceptance. See [evidence-based audit](docs/UX-PRODUCTION-AUDIT.md) and [all epics/stories](docs/DELIVERY-PLAN.md). This revision changes planning documents only. No live physical signal control is authorized.
+> **Architecture update — 2026-09-18:** The supplied Backend Architecture and API Concepts specifications are authoritative. The MVP uses one public Go API gateway with modular in-process Go persistence, PostgreSQL as the system of record, and private Python gRPC compute services. Do not deploy a Python public gateway or a dedicated Go DB-writer microservice for this MVP. See [architecture alignment](docs/API-ARCHITECTURE-SPEC-ALIGNMENT.md) and [delivery plan](docs/DELIVERY-PLAN.md). No live physical signal control is authorized.
 
 
 **Document type:** Product Requirements Document (PRD)  
@@ -576,28 +576,27 @@ Degraded components should never be hidden.
 
 ---
 
-## 9. Backend architecture — revised target, not current implementation
+## 9. Backend architecture
 
-The browser uses a **Python API gateway** for all product REST and WebSocket traffic. Existing Next.js same-origin routing may remain, with its upstream changed to the Python gateway during implementation. The gateway selects the owning Go service using an explicit method/path registry. Go performs domain validation, safety and computation orchestration; existing private Python SUMO/intelligence workers remain Go dependencies.
+The browser uses the **Go API gateway** for all product REST and WebSocket traffic. Go performs validation, safety, orchestration, audit, and durable persistence; private Python SUMO/intelligence workers remain Go dependencies.
 
 For durable commands the required path is:
 
-`Frontend → Python gateway → owning Go service → Python gateway → Go DB writer → PostgreSQL → commit acknowledgment → Python gateway → frontend`.
+`Frontend → Go API gateway and domain modules → private Python gRPC when needed → Go safety and persistence → PostgreSQL → commit acknowledgment → frontend`.
 
-Only the Go DB writer commits business database mutations. The gateway and domain services must not also write the result directly. Reads use a documented Go query owner with read-only database access. High-frequency state and WebSocket delivery do not implicitly create database writes. See §32 for persistence classes, command phases and exceptions.
+Go persistence modules commit business database mutations through repository interfaces. Use pgx, sqlc, and PostgreSQL transactions for coupled state, action, and audit records. High-frequency state and WebSocket delivery do not implicitly create database writes.
 
 ### 9.1 Service roles and stack
 
 - Frontend: existing Next.js/React/TypeScript, React Query and Zustand.
-- Python gateway: separate ingress responsibility from existing Python compute; versioned routing, authentication, request/deadline propagation, response/error handling, bounded connections, health-aware routing and WebSocket proxying. Select the HTTP framework during implementation; none is claimed present today.
-- Go traffic/domain service: existing chi handlers organized by configuration/query, lifecycle, decisions/safety, mode/locks and replay owners. Logical owners may initially share one deployment; do not invent one microservice per endpoint.
-- Go DB writer: dedicated internal service using existing PostgreSQL/pgx/sqlc patterns, migrations, typed writes, idempotency and transactional audit/status/outcome persistence.
+- Go API gateway and domain modules: chi handlers organized by configuration/query, lifecycle, decisions/safety, mode/locks, replay, WebSocket fan-out, and health. Logical owners share the modular-monolith deployment; do not invent one microservice per endpoint.
+- Go persistence module: pgx/sqlc repositories, migrations, idempotency, and transactional audit/status/outcome persistence behind clear interfaces. Keep it extractable, but do not deploy it as a service without a measured need.
 - Private Python simulation/intelligence: existing gRPC compute and SUMO/TraCI, not public HTTP ingress and not database writers.
 - Go gateway clients and service connections use authenticated private boundaries outside an isolated local demo; production must not rely solely on loopback or Origin checks.
 
 ### 9.2 Responsibility boundaries
 
-Go remains authoritative for domain rules, current run ownership, safety validation, operator decisions, configuration and replay. Python gateway owns public transport, route selection, authenticated request context, downstream orchestration and response delivery. Go writer owns write authorization, persisted command state, transaction boundaries and audit integrity. The gateway may orchestrate persistence phases but cannot invent safety approval or convert an unconfirmed result into success.
+Go remains authoritative for public transport, domain rules, safety validation, operator decisions, configuration, replay, write authorization, transaction boundaries, and audit integrity. It cannot convert an unconfirmed persistence result into success.
 
 The original seeded demo operator is acceptable only in an explicitly isolated synthetic demo. Shared deployment requires server-enforced operator/supervisor/viewer permissions and authenticated audit identity (§33). Physical actuation remains excluded.
 

@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 
-const apiOrigin = process.env.API_ORIGIN || "http://127.0.0.1:8080";
+const apiOrigin = process.env.API_ORIGIN || "http://127.0.0.1:8081";
 
 export default defineConfig({
   plugins: [react()],

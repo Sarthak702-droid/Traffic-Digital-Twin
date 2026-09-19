@@ -12,10 +12,8 @@ import (
 )
 
 type Store struct {
-	Pool    *pgxpool.Pool
-	Q       *queries.Queries
-	Gateway string
-	Token   string
+	Pool *pgxpool.Pool
+	Q    *queries.Queries
 }
 
 func New(pool *pgxpool.Pool) *Store { return &Store{Pool: pool, Q: queries.New(pool)} }
@@ -29,9 +27,6 @@ func UUID() pgtype.UUID {
 	return pgtype.UUID{Bytes: b, Valid: true}
 }
 func (s *Store) SaveConfig(ctx context.Context, n config.Network) error {
-	if s.Gateway != "" {
-		return s.Write(ctx, "config", n, nil)
-	}
 	b, e := json.Marshal(n)
 	if e != nil {
 		return e
@@ -54,11 +49,6 @@ func (s *Store) SaveConfig(ctx context.Context, n config.Network) error {
 	return nil
 }
 func (s *Store) CreateRun(ctx context.Context, configID, scenario, mode string, seed int64) (queries.ScenarioRun, error) {
-	if s.Gateway != "" {
-		var out queries.ScenarioRun
-		err := s.Write(ctx, "run.prepare", map[string]any{"config_id": configID, "scenario": scenario, "mode": mode, "seed": seed}, &out)
-		return out, err
-	}
 	tx, e := s.Pool.Begin(ctx)
 	if e != nil {
 		return queries.ScenarioRun{}, e
@@ -81,11 +71,6 @@ func (s *Store) CreateRun(ctx context.Context, configID, scenario, mode string, 
 }
 
 func (s *Store) Activate(ctx context.Context, id pgtype.UUID, reason string) (queries.ScenarioRun, error) {
-	if s.Gateway != "" {
-		var out queries.ScenarioRun
-		err := s.Write(ctx, "run.activate", map[string]any{"id": id, "reason": reason}, &out)
-		return out, err
-	}
 	tx, e := s.Pool.Begin(ctx)
 	if e != nil {
 		return queries.ScenarioRun{}, e

@@ -1,4 +1,4 @@
-> **Revalidation notice — 2026-09-17:** Revalidated and accepted against revised gateway/writer boundaries, mode contracts, and production release gates. Seeded SUMO simulation, runtime safety validation, 1 Hz observation smoothing, WebSocket tunnel via Python gateway, and virtual signal state are active and verified. Stories S05–S07 are completed.
+> **Architecture alignment notice — 2026-09-18:** The supplied specifications require Go REST/WebSocket ingress and private Python gRPC compute. The historical verification evidence below must be read against that boundary; it does not authorize a Python public gateway or separate DB-writer service.
 
 # Epic 2 — implementation status
 

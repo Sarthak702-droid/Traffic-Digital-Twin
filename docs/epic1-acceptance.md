@@ -1,4 +1,4 @@
-> **Revalidation notice — 2026-09-17:** Revalidated and accepted against revised gateway/writer boundaries and production release gates. Browser → Python API Gateway (`services/gateway`) → Go Domain Service (`apps/api/cmd/api`) → Python Gateway → Private Go Writer (`apps/api/cmd/writer`) → PostgreSQL is active and verified. Stories S01–S04 are completed and verified by end-to-end integration, unit, and regression tests.
+> **Architecture alignment notice — 2026-09-18:** The supplied backend and API-concepts specifications replace the earlier gateway/writer target. The active MVP boundary is Browser → Go API gateway (`apps/api/cmd/api`) → PostgreSQL through Go persistence modules, with private Python gRPC simulation and intelligence. Historical acceptance remains evidence, not a claim that every current release gate has been rerun.
 
 # Epic 1 acceptance — Foundation & shared contracts
 
@@ -45,7 +45,7 @@ All of these passed on the local implementation (final verification: 2026-09-17 
 4. `npm run typecheck` and `npm run build`: strict TypeScript and production Vite build.
 5. `node scripts/verify-browser.mjs`: desktop/mobile UI, keyboard/Escape drawer, invalid seed, all three scenario preparations, durable reload, audit, emergency route and no page runtime errors. Screenshots saved locally under test-results/.
 
-6. `node scripts/verify-dashboard.mjs`: all 12 epic searches, four repository-backed completions, accepted-status locking, evidence endpoint and epic overview.
+6. `node scripts/verify-dashboard.mjs`: dynamic epic searches, repository-backed completions, accepted-status locking, evidence endpoint and epic overview.
 7. Protobuf/TypeScript/schema regeneration reproduced identical artifact hashes.
 
 A browser-discovered proxy-origin bug initially prevented saving runs. The fix allows only the configured frontend origin, preserves cross-origin rejection and has Go regression coverage. Mobile node shortcut buttons supplement the scaled graph.

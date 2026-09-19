@@ -29,7 +29,7 @@ dashboard/
 
 ## Features
 
-- All 12 epics are broken down into the existing 35 source-backed task cards. Each card identifies its parent epic and task position, priority, responsible team, dependencies, day window and expandable acceptance criteria.
+- All epics in the versioned delivery plan are broken down into source-backed task cards. Each card identifies its parent epic and task position, priority, responsible team, dependencies, day window and expandable acceptance criteria.
 - Search `11`, `E11`, `epic11`, `EPIC-11` or `Epic 11` for Epic 11's tasks; the same aliases work for every epic. A bare number is an exact epic search, so `1` does not mix in Epics 10–12. Use `S11` to find story S11. Ordinary text searches titles, requirements and acceptance criteria.
 - Epic and priority dropdowns combine with status filtering and execution/priority/title sorting. P0 is High / Essential, P1 is Medium / Important, and P2 is Low / Optional, preserving the source plan's priority policy.
 - Epic overview lists each epic's individual tasks with their priorities. Click a task for details or use “View all task cards” to open that epic's complete breakdown. This drill-down clears previous filters; “Clear filters” returns the full backlog.
@@ -41,7 +41,7 @@ dashboard/
 
 ## Data and boundaries
 
-The server reads `../docs/backlog.json` on every refresh. The current source contains 35 proposed stories across 12 epics. Unverified stories begin in Backlog. Repository progress is loaded from `../docs/delivery-status.json`; accepted completion records with evidence take precedence over personal tracking. The task modal links to the recorded checks. Readiness includes both repository completion and personal status tracking, with the verified count labelled separately. The next eligible task is calculated from dependencies marked completed. Ready/Blocked are manually tracked statuses, not automatic safety checks.
+The server reads `../docs/backlog.json` on every refresh. The current source is specification-aligned and the UI derives epic and story counts from it. Unverified stories begin in Backlog. Repository progress is loaded from `../docs/delivery-status.json`; accepted completion records with evidence take precedence over personal tracking. The task modal links to the recorded checks. Readiness includes both repository completion and personal status tracking, with the verified count labelled separately. The next eligible task is calculated from dependencies marked completed. Ready/Blocked are manually tracked statuses, not automatic safety checks.
 
 The original planning dashboard and backlog remain unchanged. This is a delivery documentation tool, not the operational Traffic Digital Twin application. It does not implement traffic control or replace the required product architecture.
 

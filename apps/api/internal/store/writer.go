@@ -3,7 +3,6 @@ package store
 import (
 	"bytes"
 	"context"
-	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,9 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"google.golang.org/protobuf/encoding/protojson"
 	"io"
-	"net/http"
 	"strings"
-	"time"
 	"traffic.local/twin/apps/api/internal/config"
 	pb "traffic.local/twin/packages/contracts/gen/go"
 )
@@ -48,82 +45,23 @@ func Role(ctx context.Context) string {
 	return "operator"
 }
 
-type WriteEnvelope struct {
-	CommandID string          `json:"command_id,omitempty"`
-	Operation string          `json:"operation"`
-	Actor     string          `json:"actor"`
-	Payload   json.RawMessage `json:"payload"`
-}
-
+// Write is the persistence-module command boundary. It keeps domain handlers
+// from issuing arbitrary SQL while retaining in-process Go transactions for
+// the MVP, as required by the architecture specification.
 func (s *Store) Write(ctx context.Context, op string, payload any, out any) error {
 	b, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
-	if s.Gateway == "" {
-		v, e := s.execute(ctx, op, b)
-		if e != nil {
-			return e
-		}
-		if out != nil {
-			vbytes, _ := json.Marshal(v)
-			return json.Unmarshal(vbytes, out)
-		}
-		return nil
-	}
-	data, _ := json.Marshal(WriteEnvelope{Operation: op, Actor: Actor(ctx), Payload: b, CommandID: CommandID(ctx)})
-	req, err := http.NewRequestWithContext(ctx, "POST", s.Gateway+"/internal/write", bytes.NewReader(data))
+	v, err := s.execute(ctx, op, b)
 	if err != nil {
 		return err
-	}
-	req.Header.Set("X-Service-Token", s.Token)
-	req.Header.Set("Content-Type", "application/json")
-	client := http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("writer unavailable (%d)", resp.StatusCode)
 	}
 	if out != nil {
-		return json.Unmarshal(body, out)
+		vbytes, _ := json.Marshal(v)
+		return json.Unmarshal(vbytes, out)
 	}
 	return nil
-}
-func (s *Store) WriterHandler(token string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Cache-Control", "no-store")
-		if token == "" || subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Service-Token")), []byte(token)) != 1 {
-			http.Error(w, `{"message":"Private writer"}`, 401)
-			return
-		}
-		if r.Method != "POST" || r.URL.Path != "/internal/write" {
-			http.NotFound(w, r)
-			return
-		}
-		var e WriteEnvelope
-		d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 2<<20))
-		d.DisallowUnknownFields()
-		if d.Decode(&e) != nil || d.Decode(new(any)) != io.EOF || e.Actor == "" {
-			http.Error(w, `{"message":"Invalid typed write"}`, 400)
-			return
-		}
-		ctx, cancel := context.WithTimeout(WithCommand(WithActor(r.Context(), e.Actor), e.CommandID), 4*time.Second)
-		defer cancel()
-		out, err := s.execute(ctx, e.Operation, e.Payload)
-		if err != nil {
-			http.Error(w, `{"message":"Write not confirmed; inspect command outcome"}`, 503)
-			return
-		}
-		json.NewEncoder(w).Encode(out)
-	})
 }
 func decode(b []byte, v any) error {
 	d := json.NewDecoder(bytes.NewReader(b))

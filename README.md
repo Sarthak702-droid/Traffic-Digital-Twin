@@ -1,4 +1,4 @@
-> **Production readiness — 2026-09-17: not ready.** Gateway/writer and UX remediation are in progress. See [verified implementation checkpoint](docs/REMEDIATION-STATUS.md) for passing checks and remaining blockers. The [audit](docs/UX-PRODUCTION-AUDIT.md) records the pre-fix baseline; historical epic acceptance does not approve production.
+> **Architecture alignment — 2026-09-18:** The supplied backend and API-concepts specifications are authoritative: Go exposes the public REST/WebSocket gateway and owns persistence; Python is private gRPC compute. This is a synthetic MVP and is not approved for live traffic control.
 
 # Traffic Digital Twin
 
@@ -16,19 +16,17 @@ go mod download
 docker compose up -d --wait postgres
 ```
 
-Prepare the new local gateway/writer stack (the writer owns migrations):
+Start the local Go-control-plane stack:
 
 ```sh
 python3 scripts/bootstrap-local.py
-python3 scripts/create-gateway-user.py .runtime/users.json operator --role operator
-docker compose exec -T postgres psql -U traffic -d traffic < scripts/init-local-db.sql
 npm run build
-python3 scripts/dev-stack.py
+npm start
 ```
 
-Bootstrap preserves an existing environment. Password entry is interactive. Generated secrets remain in ignored `.runtime` files. Open **http://127.0.0.1:3100** and sign in. Public gateway: **8080**; private Go domain: **8081**; internal gateway: **8082**; Go writer: **8083**. PostgreSQL: **5433**. The domain uses a read-only database account; only the writer uses write credentials. These are development startup instructions; full-stack acceptance and production deployment remain pending.
+Bootstrap preserves an existing environment and keeps generated compute credentials in ignored `.runtime` files. Open **http://127.0.0.1:3100**. Public Go API: **8081** (or the next available loopback port); private Python simulation and intelligence gRPC services: **50051** and **50052**; PostgreSQL: **5433**. Go performs migrations and durable writes through its persistence modules. These are development startup instructions; full-stack acceptance and production deployment remain pending.
 
-`.env.example` documents overrides. Next's proxy reads `API_ORIGIN`; rebuild Next when changing it. Keep private services on loopback. Local HTTP does not establish a production transport-security pass.
+`API_ORIGIN` controls the Vite proxy. Keep private services on loopback. Local HTTP does not establish a production transport-security pass.
 
 The existing delivery dashboard is separate: `node server.mjs` from the repository root, or `npm run dashboard`. It reads `docs/backlog.json` (the versioned copy of the original independent planning project) and repository completion evidence in `docs/delivery-status.json`. The legacy `docs/planning-dashboard` checkout remains untouched and is not required to run this project.
 
@@ -68,4 +66,4 @@ Browser acceptance: install Chromium once with `npx playwright install chromium`
 
 ## Design and scope
 
-See [architecture](docs/architecture.md), [contracts](packages/contracts/README.md), [PRD](docs/PRD.md) and [Epic 1 acceptance evidence](docs/epic1-acceptance.md).
+See [architecture](docs/architecture.md), [API and architecture alignment](docs/API-ARCHITECTURE-SPEC-ALIGNMENT.md), [contracts](packages/contracts/README.md), [PRD](docs/PRD.md) and [Epic 1 acceptance evidence](docs/epic1-acceptance.md).
