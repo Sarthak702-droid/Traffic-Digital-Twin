@@ -9,45 +9,31 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# 1. Interpreter version guard: the virtualenv and C-extensions are compiled for Python 3.12.
-# If invoked by a different interpreter (e.g. Python 3.13), find Python 3.12 and re-exec.
-if (sys.version_info.major, sys.version_info.minor) != (3, 12):
-    candidates = [
-        ROOT / ".venv/bin/python3.12",
-        ROOT / ".venv/bin/python",
-        "/usr/bin/python3.12",
-        "/usr/local/bin/python3.12",
-        shutil.which("python3.12"),
-    ]
-    for cand in candidates:
-        cand_str = str(cand) if cand else ""
-        if cand_str and os.path.isfile(cand_str) and os.access(cand_str, os.X_OK):
-            try:
-                res = subprocess.check_output(
-                    [cand_str, "-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"],
-                    text=True,
-                    timeout=2,
-                ).strip()
-                if res == "3.12":
-                    os.execv(cand_str, [cand_str, str(Path(__file__).resolve())] + sys.argv[1:])
-            except Exception:
-                continue
-
-# 2. Ensure repository root and contract paths are in sys.path
+# 1. Ensure repository root and contract paths are in sys.path
 for p in [ROOT, ROOT / "packages/contracts/gen/python"]:
     str_p = str(p)
     if str_p not in sys.path:
         sys.path.insert(0, str_p)
 
-# 3. Ensure .venv site-packages is in sys.path and .venv/bin in PATH
-for venv_site in (ROOT / ".venv/lib").glob("python*/site-packages"):
-    str_site = str(venv_site)
-    if str_site not in sys.path:
-        sys.path.insert(0, str_site)
+# 2. Ensure matching Python version site-packages is prioritized in sys.path
+py_ver_tag = f"python{sys.version_info.major}.{sys.version_info.minor}"
+matching_site = ROOT / f".venv/lib/{py_ver_tag}/site-packages"
+if matching_site.is_dir():
+    str_matching = str(matching_site)
+    if str_matching not in sys.path:
+        sys.path.insert(0, str_matching)
+else:
+    for venv_site in (ROOT / ".venv/lib").glob("python*/site-packages"):
+        str_site = str(venv_site)
+        if str_site not in sys.path:
+            sys.path.insert(0, str_site)
 
+# 3. Ensure bin directories are in PATH for SUMO/TraCI binaries
+flatpak_bin = Path.home() / ".var/app/com.visualstudio.code/data/python/bin"
 venv_bin = ROOT / ".venv/bin"
-if venv_bin.is_dir() and str(venv_bin) not in os.environ.get("PATH", ""):
-    os.environ["PATH"] = f"{venv_bin}:{os.environ.get('PATH', '')}"
+for b in [venv_bin, flatpak_bin]:
+    if b.is_dir() and str(b) not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = f"{b}:{os.environ.get('PATH', '')}"
 
 # 4. Compatibility fallbacks for C-extensions if running under mismatched interpreter
 try:

@@ -5,9 +5,9 @@
     "apps/web"
   ],
   "scripts": {
-    "start": "if command -v python3.12 >/dev/null 2>&1; then python3.12 scripts/start-all.py; elif [ -x .venv/bin/python ]; then .venv/bin/python scripts/start-all.py; else python3 scripts/start-all.py; fi",
-    "dev": "if command -v python3.12 >/dev/null 2>&1; then python3.12 scripts/start-all.py; elif [ -x .venv/bin/python ]; then .venv/bin/python scripts/start-all.py; else python3 scripts/start-all.py; fi",
-    "dev:all": "if command -v python3.12 >/dev/null 2>&1; then python3.12 scripts/start-all.py; elif [ -x .venv/bin/python ]; then .venv/bin/python scripts/start-all.py; else python3 scripts/start-all.py; fi",
+    "start": "python3 scripts/start-all.py",
+    "dev": "python3 scripts/start-all.py",
+    "dev:all": "python3 scripts/start-all.py",
     "dev:web": "npm run dev -w apps/web",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
@@ -17,7 +17,7 @@
     "test": "npm run test:ui && npm run test:python && npm run test:go",
     "test:all": "npm run test:ui && npm run test:python && npm run test:go",
     "test:ui": "npm run test -w apps/web",
-    "test:python": "if command -v python3.12 >/dev/null 2>&1; then python3.12 scripts/run-python-tests.py; elif [ -x .venv/bin/python ]; then .venv/bin/python scripts/run-python-tests.py; else python3 scripts/run-python-tests.py; fi",
+    "test:python": "python3 scripts/run-python-tests.py",
     "test:go": "(cd apps/api && go test ./...)",
     "dashboard": "node server.mjs"
   },

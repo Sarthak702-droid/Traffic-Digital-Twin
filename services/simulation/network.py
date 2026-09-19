@@ -13,10 +13,19 @@ def binary(name):
     path = Path(sys.executable).parent / name
     if path.exists():
         return str(path)
-    # 2. Check repo .venv/bin directly
+    # 2. When running Python 3.13, prioritize Python 3.13 runtime binaries
+    if sys.version_info[:2] == (3, 13):
+        flatpak_bin = Path.home() / ".var/app/com.visualstudio.code/data/python/bin" / name
+        if flatpak_bin.exists():
+            return str(flatpak_bin)
+    # 3. Check repo .venv/bin directly (Python 3.12)
     venv_bin = ROOT / ".venv/bin" / name
     if venv_bin.exists():
         return str(venv_bin)
+    # 4. Check user bin fallback
+    flatpak_bin = Path.home() / ".var/app/com.visualstudio.code/data/python/bin" / name
+    if flatpak_bin.exists():
+        return str(flatpak_bin)
     import shutil
     result = shutil.which(name)
     if not result:
