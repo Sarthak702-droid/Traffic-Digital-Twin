@@ -17,7 +17,7 @@
     "test": "npm run test:ui && npm run test:python && npm run test:go",
     "test:all": "npm run test:ui && npm run test:python && npm run test:go",
     "test:ui": "npm run test -w apps/web",
-    "test:python": "if [ -x .venv/bin/pytest ]; then .venv/bin/pytest; else pytest; fi",
+    "test:python": "if [ -x .venv/bin/python ]; then .venv/bin/python -m pytest; elif [ -x .venv/bin/python3 ]; then .venv/bin/python3 -m pytest; else python3 -m pytest; fi",
     "test:go": "(cd apps/api && go test ./...)",
     "dashboard": "node server.mjs"
   },
