@@ -103,7 +103,7 @@ export function Workspace() {
   const canWrite = activeRole !== "viewer";
 
   const client = useQueryClient();
-  const network = useQuery({ queryKey: ["network"], queryFn: getNetwork, enabled: session.isSuccess && !session.isError });
+  const network = useQuery({ queryKey: ["network"], queryFn: getNetwork });
   const health = useQuery({
     queryKey: ["health"],
     queryFn: () => request<HealthState>("/health"),
