@@ -539,7 +539,11 @@ func (s *Server) changeLock(w http.ResponseWriter, r *http.Request, locked bool)
 	if s.locks == nil {
 		s.locks = map[string]bool{}
 	}
-	s.locks[id] = locked
+	if locked {
+		s.locks[id] = true
+	} else {
+		delete(s.locks, id)
+	}
 	s.mu.Unlock()
 	send(w, 200, map[string]any{"target": id, "locked": locked})
 }

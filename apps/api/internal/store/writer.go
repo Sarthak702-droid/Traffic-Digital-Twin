@@ -283,7 +283,8 @@ func completeCommand(ctx context.Context, tx pgx.Tx, id string, response any) er
 		return e
 	}
 	if tag.RowsAffected() != 1 {
-		return errors.New("command reservation missing or already completed")
+		_, e = tx.Exec(ctx, "INSERT INTO command_outcomes(id,actor,payload_hash,status,http_status,response,route) VALUES($1,$2,'','completed',200,$3,'') ON CONFLICT(id) DO UPDATE SET status='completed',http_status=200,response=EXCLUDED.response,updated_at=now() WHERE command_outcomes.actor=$2", id, Actor(ctx), b)
+		return e
 	}
 	return nil
 }
