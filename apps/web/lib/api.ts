@@ -5,7 +5,7 @@ import { validateResponse } from "./response-schemas";
 import { useWorkspace } from "./state";
 
 export class ApiError extends Error {
-  constructor(message:string,public status:number,public commandId?:string,public uncertain=false){super(message);this.name="ApiError";}
+  constructor(message:string,public status:number,public commandId?:string,public uncertain=false,public code?:string,public requestId?:string){super(message);this.name="ApiError";}
 }
 export function pendingCommand():string|null {try{return localStorage.getItem("twin-uncertain-command")}catch{return null}}
 export function clearPendingCommand(){try{localStorage.removeItem("twin-uncertain-command")}catch{};window.dispatchEvent(new Event("command-outcome"));}
@@ -27,7 +27,7 @@ export async function request<T>(path:string,options?:RequestInit):Promise<T>{
  try{
   const response=await fetch(`/api/v1${path}`,{...options,headers,signal:controller.signal});
   let data:unknown;try{data=await response.json()}catch{throw new ApiError("Invalid response from service. Refresh safely.",502,commandId,mutation)}
-  if(!response.ok){const error=data as {message?:string;command_id?:string;outcome?:string};throw new ApiError(error.message||`Request failed (${response.status})`,response.status,error.command_id||commandId,mutation&&(error.outcome==="unknown"||(response.status>=500&&error.outcome!=="not_dispatched")))}
+  if(!response.ok){const error=data as {message?:string;code?:string;command_id?:string;outcome?:string};throw new ApiError(error.message||`Request failed (${response.status})`,response.status,error.command_id||commandId,mutation&&(error.outcome==="unknown"||(response.status>=500&&error.outcome!=="not_dispatched")),error.code,response.headers.get("X-Request-ID")||undefined)}
   try{const parsed=validateResponse(path,data) as T;release();return parsed}catch{throw new ApiError("Service response does not match the expected contract. Data is unavailable.",502,commandId,mutation)}
  }catch(error){
   const e=error instanceof ApiError?error:new ApiError(controller.signal.aborted?"Request timed out or was cancelled. Check the command outcome before retrying.":"Network unavailable. Reconnect and retry reads.",0,commandId,mutation&&!auth);

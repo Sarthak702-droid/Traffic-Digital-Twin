@@ -286,7 +286,15 @@ func (s *Server) health(ctx context.Context) *pb.HealthState {
 		intMessage = "Conservation forecasts and bounded network candidates"
 	}
 	s.mu.RUnlock()
-	return &pb.HealthState{Timestamp: time.Now().UTC().Format(time.RFC3339Nano), Components: []*pb.ComponentHealth{{Component: "api", Status: "normal", Message: "Go API connected"}, {Component: "database", Status: dbStatus, Message: dbMessage}, {Component: "simulation", Status: simStatus, Message: simMessage}, {Component: "intelligence", Status: intStatus, Message: intMessage}, {Component: "signal_controller", Status: "unavailable", Message: "No live signal control"}}}
+	return &pb.HealthState{Timestamp: time.Now().UTC().Format(time.RFC3339Nano), Components: []*pb.ComponentHealth{
+		{Component: "api", Status: "normal", Message: "Go API connected"},
+		{Component: "database", Status: dbStatus, Message: dbMessage},
+		{Component: "simulation", Status: simStatus, Message: simMessage},
+		{Component: "intelligence", Status: intStatus, Message: intMessage},
+		{Component: "signal_controller", Status: "unavailable", Message: "NOT CONNECTED · synthetic signal plans only"},
+		{Component: "cctv", Status: "unavailable", Message: "DEMO/SAMPLE · no camera feed or CV pipeline configured"},
+		{Component: "emergency_api", Status: "simulated", Message: "SIMULATED · no live emergency dispatch integration"},
+	}}
 }
 func (s *Server) live(w http.ResponseWriter, r *http.Request) {
 	options := &websocket.AcceptOptions{}

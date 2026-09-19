@@ -31,6 +31,26 @@ func TestReadAndUnavailable(t *testing.T) {
 		}
 	}
 }
+
+func TestHealthMakesUnavailableAndSimulatedDependenciesExplicit(t *testing.T) {
+	s := app(t)
+	health := s.health(context.Background())
+	components := map[string]*pb.ComponentHealth{}
+	for _, component := range health.Components {
+		components[component.Component] = component
+	}
+	for _, required := range []string{"api", "database", "simulation", "intelligence", "signal_controller", "cctv", "emergency_api"} {
+		if components[required] == nil {
+			t.Fatalf("health omitted %s", required)
+		}
+	}
+	if components["signal_controller"].Status != "unavailable" || components["cctv"].Status != "unavailable" || components["emergency_api"].Status != "simulated" {
+		t.Fatalf("optional integration states are not explicit: %#v", components)
+	}
+	if _, err := time.Parse(time.RFC3339Nano, health.Timestamp); err != nil {
+		t.Fatalf("health timestamp is invalid: %v", err)
+	}
+}
 func TestRejectInvalidCommands(t *testing.T) {
 	h := app(t).Handler()
 	for _, body := range []string{`{}`, `null`, `{"schema_version":"1.0","scenario_type":"unknown","mode":"recommend","seed":1}`, `{"schema_version":"1.0","scenario_type":"peak_surge","mode":"live","seed":1}`, `{"schema_version":"1.0","scenario_type":"peak_surge","mode":"recommend","seed":-1}`, `{"schema_version":"1.0","scenario_type":"peak_surge","mode":"recommend","seed":1,"unsafe":true}`, `{} {}`, strings.Repeat(" ", 5000) + `{}`} {

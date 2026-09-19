@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { z } from "zod";
-import type { TrafficState } from "../../../packages/contracts/typescript/events";
+import type { HealthState, TrafficState } from "../../../packages/contracts/typescript/events";
 const nonnegative = z.number().finite().nonnegative();
 const movement = z.object({
   movement_id: z.string(),
@@ -80,6 +80,7 @@ export const useLiveStore = create<{
   connected: boolean;
   failed: boolean;
   latency: number;
+  health: HealthState | null;
   set: (
     value: Partial<{
       frame: TrafficState | null;
@@ -87,6 +88,7 @@ export const useLiveStore = create<{
       connected: boolean;
       failed: boolean;
       latency: number;
+      health: HealthState | null;
     }>,
   ) => void;
 }>((set) => ({
@@ -95,6 +97,7 @@ export const useLiveStore = create<{
   connected: false,
   failed: false,
   latency: 0,
+  health: null,
   set,
 }));
 export function useLive() {
@@ -131,8 +134,14 @@ export function useLive() {
             const simulation = envelope.payload.components?.find(
               (c: { component: string }) => c.component === "simulation",
             );
-            if (simulation?.status === "unavailable")
-              useLiveStore.getState().set({ failed: true });
+            const timestamp = envelope.payload.timestamp;
+            if (typeof timestamp !== "string" || Number.isNaN(Date.parse(timestamp))) {
+              throw Error("Invalid health timestamp");
+            }
+            useLiveStore.getState().set({
+              health: envelope.payload as HealthState,
+              failed: simulation?.status === "unavailable",
+            });
           }
         } catch {
           useLiveStore.getState().set({ failed: true });

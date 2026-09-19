@@ -325,6 +325,10 @@ export function Workspace() {
   const refresh = () => {
     client.invalidateQueries();
   };
+  const auditScope = (values: unknown) => {
+    if (!Array.isArray(values)) return [];
+    return [...new Set(values.flatMap((value) => typeof value === "object" && value !== null && "node_id" in value && typeof value.node_id === "string" ? [value.node_id] : []))];
+  };
 
   return (
     <div className="app-shell">
@@ -636,7 +640,7 @@ export function Workspace() {
                     {/* Live Stream Health & Signal Summary */}
                     <LiveSummary live={live} />
                     <section className="context-panel"><h2>Recovery and timing locks</h2>
-                    <p>{live.frame?.replay ? "Prerecorded replay · signal decisions disabled" : "Replay is a prerecorded fallback; it still requires the local gateway and database."}</p>
+                    <p>{live.frame?.replay ? "Prerecorded replay · signal decisions disabled" : "Replay is a prerecorded fallback delivered by the Go API. It requires the verified recording and PostgreSQL to create its run audit."}</p>
                     <Button disabled={!dbReady||anyCommandPending} onClick={()=>{if(!live.frame||window.confirm("Replace the current run with prerecorded replay?"))replay.mutate()}}>Start golden replay</Button>
                     <h3>Configured timing locks</h3><p>Locks persist across restarts and are checked before operator plan changes. Emergency scheduling remains separately protected.</p>
                     {data.phases.map(p=><Button key={p.id} variant="outline" disabled={!dbReady||!live.fresh||!!live.frame?.replay||anyCommandPending} onClick={()=>lock.mutate({target:p.id,locked:!modeQuery.data?.locks.includes(p.id)})}>{modeQuery.data?.locks.includes(p.id)?"Unlock":"Lock"} {p.id}</Button>)}
@@ -843,6 +847,10 @@ export function Workspace() {
                                     <span>Actor: <strong>{a.actor}</strong></span>
                                     <span>Safety Result: <strong className={isApproved ? "text-success" : isRejected ? "text-danger" : ""}>{a.safety_result}</strong></span>
                                   </div>
+                                  <div className="audit-meta-row">
+                                    <span>Junctions: <strong>{[...auditScope(a.before_values), ...auditScope(a.after_values)].filter((value, index, values) => values.indexOf(value) === index).join(", ") || "Not applicable"}</strong></span>
+                                    <span>Recommendation: <code>{a.recommendation_id || "Not applicable"}</code></span>
+                                  </div>
                                   <details><summary>Decision evidence</summary><p>Recommendation: {a.recommendation_id || "Not applicable"}</p><pre>Before: {JSON.stringify(a.before_values,null,2)}{"\n"}After: {JSON.stringify(a.after_values,null,2)}</pre></details>
                                   <div className="audit-run-id">
                                     <code>Run: {a.run_id}</code>
@@ -860,17 +868,19 @@ export function Workspace() {
                     </section>
 
                     <section className="context-panel">
-                      <h2>Audit pages</h2><Button disabled={auditPages.length===0} onClick={()=>{const previous=[...auditPages];setAuditAfter(previous.pop()||0);setAuditPages(previous)}}>Previous events</Button><Button disabled={!audit.data||audit.data.events.length<50} onClick={()=>{setAuditPages([...auditPages,auditAfter]);setAuditAfter(audit.data!.next_after)}}>Next events</Button><Button onClick={()=>{setAuditPages([]);setAuditAfter(0)}}>First page</Button>
+                      <h2>Audit pages</h2><p className="panel-message">Page {auditPages.length + 1} · durable cursor {auditAfter}</p><Button disabled={auditPages.length===0} onClick={()=>{const previous=[...auditPages];setAuditAfter(previous.pop()||0);setAuditPages(previous)}}>Previous events</Button><Button disabled={!audit.data||audit.data.events.length<50||audit.data.next_after<=auditAfter} onClick={()=>{setAuditPages([...auditPages,auditAfter]);setAuditAfter(audit.data!.next_after)}}>Next events</Button><Button disabled={auditAfter===0} onClick={()=>{setAuditPages([]);setAuditAfter(0)}}>First page</Button>
                       <div className="overline">COMPONENT HEALTH</div>
                       <h2>System Availability</h2>
                       {health.isError ? (
                         <p className="form-error">Health API unavailable</p>
+                      ) : health.isPending ? (
+                        <p className="panel-message">Checking component availability…</p>
                       ) : (
                         health.data?.components.map((c) => (
                           <div className="component" key={c.component}>
                             <div>
                               <span
-                                className={`status-dot ${c.status === "normal" ? "normal" : "unknown"}`}
+                                className={`status-dot ${c.status === "normal" ? "normal" : c.status === "simulated" ? "simulated" : "unknown"}`}
                               />
                               <strong>
                                 {c.component.replaceAll("_", " ")}
@@ -880,6 +890,7 @@ export function Workspace() {
                           </div>
                         ))
                       )}
+                      {health.data?.timestamp && <p className="health-observed-at">Last checked {new Date(health.data.timestamp).toLocaleString()}</p>}
                     </section>
                   </div>
                 )}

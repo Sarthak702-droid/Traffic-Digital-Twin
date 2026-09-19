@@ -55,8 +55,9 @@ export function TopBar({
   }, []);
 
   const components = health?.components ?? [];
+  const coreComponents = new Set(["api", "database", "simulation", "intelligence"]);
   const hasFailure = components.some(
-    (c) => c.status !== "normal" && c.component !== "signal_controller",
+    (c) => coreComponents.has(c.component) && c.status !== "normal",
   );
   const healthKnown=!!health?.timestamp && Date.now()-Date.parse(health.timestamp)<20000 && components.length>0;
   const healthStatusText = !healthKnown ? "Unknown" : hasFailure ? "Degraded" : "Normal";
@@ -115,10 +116,13 @@ export function TopBar({
                 </button>
               </div>
               <ul className="health-popover-list">
+                <li className="health-observed-at">
+                  Last checked {healthKnown ? new Date(health!.timestamp).toLocaleTimeString() : "—"}
+                </li>
                 {components.map((c) => (
                   <li key={c.component}>
                     <span
-                      className={`status-dot ${c.status === "normal" ? "normal" : "unknown"}`}
+                      className={`status-dot ${c.status === "normal" ? "normal" : c.status === "simulated" ? "simulated" : "unknown"}`}
                     />
                     <div>
                       <strong>{c.component.replaceAll("_", " ")}</strong>

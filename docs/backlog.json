@@ -915,6 +915,8 @@
       ],
       "why": "Reliability and traceability must grow with the system, not wait until the final rehearsal.",
       "sources": [
+        "traffic_digital_twin_backend_architecture_spec.docx",
+        "traffic_digital_twin_api_concepts_spec.docx",
         "PRD §§8.8, 12–13, 23–25",
         "AGENT.MD: Audit, Golden replay",
         "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
@@ -936,9 +938,9 @@
           "userStory": "As a supervisor, I want an append-only decision history, so that I can trace who changed what and why.",
           "acceptance": [
             "Record recommendations and operator actions including timestamp, actor, recommendation ID, before/after, reason, safety result and run ID.",
-            "Serve paginated audit through Python gateway → Go query service; expose audit.appended through the owning Go stream and gateway.",
+            "Serve paginated audit from the public Go API; expose audit.appended through the same Go WebSocket contract.",
             "Test successful and rejected decisions, persistence and association with the correct scenario.",
-            "Writer commits command outcome/status/audit together; retain durable intent before dispatch and reconcile unknown/final-audit-failure states after restart. No ignored write errors may appear as success.",
+            "The Go API commits command outcome/status/audit together through its in-process persistence module; retain durable intent before dispatch and reconcile unknown/final-audit-failure states after restart. No ignored write errors may appear as success.",
             "Use authenticated actor for shared production, validate lifecycle before saving, deduplicate per command/payload and verify append-only history through real DB failures."
           ],
           "dependencies": [
@@ -955,7 +957,7 @@
             "A09",
             "A10"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified; evidence in docs/epic8-status.md."
         },
         {
           "id": "S26",
@@ -971,7 +973,7 @@
             "Show Go, simulation, intelligence, CV and database availability with timestamps/staleness.",
             "Show controller NOT CONNECTED, CCTV DEMO/SAMPLE and emergency API SIMULATED.",
             "Stop recommendations when intelligence fails; display missing/low-confidence state and explain absent optional CV.",
-            "Show gateway, Go owner, writer, Python compute and DB health with fresh timestamps; missing or stale health is unknown/unavailable, never Normal.",
+            "Show the public Go API, simulation, private Python intelligence service and database health with a fresh report timestamp; missing or stale health is unknown/unavailable, never Normal.",
             "Define offline, maintenance, rate-limit, timeout and recovery states; suppress recommendations without fresh analysis even while stream continues. Optional CV remains explicitly unavailable."
           ],
           "dependencies": [
@@ -988,7 +990,7 @@
             "A11",
             "A12"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified; evidence in docs/epic8-status.md."
         },
         {
           "id": "S27",
@@ -1001,11 +1003,11 @@
           ],
           "userStory": "As a presenter, I want a deterministic replay fallback, so that the demo survives SUMO or CV failure offline.",
           "acceptance": [
-            "Implement live/replay selection behind a presenter/admin control; replay travels through owning Go service → Python gateway → the same frontend WebSocket contracts.",
+            "Implement live/replay selection behind a presenter/admin control; replay travels through the public Go API and the same frontend WebSocket contracts.",
             "Replay/reset preserve event order, timing and scenario/run identity; visibly indicate replay.",
             "Capture a known-good eight-minute event stream once scenarios stabilize and verify failure switch-over.",
             "Expose replay controls in the active Workspace; label all replay-derived views and disable live mutations while replay runs.",
-            "Test SUMO/intelligence failure, replay end/restart, checksum/config mismatch and gateway reconnect. Database loss must show a limitation rather than claiming database-independent replay."
+            "Test SUMO/intelligence failure, replay end/restart, checksum/config mismatch and WebSocket reconnect. Database loss must show a limitation rather than claiming database-independent replay."
           ],
           "dependencies": [
             "S02",
@@ -1020,7 +1022,7 @@
             "A11",
             "A14"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified; evidence in docs/epic8-status.md."
         },
         {
           "id": "S28",
@@ -1052,10 +1054,10 @@
           "auditFindings": [
             "A10"
           ],
-          "verificationStatus": "Revalidation required; no implementation performed by this audit."
+          "verificationStatus": "Completed and verified; evidence in docs/epic8-status.md."
         }
       ],
-      "releaseGate": "Reaccept every story against revised gateway/writer ownership and applicable UX states; historical completion is not production acceptance.",
+      "releaseGate": "Accepted against the direct public Go API, in-process Go persistence, private Python gRPC intelligence boundary and applicable UI states; evidence in docs/epic8-status.md.",
       "auditFindings": [
         "A04",
         "A05",
