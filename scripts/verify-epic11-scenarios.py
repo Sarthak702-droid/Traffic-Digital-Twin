@@ -28,6 +28,9 @@ import time
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+import docker_cmd
+from docker_cmd import get_docker_cmd
 
 def get_free_port():
     with socket.socket() as s:
@@ -107,7 +110,7 @@ def main():
         intel_proc = start_process([python_bin, "-m", "services.shared.server", "intelligence", "--port", str(ports["intelligence"])])
 
         print("[3/8] Building and launching Go API gateway...")
-        api_bin = Path(tempfile.gettempdir()) / f"traffic-api-{uuid.uuid4().hex[:6]}"
+        api_bin = ROOT / ".runtime" / f"traffic-api-{uuid.uuid4().hex[:6]}"
         subprocess.run(["go", "build", "-o", str(api_bin), "./apps/api/cmd/api"], cwd=ROOT, check=True)
         start_process([str(api_bin)])
 

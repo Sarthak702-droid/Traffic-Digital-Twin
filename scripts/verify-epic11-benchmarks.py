@@ -26,6 +26,9 @@ import time
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+import docker_cmd
+from docker_cmd import get_docker_cmd
 
 def get_free_port():
     with socket.socket() as s:
@@ -128,7 +131,7 @@ def main():
         sim_proc = start_process([python_bin, "-m", "services.shared.server", "simulation", "--port", str(ports["simulation"])])
         intel_proc = start_process([python_bin, "-m", "services.shared.server", "intelligence", "--port", str(ports["intelligence"])])
 
-        api_bin = Path(tempfile.gettempdir()) / f"traffic-api-bench-{uuid.uuid4().hex[:6]}"
+        api_bin = ROOT / ".runtime" / f"traffic-api-bench-{uuid.uuid4().hex[:6]}"
         subprocess.run(["go", "build", "-o", str(api_bin), "./apps/api/cmd/api"], cwd=ROOT, check=True)
         api_proc = start_process([str(api_bin)])
 

@@ -13,6 +13,9 @@ import time
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+import docker_cmd
+from docker_cmd import get_docker_cmd
 
 def port():
     with socket.socket() as s:
@@ -60,7 +63,7 @@ def main():
         python = str(ROOT / ".venv/bin/python") if (ROOT / ".venv/bin/python").exists() else sys.executable
         start([python, "-m", "services.shared.server", "simulation", "--port", str(ports["simulation"])])
         start([python, "-m", "services.shared.server", "intelligence", "--port", str(ports["intelligence"])])
-        binary = Path(tempfile.gettempdir()) / "traffic-go-api-smoke"
+        binary = ROOT / ".runtime" / "traffic-go-api-smoke"
         subprocess.run(["go", "build", "-o", str(binary), "./apps/api/cmd/api"], cwd=ROOT, check=True)
         start([str(binary)])
         wait(lambda: request("/health/live")[0] == 200)
