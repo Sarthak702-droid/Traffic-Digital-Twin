@@ -14,7 +14,11 @@
     "build:bin": "mkdir -p bin && GOCACHE=${GOCACHE:-/tmp/traffic-go-build-cache} go build -o bin/api ./apps/api/cmd/api",
     "build": "npm run build -w apps/web",
     "typecheck": "npm run typecheck -w apps/web",
+    "test": "npm run test:ui && npm run test:python && npm run test:go",
+    "test:all": "npm run test:ui && npm run test:python && npm run test:go",
     "test:ui": "npm run test -w apps/web",
+    "test:python": "if [ -x .venv/bin/pytest ]; then .venv/bin/pytest; else pytest; fi",
+    "test:go": "(cd apps/api && go test ./...)",
     "dashboard": "node server.mjs"
   },
   "devDependencies": {
