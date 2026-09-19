@@ -9,9 +9,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 def binary(name):
+    # 1. Check relative to sys.executable (e.g. inside activated venv)
     path = Path(sys.executable).parent / name
     if path.exists():
         return str(path)
+    # 2. Check repo .venv/bin directly
+    venv_bin = ROOT / ".venv/bin" / name
+    if venv_bin.exists():
+        return str(venv_bin)
     import shutil
     result = shutil.which(name)
     if not result:
