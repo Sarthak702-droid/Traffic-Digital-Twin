@@ -142,24 +142,24 @@
       "evidence": "docs/epic12-status.md"
     },
     "S39": {
-      "status": "in-progress",
-      "reason": "Go public gateway and private Python gRPC boundary implemented; direct runtime acceptance remains to be rerun locally."
+      "status": "completed",
+      "evidence": "docs/epic13-status.md"
     },
     "S40": {
-      "status": "in-progress",
-      "reason": "Request IDs, stable error codes, readiness routes, OpenAPI updates and explicit route failures are implemented; full route-parity acceptance remains."
+      "status": "completed",
+      "evidence": "docs/epic13-status.md"
     },
     "S41": {
-      "status": "in-progress",
-      "reason": "In-process Go persistence modules now own migrations and transactional writes; local database fault acceptance remains."
+      "status": "completed",
+      "evidence": "docs/epic13-status.md"
     },
     "S42": {
-      "status": "backlog",
-      "reason": "Revised acceptance pending; no completion verified by this audit."
+      "status": "completed",
+      "evidence": "docs/epic13-status.md"
     },
     "S43": {
-      "status": "backlog",
-      "reason": "Revised acceptance pending; no completion verified by this audit."
+      "status": "completed",
+      "evidence": "docs/epic13-status.md"
     },
     "S44": {
       "status": "backlog",

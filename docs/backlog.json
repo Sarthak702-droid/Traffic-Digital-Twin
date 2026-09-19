@@ -1542,7 +1542,7 @@
       "dependencies": [
         "E01"
       ],
-      "releaseGate": "All stories require implementation and measured acceptance; no work is claimed complete.",
+      "releaseGate": "Accepted against the direct public Go API, private Python gRPC boundary, in-process Go persistence, lease fencing, and concurrent load gates; evidence in docs/epic13-status.md.",
       "auditFindings": [
         "A01",
         "A07",
@@ -1585,7 +1585,7 @@
             "A12",
             "A13"
           ],
-          "verificationStatus": "Not implemented by this audit; acceptance pending."
+          "verificationStatus": "Completed and verified against gateway/writer and schema release gates; evidence in docs/epic13-status.md."
         },
         {
           "id": "S40",
@@ -1615,7 +1615,7 @@
             "A07",
             "A18"
           ],
-          "verificationStatus": "Not implemented by this audit; acceptance pending."
+          "verificationStatus": "Completed and verified against gateway/writer and schema release gates; evidence in docs/epic13-status.md."
         },
         {
           "id": "S41",
@@ -1648,7 +1648,7 @@
             "A09",
             "A14"
           ],
-          "verificationStatus": "Not implemented by this audit; acceptance pending."
+          "verificationStatus": "Completed and verified against gateway/writer and schema release gates; evidence in docs/epic13-status.md."
         },
         {
           "id": "S42",
@@ -1680,7 +1680,7 @@
             "A11",
             "A12"
           ],
-          "verificationStatus": "Not implemented by this audit; acceptance pending."
+          "verificationStatus": "Completed and verified against gateway/writer and schema release gates; evidence in docs/epic13-status.md."
         },
         {
           "id": "S43",
@@ -1713,7 +1713,7 @@
             "A14",
             "A19"
           ],
-          "verificationStatus": "Not implemented by this audit; acceptance pending."
+          "verificationStatus": "Completed and verified against gateway/writer and schema release gates; evidence in docs/epic13-status.md."
         }
       ]
     },

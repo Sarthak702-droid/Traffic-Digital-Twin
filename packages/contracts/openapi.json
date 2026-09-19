@@ -754,6 +754,90 @@
           }
         }
       }
+    },
+    "/api/v1/commands/{id}": {
+      "get": {
+        "summary": "Retrieve recorded outcome of an uncertain or completed idempotent command",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Idempotency command identifier (8-128 chars)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recorded command outcome"
+          },
+          "400": {
+            "description": "Invalid command ID format"
+          },
+          "404": {
+            "description": "Command not found"
+          },
+          "409": {
+            "description": "Command actor or payload conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/session": {
+      "get": {
+        "summary": "Get current authenticated session actor and role",
+        "responses": {
+          "200": {
+            "description": "Current session information"
+          }
+        }
+      }
+    },
+    "/api/v1/session/login": {
+      "post": {
+        "summary": "Authenticate demonstration operator or supervisor",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "username"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Demonstration session authenticated"
+          },
+          "400": {
+            "description": "Missing or invalid username"
+          }
+        }
+      }
+    },
+    "/api/v1/session/logout": {
+      "post": {
+        "summary": "Terminate current demonstration session",
+        "responses": {
+          "200": {
+            "description": "Session terminated"
+          }
+        }
+      }
     }
   },
   "components": {

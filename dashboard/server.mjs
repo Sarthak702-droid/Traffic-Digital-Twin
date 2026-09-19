@@ -35,6 +35,7 @@ const server = http.createServer(async (req,res) => {
     if(path === '/evidence/epic10' || path === '/evidence/e10') return send(200,await readFile(resolve(root,'docs/epic10-status.md'),'utf8'),'text/plain');
     if(path === '/evidence/epic11' || path === '/evidence/e11') return send(200,await readFile(resolve(root,'docs/epic11-status.md'),'utf8'),'text/plain');
     if(path === '/evidence/epic12' || path === '/evidence/e12') return send(200,await readFile(resolve(root,'docs/epic12-status.md'),'utf8'),'text/plain');
+    if(path === '/evidence/epic13' || path === '/evidence/e13') return send(200,await readFile(resolve(root,'docs/epic13-status.md'),'utf8'),'text/plain');
     if(path === '/api/git') {
       try {
         const [{stdout:branch},{stdout:status}] = await Promise.all([run('git',['branch','--show-current'],{cwd:root}),run('git',['status','--short'],{cwd:root})]);

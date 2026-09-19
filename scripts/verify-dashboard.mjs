@@ -153,6 +153,30 @@ try {
     200,
   );
   await page.keyboard.press("Escape");
+  await page.getByRole("searchbox").fill("13");
+  await page.waitForFunction(
+    () => document.querySelectorAll(".task-card").length === 5,
+  );
+  assert.equal(
+    await page
+      .locator(".task-card .badge")
+      .filter({ hasText: "COMPLETED" })
+      .count(),
+    5,
+  );
+  await page
+    .getByRole("button", {
+      name: "Establish the Go public gateway boundary",
+      exact: true,
+    })
+    .click();
+  await page.getByRole("dialog").waitFor();
+  assert.equal(await page.locator("#task-status").isDisabled(), true);
+  assert.equal(
+    (await page.request.get(base + "/evidence/epic13")).status(),
+    200,
+  );
+  await page.keyboard.press("Escape");
   await page.getByRole("searchbox").fill("8");
   await page.waitForFunction(
     () => document.querySelectorAll(".task-card").length === 4,

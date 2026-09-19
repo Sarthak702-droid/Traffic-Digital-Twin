@@ -157,3 +157,221 @@ func TestLeaseFencesFormerOwner(t *testing.T) {
 		t.Fatalf("lease fencing failed: first=%t/%d second=%t/%d", one.IsAuthoritative(), one.Epoch(), two.IsAuthoritative(), two.Epoch())
 	}
 }
+
+func TestRoleBasedAccessControlAndRequestTracking(t *testing.T) {
+	s := app(t)
+	h := s.Handler()
+
+	// 1. Mutation by viewer is forbidden (403)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/runs", strings.NewReader(`{}`))
+	req.Header.Set("X-Role", "viewer")
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("viewer mutation got %d, want 403", w.Code)
+	}
+
+	// 2. Mutation by observer is forbidden (403)
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/runs", strings.NewReader(`{}`))
+	req.Header.Set("X-Role", "observer")
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("observer mutation got %d, want 403", w.Code)
+	}
+
+	// 3. Invalid role is rejected (401)
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/network", nil)
+	req.Header.Set("X-Role", "unauthorized_role")
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("invalid role got %d, want 401", w.Code)
+	}
+
+	// 4. Request ID is present on all responses
+	req = httptest.NewRequest(http.MethodGet, "/health/live", nil)
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Header().Get("X-Request-ID") == "" {
+		t.Fatal("response missing X-Request-ID")
+	}
+
+	// 5. Explicit incoming X-Request-ID is preserved
+	req = httptest.NewRequest(http.MethodGet, "/health/live", nil)
+	req.Header.Set("X-Request-ID", "req-test-trace-1234")
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Header().Get("X-Request-ID") != "req-test-trace-1234" {
+		t.Fatalf("request ID not preserved: got %q, want %q", w.Header().Get("X-Request-ID"), "req-test-trace-1234")
+	}
+}
+
+func TestSessionLifecycleAndRoleAssignment(t *testing.T) {
+	s := app(t)
+	h := s.Handler()
+
+	// 1. GET /api/v1/session returns current actor & role
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/session", nil)
+	req.Header.Set("X-Actor", "demo-operator")
+	req.Header.Set("X-Role", "operator")
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("session read got %d: %s", w.Code, w.Body.String())
+	}
+	var sessionInfo map[string]string
+	if err := json.Unmarshal(w.Body.Bytes(), &sessionInfo); err != nil {
+		t.Fatal(err)
+	}
+	if sessionInfo["actor"] != "demo-operator" || sessionInfo["role"] != "operator" {
+		t.Fatalf("unexpected session info: %+v", sessionInfo)
+	}
+
+	// 2. POST /api/v1/session/login with supervisor
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/session/login", strings.NewReader(`{"username":"supervisor_patel","password":"demo"}`))
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("login supervisor got %d: %s", w.Code, w.Body.String())
+	}
+	var loginRes map[string]string
+	_ = json.Unmarshal(w.Body.Bytes(), &loginRes)
+	if loginRes["role"] != "supervisor" {
+		t.Fatalf("expected supervisor role, got %s", loginRes["role"])
+	}
+
+	// 3. POST /api/v1/session/login with viewer
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/session/login", strings.NewReader(`{"username":"viewer_guest","password":"demo"}`))
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("login viewer got %d: %s", w.Code, w.Body.String())
+	}
+	_ = json.Unmarshal(w.Body.Bytes(), &loginRes)
+	if loginRes["role"] != "viewer" {
+		t.Fatalf("expected viewer role, got %s", loginRes["role"])
+	}
+
+	// 4. Invalid login request
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/session/login", strings.NewReader(`{"username":""}`))
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("empty username got %d, want 400", w.Code)
+	}
+
+	// 5. POST /api/v1/session/logout
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/session/logout", nil)
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("logout got %d, want 200", w.Code)
+	}
+}
+
+func TestCommandStatusEndpointContract(t *testing.T) {
+	st, cleanup := setupTestStore(t)
+	if st == nil {
+		return
+	}
+	defer cleanup()
+	s := app(t)
+	s.Store = st
+	h := s.Handler()
+
+	// 1. Invalid command ID (less than 8 chars)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/commands/short", nil)
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("short command id got %d, want 400", w.Code)
+	}
+
+	// 2. Non-existent command
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/commands/nonexistent-command-9999", nil)
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("non-existent command got %d, want 404", w.Code)
+	}
+
+	// 3. Issue a real command via POST /api/v1/runs
+	body := `{"schema_version":"1.0","scenario_type":"peak_surge","seed":2201,"mode":"recommend"}`
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/runs", strings.NewReader(body))
+	req.Header.Set("Idempotency-Key", "epic13-cmd-status-001")
+	req.Header.Set("X-Actor", "operator-cmd-test")
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("run creation failed: %d %s", w.Code, w.Body.String())
+	}
+
+	// 4. Retrieve the recorded command outcome via GET /api/v1/commands/{id}
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/commands/epic13-cmd-status-001", nil)
+	req.Header.Set("X-Actor", "operator-cmd-test")
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("get command failed: %d %s", w.Code, w.Body.String())
+	}
+	var cmdOutcome map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &cmdOutcome); err != nil {
+		t.Fatal(err)
+	}
+	if cmdOutcome["status"] != "completed" || cmdOutcome["command_id"] != "epic13-cmd-status-001" {
+		t.Fatalf("unexpected command outcome: %+v", cmdOutcome)
+	}
+
+	// 5. Actor mismatch on command status returns 409
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/commands/epic13-cmd-status-001", nil)
+	req.Header.Set("X-Actor", "wrong-operator")
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusConflict {
+		t.Fatalf("actor mismatch got %d, want 409", w.Code)
+	}
+}
+
+func TestNonAuthoritativeReplicaFencingAndStatelessBalancing(t *testing.T) {
+	st, cleanup := setupTestStore(t)
+	if st == nil {
+		return
+	}
+	defer cleanup()
+	s := app(t)
+	s.Store = st
+	// Replica marked explicitly as non-authoritative standby
+	s.Lease = &LeaseManager{server: s, instanceID: "standby-replica", isOwner: false}
+	h := s.Handler()
+
+	// 1. Stateful mutating command rejected with 503
+	body := `{"schema_version":"1.0","scenario_type":"peak_surge","seed":3301,"mode":"recommend"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/runs", strings.NewReader(body))
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("standby accepted mutation: got %d, want 503", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "authoritative run owner") {
+		t.Fatalf("expected leaseholder warning, got %s", w.Body.String())
+	}
+
+	// 2. Stateful start rejected with 503
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/scenarios/peak_surge/start", strings.NewReader(`{}`))
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("standby accepted scenario start: got %d, want 503", w.Code)
+	}
+
+	// 3. Stateless read queries balance freely across healthy replicas
+	for _, path := range []string{"/health/live", "/health/ready", "/api/v1/network", "/api/v1/junctions/C1", "/api/v1/health"} {
+		req = httptest.NewRequest(http.MethodGet, path, nil)
+		w = httptest.NewRecorder()
+		h.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("stateless path %s failed on standby: %d %s", path, w.Code, w.Body.String())
+		}
+	}
+}
