@@ -29,6 +29,8 @@ RUNTIME_DIR = ROOT / ".runtime"
 RUNTIME_DIR.mkdir(exist_ok=True)
 ENV_FILE = RUNTIME_DIR / "local-env.json"
 LOCK_FILE = RUNTIME_DIR / "stack.lock"
+SERVICE_STATE_FILE = RUNTIME_DIR / "services.json"
+SERVICE_PORTS = (8081, 50051, 50052, 3100)
 
 
 def log(msg: str):
@@ -167,6 +169,115 @@ def wait_for_port(name: str, port: int, process: subprocess.Popen, timeout: floa
     raise RuntimeError(f"{name} did not listen on 127.0.0.1:{port} within {timeout:.0f} seconds.")
 
 
+def _process_start_time(pid: int, proc_root: Path = Path("/proc")) -> str | None:
+    """Return Linux's stable process start tick, used to guard against PID reuse."""
+    try:
+        stat = (proc_root / str(pid) / "stat").read_text()
+        # The command name is parenthesized and may itself contain spaces.
+        fields = stat[stat.rfind(")") + 2:].split()
+        return fields[19]  # field 22 overall; fields starts at field 3
+    except (OSError, IndexError):
+        return None
+
+
+def _write_service_state(children: list[tuple[str, subprocess.Popen]]) -> None:
+    records = []
+    for name, process in children:
+        start_time = _process_start_time(process.pid)
+        if start_time is not None:
+            records.append({"name": name, "pid": process.pid, "start_time": start_time})
+    temporary = SERVICE_STATE_FILE.with_suffix(".tmp")
+    temporary.write_text(json.dumps({"services": records}, indent=2) + "\n")
+    temporary.replace(SERVICE_STATE_FILE)
+
+
+def _registered_service_pids(proc_root: Path = Path("/proc")) -> set[int]:
+    """Read crash-surviving child records, rejecting PIDs that were reused."""
+    try:
+        records = json.loads(SERVICE_STATE_FILE.read_text()).get("services", [])
+    except (OSError, ValueError, AttributeError):
+        return set()
+    found = set()
+    for record in records:
+        try:
+            pid = int(record["pid"])
+            expected_start = str(record["start_time"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if _process_start_time(pid, proc_root) == expected_start:
+            found.add(pid)
+    return found
+
+
+def _listening_socket_inodes(ports: set[int], proc_root: Path = Path("/proc")) -> set[str]:
+    """Find socket inodes listening on our ports without depending on lsof/fuser."""
+    inodes: set[str] = set()
+    for table in ("tcp", "tcp6"):
+        try:
+            lines = (proc_root / "net" / table).read_text().splitlines()[1:]
+        except OSError:
+            continue
+        for line in lines:
+            fields = line.split()
+            try:
+                local_port = int(fields[1].rsplit(":", 1)[1], 16)
+                state = fields[3]
+                inode = fields[9]
+            except (IndexError, ValueError):
+                continue
+            if state == "0A" and local_port in ports:  # TCP_LISTEN
+                inodes.add(inode)
+    return inodes
+
+
+def _listener_pids(ports: set[int], proc_root: Path = Path("/proc")) -> set[int]:
+    inodes = _listening_socket_inodes(ports, proc_root)
+    if not inodes:
+        return set()
+    found: set[int] = set()
+    try:
+        entries = list(proc_root.iterdir())
+    except OSError:
+        return found
+    for entry in entries:
+        if not entry.name.isdigit():
+            continue
+        try:
+            descriptors = list((entry / "fd").iterdir())
+        except OSError:
+            continue
+        for descriptor in descriptors:
+            try:
+                target = os.readlink(descriptor)
+            except OSError:
+                continue
+            if target.startswith("socket:[") and target[8:-1] in inodes:
+                found.add(int(entry.name))
+                break
+    return found
+
+
+def _belongs_to_workspace(entry: Path) -> bool:
+    root = str(ROOT)
+    try:
+        raw = (entry / "cmdline").read_bytes()
+        command = raw.replace(b"\0", b" ").decode(errors="replace")
+    except OSError:
+        command = ""
+    try:
+        cwd = str((entry / "cwd").resolve())
+    except OSError:
+        cwd = ""
+    try:
+        executable = str((entry / "exe").resolve())
+    except OSError:
+        executable = ""
+    return any(
+        value == root or value.startswith(root + os.sep) or root in value
+        for value in (cwd, executable, command)
+    )
+
+
 def workspace_service_pids(proc_root: Path = Path("/proc")) -> set[int]:
     """Find only stale service processes that belong to this workspace.
 
@@ -176,8 +287,8 @@ def workspace_service_pids(proc_root: Path = Path("/proc")) -> set[int]:
     unrelated service which happens to use one of the same ports.
     """
     found: set[int] = set()
-    root = str(ROOT)
     own_pid = os.getpid()
+    listener_pids = _listener_pids(set(SERVICE_PORTS), proc_root)
     try:
         entries = list(proc_root.iterdir())
     except OSError:
@@ -193,17 +304,20 @@ def workspace_service_pids(proc_root: Path = Path("/proc")) -> set[int]:
             command = raw.replace(b"\0", b" ").decode(errors="replace")
         except OSError:
             continue
-        try:
-            cwd = str((entry / "cwd").resolve())
-        except OSError:
-            cwd = ""
-        in_workspace = cwd == root or cwd.startswith(root + os.sep) or root in command
-        if not in_workspace:
+        if not _belongs_to_workspace(entry):
             continue
-        is_api = str(ROOT / "bin" / "api") in command
+        # A workspace-owned process actually listening on a stack port is the
+        # strongest signal. It also catches `go run` temporary executables and
+        # integration binaries under .runtime, whose command paths vary.
+        owns_stack_port = pid in listener_pids
+        is_api = (
+            str(ROOT / "bin" / "api") in command
+            or "apps/api/cmd/api" in command
+            or (str(ROOT / ".runtime") in command and "traffic-api" in command)
+        )
         is_compute = "services.shared.server" in command and (" simulation " in f" {command} " or " intelligence " in f" {command} ")
         is_vite = "vite" in command and "--port 3100" in command
-        if is_api or is_compute or is_vite:
+        if owns_stack_port or is_api or is_compute or is_vite:
             found.add(pid)
     return found
 
@@ -234,17 +348,25 @@ def cleanup_stale_services():
     # Only clean processes positively identified as belonging to this
     # workspace. Never kill an unrelated process merely because it owns one of
     # our expected ports.
-    ports = [8081, 50051, 50052, 3100]
+    ports = list(SERVICE_PORTS)
 
     # First use a workspace-scoped proc scan. This covers stale children
     # orphaned by an earlier Flatpak/VS Code terminal where lsof/fuser cannot
     # resolve the owning host process.
-    scoped = workspace_service_pids()
+    # The state file survives an ungraceful launcher/terminal exit. Start-time
+    # validation ensures that a recycled PID can never be terminated.
+    scoped = _registered_service_pids() | workspace_service_pids()
     if scoped:
         log(f"Stopping {len(scoped)} stale workspace service process(es)...")
     for pid in scoped:
         try:
-            os.kill(pid, signal.SIGTERM)
+            # Every launcher child starts a new session whose process-group ID
+            # equals its PID. Killing the group also reaches npm/go wrappers'
+            # descendants. Fall back to the process for legacy discoveries.
+            try:
+                os.killpg(pid, signal.SIGTERM)
+            except ProcessLookupError:
+                os.kill(pid, signal.SIGTERM)
         except OSError:
             pass
     if scoped:
@@ -254,9 +376,13 @@ def cleanup_stale_services():
         for pid in scoped:
             if (Path("/proc") / str(pid)).exists():
                 try:
-                    os.kill(pid, signal.SIGKILL)
+                    try:
+                        os.killpg(pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        os.kill(pid, signal.SIGKILL)
                 except OSError:
                     pass
+    SERVICE_STATE_FILE.unlink(missing_ok=True)
 
     # Wait for ports to be released by kernel
     for p in ports:
@@ -374,6 +500,7 @@ def main():
             log(f"Launching {name}...")
             proc = subprocess.Popen(cmd, env=env, cwd=str(ROOT), start_new_session=True)
             children.append((name, proc))
+            _write_service_state(children)
 
             if name == "Python Simulation gRPC":
                 wait_for_port(name, 50051, proc)
@@ -440,6 +567,7 @@ Press \033[1;31mCtrl+C\033[0m to stop all services.
                     os.killpg(p.pid, signal.SIGKILL)
                 except OSError:
                     pass
+        SERVICE_STATE_FILE.unlink(missing_ok=True)
         instance_lock.close()
         log("All services stopped.")
 
