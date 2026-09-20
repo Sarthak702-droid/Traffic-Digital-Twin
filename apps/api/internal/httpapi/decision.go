@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"google.golang.org/grpc"
@@ -18,6 +19,8 @@ import (
 	"traffic.local/twin/apps/api/internal/store"
 	pb "traffic.local/twin/packages/contracts/gen/go"
 )
+
+var errEmergencyProtectionActive = errors.New("emergency protection active; retry after recovery")
 
 func jsonProto(v proto.Message) []byte {
 	b, _ := (protojson.MarshalOptions{UseProtoNames: true, EmitUnpopulated: true}).Marshal(v)
@@ -231,7 +234,7 @@ func validateChanges(n config.Network, state *pb.TrafficState, changes []*pb.Tim
 
 	// Rule 9: Emergency protections
 	if state.Emergency != nil && (state.Emergency.Status == "priority" || state.Emergency.Status == "pre_clearance" || state.Emergency.Status == "active") {
-		return fmt.Errorf("emergency protection active; retry after recovery")
+		return errEmergencyProtectionActive
 	}
 	return nil
 }
@@ -339,7 +342,11 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 				problem(w, 503, "Unsafe plan refused; audit write not confirmed")
 				return
 			}
-			problem(w, 409, e.Error())
+			if errors.Is(e, errEmergencyProtectionActive) {
+				problemWithCode(w, 409, "EMERGENCY_PROTECTION_ACTIVE", e.Error())
+			} else {
+				problem(w, 409, e.Error())
+			}
 			return
 		}
 	}
@@ -391,7 +398,11 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 				problem(w, 503, "Plan refused; audit unavailable")
 				return
 			}
-			problem(w, 409, err.Error())
+			if errors.Is(err, errEmergencyProtectionActive) {
+				problemWithCode(w, 409, "EMERGENCY_PROTECTION_ACTIVE", err.Error())
+			} else {
+				problem(w, 409, err.Error())
+			}
 			return
 		}
 		state = latest

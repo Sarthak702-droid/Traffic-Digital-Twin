@@ -75,6 +75,9 @@ func problem(w http.ResponseWriter, status int, message string) {
 	}
 	send(w, status, apiError{code, message})
 }
+func problemWithCode(w http.ResponseWriter, status int, code, message string) {
+	send(w, status, apiError{Code: code, Message: message})
+}
 func (s *Server) SetState(state *pb.TrafficState) error {
 	if e := contracts.ValidateState(state); e != nil {
 		return e

@@ -58,6 +58,21 @@ def test_bad_command(engine):
     with pytest.raises(ValueError):engine.reset(pb.RunCommand(schema_version='1.0',scenario_type='peak_surge',seed=1101,mode='recommend',run_id='bad-override',incident_capacity_ratio=.5))
     with pytest.raises(ValueError):engine.reset(pb.RunCommand(schema_version='1.0',scenario_type='incident_c3',seed=2202,mode='recommend',run_id='bad-ratio',incident_capacity_ratio=.95))
 
+def test_optional_scenario_events_are_present_only_for_their_domain(engine):
+    peak=engine.reset(command('peak_surge',1101))
+    assert not peak.HasField('incident')
+    assert not peak.HasField('emergency')
+
+    incident=engine.reset(command('incident_c3',2202))
+    assert incident.HasField('incident')
+    assert incident.incident.status=='scheduled'
+    assert not incident.HasField('emergency')
+
+    emergency=engine.reset(command('ambulance_corridor',3303))
+    assert not emergency.HasField('incident')
+    assert emergency.HasField('emergency')
+    assert emergency.emergency.status=='scheduled'
+
 def test_incident_capacity_and_emergency_recovery(engine):
     engine.reset(command('incident_c3',2202))
     statuses=set()

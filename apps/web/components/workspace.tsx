@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
-import { getNetwork, request } from "@/lib/api";
+import { getNetwork, isEmergencyProtectionError, isStaleUncertainCommandError, pendingCommand, request } from "@/lib/api";
 import { useLive } from "@/lib/live";
 import { LiveSummary } from "@/components/live-panel";
 import { SessionPanel, useSession } from "@/components/session-panel";
@@ -234,6 +234,9 @@ export function Workspace() {
     }) => {
       const rec = selectedAlternative || analysis?.recommendation;
       if (!rec || !canWrite || !live.fresh || live.frame?.replay || modeQuery.isError || systemMode!=="recommend") throw Error("Fresh authorized recommendation required");
+      if (action !== "reject" && live.frame?.emergency?.id && ["pre_clearance", "priority", "active"].includes(live.frame.emergency.status)) {
+        throw Error("Emergency signal protection is active; approval resumes automatically after priority clears.");
+      }
       return {
         action,
         result: await request<ComparisonResult>(
@@ -360,6 +363,35 @@ export function Workspace() {
 
   const replay=useMutation({mutationFn:()=>request(`/replay/${scenarioID}`,{method:"POST",body:"{}"}),onSuccess:()=>{setSimulationComparison(null);client.invalidateQueries()}});
   const lock=useMutation({mutationFn:({target,locked}:{target:string;locked:boolean})=>request(`/locks/${target}`,{method:locked?"POST":"DELETE",body:"{}"}),onSuccess:()=>client.invalidateQueries()});
+  const clearStaleUncertainErrors = (activeCommandId: string | null = pendingCommand()) => {
+    const resetStale = (mutation: { error: Error | null; reset: () => void }) => {
+      if (isStaleUncertainCommandError(mutation.error, activeCommandId)) mutation.reset();
+    };
+    resetStale(decision);
+    resetStale(modeMutation);
+    resetStale(changeModeMutation);
+    resetStale(prepare);
+    resetStale(reset);
+    resetStale(startIncident);
+    resetStale(startEmergency);
+    resetStale(replay);
+    resetStale(lock);
+    resetStale(resolveDecisionMutation);
+  };
+  const clearRecoveredCommandErrors = () => clearStaleUncertainErrors(null);
+  useEffect(() => {
+    if (isEmergencyProtectionError(decision.error)) decision.reset();
+  }, [decision.error]);
+  useEffect(() => {
+    const reconcile = () => clearStaleUncertainErrors();
+    reconcile();
+    window.addEventListener("command-outcome", reconcile);
+    window.addEventListener("storage", reconcile);
+    return () => {
+      window.removeEventListener("command-outcome", reconcile);
+      window.removeEventListener("storage", reconcile);
+    };
+  }, [decision.error,modeMutation.error,changeModeMutation.error,prepare.error,reset.error,startIncident.error,startEmergency.error,replay.error,lock.error,resolveDecisionMutation.error]);
   const anyCommandPending=decision.isPending||modeMutation.isPending||changeModeMutation.isPending||prepare.isPending||reset.isPending||startIncident.isPending||startEmergency.isPending||replay.isPending||lock.isPending||resolveDecisionMutation.isPending;
   const decisionReady=!!analysis && live.fresh && !live.frame?.replay && !!dbReady && systemMode==="recommend" && canWrite && !anyCommandPending;
   const refresh = () => {
@@ -435,7 +467,7 @@ export function Workspace() {
         </div>
 
         <main className="product-content">
-          <SessionPanel/>
+          <SessionPanel onReviewFinished={clearRecoveredCommandErrors}/>
           {!online&&<p role="alert">Offline. Measurements may be stale; commands are disabled.</p>}
           {network.data?.provenance==="bundled-offline"&&<p role="alert">Bundled offline topology only. This configuration is not a live service response.</p>}
           {(decision.error||modeMutation.error||changeModeMutation.error||startIncident.error||startEmergency.error||replay.error||lock.error)&&<p className="form-error" role="alert">{(decision.error||modeMutation.error||changeModeMutation.error||startIncident.error||startEmergency.error||replay.error||lock.error)?.message}</p>}

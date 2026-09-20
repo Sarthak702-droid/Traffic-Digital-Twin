@@ -3590,6 +3590,8 @@ tr:last-child td {
 .session-panel form h2, .session-panel form p { flex-basis: 100%; }
 .session-panel label { display: flex; flex-direction: column; gap: 6px; }
 .session-panel input[type=checkbox] { width: 24px; height: 24px; }
+.emergency-protection-note { display: flex; gap: 8px; align-items: flex-start; margin: 10px 0 0; padding: 10px; border: 1px solid #684f82; border-radius: 8px; background: #241b2e; color: #d9c9eb; font-size: 11px; line-height: 1.5; }
+.emergency-protection-note svg { flex: 0 0 auto; margin-top: 1px; }
 button, .button, .action-btn, .mode-segment-btn, .ts-btn, .horizon-tab, .icon-button, .sheet-close { min-height: 44px; min-width: 44px; }
 pre, code { overflow-wrap: anywhere; white-space: pre-wrap; }
 .context-panel, .action-rail, .app-main, .product-content { min-width: 0; }
@@ -4212,4 +4214,3 @@ input, textarea, select { max-width: 100%; font-size: 1rem; }
     overflow-x: auto;
   }
 }
-

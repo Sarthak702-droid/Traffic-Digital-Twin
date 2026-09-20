@@ -111,8 +111,12 @@ class Engine:
 
     def _scenario_state(self, tick):
         scenario=self.scenario
-        incident=pb.Incident()
-        emergency=pb.EmergencyEvent()
+        # Optional protobuf messages must be absent when their scenario is not
+        # active. Empty message objects serialize as structurally present domain
+        # events (for example emergency.status == ""), which correctly fail the
+        # browser contract and hide otherwise valid live traffic frames.
+        incident=None
+        emergency=None
         ratio=1.0
         if self.command.scenario_type=='incident_c3':
             active=scenario['incident_start_s']<=tick<scenario['incident_end_s']
@@ -241,7 +245,11 @@ class Engine:
         self.vehicle_moves={vid:self.vehicle_moves[vid] for vid in ids}
         self.vehicle_routes={vid:self.vehicle_routes[vid] for vid in ids}
         signal_by_node={s.node_id:s for s in self.signal_states}
-        result=pb.TrafficState(schema_version='1.0',run_id=self.command.run_id,timestamp=datetime.now(timezone.utc).isoformat(),simulation_time_s=tick,source='synthetic',signals=self.signal_states,vehicles_in_network=len(ids),inserted_total=self.inserted,arrived_total=self.arrived,teleported_total=self.teleported,scenario_type=self.command.scenario_type,seed=self.command.seed,incident=self.incident,emergency=self.emergency,active_plan=[pb.TimingChange(node_id=p["node_id"],phase_id=p["id"],green_s=self.scheduler.plan[p["id"]]) for p in self.config["phases"]])
+        result=pb.TrafficState(schema_version='1.0',run_id=self.command.run_id,timestamp=datetime.now(timezone.utc).isoformat(),simulation_time_s=tick,source='synthetic',signals=self.signal_states,vehicles_in_network=len(ids),inserted_total=self.inserted,arrived_total=self.arrived,teleported_total=self.teleported,scenario_type=self.command.scenario_type,seed=self.command.seed,active_plan=[pb.TimingChange(node_id=p["node_id"],phase_id=p["id"],green_s=self.scheduler.plan[p["id"]]) for p in self.config["phases"]])
+        if self.incident is not None:
+            result.incident.CopyFrom(self.incident)
+        if self.emergency is not None:
+            result.emergency.CopyFrom(self.emergency)
         for mid,m in self.moves.items():
             current=memberships[mid];arrivals=len(current-self.previous[mid]);departures=len(self.previous[mid]-current)
             self.arrivals[mid]+=arrivals;self.departures[mid]+=departures

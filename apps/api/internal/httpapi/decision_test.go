@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -39,7 +40,7 @@ func TestPlanBoundsAndReceivingSafety(t *testing.T) {
 	}
 	changes[0].GreenS = 30
 	state.Emergency = &pb.EmergencyEvent{Status: "priority"}
-	if validateChanges(s.Network, state, changes) == nil {
+	if err := validateChanges(s.Network, state, changes); !errors.Is(err, errEmergencyProtectionActive) {
 		t.Fatal("emergency protection bypassed")
 	}
 }

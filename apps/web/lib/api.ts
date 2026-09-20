@@ -8,6 +8,12 @@ export class ApiError extends Error {
   constructor(message:string,public status:number,public commandId?:string,public uncertain=false,public code?:string,public requestId?:string){super(message);this.name="ApiError";}
 }
 export function pendingCommand():string|null {try{return localStorage.getItem("twin-uncertain-command")}catch{return null}}
+export function isStaleUncertainCommandError(error:unknown,activeCommandId:string|null=pendingCommand()):boolean {
+ return error instanceof ApiError && error.uncertain && error.commandId!==activeCommandId;
+}
+export function isEmergencyProtectionError(error:unknown):boolean {
+ return error instanceof ApiError && error.code==="EMERGENCY_PROTECTION_ACTIVE";
+}
 export function clearPendingCommand(){try{localStorage.removeItem("twin-uncertain-command")}catch{};window.dispatchEvent(new Event("command-outcome"));}
 export async function request<T>(path:string,options?:RequestInit):Promise<T>{
  const mutation=!!options?.method && !["GET","HEAD"].includes(options.method);

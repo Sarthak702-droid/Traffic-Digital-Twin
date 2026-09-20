@@ -51,6 +51,10 @@ export const MANDATORY_REASONS = [
 
 export type MandatoryReason = (typeof MANDATORY_REASONS)[number];
 
+export function isEmergencyProtectionActive(frame: TrafficState | null): boolean {
+  return !!frame?.emergency?.id && ["pre_clearance", "priority", "active"].includes(frame.emergency.status);
+}
+
 export function ActionRail({
   network,
   frame,
@@ -152,6 +156,7 @@ export function ActionRail({
   },[draftKey,modifyOpen,rejectOpen,reasonCategory,decisionReason,edits]);
   useEffect(()=>{onDirty?.(modifyOpen||rejectOpen)},[modifyOpen,rejectOpen,onDirty]);
   const forecasts = analysis?.forecasts ?? [];
+  const emergencyProtected = isEmergencyProtectionActive(frame);
 
   const getPhaseBounds = (phaseId: string) => {
     const p = network.phases.find((item) => item.id === phaseId);
@@ -372,14 +377,20 @@ export function ActionRail({
               </div>
             )}
 
+            {emergencyProtected && (
+              <p className="emergency-protection-note" role="status">
+                <ShieldAlert size={14} /> Emergency signal protection is controlling this corridor. Simulation, approval and modification resume automatically when priority clears; the operator may still reject this recommendation.
+              </p>
+            )}
+
             {/* Quick Decision Actions */}
             <div className="rec-actions-grid">
               <Button
                 variant="outline"
                 className="action-btn simulate-btn"
                 onClick={onSimulate}
-                disabled={decisionPending || !canAct}
-                title="Simulate before and after rollout in digital twin"
+                disabled={decisionPending || !canAct || emergencyProtected}
+                title={emergencyProtected ? "Unavailable while emergency signal protection is active" : "Simulate before and after rollout in digital twin"}
               >
                 <Layers size={14} /> Simulate
               </Button>
@@ -387,8 +398,8 @@ export function ActionRail({
                 variant="default"
                 className="action-btn approve-btn"
                 onClick={onApprove}
-                disabled={decisionPending || !canAct}
-                title="Approve candidate plan inside digital twin"
+                disabled={decisionPending || !canAct || emergencyProtected}
+                title={emergencyProtected ? "Approval resumes after emergency priority clears" : "Approve candidate plan inside digital twin"}
               >
                 <Check size={14} /> Approve in Twin
               </Button>
@@ -400,7 +411,7 @@ export function ActionRail({
                   setModifyOpen(!modifyOpen);
                   setRejectOpen(false);
                 }}
-                disabled={decisionPending || !canAct}
+                disabled={decisionPending || !canAct || emergencyProtected}
               >
                 Modify
               </Button>

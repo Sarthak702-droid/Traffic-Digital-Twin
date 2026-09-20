@@ -4,6 +4,7 @@ import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/re
 import { TopBar } from "./top-bar";
 import { SessionPanel } from "./session-panel";
 import { ActionRail } from "./action-rail";
+import { ApiError, isEmergencyProtectionError, isStaleUncertainCommandError } from "@/lib/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import fallbackNetworkConfig from "../../../packages/scenario-config/c1-c6.json";
 import type { HealthState, TrafficState } from "../../../packages/contracts/typescript/events";
@@ -234,16 +235,27 @@ describe("Epic 14: Production UX, Access & Acceptance (S44–S48)", () => {
   // S46: Production roles and session recovery
   // =========================================================================
   describe("S46: Roles & Session Recovery", () => {
-    it("renders sign-in form when unauthenticated", () => {
-      render(<SessionPanel />, { wrapper });
+    it("distinguishes an active uncertain command from an orphaned stale error", () => {
+      const error = new ApiError("Outcome unknown", 409, "cmd-uncertain-1", true);
 
-      expect(screen.getByRole("heading", { name: /Sign in to the digital twin/i })).toBeInTheDocument();
-      expect(screen.getByLabelText(/Username/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Password/i)).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /Sign in/i })).toBeInTheDocument();
+      expect(isStaleUncertainCommandError(error, "cmd-uncertain-1")).toBe(false);
+      expect(isStaleUncertainCommandError(error, null)).toBe(true);
+      expect(isStaleUncertainCommandError(new Error("ordinary failure"), null)).toBe(false);
+      expect(isEmergencyProtectionError(new ApiError("Protected", 409, undefined, false, "EMERGENCY_PROTECTION_ACTIVE"))).toBe(true);
     });
 
-    it("displays authenticated session credentials and sign out action", async () => {
+    it("does not request credentials when the automatic local session is unavailable", async () => {
+      vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(new Error("offline"));
+      render(<SessionPanel />, { wrapper });
+
+      expect(await screen.findByText(/Local demonstration session unavailable/i)).toBeInTheDocument();
+      expect(screen.getByText(/No username or password is required/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/Username/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Password/i)).not.toBeInTheDocument();
+      vi.restoreAllMocks();
+    });
+
+    it("displays the automatically provisioned local demonstration identity", async () => {
       // Mock successful session response
       vi.spyOn(globalThis, "fetch").mockImplementationOnce(() =>
         Promise.resolve({
@@ -258,9 +270,59 @@ describe("Epic 14: Production UX, Access & Acceptance (S44–S48)", () => {
       await waitFor(() => {
         expect(screen.getByText("supervisor-ramesh")).toBeInTheDocument();
       });
-      expect(screen.getByText(/Signed in as/i)).toHaveTextContent("supervisor");
-      expect(screen.getByRole("button", { name: /Sign out/i })).toBeInTheDocument();
+      expect(screen.getByText(/Local demonstration session/i)).toHaveTextContent("supervisor");
+      expect(screen.queryByRole("button", { name: /Sign out/i })).not.toBeInTheDocument();
 
+      vi.restoreAllMocks();
+    });
+
+    it("blocks timing actions during emergency priority but still permits rejection", () => {
+      const frame = {
+        ...makeSampleState(),
+        scenario_type: "ambulance_corridor",
+        emergency: { id: "emergency-1", run_id: "run-e14-test", route_node_ids: ["C6", "C3", "C1", "C2"], status: "priority", eta_s: [0, 5, 20, 40], recovery_cycles_remaining: 2, vehicle_id: "ambulance" },
+      } as TrafficState;
+      const analysis = {
+        run_id: frame.run_id,
+        simulation_time_s: frame.simulation_time_s,
+        forecasts: [],
+        recommendation: { id: "rec-emergency", run_id: frame.run_id, timestamp: frame.timestamp, priority: "critical", reason: "Protected corridor timing", changes: [], safety_status: "requires_fresh_validation", status: "pending", explanation_facts: [] },
+        alternatives: [],
+      } as any;
+      render(<ActionRail network={makeNetwork()} frame={frame} analysis={analysis} scenarioID="ambulance_corridor" setScenarioID={vi.fn()} seed="3303" setSeed={vi.fn()} dbReady={true} liveFresh={true} prepareMutation={{ mutate: vi.fn(), isPending: false, isError: false, error: null, isSuccess: false, reset: vi.fn() }} resetMutation={{ mutate: vi.fn(), isPending: false, isError: false, error: null, isSuccess: false, reset: vi.fn() }} onSimulate={vi.fn()} onApprove={vi.fn()} onModify={vi.fn()} onReject={vi.fn()} decisionPending={false} />);
+
+      expect(screen.getByText(/Emergency signal protection is controlling this corridor/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /simulate/i })).toBeDisabled();
+      expect(screen.getByRole("button", { name: /approve in twin/i })).toBeDisabled();
+      expect(screen.getByRole("button", { name: /^modify$/i })).toBeDisabled();
+      expect(screen.getByRole("button", { name: /^reject$/i })).toBeEnabled();
+    });
+
+    it("clears recovered command errors after the operator finishes review", async () => {
+      localStorage.setItem("twin-uncertain-command", "cmd-reviewed-1001");
+      const onReviewFinished = vi.fn();
+      vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+        const url = String(input);
+        const data = url.endsWith("/session")
+          ? { actor: "demo-operator", role: "operator" }
+          : { status: "completed", response: { applied: true } };
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(data),
+          headers: new Headers({ "Content-Type": "application/json" }),
+        } as Response);
+      });
+
+      render(<SessionPanel onReviewFinished={onReviewFinished} />, { wrapper });
+
+      const checkbox = await screen.findByLabelText(/I have checked the recorded outcome/i);
+      fireEvent.click(checkbox);
+      await waitFor(() => expect(screen.getByRole("button", { name: /Finish review/i })).toBeEnabled());
+      fireEvent.click(screen.getByRole("button", { name: /Finish review/i }));
+
+      expect(onReviewFinished).toHaveBeenCalledWith("cmd-reviewed-1001");
+      expect(localStorage.getItem("twin-uncertain-command")).toBeNull();
+      expect(screen.queryByText(/Previous command needs review/i)).not.toBeInTheDocument();
       vi.restoreAllMocks();
     });
   });
