@@ -416,6 +416,15 @@ func (s *Store) Command(ctx context.Context, op string, v CommandWrite) (any, er
 		if e != nil {
 			return nil, e
 		}
+		// Scenario/replay handlers can be interrupted after reservation while
+		// reading fixtures or contacting compute. They are not safe to replay,
+		// but leaving the receipt pending forever also blocks every future UI
+		// command. Settle it with an explicitly non-committal recovery outcome;
+		// the operator must still inspect Runs/Audit before clearing it.
+		_, e = s.Pool.Exec(ctx, `UPDATE command_outcomes SET status='completed',http_status=409,response='{"message":"Command is no longer in progress. Inspect the current run and Audit & Health before clearing; no retry was performed."}'::jsonb,updated_at=now() WHERE id=$1 AND actor=$2 AND status IN ('pending','unknown') AND created_at<now()-interval '30 seconds' AND (route LIKE '/api/v1/scenarios/%' OR route LIKE '/api/v1/replay/%')`, v.ID, Actor(ctx))
+		if e != nil {
+			return nil, e
+		}
 	}
 	var actor, hash, status string
 	var code *int

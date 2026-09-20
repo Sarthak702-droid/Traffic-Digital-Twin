@@ -24,7 +24,16 @@ class ServiceIdentity(grpc.ServerInterceptor):
 def serve(kind, port):
     token=os.environ.get('COMPUTE_TOKEN','')
     if len(token)<32: raise RuntimeError('COMPUTE_TOKEN of 32+ characters required')
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=4), interceptors=[ServiceIdentity(token)], options=[('grpc.max_receive_message_length', 1048576)])
+    server = grpc.server(
+        futures.ThreadPoolExecutor(max_workers=4),
+        interceptors=[ServiceIdentity(token)],
+        options=[
+            ('grpc.max_receive_message_length', 1048576),
+            # A second local stack must fail to bind instead of sharing the
+            # same gRPC port and randomly splitting requests between engines.
+            ('grpc.so_reuseport', 0),
+        ],
+    )
     if kind == 'simulation':
         from services.simulation.service import Simulation
         simulation = Simulation()

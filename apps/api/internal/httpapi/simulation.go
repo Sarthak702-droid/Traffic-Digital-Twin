@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"io"
 	"log/slog"
@@ -70,6 +73,10 @@ func (s *Server) ConnectSimulation(ctx context.Context, address string) error {
 			return rows.Err()
 		}
 	}
+	if e := s.reconcileRecoveredSimulation(ctx); e != nil {
+		conn.Close()
+		return e
+	}
 	go s.ReconcileDecisions(ctx)
 	go func() {
 		defer conn.Close()
@@ -116,6 +123,60 @@ func (s *Server) ConnectSimulation(ctx context.Context, address string) error {
 			}
 		}
 	}()
+	return nil
+}
+
+// reconcileRecoveredSimulation distinguishes a live simulator surviving a Go
+// gateway failover from a full-stack restart. PostgreSQL may still say that a
+// run is active, but the simulator is intentionally in-memory and starts empty.
+// Keeping that stale command would leave the UI permanently degraded and make
+// yesterday's run look active today.
+func (s *Server) reconcileRecoveredSimulation(ctx context.Context) error {
+	if s.Store == nil || s.sim == nil || !s.requireLeaseSilent() {
+		return nil
+	}
+	s.mu.RLock()
+	command := s.sim.command
+	if command != nil {
+		command = proto.Clone(command).(*pb.RunCommand)
+	}
+	s.mu.RUnlock()
+	if command == nil {
+		return nil
+	}
+
+	checkCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	frame, e := s.sim.client.GetState(checkCtx, &pb.RunRequest{RunId: command.RunId})
+	cancel()
+	if e == nil && frame.RunId == command.RunId {
+		return s.acceptFrame(frame)
+	}
+	if e != nil && status.Code(e) != codes.FailedPrecondition && status.Code(e) != codes.NotFound {
+		// A transient compute/network error is not evidence that a durable run
+		// ended. The normal stream reconnect loop will keep reporting it honestly.
+		return nil
+	}
+
+	var runID pgtype.UUID
+	if parseErr := runID.Scan(command.RunId); parseErr != nil {
+		return fmt.Errorf("invalid recovered run id %q: %w", command.RunId, parseErr)
+	}
+	reconcileCtx, reconcileCancel := context.WithTimeout(ctx, 2*time.Second)
+	e = s.Store.EndInterruptedRun(reconcileCtx, runID, "Full-stack restart found no matching in-memory simulator state; start a fresh deterministic scenario")
+	reconcileCancel()
+	if e != nil {
+		return e
+	}
+	s.mu.Lock()
+	if s.sim.command != nil && s.sim.command.RunId == command.RunId {
+		s.sim.command = nil
+		s.state = nil
+		s.analysis = nil
+		s.manual = false
+		s.sim.fault = "No simulator state received"
+	}
+	s.mu.Unlock()
+	slog.Info("Reconciled interrupted simulation run", "run_id", command.RunId)
 	return nil
 }
 func (s *Server) acceptFrame(frame *pb.TrafficState) error {

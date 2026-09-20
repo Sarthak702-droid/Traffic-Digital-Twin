@@ -95,6 +95,43 @@ func (s *Store) Activate(ctx context.Context, id pgtype.UUID, reason string) (qu
 	return run, tx.Commit(ctx)
 }
 
+// EndInterruptedRun reconciles a durable "running" row when the private
+// simulator no longer has the matching in-memory run after a full-stack
+// restart. The status change and its audit evidence are intentionally atomic.
+func (s *Store) EndInterruptedRun(ctx context.Context, id pgtype.UUID, reason string) error {
+	tx, e := s.Pool.Begin(ctx)
+	if e != nil {
+		return e
+	}
+	defer tx.Rollback(ctx)
+	tag, e := tx.Exec(ctx, "UPDATE scenario_runs SET status='ended',ended_at=now() WHERE id=$1 AND status='running'", id)
+	if e != nil {
+		return e
+	}
+	if tag.RowsAffected() == 0 {
+		return tx.Commit(ctx)
+	}
+	after, e := json.Marshal(map[string]any{"status": "ended", "recovery": "simulator_state_missing"})
+	if e != nil {
+		return e
+	}
+	q := s.Q.WithTx(tx)
+	_, e = q.AppendAudit(ctx, queries.AppendAuditParams{
+		ID:           UUID(),
+		RunID:        id,
+		Actor:        Actor(ctx),
+		EventType:    "scenario.interrupted",
+		BeforeValues: []byte(`{"status":"running"}`),
+		AfterValues:  after,
+		Reason:       reason,
+		SafetyResult: "not_applied",
+	})
+	if e != nil {
+		return e
+	}
+	return tx.Commit(ctx)
+}
+
 // RecordSafetyRejection preserves a denied command as evidence without
 // inventing a scenario run. It is intentionally owned by the persistence
 // module so HTTP handlers do not write audit rows directly.
@@ -105,12 +142,12 @@ func (s *Store) RecordSafetyRejection(ctx context.Context, eventType, reason str
 	}
 	_, err = s.Q.AppendAudit(ctx, queries.AppendAuditParams{
 		ID:           UUID(),
-		Actor:         Actor(ctx),
-		EventType:     eventType,
+		Actor:        Actor(ctx),
+		EventType:    eventType,
 		BeforeValues: []byte(`{}`),
-		AfterValues:   after,
-		Reason:         reason,
-		SafetyResult:   "rejected: safety_protection",
+		AfterValues:  after,
+		Reason:       reason,
+		SafetyResult: "rejected: safety_protection",
 	})
 	return err
 }

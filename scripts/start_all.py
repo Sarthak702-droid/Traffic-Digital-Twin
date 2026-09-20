@@ -9,6 +9,7 @@ Starts:
 5. Frontend Vite Web server (:3100).
 """
 import hashlib
+import fcntl
 import json
 import os
 import secrets
@@ -27,6 +28,7 @@ os.chdir(ROOT)
 RUNTIME_DIR = ROOT / ".runtime"
 RUNTIME_DIR.mkdir(exist_ok=True)
 ENV_FILE = RUNTIME_DIR / "local-env.json"
+LOCK_FILE = RUNTIME_DIR / "stack.lock"
 
 
 def log(msg: str):
@@ -121,14 +123,10 @@ def ensure_local_env() -> dict:
         write_local_env(env_data)
         log("Migrated legacy local launcher settings to the Go gateway configuration.")
 
-    # Choose the public Go API port before Vite starts so the proxy points to it.
-    api_port = int(os.environ.get("API_PORT") or env_data.get("API_PORT") or 8081)
-    if check_port("127.0.0.1", api_port, timeout=0.2):
-        candidate = 8085
-        while check_port("127.0.0.1", candidate, timeout=0.2):
-            candidate += 1
-        log(f"Port {api_port} is busy; assigning Go API to port {candidate}")
-        api_port = candidate
+    # The local development contract uses stable ports. Silently moving only
+    # one component creates a mixed stack where the browser can keep talking to
+    # an older API/frontend process.
+    api_port = 8081
 
     # Merge into process environment
     merged = dict(os.environ)
@@ -160,30 +158,105 @@ def wait_for_port(name: str, port: int, process: subprocess.Popen, timeout: floa
         if exit_code is not None:
             raise RuntimeError(f"{name} exited before becoming ready (exit code {exit_code}).")
         if check_port("127.0.0.1", port, timeout=0.2):
-            return
+            # Do not mistake an unrelated/old listener for this child. Give the
+            # newly launched process a stabilization window and re-check it.
+            time.sleep(0.25)
+            if process.poll() is None and check_port("127.0.0.1", port, timeout=0.2):
+                return
         time.sleep(0.2)
     raise RuntimeError(f"{name} did not listen on 127.0.0.1:{port} within {timeout:.0f} seconds.")
 
 
+def workspace_service_pids(proc_root: Path = Path("/proc")) -> set[int]:
+    """Find only stale service processes that belong to this workspace.
+
+    Flatpak/VS Code terminals can make host listeners invisible to lsof/fuser
+    even though a new process can still see that the port is occupied. Reading
+    proc metadata gives the launcher a scoped fallback without killing an
+    unrelated service which happens to use one of the same ports.
+    """
+    found: set[int] = set()
+    root = str(ROOT)
+    own_pid = os.getpid()
+    try:
+        entries = list(proc_root.iterdir())
+    except OSError:
+        return found
+    for entry in entries:
+        if not entry.name.isdigit():
+            continue
+        pid = int(entry.name)
+        if pid == own_pid:
+            continue
+        try:
+            raw = (entry / "cmdline").read_bytes()
+            command = raw.replace(b"\0", b" ").decode(errors="replace")
+        except OSError:
+            continue
+        try:
+            cwd = str((entry / "cwd").resolve())
+        except OSError:
+            cwd = ""
+        in_workspace = cwd == root or cwd.startswith(root + os.sep) or root in command
+        if not in_workspace:
+            continue
+        is_api = str(ROOT / "bin" / "api") in command
+        is_compute = "services.shared.server" in command and (" simulation " in f" {command} " or " intelligence " in f" {command} ")
+        is_vite = "vite" in command and "--port 3100" in command
+        if is_api or is_compute or is_vite:
+            found.add(pid)
+    return found
+
+
+def acquire_instance_lock():
+    """Return a held lock file, or None when this workspace is already live."""
+    handle = LOCK_FILE.open("a+")
+    try:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        handle.seek(0)
+        owner = handle.read().strip() or "unknown"
+        if all(check_port("127.0.0.1", port, timeout=0.2) for port in (8081, 50051, 50052, 3100)):
+            log(f"Traffic Digital Twin is already running (launcher PID {owner}).")
+            log("Frontend: http://127.0.0.1:3100 · Go API: http://127.0.0.1:8081")
+            handle.close()
+            return None
+        handle.close()
+        raise RuntimeError(f"Another launcher (PID {owner}) is still starting or shutting down; wait and retry.")
+    handle.seek(0)
+    handle.truncate()
+    handle.write(str(os.getpid()))
+    handle.flush()
+    return handle
+
+
 def cleanup_stale_services():
-    # Clean up lingering local processes on digital twin service ports
-    ports = [8081, 8085, 8086, 50051, 50052, 3100]
-    for p in ports:
+    # Only clean processes positively identified as belonging to this
+    # workspace. Never kill an unrelated process merely because it owns one of
+    # our expected ports.
+    ports = [8081, 50051, 50052, 3100]
+
+    # First use a workspace-scoped proc scan. This covers stale children
+    # orphaned by an earlier Flatpak/VS Code terminal where lsof/fuser cannot
+    # resolve the owning host process.
+    scoped = workspace_service_pids()
+    if scoped:
+        log(f"Stopping {len(scoped)} stale workspace service process(es)...")
+    for pid in scoped:
         try:
-            out = subprocess.check_output(["lsof", "-t", f"-i:{p}"], stderr=subprocess.DEVNULL)
-            pids = [int(x.strip()) for x in out.decode().split() if x.strip()]
-            for pid in pids:
-                if pid != os.getpid():
-                    try:
-                        os.kill(pid, signal.SIGKILL)
-                    except OSError:
-                        pass
-        except Exception:
+            os.kill(pid, signal.SIGTERM)
+        except OSError:
             pass
-        try:
-            subprocess.run(["fuser", "-k", "-9", f"{p}/tcp"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except Exception:
-            pass
+    if scoped:
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline and any((Path("/proc") / str(pid)).exists() for pid in scoped):
+            time.sleep(0.05)
+        for pid in scoped:
+            if (Path("/proc") / str(pid)).exists():
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except OSError:
+                    pass
 
     # Wait for ports to be released by kernel
     for p in ports:
@@ -192,8 +265,18 @@ def cleanup_stale_services():
                 break
             time.sleep(0.08)
 
+    busy = [str(p) for p in ports if check_port("127.0.0.1", p, timeout=0.2)]
+    if busy:
+        raise RuntimeError(
+            "Required local port(s) still occupied: " + ", ".join(busy) +
+            ". Stop the owning process; the launcher will not create a mixed stack on fallback ports."
+        )
+
 
 def main():
+    instance_lock = acquire_instance_lock()
+    if instance_lock is None:
+        return
     cleanup_stale_services()
     ensure_postgres()
     env = ensure_local_env()
@@ -296,7 +379,7 @@ def main():
                 wait_for_port(name, 50051, proc)
             elif name == "Python Intelligence gRPC":
                 wait_for_port(name, 50052, proc)
-            if name == "Go API Gateway":
+            elif name == "Go API Gateway":
                 for _ in range(50):
                     if proc.poll() is not None:
                         raise RuntimeError(f"Go API Gateway exited before becoming ready (exit code {proc.returncode}).")
@@ -308,6 +391,8 @@ def main():
                         time.sleep(0.2)
                 else:
                     raise RuntimeError("Go API Gateway did not become ready")
+            elif name == "Frontend Web (Vite)":
+                wait_for_port(name, 3100, proc)
 
         api_p = env["API_ADDR"].split(":")[-1]
         print(
@@ -331,11 +416,12 @@ Press \033[1;31mCtrl+C\033[0m to stop all services.
             flush=True,
         )
 
-        while all(p.poll() is None for _, p in children):
+        while True:
+            failed = next(((name, p) for name, p in children if p.poll() is not None), None)
+            if failed is not None:
+                failed_name, failed_proc = failed
+                raise RuntimeError(f"Service {failed_name} exited with code {failed_proc.returncode}")
             time.sleep(0.5)
-
-        failed_name, failed_proc = next((n, p) for n, p in children if p.poll() is not None)
-        raise RuntimeError(f"Service {failed_name} exited with code {failed_proc.returncode}")
 
     except KeyboardInterrupt:
         log("Shutting down services stack...")
@@ -354,6 +440,7 @@ Press \033[1;31mCtrl+C\033[0m to stop all services.
                     os.killpg(p.pid, signal.SIGKILL)
                 except OSError:
                     pass
+        instance_lock.close()
         log("All services stopped.")
 
 

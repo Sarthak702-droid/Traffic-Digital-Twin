@@ -127,6 +127,35 @@ func TestPostgresDurabilityAndAtomicAudit(t *testing.T) {
 	command.Response = json.RawMessage(`{"confirmed":true}`)
 	assertCommand("command.finish", "completed", command, "operator")
 	assertCommand("command.reserve", "completed", command, "operator")
+
+	// An interrupted scenario/replay reservation must become reviewable rather
+	// than blocking every future browser mutation forever. It is never replayed.
+	abandoned := CommandWrite{ID: "abandoned-replay-command", Hash: strings.Repeat("c", 64), Route: "/api/v1/replay/peak_surge"}
+	assertCommand("command.reserve", "reserved", abandoned, "operator")
+	if _, e = s.Pool.Exec(ctx, "UPDATE command_outcomes SET created_at=now()-interval '1 minute' WHERE id=$1", abandoned.ID); e != nil {
+		t.Fatal(e)
+	}
+	result, e := s.Command(WithActor(ctx, "operator"), "command.get", CommandWrite{ID: abandoned.ID})
+	if e != nil || result.(map[string]any)["status"] != "completed" || !strings.Contains(string(result.(map[string]any)["response"].(json.RawMessage)), "no retry was performed") {
+		t.Fatalf("abandoned replay command was not settled for review: %v %v", result, e)
+	}
+
+	// A full-stack restart leaves the private simulator empty. Ending the stale
+	// durable run must be atomic with explicit interruption audit evidence.
+	if _, e = s.Activate(ctx, run.ID, "test activation"); e != nil {
+		t.Fatal(e)
+	}
+	if e = s.EndInterruptedRun(WithActor(ctx, "system-recovery"), run.ID, "simulator state missing"); e != nil {
+		t.Fatal(e)
+	}
+	saved, e = s.Q.GetRun(ctx, run.ID)
+	if e != nil || saved.Status != "ended" || !saved.EndedAt.Valid {
+		t.Fatalf("interrupted run was not ended: %+v %v", saved, e)
+	}
+	var interrupted int
+	if e = s.Pool.QueryRow(ctx, "SELECT count(*) FROM audit_events WHERE run_id=$1 AND event_type='scenario.interrupted' AND actor='system-recovery'", run.ID).Scan(&interrupted); e != nil || interrupted != 1 {
+		t.Fatalf("interruption audit missing: count=%d err=%v", interrupted, e)
+	}
 	// Force audit insertion failure and prove the run transaction rolls back.
 	if _, e = s.Pool.Exec(ctx, "ALTER TABLE audit_events ADD CONSTRAINT test_reject CHECK(event_type <> 'run.prepared') NOT VALID"); e != nil {
 		t.Fatal(e)
