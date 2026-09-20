@@ -208,7 +208,7 @@ export function TopBar({
         <Button
           variant="default"
           className="dgp-launch-button"
-          onClick={() => setDgpModalOpen(true)}
+          onClick={() => window.open('/dgp-pitch-deck.html', '_blank')}
           aria-label="Start DGP demonstration briefing"
         >
           <Sparkles size={15} />

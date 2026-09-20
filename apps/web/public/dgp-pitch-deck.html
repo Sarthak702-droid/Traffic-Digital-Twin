@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Traffic Digital Twin · DGP Executive Pitch Deck</title>
+<style>/* html-ppt :: webfonts (only families actually used by this theme) */
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+</style>
+<style>/* html-ppt :: base.css — reset + shared tokens + layout primitives */
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #f2f2f4;
+  --border: rgba(0,0,0,.08);
+  --border-strong: rgba(0,0,0,.16);
+  --text-1: #111216;
+  --text-2: #55596a;
+  --text-3: #8a8f9e;
+  --accent: #d97757;
+  --accent-2: #c65a3f;
+  --accent-3: #e8b15c;
+  --good: #1aaf6c;
+  --warn: #f5a524;
+  --bad:  #e0445a;
+  --grad: linear-gradient(100deg,#e8b15c,#d97757 58%,#c65a3f);
+  --grad-soft: linear-gradient(100deg,#f7ead8,#f6e2d6 58%,#f3d9cd);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --radius-lg: 26px;
+  --shadow: 0 10px 30px rgba(18,24,40,.08), 0 2px 6px rgba(18,24,40,.04);
+  --shadow-lg: 0 24px 60px rgba(18,24,40,.14), 0 6px 16px rgba(18,24,40,.06);
+  --font-sans: 'Inter',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+  --font-serif: 'Source Serif 4',Georgia,serif;
+  --font-mono: 'JetBrains Mono',SFMono-Regular,Menlo,monospace;
+  --font-display: var(--font-serif);
+  --letter-tight: -.03em;
+  --letter-normal: -.01em;
+  --ease: cubic-bezier(.4,0,.2,1);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);
+  font-family:var(--font-sans);font-weight:400;line-height:1.6;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  letter-spacing:var(--letter-normal)}
+img,svg,video{max-width:100%;display:block}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code,kbd,pre,samp{font-family:var(--font-mono)}
+
+/* ================= SLIDE SYSTEM ================= */
+.deck{position:relative;width:100vw;height:100vh;overflow:hidden;background:var(--bg)}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:72px 96px;
+  box-sizing:border-box;
+  opacity:0;pointer-events:none;
+  transition:opacity .5s var(--ease), transform .5s var(--ease);
+  transform:translateX(30px);
+  overflow:hidden;
+}
+.slide.is-active{opacity:1;pointer-events:auto;transform:translateX(0);z-index:2}
+.slide.is-prev{transform:translateX(-30px)}
+
+/* ================= TYPOGRAPHY ================= */
+.eyebrow{font-size:13px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3)}
+.kicker{font-size:14px;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+h1.title,.h1{font-family:var(--font-display);font-size:72px;line-height:1.05;font-weight:800;letter-spacing:var(--letter-tight);margin:0 0 18px;color:var(--text-1)}
+h2.title,.h2{font-family:var(--font-display);font-size:54px;line-height:1.1;font-weight:700;letter-spacing:var(--letter-tight);margin:0 0 14px}
+h3,.h3{font-size:32px;line-height:1.2;font-weight:600;letter-spacing:var(--letter-normal);margin:0 0 10px}
+h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
+.lede{font-size:22px;line-height:1.55;color:var(--text-2);font-weight:300;max-width:62ch}
+.dim{color:var(--text-2)}
+.dim2{color:var(--text-3)}
+.mono{font-family:var(--font-mono)}
+.serif{font-family:var(--font-serif)}
+.gradient-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+
+/* ================= LAYOUT PRIMITIVES ================= */
+.stack>*+*{margin-top:14px}
+.row{display:flex;gap:24px;align-items:center}
+.row.wrap{flex-wrap:wrap}
+.grid{display:grid;gap:24px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.center{display:flex;align-items:center;justify-content:center;text-align:center}
+.fill{flex:1}
+
+/* ================= CHROME (header/footer/progress) ================= */
+.progress-bar{position:fixed;left:0;right:0;bottom:0;height:3px;background:transparent;z-index:20}
+.progress-bar > span{display:block;height:100%;width:0;background:var(--accent);transition:width .3s var(--ease)}
+
+/* ================= UTILITY ================= */
+.hidden{display:none!important}
+.nowrap{white-space:nowrap}
+
+/* ================= PRINT ================= */
+@media print{
+  .slide{position:relative;opacity:1!important;transform:none!important;page-break-after:always;height:100vh}
+  .progress-bar,.nav-controls{display:none!important}
+}
+
+</style>
+<style>/* obsidian-claude-gradient theme */
+.tpl-obsidian-claude-gradient{
+  --oc-bg:#151210;
+  --oc-surface:#1c1815;
+  --oc-surface2:#241f1a;
+  --oc-border:rgba(236,229,220,.13);
+  --oc-border-strong:rgba(236,229,220,.3);
+  --oc-accent:#d97757;
+  --oc-accent2:#c65a3f;
+  --oc-accent3:#e3996f;
+  --oc-green:#9ab98a;
+  --oc-blue:#e0b178;
+  --oc-orange:#d97757;
+  --oc-yellow:#e0b178;
+  --oc-red:#c65a3f;
+  --oc-text:#ece5dc;
+  --oc-dim:#a99d8f;
+  --oc-dimmer:#867967;
+  --oc-serif:'Source Serif 4',Georgia,serif;
+  --oc-mono:'JetBrains Mono',SFMono-Regular,Menlo,monospace;
+  --oc-ease:cubic-bezier(.16,1,.3,1);
+  background:var(--oc-bg);
+  color:var(--oc-text);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+.tpl-obsidian-claude-gradient .slide{background:var(--oc-bg);color:var(--oc-text);padding:72px 110px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;overflow:hidden}
+.tpl-obsidian-claude-gradient .oc-cbg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(110% 70% at 18% 108%,rgba(217,119,87,.14) 0%,transparent 62%)}
+.tpl-obsidian-claude-gradient .oc-cgrid{position:absolute;left:110px;right:110px;bottom:52px;top:auto;height:1px;pointer-events:none;background:var(--oc-border)}
+.tpl-obsidian-claude-gradient .slide > *{position:relative;z-index:2}
+.tpl-obsidian-claude-gradient .oc-snum{position:absolute;top:auto;bottom:30px;right:110px;color:var(--oc-dimmer);font-family:var(--oc-mono);font-size:11px;letter-spacing:.14em;z-index:3}
+.tpl-obsidian-claude-gradient .oc-tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--oc-mono);font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--oc-accent);margin-bottom:30px}
+.tpl-obsidian-claude-gradient .oc-h1{font-family:var(--oc-serif);font-size:76px;font-weight:600;line-height:1.06;letter-spacing:-.022em;margin:0 0 10px;color:var(--oc-text)}
+.tpl-obsidian-claude-gradient .oc-h2{font-family:var(--oc-serif);font-size:48px;font-weight:600;line-height:1.12;letter-spacing:-.018em;margin:0 0 14px}
+.tpl-obsidian-claude-gradient .oc-sub{font-size:18px;color:var(--oc-dim);line-height:1.7;max-width:760px;margin-top:14px}
+.tpl-obsidian-claude-gradient .oc-g{background:linear-gradient(100deg,#e8b15c 0%,#d97757 58%,#c65a3f 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.tpl-obsidian-claude-gradient .oc-card{background:transparent;border:0;border-top:1px solid var(--oc-border-strong);border-radius:0;padding:24px 28px 22px 0;text-align:left;position:relative;overflow:hidden}
+.tpl-obsidian-claude-gradient .oc-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0 56px;width:100%;max-width:1000px;margin-top:30px}
+.tpl-obsidian-claude-gradient .oc-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 48px;width:100%;max-width:1080px;margin-top:30px}
+.tpl-obsidian-claude-gradient .oc-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--oc-mono);font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:0;border-radius:0;margin-bottom:12px}
+.tpl-obsidian-claude-gradient .oc-bp{background:transparent;color:var(--oc-accent)}
+.tpl-obsidian-claude-gradient .oc-bb{background:transparent;color:var(--oc-dimmer)}
+.tpl-obsidian-claude-gradient .oc-bg{background:transparent;color:var(--oc-green)}
+.tpl-obsidian-claude-gradient .oc-bo{background:transparent;color:var(--oc-accent3)}
+.tpl-obsidian-claude-gradient .oc-code{background:#0e0c0a;border:1px solid var(--oc-border);border-radius:4px;padding:22px 26px;font-family:var(--oc-mono);font-size:14px;line-height:1.85;width:100%;max-width:860px;text-align:left;color:var(--oc-text)}
+.tpl-obsidian-claude-gradient .oc-code .cp{color:var(--oc-green)}
+.tpl-obsidian-claude-gradient .oc-code .cc{color:#e0b178}
+.tpl-obsidian-claude-gradient .oc-code .ca{color:var(--oc-accent3)}
+.tpl-obsidian-claude-gradient .oc-code .cm{color:var(--oc-dimmer)}
+.tpl-obsidian-claude-gradient .oc-code .cs{color:var(--oc-accent)}
+.tpl-obsidian-claude-gradient .oc-hl{background:transparent;border:0;border-left:2px solid var(--oc-accent);border-radius:0;padding:6px 0 6px 24px;font-size:16px;line-height:1.7;max-width:860px;text-align:left;color:var(--oc-dim)}
+.tpl-obsidian-claude-gradient .oc-hl b{color:var(--oc-text)}
+.tpl-obsidian-claude-gradient .oc-steps{display:flex;flex-direction:column;gap:0;width:100%;max-width:820px;text-align:left;border-top:1px solid var(--oc-border-strong);margin-top:14px}
+.tpl-obsidian-claude-gradient .oc-step{display:flex;gap:26px;align-items:baseline;padding:20px 0;border-bottom:1px solid var(--oc-border)}
+.tpl-obsidian-claude-gradient .oc-sn{width:44px;flex-shrink:0;font-family:var(--oc-mono);font-weight:500;font-size:13px;color:var(--oc-accent);background:none;border-radius:0;height:auto;display:block}
+.tpl-obsidian-claude-gradient .oc-sc h4{font-size:17px;font-weight:600;margin:0 0 6px;color:var(--oc-text)}
+.tpl-obsidian-claude-gradient .oc-sc p{font-size:14px;color:var(--oc-dim);line-height:1.6;margin:0}
+.tpl-obsidian-claude-gradient .oc-pill{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--oc-border-strong);border-radius:2px;padding:9px 18px;font-family:var(--oc-mono);font-size:13px;font-weight:400;color:var(--oc-text);margin:4px 10px 4px 0;transition:border-color .25s var(--oc-ease),transform .25s var(--oc-ease)}
+.tpl-obsidian-claude-gradient .oc-pill:hover{border-color:var(--oc-accent);transform:translateY(-2px)}
+.tpl-obsidian-claude-gradient .oc-quote{max-width:860px}
+.tpl-obsidian-claude-gradient .oc-quote blockquote{font-family:var(--oc-serif);font-size:36px;font-weight:600;line-height:1.4;letter-spacing:-.01em;position:relative;padding:0;margin:0;color:var(--oc-text)}
+.tpl-obsidian-claude-gradient .oc-quote blockquote::before{content:'';position:absolute;left:-34px;top:8px;bottom:8px;width:2px;background:linear-gradient(180deg,#e8b15c,#c65a3f)}
+.tpl-obsidian-claude-gradient .oc-quote .attr{margin-top:24px;font-family:var(--oc-mono);font-size:13px;color:var(--oc-dim)}
+.tpl-obsidian-claude-gradient .oc-big{font-family:var(--oc-serif);font-size:140px;font-weight:700;line-height:.95;letter-spacing:-.03em}
+
+/* entrance animations */
+@keyframes oc-rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+.tpl-obsidian-claude-gradient .slide.is-active > *{animation:oc-rise .65s var(--oc-ease) both}
+.tpl-obsidian-claude-gradient .slide.is-active > *:nth-child(4){animation-delay:.06s}
+.tpl-obsidian-claude-gradient .slide.is-active > *:nth-child(5){animation-delay:.12s}
+.tpl-obsidian-claude-gradient .slide.is-active > *:nth-child(6){animation-delay:.18s}
+.tpl-obsidian-claude-gradient .slide.is-active > *:nth-child(7){animation-delay:.24s}
+.tpl-obsidian-claude-gradient .slide.is-active > *:nth-child(n+8){animation-delay:.3s}
+.tpl-obsidian-claude-gradient .slide.is-active > .oc-cbg,
+.tpl-obsidian-claude-gradient .slide.is-active > .oc-cgrid,
+.tpl-obsidian-claude-gradient .slide.is-active > .oc-snum{animation:none}
+@media (prefers-reduced-motion:reduce){.tpl-obsidian-claude-gradient .slide.is-active > *{animation:none}}
+
+/* ================= NAVIGATION CONTROLS ================= */
+.nav-controls{
+  position:fixed;bottom:32px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:16px;z-index:30;
+  background:rgba(28,24,21,.92);backdrop-filter:blur(12px);
+  border:1px solid var(--oc-border);border-radius:14px;padding:12px 24px;
+}
+.nav-btn{
+  display:flex;align-items:center;gap:8px;
+  background:transparent;border:1px solid var(--oc-border-strong);
+  color:var(--oc-text);font-family:var(--oc-mono);font-size:13px;
+  padding:10px 20px;border-radius:8px;cursor:pointer;
+  transition:all .25s var(--oc-ease);
+}
+.nav-btn:hover:not(:disabled){background:rgba(217,119,87,.15);border-color:var(--oc-accent);transform:translateY(-1px)}
+.nav-btn:disabled{opacity:.35;cursor:not-allowed}
+.nav-btn.primary{background:var(--oc-accent);border-color:var(--oc-accent);color:#151210;font-weight:500}
+.nav-btn.primary:hover:not(:disabled){background:var(--oc-accent2)}
+.nav-counter{font-family:var(--oc-mono);font-size:12px;color:var(--oc-dimmer);letter-spacing:.1em}
+.nav-hint{font-size:11px;color:var(--oc-dimmer);font-family:var(--oc-mono);letter-spacing:.05em}
+
+/* ================= OVERVIEW GRID ================= */
+.overview{position:fixed;inset:0;background:rgba(10,12,18,.95);backdrop-filter:blur(12px);z-index:50;
+  display:none;padding:40px;overflow:auto}
+.overview.open{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;align-content:start}
+.overview .thumb{background:var(--oc-surface);border:1px solid var(--oc-border);border-radius:12px;
+  aspect-ratio:16/9;overflow:hidden;cursor:pointer;position:relative;color:var(--oc-text);padding:16px;
+  font-size:11px;transition:transform .2s var(--oc-ease)}
+.overview .thumb:hover{transform:scale(1.04)}
+.overview .thumb .n{position:absolute;top:8px;left:10px;font-weight:700;font-size:14px;color:var(--oc-dimmer)}
+.overview .thumb .t{position:absolute;bottom:10px;left:14px;right:14px;font-weight:600;color:var(--oc-text)}
+
+</style>
+</head>
+<body class="tpl-obsidian-claude-gradient">
+<div class="deck" id="deck">
+
+  <!-- 1. COVER -->
+  <section class="slide is-active">
+    <div class="oc-cbg"></div>
+    <div class="oc-cgrid"></div>
+    <div class="oc-snum">01 / 10</div>
+    <div class="oc-tag">● TRAFFIC DIGITAL TWIN · EXECUTIVE PITCH</div>
+    <h1 class="oc-h1">Traffic Digital Twin<br>for <span class="oc-g">Smarter Cities</span></h1>
+    <p class="oc-sub">A synthetic, AI-powered traffic management system that predicts congestion,<br>recommends coordinated signal timing, and preserves human authority — all without touching live infrastructure.</p>
+    <div style="margin-top:32px">
+      <span class="oc-pill">🛡️ Zero Live Signal Control</span>
+      <span class="oc-pill">🔮 Predictive Analytics</span>
+      <span class="oc-pill">🏛️ DGP Demonstration Ready</span>
+    </div>
+  </section>
+
+  <!-- 2. THE PROBLEM -->
+  <section class="slide">
+    <div class="oc-cbg"></div>
+    <div class="oc-cgrid"></div>
+    <div class="oc-snum">02 / 10</div>
+    <div class="oc-tag">● CHAPTER 01 · THE CHALLENGE</div>
+    <h1 class="oc-h1" style="font-size:110px">Why a <span class="oc-g">Digital Twin</span>?</h1>
+    <p class="oc-sub">Urban traffic management today relies on reactive CCTV monitoring and manual signal timing.<br>Operators see what has already failed — never what is about to happen. Incident response is always too late.<br><b style="color:var(--oc-accent3)">We need a system that predicts, recommends, and proves impact before any action is taken.</b></p>
+  </section>
+
+  <!-- 3. ARCHITECTURE -->
+  <section class="slide">
+    <div class="oc-cbg"></div>
+    <div class="oc-cgrid"></div>
+    <div class="oc-snum">03 / 10</div>
+    <div class="oc-tag">● CHAPTER 02 · SYSTEM ARCHITECTURE</div>
+    <h2 class="oc-h2">A <span class="oc-g">layered, secure</span> architecture</h2>
+    <pre class="oc-code"><span class="cm">// Traffic Digital Twin — Service Architecture</span>
+
+<span class="cc">Go Public API Gateway</span>      <span class="cm">// :8081 — REST/WebSocket, safety validation, 1 Hz broadcast</span>
+├── <span class="cc">PostgreSQL</span>              <span class="cm">// :5433 — Append-only audit, durable persistence</span>
+├── <span class="cc">React Dashboard</span>         <span class="cm">// :3100 — Real-time corridor visualization</span>
+│
+<span class="cc">Private Python Services</span>    <span class="cm">// gRPC, never exposed publicly</span>
+├── <span class="cc">Simulation Engine</span>       <span class="cm">// :50051 — SUMO micro-simulation, deterministic seeds</span>
+├── <span class="cc">Intelligence Engine</span>     <span class="cm">// :50052 — AGDA bounds, conservation forecasts</span>
+└── <span class="cc">Vision Pipeline</span>         <span class="cm">// Camera feed analytics, sample generation</span></pre>
+    <p class="oc-sub" style="margin-top:18px">Go owns the public boundary and safety validation. Python handles private compute. <b style="color:var(--oc-accent3)">No direct public access to simulation or AI services — enforced by architecture, not policy.</b></p>
+  </section>
+
+  <!-- 4. REAL-TIME MONITORING -->
+  <section class="slide">
+    <div class="oc-cbg"></div>
+    <div class="oc-cgrid"></div>
+    <div class="oc-snum">04 / 10</div>
+    <div class="oc-tag">● CHAPTER 03 · LIVE MONITORING</div>
+    <h2 class="oc-h2">Real-time visibility across the <span class="oc-g">C1–C6 corridor</span></h2>
+    <div class="oc-grid-2">
+      <div class="oc-card">
+        <span class="oc-badge oc-bb">NETWORK TOPOLOGY</span>
+        <h4 style="font-size:20px;margin-bottom:10px">Connected arterial model</h4>
+        <p style="color:var(--oc-dim);font-size:14px;line-height:1.65">The C1–C6 corridor maps primary traffic arteries with:<br>• Directional links with calibrated storage capacities<br>• Virtual signal phasing at C1 &amp; C3 junctions<br>• 1 Hz state broadcast via Go WebSocket gateway</p>
+      </div>
+      <div class="oc-card" style="border-top-color:var(--oc-accent)">
+        <span class="oc-badge oc-bp">LIVE TELEMETRY</span>
+        <h4 style="font-size:20px;margin-bottom:10px">Every second, every approach</h4>
+        <p style="color:var(--oc-dim);font-size:14px;line-height:1.65">Continuous measurement across the corridor:<br>• Incoming queue lengths and smoothed arrival rates<br>• Departures, travel times, and downstream receiver space<br>• Spillback risk flags before physical gridlock occurs</p>
+      </div>
+    </div>
+    <div class="oc-hl" style="margin-top:26px">💡 <b>Key insight:</b> CCTV shows what is happening. The twin provides the data foundation to estimate what will happen next.</div>
+  </section>
+
+  <!-- 5. PREDICTIVE ANALYTICS -->
+  <section class="slide">
+    <div class="oc-cbg"></div>
+    <div class="oc-cgrid"></div>
+    <div class="oc-snum">05 / 10</div>
+    <div class="oc-tag">● CHAPTER 04 · PREDICTION ENGINE</div>
+    <h2 class="oc-h2">Forecasting congestion <span class="oc-g">before it happens</span></h2>
+    <div class="oc-grid-3" style="margin-top:28px">
+      <div class="oc-card"><div class="oc-big oc-g" style="font-size:64px">+30s</div><p style="color:var(--oc-dim);margin-top:14px;font-size:13px">Immediate queue projection for signal cycle optimization</p></div>
+      <div class="oc-card"><div class="oc-big oc-g" style="font-size:64px">+2m</div><p style="color:var(--oc-dim);margin-top:14px;font-size:13px">Medium-term spillback risk assessment at connected junctions</p></div>
+      <div class="oc-card"><div class="oc-big oc-g" style="font-size:64px">+5m</div><p style="color:var(--oc-dim);margin-top:14px;font-size:13px">Strategic corridor-wide congestion propagation forecast</p></div>
+    </div>
+    <div class="oc-hl" style="margin-top:26px">Using <b>vehicle conservation physics</b> (arrivals − departures = queue change), not black-box ML. Operators can trust the math.</div>
+  </section>
+
+  <!-- 6. COORDINATED RECOMMENDATIONS -->
+  <section class="slide">
+    <div class="oc-cbg"></div>
+    <div class="oc-cgrid"></div>
+    <div class="oc-snum">06 / 10</div>
+    <div class="oc-tag">● CHAPTER 05 · AI DECISION SUPPORT</div>
+    <h2 class="oc-h2">Coordinated signal timing with <span class="oc-g">strict safety envelopes</span></h2>
+    <div class="oc-steps">
+      <div class="oc-step"><div class="oc-sn">1</div><div class="oc-sc"><h4>Multi-junction coordination</h4><p>Instead of isolated timers, the system computes coordinated green splits across C1 and C3, clearing downstream before releasing upstream.</p></div></div>
+      <div class="oc-step"><div class="oc-sn">2</div><div class="oc-sc"><h4>Safety-first validation</h4><p>Every recommendation is bounded: 10s min green, 55s max green, 3–4s amber clearance, 2s all-red — violations are physically impossible.</p></div></div>
+      <div class="oc-step"><div class="oc-sn">3</div><div class="oc-sc"><h4>Before-vs-After simulation</h4><p>Operators run a virtual comparison in the digital twin. Same initial state, same seed — 4 objective metrics scored before any action is taken.</p></div></div>
+      <div class="oc-step"><div class="oc-sn">4</div><div class="oc-sc"><h4>Transparent reasoning</h4><p>Every recommendation explains what changed, why it helps, and which safety rules were validated. 100% traceable, zero hallucinated gains.</p></div></div>
+    </div>
+  </section>
+
+  <!-- 7. INCIDENT MANAGEMENT -->
+  <section class="slide">
+    <div class="oc-cbg"></div>
+    <div class="oc-cgrid"></div>
+    <div class="oc-snum">07 / 10</div>
+    <div class="oc-tag">● CHAPTER 06 · INCIDENT RESPONSE</div>
+    <h2 class="oc-h2">Proactive <span class="oc-g">incident management</span></h2>
+    <div class="oc-grid-2">
+      <div class="oc-card">
+        <span class="oc-badge oc-bo">BOTTLENECK SCENARIO</span>
+        <h4 style="font-size:20px;margin-bottom:10px">C3 incident: 35% capacity retained</h4>
+        <p style="color:var(--oc-dim);font-size:14px;line-height:1.65">When a lane blockage reduces C3 capacity, the twin:<br>• Detects the bottleneck from queue growth patterns<br>• Meters inflow from C6 to prevent gridlock spillback<br>• Adjusts C1 cycle timing to clear the corridor<br>• Tracks recovery cycle-by-cycle — no false promises</p>
+      </div>
+      <div class="oc-card" style="border-top-color:var(--oc-accent)">
+        <span class="oc-badge oc-bp">EMERGENCY CORRIDOR</span>
+        <h4 style="font-size:20px;margin-bottom:10px">Ambulance priority: C6 → C3 → C1 → C2</h4>
+        <p style="color:var(--oc-dim);font-size:14px;line-height:1.65">Virtual green corridor for emergency vehicles:<br>• Cross-traffic safely halted via amber → all-red clearance<br>• 5-stage lifecycle: Scheduled → Clear → Priority → Recovery → Done<br>• Post-passage bounded recovery prevents lingering cross-traffic delays<br>• Manual safety locks override emergency commands with audit</p>
+      </div>
+    </div>
+    <div class="oc-hl" style="margin-top:26px">💡 <b>Key insight:</b> Dynamic upstream metering during incidents protects the broader network from localized failures — preventing cascading gridlock.</div>
+  </section>
+
+  <!-- 8. HUMAN AUTHORITY -->
+  <section class="slide">
+    <div class="oc-cbg"></div>
+    <div class="oc-cgrid"></div>
+    <div class="oc-snum">08 / 10</div>
+    <div class="oc-tag">● CHAPTER 07 · ACCOUNTABILITY</div>
+    <h2 class="oc-h2">Human authority <span class="oc-g">always preserved</span></h2>
+    <div class="oc-grid-3" style="margin-top:28px">
+      <div class="oc-card"><div class="oc-big oc-g" style="font-size:48px">Approve</div><p style="color:var(--oc-dim);margin-top:14px;font-size:13px">Accept AI recommendation as-is with one-click confirmation</p></div>
+      <div class="oc-card"><div class="oc-big oc-g" style="font-size:48px">Modify</div><p style="color:var(--oc-dim);margin-top:14px;font-size:13px">Adjust timing within safety boundaries — mandatory reason required</p></div>
+      <div class="oc-card"><div class="oc-big oc-g" style="font-size:48px">Reject</div><p style="color:var(--oc-dim);margin-top:14px;font-size:13px">Override with documented rationale — full audit trail preserved</p></div>
+    </div>
+    <div class="oc-hl" style="margin-top:26px"><b>PostgreSQL append-only audit ledger:</b> Every decision, override, timing change — who, when, why, and what the system predicted. One-click manual mode kills all AI recommendations instantly.</div>
+  </section>
+
+  <!-- 9. SAFETY & STATS -->
+  <section class="slide">
+    <div class="oc-cbg"></div>
+    <div class="oc-cgrid"></div>
+    <div class="oc-snum">09 / 10</div>
+    <div class="oc-tag">● CHAPTER 08 · SAFETY GUARANTEES</div>
+    <h2 class="oc-h2">The <span class="oc-g">numbers</span> that matter</h2>
+    <div class="oc-grid-3" style="margin-top:28px">
+      <div class="oc-card"><div class="oc-big oc-g" style="font-size:80px">0%</div><p style="color:var(--oc-dim);margin-top:14px;font-size:13px">physical signal actuation — pure synthetic demonstration mode</p></div>
+      <div class="oc-card"><div class="oc-big oc-g" style="font-size:80px">1 Hz</div><p style="color:var(--oc-dim);margin-top:14px;font-size:13px">real-time state broadcast — every second, every junction approach</p></div>
+      <div class="oc-card"><div class="oc-big oc-g" style="font-size:80px">100%</div><p style="color:var(--oc-dim);margin-top:14px;font-size:13px">auditable — append-only PostgreSQL ledger with UUID idempotency</p></div>
+    </div>
+    <div style="margin-top:36px">
+      <span class="oc-pill">🔒 Safety validation at Go gateway</span>
+      <span class="oc-pill">🧪 Deterministic seeds (1101 / 2202 / 3303)</span>
+      <span class="oc-pill">📡 Offline golden replay fallback</span>
+      <span class="oc-pill">♿ WCAG 2.1 accessible</span>
+    </div>
+  </section>
+
+  <!-- 10. NEXT STEPS & CLOSING -->
+  <section class="slide">
+    <div class="oc-cbg"></div>
+    <div class="oc-cgrid"></div>
+    <div class="oc-snum">10 / 10</div>
+    <div class="oc-tag">● RECOMMENDATION · SHADOW-PILOT</div>
+    <div class="oc-quote">
+      <blockquote>Approve the shadow-pilot,<br>not the platform.<br>Every gate after that is a <span class="oc-g">data-backed decision</span>.</blockquote>
+      <div class="attr">— Proposed to the Director General of Police, Odisha</div>
+    </div>
+    <div style="margin-top:36px">
+      <span class="oc-pill">① TMC Shadow-Pilot · Observation only</span>
+      <span class="oc-pill">② Sample camera feed ingestion</span>
+      <span class="oc-pill">③ Compare twin vs manual decisions</span>
+      <span class="oc-pill">④ Independent safety audit before any live deployment</span>
+    </div>
+    <p class="oc-sub" style="margin-top:24px">
+      <b style="color:var(--oc-accent3)">No street-side hardware modifications required for shadow mode.<br>Standard RTSP feeds and an edge server — that's all.</b>
+    </p>
+  </section>
+
+</div>
+
+<!-- Navigation Controls -->
+<div class="nav-controls" id="nav-controls">
+  <button class="nav-btn" id="btn-prev" disabled aria-label="Previous slide">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+    Previous
+  </button>
+  <span class="nav-counter" id="nav-counter">01 / 10</span>
+  <button class="nav-btn primary" id="btn-next" aria-label="Next slide">
+    Next
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+  </button>
+  <span class="nav-hint">← → Arrow Keys</span>
+</div>
+
+<!-- Progress Bar -->
+<div class="progress-bar"><span id="progress-fill"></span></div>
+
+<script>
+(function(){
+  'use strict';
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  const btnPrev = document.getElementById('btn-prev');
+  const btnNext = document.getElementById('btn-next');
+  const counter = document.getElementById('nav-counter');
+  const progressFill = document.getElementById('progress-fill');
+
+  function pad(n){ return String(n).padStart(2,'0'); }
+
+  function goTo(index){
+    if(index < 0 || index >= total) return;
+    slides.forEach((s, i) => {
+      s.classList.remove('is-active','is-prev');
+      if(i === index) s.classList.add('is-active');
+      else if(i < index) s.classList.add('is-prev');
+    });
+    current = index;
+    counter.textContent = pad(current+1) + ' / ' + pad(total);
+    btnPrev.disabled = (current === 0);
+
+    // Update next button text for last slide
+    if(current === total - 1){
+      btnNext.innerHTML = 'Close <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+    } else {
+      btnNext.innerHTML = 'Next <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>';
+    }
+
+    progressFill.style.width = ((current + 1) / total * 100) + '%';
+  }
+
+  function next(){ 
+    if(current === total - 1){
+      // On last slide, optionally close or loop
+      return;
+    }
+    goTo(current + 1); 
+  }
+  function prev(){ goTo(current - 1); }
+
+  // Button clicks
+  btnPrev.addEventListener('click', prev);
+  btnNext.addEventListener('click', function(){
+    if(current === total - 1) return; // stay on last
+    next();
+  });
+
+  // Keyboard navigation: ArrowRight = next, ArrowLeft = previous
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowRight' || e.key === 'Right'){
+      e.preventDefault();
+      next();
+    } else if(e.key === 'ArrowLeft' || e.key === 'Left'){
+      e.preventDefault();
+      prev();
+    } else if(e.key === 'Home'){
+      e.preventDefault();
+      goTo(0);
+    } else if(e.key === 'End'){
+      e.preventDefault();
+      goTo(total - 1);
+    }
+    // Note: PageDown and PageUp are NOT used for navigation (as per requirement)
+  });
+
+  // Initialize
+  goTo(0);
+})();
+</script>
+</body>
+</html>

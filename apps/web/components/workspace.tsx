@@ -486,7 +486,7 @@ export function Workspace() {
               <Button
                 variant="default"
                 className="dgp-launch-button"
-                onClick={() => setDgpModalOpen(true)}
+                onClick={() => window.open('/dgp-pitch-deck.html', '_blank')}
               >
                 <Sparkles size={14} /> Open Briefing Slides
               </Button>
