@@ -104,16 +104,21 @@ export function useLive() {
   const store = useLiveStore();
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
-    let socket: WebSocket;
-    let timer: ReturnType<typeof setTimeout>;
+    let socket: WebSocket | undefined;
+    let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+    let initialConnectTimer: ReturnType<typeof setTimeout> | undefined;
     let disposed = false;
- let attempts=0;
+    let attempts = 0;
     const connect = () => {
-      socket = new WebSocket(
+      const connection = new WebSocket(
         `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/ws/v1/live`,
       );
-      socket.onopen = () => { attempts=0;useLiveStore.getState().set({ connected: true, failed: false }); };
-      socket.onmessage = (event) => {
+      socket = connection;
+      connection.onopen = () => {
+        attempts = 0;
+        useLiveStore.getState().set({ connected: true, failed: false });
+      };
+      connection.onmessage = (event) => {
         try {
           const envelope = JSON.parse(event.data);
           if (envelope.schema_version !== "1.0")
@@ -147,19 +152,29 @@ export function useLive() {
           useLiveStore.getState().set({ failed: true });
         }
       };
-      socket.onerror = () => socket.close();
-      socket.onclose = () => {
+      connection.onerror = () => connection.close();
+      connection.onclose = () => {
         useLiveStore.getState().set({ connected: false });
-        if (!disposed) timer = setTimeout(connect, Math.min(30000,1000*2**attempts++)+Math.random()*500);
+        if (!disposed) {
+          reconnectTimer = setTimeout(
+            connect,
+            Math.min(30_000, 1_000 * 2 ** attempts++) + Math.random() * 500,
+          );
+        }
       };
     };
-    connect();
+
+    // React Strict Mode intentionally runs an effect setup/cleanup pair in
+    // development. Scheduling the first connection lets that cleanup cancel
+    // its throwaway attempt before it reaches Vite's WebSocket proxy.
+    initialConnectTimer = setTimeout(connect, 0);
     const interval = setInterval(() => setNow(Date.now()), 250);
     return () => {
       disposed = true;
-      clearTimeout(timer);
+      if (initialConnectTimer) clearTimeout(initialConnectTimer);
+      if (reconnectTimer) clearTimeout(reconnectTimer);
       clearInterval(interval);
-      socket.close();
+      socket?.close();
     };
   }, []);
   return {

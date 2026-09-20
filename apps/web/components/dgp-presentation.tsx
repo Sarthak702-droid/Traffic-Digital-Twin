@@ -27,7 +27,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useLive } from "@/lib/live";
+import { useLiveStore } from "@/lib/live";
 import type {
   Analysis,
   HealthState,
@@ -385,7 +385,9 @@ export function DgpPresentationModal({
   activeRun,
   auditCount,
 }: DgpPresentationModalProps) {
-  const liveStore = useLive();
+  // Workspace owns the one live WebSocket connection. This modal only reads
+  // its shared Zustand state when it is rendered independently in tests.
+  const liveStore = useLiveStore();
   const liveFrame = propFrame ?? liveStore.frame;
   const liveHealth = propHealth ?? liveStore.health;
 

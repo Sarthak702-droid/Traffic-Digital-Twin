@@ -32,6 +32,7 @@ describe("live reconnection", () => {
     vi.useFakeTimers();
     vi.stubGlobal("WebSocket", FakeSocket);
     const { result, unmount } = renderHook(() => useLive());
+    act(() => vi.advanceTimersByTime(0));
     const socket = FakeSocket.sockets[0];
     act(() => socket.onopen());
     expect(result.current.connected).toBe(true);
@@ -73,6 +74,7 @@ describe("live reconnection", () => {
     vi.useFakeTimers();
     vi.stubGlobal("WebSocket", FakeSocket);
     const { result } = renderHook(() => useLive());
+    act(() => vi.advanceTimersByTime(0));
     act(() => FakeSocket.sockets[0].onmessage({ data: "invalid" }));
     expect(result.current.failed).toBe(true);
   });
@@ -80,6 +82,7 @@ describe("live reconnection", () => {
     vi.useFakeTimers();
     vi.stubGlobal("WebSocket", FakeSocket);
     const { result } = renderHook(() => useLive());
+    act(() => vi.advanceTimersByTime(0));
     act(() => FakeSocket.sockets[0].onmessage({
       data: JSON.stringify({
         schema_version: "1.0",
