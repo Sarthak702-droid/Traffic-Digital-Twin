@@ -6,11 +6,13 @@ import {
   Check,
   ChevronRight,
   Clock,
+  Gauge,
   GitBranch,
+  Presentation,
   Radio,
   ShieldAlert,
   ShieldCheck,
-  Sparkles,
+  SlidersHorizontal,
   User,
   Users,
 } from "lucide-react";
@@ -150,7 +152,7 @@ export function TopBar({
             disabled={isPendingManual}
             title="Recommend Mode: Digital twin forecasts + predictive coordinated recommendations"
           >
-            <Sparkles size={12} />
+            <Gauge size={12} />
             <span>Recommend</span>
           </button>
           <button
@@ -189,8 +191,8 @@ export function TopBar({
             </>
           ) : (
             <>
-              <Sparkles size={13} />
-              <span>Autonomous Recs</span>
+              <SlidersHorizontal size={13} />
+              <span>Coordinated Plan</span>
             </>
           )}
         </button>
@@ -211,7 +213,7 @@ export function TopBar({
           onClick={() => window.open('/dgp-pitch-deck.html', '_blank')}
           aria-label="Start DGP demonstration briefing"
         >
-          <Sparkles size={15} />
+          <Presentation size={15} />
           <span>START DGP DEMONSTRATION</span>
         </Button>
       </div>

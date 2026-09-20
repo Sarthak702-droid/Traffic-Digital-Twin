@@ -18,7 +18,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   Siren,
-  Sparkles,
+  SlidersHorizontal,
   TrafficCone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -274,7 +274,7 @@ export function ActionRail({
                   ? `${rec.priority.toUpperCase()} RECOMMENDATION`
                   : "DECISION SUPPORT"}
           </span>
-          <Sparkles size={16} className="sparkle-icon" />
+          <SlidersHorizontal size={15} className="rec-header-icon" />
         </div>
 
         {isAltSelected && (
