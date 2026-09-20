@@ -64,7 +64,10 @@ def ensure_postgres():
     try:
         subprocess.run([docker_bin, "compose", "up", "-d", "postgres"], check=True, cwd=ROOT)
     except Exception as e:
-        log(f"\033[33mWarning:\033[0m could not launch docker compose: {e}")
+        raise RuntimeError(
+            "PostgreSQL is not running and Docker Compose could not start it. "
+            "Start Docker (and ensure this user can access its socket), then run npm start again."
+        ) from e
 
     log("Waiting for PostgreSQL to be ready on 127.0.0.1:5433...")
     for _ in range(30):
@@ -73,6 +76,14 @@ def ensure_postgres():
         time.sleep(1)
     else:
         raise RuntimeError("PostgreSQL did not become available on port 5433.")
+
+
+def write_local_env(env_data: dict) -> None:
+    """Persist local configuration without ever logging its secret values."""
+    temporary = ENV_FILE.with_suffix(".tmp")
+    temporary.write_text(json.dumps(env_data, indent=2) + "\n")
+    os.chmod(temporary, 0o600)
+    temporary.replace(ENV_FILE)
 
 def ensure_local_env() -> dict:
     if not ENV_FILE.exists():
@@ -86,16 +97,29 @@ def ensure_local_env() -> dict:
             API_ORIGIN="http://127.0.0.1:8081",
             UI_ORIGIN="http://127.0.0.1:3100",
         )
-        fd = os.open(ENV_FILE, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(fd, "w") as f:
-            json.dump(env_data, f, indent=2)
+        write_local_env(env_data)
     else:
         env_data = json.loads(ENV_FILE.read_text())
 
     # Upgrade prior gateway/writer launcher state without requiring users to
-    # delete local demo data or secrets.
-    env_data.setdefault("COMPUTE_TOKEN", secrets.token_hex(32))
-    env_data.setdefault("DATABASE_URL", "postgres://traffic:traffic_demo@127.0.0.1:5433/traffic?sslmode=disable")
+    # delete local demo data or secrets.  Earlier revisions used
+    # WRITE_DATABASE_URL and pointed Vite at a retired :8080 gateway.  The
+    # current Go gateway owns persistence and listens on :8081 by default.
+    changed = False
+    if not env_data.get("COMPUTE_TOKEN"):
+        env_data["COMPUTE_TOKEN"] = secrets.token_hex(32)
+        changed = True
+    if not env_data.get("DATABASE_URL"):
+        env_data["DATABASE_URL"] = env_data.get(
+            "WRITE_DATABASE_URL", "postgres://traffic:traffic_demo@127.0.0.1:5433/traffic?sslmode=disable"
+        )
+        changed = True
+    if env_data.get("API_ORIGIN") == "http://127.0.0.1:8080":
+        env_data["API_ORIGIN"] = "http://127.0.0.1:8081"
+        changed = True
+    if changed:
+        write_local_env(env_data)
+        log("Migrated legacy local launcher settings to the Go gateway configuration.")
 
     # Choose the public Go API port before Vite starts so the proxy points to it.
     api_port = int(os.environ.get("API_PORT") or env_data.get("API_PORT") or 8081)
@@ -126,6 +150,19 @@ def find_executable(name: str, fallback_paths: list[str]) -> str:
         if os.path.isfile(expanded) and os.access(expanded, os.X_OK):
             return expanded
     return name
+
+
+def wait_for_port(name: str, port: int, process: subprocess.Popen, timeout: float = 20.0):
+    """Do not start a dependent service until its listener is actually ready."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        exit_code = process.poll()
+        if exit_code is not None:
+            raise RuntimeError(f"{name} exited before becoming ready (exit code {exit_code}).")
+        if check_port("127.0.0.1", port, timeout=0.2):
+            return
+        time.sleep(0.2)
+    raise RuntimeError(f"{name} did not listen on 127.0.0.1:{port} within {timeout:.0f} seconds.")
 
 
 def cleanup_stale_services():
@@ -255,8 +292,14 @@ def main():
             proc = subprocess.Popen(cmd, env=env, cwd=str(ROOT), start_new_session=True)
             children.append((name, proc))
 
+            if name == "Python Simulation gRPC":
+                wait_for_port(name, 50051, proc)
+            elif name == "Python Intelligence gRPC":
+                wait_for_port(name, 50052, proc)
             if name == "Go API Gateway":
                 for _ in range(50):
+                    if proc.poll() is not None:
+                        raise RuntimeError(f"Go API Gateway exited before becoming ready (exit code {proc.returncode}).")
                     try:
                         req = urllib.request.Request(env["API_ORIGIN"] + "/health/live")
                         urllib.request.urlopen(req, timeout=1).close()

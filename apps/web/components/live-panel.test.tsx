@@ -142,7 +142,7 @@ describe("LiveSummary component", () => {
     expect(screen.getByText("12")).toBeInTheDocument(); // vehicles in network
     expect(screen.getByText("7")).toBeInTheDocument(); // queued (5 + 2)
     expect(screen.getByText("1101")).toBeInTheDocument(); // seed
-    expect(screen.getByText(/38/)).toBeInTheDocument(); // completed trips
+    expect(screen.getByText("COMPLETED TRIPS").parentElement).toHaveTextContent(/38\s*of\s*50\s*inserted/); // completed trips
     expect(screen.getByText(/Run test-run-123/)).toBeInTheDocument();
   });
 

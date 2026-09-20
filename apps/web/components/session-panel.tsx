@@ -22,9 +22,9 @@ export function SessionPanel(){
  {logout.error&&<p role="alert">{logout.error.message}</p>}
  {uncertain&&<div role="alert"><h2>Previous command needs review</h2><p>Command <code>{uncertain}</code> · {outcome.data?.status||"outcome unavailable"}. Do not repeat an uncertain action.</p>
  <details><summary>Saved outcome</summary><pre>{JSON.stringify(outcome.data?.response??{},null,2)}</pre></details>
- <p>Inspect the current plan and Audit & Health. If the outcome remains unknown, ask a supervisor to reconcile it before further changes.</p>
+ <p>{outcome.error && (outcome.error as {status?:number}).status===404 ? "This Go API has no durable record of the command, so it was not committed here. Review the current plan and Audit & Health before clearing this stale browser-only record." : "Inspect the current plan and Audit & Health. If the outcome remains unknown, ask a supervisor to reconcile it before further changes."}</p>
  <label><input type="checkbox" checked={reviewed} onChange={e=>setReviewed(e.target.checked)}/> I have checked the recorded outcome and current plan.</label>
- <button disabled={!reviewed||!(outcome.data?.status==="completed")} onClick={()=>{clearPendingCommand();setReviewed(false);client.invalidateQueries()}}>Finish review (does not retry)</button>
+ <button disabled={!reviewed||!(outcome.data?.status==="completed" || (outcome.error as {status?:number}|undefined)?.status===404)} onClick={()=>{clearPendingCommand();setReviewed(false);client.invalidateQueries()}}>Finish review (does not retry)</button>
  </div>}
  </section>;
 }
