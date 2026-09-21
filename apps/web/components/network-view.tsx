@@ -122,6 +122,8 @@ export function NetworkView({
   onSelectNode,
   onSimulate,
   isSimulating = false,
+  onStartScenario,
+  isStartingScenario = false,
   route = [],
 }: {
   network: Network;
@@ -131,6 +133,9 @@ export function NetworkView({
   onSelectNode: (id: string) => void;
   onSimulate?: () => void;
   isSimulating?: boolean;
+  /** Starts the seeded aggregate scenario needed before any comparison exists. */
+  onStartScenario?: () => void;
+  isStartingScenario?: boolean;
   route?: string[];
 }) {
   const [compare, setCompare] = useState(false);
@@ -337,7 +342,7 @@ export function NetworkView({
                 Baseline vs Candidate Coordinated Recommendation
               </h2>
               <p>
-                Synchronized split rollout from identical snapshot (seed #{matching ? result?.seed : frame?.seed ?? "synthetic"}, t = {frame?.simulation_time_s ?? 0}s) over a 120-second PN-MPC horizon.
+                Synchronized aggregate rollout from an identical snapshot (seed #{matching ? result?.seed : frame?.seed ?? "synthetic"}, t = {frame?.simulation_time_s ?? 0}s) over a 120-second horizon.
               </p>
             </div>
             <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800/60">
@@ -394,8 +399,23 @@ export function NetworkView({
           ) : (
             <div className="p-6 rounded-xl border border-slate-800 bg-slate-900/40 text-center flex flex-col items-center gap-3">
               <p role="status" className="text-sm text-slate-400 max-w-md">
-                No matching comparison available. Start a scenario and request a fresh simulation. No outcome is assumed.
+                {!frame
+                  ? "No aggregate scenario is running. Start the seeded peak-surge demo, then the causal intelligence service will produce a recommendation and comparison."
+                  : !analysis
+                    ? "Aggregate state is running; waiting for a fresh causal intelligence result before a comparison can be requested."
+                    : "No matching comparison available. Request a fresh simulation. No outcome is assumed."}
               </p>
+              {!frame && onStartScenario && (
+                <button
+                  type="button"
+                  onClick={onStartScenario}
+                  disabled={isStartingScenario}
+                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-md transition disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {isStartingScenario ? "Starting aggregate scenario..." : "Start peak-surge aggregate demo"}
+                </button>
+              )}
               {analysis?.recommendation && onSimulate && (
                 <button
                   type="button"

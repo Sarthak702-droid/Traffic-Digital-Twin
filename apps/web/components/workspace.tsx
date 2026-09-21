@@ -771,6 +771,8 @@ export function Workspace() {
                     comparisonResult={activeComparison}
                     onSimulate={() => decision.mutate({ action: "simulate" })}
                     isSimulating={decision.isPending}
+                    onStartScenario={() => prepare.mutate()}
+                    isStartingScenario={prepare.isPending}
                   />
                 )}
 
