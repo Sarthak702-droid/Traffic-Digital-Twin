@@ -177,7 +177,7 @@ const mockHealth: HealthState = {
   components: [
     { component: "api", status: "normal", message: "Go API connected" },
     { component: "database", status: "normal", message: "PostgreSQL connected" },
-    { component: "simulation", status: "normal", message: "SUMO active" },
+    { component: "simulation", status: "normal", message: "Aggregate flow active" },
     { component: "intelligence", status: "normal", message: "Conservation engine online" },
     { component: "signal_controller", status: "unavailable", message: "No live signal control" },
   ],

@@ -75,7 +75,7 @@ describe("Epic 14: Production UX, Access & Acceptance (S44–S48)", () => {
         components: [
           { component: "api", status: "normal", message: "API active" },
           { component: "database", status: "degraded", message: "Connection pool latency high" },
-          { component: "simulation", status: "normal", message: "SUMO running" },
+          { component: "simulation", status: "normal", message: "Aggregate flow running" },
           { component: "intelligence", status: "normal", message: "Inference ready" },
         ],
       };
@@ -98,7 +98,7 @@ describe("Epic 14: Production UX, Access & Acceptance (S44–S48)", () => {
         components: [
           { component: "api", status: "normal", message: "API active" },
           { component: "database", status: "normal", message: "PostgreSQL connected" },
-          { component: "simulation", status: "normal", message: "SUMO running" },
+          { component: "simulation", status: "normal", message: "Aggregate flow running" },
           { component: "intelligence", status: "normal", message: "Inference ready" },
         ],
       };

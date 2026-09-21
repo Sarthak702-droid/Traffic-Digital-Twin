@@ -22,6 +22,4 @@ def build_engine(config_path=None, engine_kind=None, **kwargs):
         return AggregateEngine(config_path=config_path, **kwargs)
     if kind == "replay":
         raise ValueError("Replay is published by the Go replay provider, not a simulation process")
-    if kind == "sumo":
-        raise ValueError("SUMO is not available in the default runtime profile")
     raise ValueError(f"Unsupported traffic engine: {kind}")

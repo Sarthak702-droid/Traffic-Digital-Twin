@@ -1,6 +1,6 @@
 # Simulation boundary
 
-Python 3.12+ aggregate cell-flow runtime. It implements seeded boundary demand, finite link/cell storage, external backlog, virtual signal-controlled junction transfers, reset/get-state/stop RPCs and 1 Hz streaming for C1/C3. No vehicle identities, SUMO binaries, database credentials or browser HTTP routes belong here.
+Python 3.12+ aggregate cell-flow runtime. It implements seeded boundary demand, finite link/cell storage, external backlog, virtual signal-controlled junction transfers, reset/get-state/stop RPCs and 1 Hz streaming for C1/C3. No vehicle identities, external traffic binaries, database credentials or browser HTTP routes belong here.
 
 Run from root: `PYTHONPATH=.:packages/contracts/gen/python .venv/bin/python -m services.shared.server simulation --port 50051`.
 

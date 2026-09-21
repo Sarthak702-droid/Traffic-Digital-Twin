@@ -192,7 +192,7 @@ Screenshots: docs/screenshots/epic5-desktop.png, docs/screenshots/epic5-mobile.p
                       ▼
      ┌─────────────────────────────────┐
      │    Digital Twin Simulation      │
-     │  (SUMO / Internal Engine)       │
+     │  (Aggregate / Internal Engine)  │
      │  - Safe In-Memory Plan Applied  │
      │  - Telemetry Streamed via WS    │
      └─────────────────────────────────┘

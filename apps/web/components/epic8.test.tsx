@@ -11,7 +11,7 @@ const health: HealthState = {
   components: [
     { component: "api", status: "normal", message: "Go API connected" },
     { component: "database", status: "normal", message: "PostgreSQL connected" },
-    { component: "simulation", status: "normal", message: "SUMO/TraCI stream connected at 1 Hz" },
+    { component: "simulation", status: "normal", message: "Aggregate flow stream connected at 1 Hz" },
     { component: "intelligence", status: "normal", message: "Conservation forecasts available" },
     { component: "signal_controller", status: "unavailable", message: "NOT CONNECTED · synthetic signal plans only" },
     { component: "cctv", status: "unavailable", message: "DEMO/SAMPLE · no camera feed or CV pipeline configured" },

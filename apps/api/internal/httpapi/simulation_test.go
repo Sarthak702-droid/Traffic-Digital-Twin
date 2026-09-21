@@ -318,7 +318,7 @@ func TestLaunchFailureModes(t *testing.T) {
 	}{
 		{
 			name:         "gRPC reset error",
-			mock:         configurableMockSimulation{returnErr: status.Error(codes.Unavailable, "SUMO crashed")},
+			mock:         configurableMockSimulation{returnErr: status.Error(codes.Unavailable, "aggregate runtime crashed")},
 			expectedCode: 503,
 			expectedText: "Simulator start/reset failed",
 		},

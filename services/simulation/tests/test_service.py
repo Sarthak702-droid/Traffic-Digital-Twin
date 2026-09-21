@@ -8,7 +8,7 @@ class Context:
     def is_active(self):return True
 
 class FailedEngine:
-    failure='SUMO disconnected'
+    failure='aggregate runtime disconnected'
     running=False
     def __init__(self):
         import threading

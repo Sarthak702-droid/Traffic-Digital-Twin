@@ -260,7 +260,7 @@ h4,.h4{font-size:22px;line-height:1.3;font-weight:600;margin:0 0 8px}
 ├── <span class="cc">React Dashboard</span>         <span class="cm">// :3100 — Real-time corridor visualization</span>
 │
 <span class="cc">Private Python Services</span>    <span class="cm">// gRPC, never exposed publicly</span>
-├── <span class="cc">Simulation Engine</span>       <span class="cm">// :50051 — SUMO micro-simulation, deterministic seeds</span>
+├── <span class="cc">Simulation Engine</span>       <span class="cm">// :50051 — aggregate cell-flow, deterministic seeds</span>
 ├── <span class="cc">Intelligence Engine</span>     <span class="cm">// :50052 — AGDA bounds, conservation forecasts</span>
 └── <span class="cc">Vision Pipeline</span>         <span class="cm">// Camera feed analytics, sample generation</span></pre>
     <p class="oc-sub" style="margin-top:18px">Go owns the public boundary and safety validation. Python handles private compute. <b style="color:var(--oc-accent3)">No direct public access to simulation or AI services — enforced by architecture, not policy.</b></p>

@@ -1,6 +1,3 @@
-import json
-from pathlib import Path
-
 import twin_pb2 as pb
 
 from services.simulation.engine import Engine
@@ -34,7 +31,6 @@ def test_full_receiver_retains_boundary_backlog():
     assert backlog[source] == 10.0
 
 
-def test_no_default_sumo_runtime_imports():
-    root = Path(__file__).resolve().parents[3]
-    default_sources = [root/'services/simulation/engine.py', root/'services/simulation/aggregate_engine.py', root/'services/simulation/service.py', root/'services/simulation/providers.py', root/'services/shared/server.py']
-    assert all('import traci' not in path.read_text() and 'import sumolib' not in path.read_text() for path in default_sources)
+def test_default_runtime_uses_the_aggregate_provider():
+    from services.simulation.aggregate_engine import AggregateEngine
+    assert Engine is AggregateEngine

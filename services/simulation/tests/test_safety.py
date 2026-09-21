@@ -1,14 +1,12 @@
 import copy
-import json
-import xml.etree.ElementTree as ET
-from pathlib import Path
 import pytest
 import twin_pb2 as pb
+from services.shared.network_config import NetworkIndex, load_config
+from services.simulation.demand import BoundaryDemand
 from services.simulation.safety import Signals, validate_config, validate_plan, default_plan, validate_runtime_safety, SafetyViolation
-from services.simulation.network import ROOT, write_demand
 
 @pytest.fixture
-def config():return json.loads((ROOT/'packages/scenario-config/c1-c6.json').read_text())
+def config(): return load_config()
 
 @pytest.mark.parametrize('change',['conflict','bounds','pedestrian','missing_conflict','nan','ratio'])
 def test_bad_configuration_rejected(config,change):
@@ -37,20 +35,15 @@ def test_exact_durations_and_safe_pending_plan(config):
     with pytest.raises(ValueError):scheduler.apply(invalid)
     assert scheduler.pending==plan
 
-def test_route_demand_respects_turning_ratios(config,tmp_path):
-    chosen=[m for m in config['movements'] if m['incoming_link_id']=='C3-C1']
-    for i,m in enumerate(chosen):m['turning_ratio']=.98 if i==0 else .01
-    root=ET.parse(write_demand(config,'peak_surge',1101,tmp_path)).getroot()
-    routes={r.attrib['id']:r.attrib['edges'].split() for r in root.findall('route')}
-    counts={m['outgoing_link_id']:0 for m in chosen}
-    for v in root.findall('vehicle'):
-        edges=routes[v.attrib['route']]
-        if 'C3-C1' in edges:
-            counts[edges[edges.index('C3-C1')+1]]+=1
-    assert counts[chosen[0]['outgoing_link_id']]/sum(counts.values())>.94
-    first=(tmp_path/'demand.rou.xml').read_bytes()
-    write_demand(config,'peak_surge',1101,tmp_path)
-    assert first==(tmp_path/'demand.rou.xml').read_bytes()
+def test_boundary_demand_is_seeded_and_deterministic(config):
+    index = NetworkIndex.build(config)
+    scenario = next(item for item in config['scenarios'] if item['id'] == 'peak_surge')
+    first = BoundaryDemand(config, index, scenario, 1101)
+    second = BoundaryDemand(config, index, scenario, 1101)
+    samples_one = [first.next(tick) for tick in range(1, 121)]
+    samples_two = [second.next(tick) for tick in range(1, 121)]
+    assert samples_one == samples_two
+    assert all(set(sample) == set(index.boundary_inputs) for sample in samples_one)
 
 
 def test_runtime_safety_validator_rejects_violations(config):
@@ -132,4 +125,3 @@ def test_all_controlled_junction_exact_stage_durations(config):
             assert scheduler.state[node_id][2] == all_red_len
             for _ in range(all_red_len):
                 scheduler.advance()
-
