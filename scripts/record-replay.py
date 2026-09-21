@@ -24,7 +24,9 @@ def record(selected=None):
             with gzip.open(target/(scenario+'.jsonl.gz'),'wt') as out:
                 for tick in range(480):
                     state=engine.step()
-                    if tick%5==0:analysis=model.analyze(state)
+                    # State remains 1 Hz; a 10-second analysis cadence keeps replay
+                    # generation bounded while preserving the latest causal result.
+                    if tick%10==0:analysis=model.analyze(state)
                     record={'state':MessageToDict(state,preserving_proto_field_name=True,always_print_fields_with_no_presence=True),'analysis':MessageToDict(analysis,preserving_proto_field_name=True,always_print_fields_with_no_presence=True)}
                     out.write(json.dumps(record,separators=(',',':'))+'\n')
             print('Recorded',scenario,flush=True)

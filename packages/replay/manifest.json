@@ -1,5 +1,5 @@
 {
-  "config_id": "c1-c6-v3",
+  "config_id": "c1-c6-v4",
   "engine_kind": "aggregate_ctm",
   "model_version": "aggregate-predictor-v1",
   "metrics_version": "flow-metrics-v1",
@@ -10,7 +10,7 @@
       "engine_kind": "aggregate_ctm",
       "model_version": "aggregate-predictor-v1",
       "metrics_version": "flow-metrics-v1",
-      "sha256": "9680a851f34accaabbd068e50fa93cf3b356233785c8b6aa56d7c677650d715d"
+      "sha256": "30cae8acec8df812e40dd7496b4ec900c6aa4c62a7feb8d3f74f4b5ca3348190"
     },
     "incident_c3": {
       "seed": 2202,
@@ -18,7 +18,7 @@
       "engine_kind": "aggregate_ctm",
       "model_version": "aggregate-predictor-v1",
       "metrics_version": "flow-metrics-v1",
-      "sha256": "01c605147bc577df469911ebb209b181b5ab0b8c4ad2fa88ba835357ae5fa6c6"
+      "sha256": "a053af74f33d464f5afc8ff7481c4fdd45dc87e6b6c654897f58e9caea849780"
     },
     "ambulance_corridor": {
       "seed": 3303,
@@ -26,7 +26,7 @@
       "engine_kind": "aggregate_ctm",
       "model_version": "aggregate-predictor-v1",
       "metrics_version": "flow-metrics-v1",
-      "sha256": "a3741989012049d6bcd265a6f83c9386675c0ab9f592709fd1e4bfcd6f75ad72"
+      "sha256": "12bda50d0670c869fadb73a507370a4371b6ddbaa645792ea08483d3eeef3297"
     }
   }
 }
