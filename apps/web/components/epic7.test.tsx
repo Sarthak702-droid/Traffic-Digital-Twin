@@ -195,9 +195,9 @@ describe("Epic 7: Before-vs-after Evidence (S21, S22)", () => {
       // 4 metrics (each appears in both summary card and table row)
       const metricsSection = screen.getByLabelText("Aggregate comparison result");
       expect(within(metricsSection).getAllByText("Maximum queue (veh)").length).toBeGreaterThanOrEqual(1);
-      expect(within(metricsSection).getAllByText("Average modeled delay (s)").length).toBeGreaterThanOrEqual(1);
-      expect(within(metricsSection).getAllByText("Spillback (movement-seconds)").length).toBeGreaterThanOrEqual(1);
-      expect(within(metricsSection).getAllByText("Modeled stops / vehicle").length).toBeGreaterThanOrEqual(1);
+      expect(within(metricsSection).getAllByText("Queue-delay").length).toBeGreaterThanOrEqual(1);
+      expect(within(metricsSection).getAllByText("Boundary throughput").length).toBeGreaterThanOrEqual(1);
+      expect(within(metricsSection).getAllByText("Congested-link exposure").length).toBeGreaterThanOrEqual(1);
 
       // SIMULATED badge (may appear multiple times in split header and table)
       const badges = screen.getAllByText("SIMULATED");
@@ -233,7 +233,7 @@ describe("Epic 7: Before-vs-after Evidence (S21, S22)", () => {
 
       // Check outcome texts (rendered via outcome function in table rows)
       expect(screen.getByText(/Improved: 4.20/)).toBeInTheDocument();  // max_queue 22.5->18.3
-      expect(screen.getByText(/Unchanged/)).toBeInTheDocument();        // stops unchanged
+      expect(screen.getAllByText(/Unchanged/).length).toBeGreaterThan(0);
     });
 
     it("shows no-comparison empty state when run_id mismatches (stale rejection)", () => {

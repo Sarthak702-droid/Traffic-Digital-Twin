@@ -30,7 +30,7 @@ describe("Epic 10: emergency corridor", () => {
 
   it("renders live transition and bounded recovery evidence", () => {
     render(<EmergencyCorridorPanel network={network} frame={frame} canOperate pending={false} locked={false} onLaunch={() => {}} onReset={() => {}} />);
-    expect(screen.getByText(/Reported between C6 and C3/)).toBeInTheDocument();
+    expect(screen.getByText(/Modeled between C6 and C3/)).toBeInTheDocument();
     expect(screen.getAllByText("Boundary route point")).toHaveLength(2);
     expect(screen.getByText(/green · 12s/)).toBeInTheDocument();
     expect(screen.getByText(/Configured recovery bound/)).toBeInTheDocument();

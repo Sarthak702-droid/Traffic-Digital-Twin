@@ -288,14 +288,15 @@ func TestSafetyValidatorRuleBreaches(t *testing.T) {
 		}
 	})
 
-	// 11. Downstream link 100% full (occupancy = 1.0)
-	t.Run("DownstreamOccupancyFull", func(t *testing.T) {
+	// 11. Incoming occupancy is not downstream receiving space. A full incoming
+	// approach may legally receive a clearing extension when downstream space is open.
+	t.Run("IncomingOccupancyCanClear", func(t *testing.T) {
 		s, state, changes := baseState()
 		changes[0].GreenS = 35
 		state.Movements = []*pb.MovementState{{MovementId: s.Network.Phases[0].Movements[0], DownstreamCapacityVeh: 10, OccupancyRatio: 1.0}}
 		err := validateChanges(s.Network, state, changes)
-		if err == nil || !strings.Contains(err.Error(), "cannot extend release into blocked/full downstream link") {
-			t.Fatalf("expected full downstream occupancy rejection, got %v", err)
+		if err != nil {
+			t.Fatalf("expected clearing extension to remain lawful, got %v", err)
 		}
 	})
 }

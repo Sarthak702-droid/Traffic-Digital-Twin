@@ -229,7 +229,10 @@ func (s *Server) simulationHealth() (string, string) {
 	if s.replaying {
 		return "normal", "GOLDEN REPLAY · prerecorded synthetic traffic"
 	}
-	return "normal", "SUMO/TraCI stream connected at 1 Hz"
+	if s.state != nil && s.state.EngineKind != "" {
+		return "normal", s.state.EngineKind + " aggregate flow stream connected at 1 Hz"
+	}
+	return "normal", "Aggregate flow stream connected at 1 Hz"
 }
 func (s *Server) startScenario(w http.ResponseWriter, r *http.Request) {
 	if s.sim == nil {
@@ -301,7 +304,7 @@ func (s *Server) startScenario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	command := &pb.RunCommand{SchemaVersion: "1.0", ScenarioType: scenario, Seed: body.Seed, Mode: body.Mode}
-	reason := "Started a seeded SUMO scenario"
+	reason := "Started a seeded aggregate-flow scenario"
 	if body.Incident != nil {
 		if body.Incident.Kind != "capacity_reduction" || body.Incident.CapacityRatio < 0.1 || body.Incident.CapacityRatio > 0.9 {
 			problem(w, 400, "incident.kind must be capacity_reduction and capacity_ratio must be between 0.10 and 0.90")
@@ -335,7 +338,7 @@ func (s *Server) resetScenario(w http.ResponseWriter, r *http.Request) {
 		problem(w, 409, "Start a scenario before resetting")
 		return
 	}
-	s.launch(w, r, command, "Reset to identical seed and initial SUMO conditions")
+	s.launch(w, r, command, "Reset to identical seed and initial aggregate-flow conditions")
 }
 func (s *Server) launch(w http.ResponseWriter, r *http.Request, command *pb.RunCommand, reason string) {
 	ctx, cancel := context.WithTimeout(r.Context(), 4500*time.Millisecond)

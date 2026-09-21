@@ -8,7 +8,7 @@ Status: **accepted for Epic 1 scope**. Stories S01–S04 are completed.
 
 - Required apps/web, apps/api, services/simulation, services/intelligence, packages/contracts, packages/scenario-config, db/migrations and db/queries exist.
 - `docs/architecture.md` freezes the Browser → Go → Python gRPC boundary, ownership of validation/persistence/audit, prescribed stack, offline/demo constraints and explicit exclusions.
-- The Vite/React/TypeScript application compiles and connects to chi/pgx/PostgreSQL through the same-origin Go API proxy. Python service packages declare the future SUMO/TraCI and NumPy/SciPy engine dependencies; actual engines are later-epic work.
+- The Vite/React/TypeScript application compiles and connects to chi/pgx/PostgreSQL through the same-origin Go API proxy. Python service packages use the aggregate cell-flow runtime; actual outputs remain synthetic engineering estimates.
 - `docs/PRD.md` points to the supplied canonical root PRD. The standalone legacy planning checkout is preserved; its backlog is versioned as `docs/backlog.json`.
 
 ## S02 — Define typed state, event and command contracts
@@ -52,6 +52,6 @@ A browser-discovered proxy-origin bug initially prevented saving runs. The fix a
 
 ## Scope boundaries
 
-No trained models, SUMO execution, live state measurements, forecasting, signal actuation, full runtime safety validator, incident execution, emergency pre-clearance, CV or golden replay are claimed here. Those remain in their planned epics. The configuration timing values are synthetic engineering assumptions, not field-calibrated signal settings.
+No trained models, live state measurements, physical signal actuation, CV-based control, or field calibration are claimed here. The configuration timing values are synthetic engineering assumptions, not field-calibrated signal settings.
 
 Dashboard completion is repository-backed in `docs/delivery-status.json`; completed evidence takes precedence over device-local status. GitHub PR publication requires the target repository URL and push access.

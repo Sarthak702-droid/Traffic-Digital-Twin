@@ -241,7 +241,7 @@ try {
       .count(),
     0,
   );
-  metrics.replay_without_running_sumo = "passed";
+  metrics.replay_without_running_aggregate_runtime = "passed";
   assert.deepEqual(errors, []);
   await mkdir("test-results", { recursive: true });
   await writeFile(

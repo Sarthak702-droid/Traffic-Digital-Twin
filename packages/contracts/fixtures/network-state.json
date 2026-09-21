@@ -34,6 +34,17 @@
     "scenario_type": "",
     "seed": 0,
     "active_plan": [],
-    "replay": false
+    "replay": false,
+    "links": [],
+    "engine_kind": "",
+    "model_version": "",
+    "metrics_version": "",
+    "config_hash": "",
+    "snapshot_sequence": "0",
+    "boundary_backlog_veh": 0.0,
+    "cumulative_demand_veh": 0.0,
+    "cumulative_admitted_veh": 0.0,
+    "cumulative_boundary_exits_veh": 0.0,
+    "control_target": ""
   }
 }

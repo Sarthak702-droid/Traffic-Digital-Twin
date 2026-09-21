@@ -40,7 +40,7 @@ It must show:
 
 **Simulation / Intelligence**
 - Python
-- SUMO + TraCI
+- Aggregate finite-capacity cell-flow engine
 - NumPy / SciPy
 - OpenCV
 - YOLO + ByteTrack for optional CV
@@ -56,7 +56,7 @@ Browser
 Go API / Orchestrator
   ├── PostgreSQL
   ├── Audit + Safety + Operator Workflow
-  ├── gRPC → SUMO Simulation
+  ├── gRPC → Aggregate Simulation
   └── gRPC → Prediction / Optimization / CV
 ```
 
@@ -244,14 +244,14 @@ System must:
 Optional demo input only; use sample video clearly labelled as non-Odisha feed.
 
 Pipeline:
-`Video → YOLO → ByteTrack → lane/ROI mapping → count/flow/queue/occupancy/speed estimate → TrafficState`
+`Video → local transient association → ROI aggregate observations → optional display-only sample feed`
 
 Rules:
-- track IDs are camera-local and temporary,
+- any association state is transient and never exported,
 - no ANPR,
 - no face recognition,
 - no cross-camera identity tracking,
-- speed must be labelled estimated unless calibrated.
+- speed, lane flow, queue, occupancy and downstream impact must be unavailable unless calibrated and explicitly supported by the payload.
 
 ## APIs / realtime
 - REST for commands, config, history and operator actions.
@@ -289,7 +289,7 @@ Exactly three primary scenarios:
 Use deterministic seeds and a one-click reset.
 
 ## Golden replay
-Provide a deterministic replay event stream that drives the same Go/WebSocket/frontend path if SUMO/CV fails during the presentation.
+Provide a deterministic replay event stream that drives the same Go/WebSocket/frontend path if aggregate simulation/CV fails during the presentation.
 
 The full demo must work offline.
 

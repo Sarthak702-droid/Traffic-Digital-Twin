@@ -133,6 +133,7 @@ def ensure_local_env() -> dict:
     # Merge into process environment
     merged = dict(os.environ)
     merged.update(env_data)
+    merged.setdefault("TWIN_ENGINE", "aggregate")
     merged.setdefault("PYTHONPATH", ".:packages/contracts/gen/python")
     merged["API_ADDR"] = f"127.0.0.1:{api_port}"
     merged["API_ORIGIN"] = f"http://127.0.0.1:{api_port}"

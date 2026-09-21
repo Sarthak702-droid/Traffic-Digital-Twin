@@ -64,7 +64,7 @@ const steps: Step[] = [
     headline: "Real-time visibility without relinquishing control",
     body: [
       "The C1–C6 connected corridor models primary traffic arteries with directional links, storage capacities, and virtual signal phasing.",
-      "Every vehicle movement is monitored at 1 Hz, measuring incoming queues, smoothed arrival rates, departures, and travel times.",
+      "Every second, aggregate link flow, density, modeled speed, queue estimate and receiving storage are published for the synthetic network.",
       "Crucially, the system operates purely in demonstration mode with synthetic traffic. Zero live actuators or physical signal controllers are touched.",
     ],
     takeaway: "CCTV shows what is happening now. This twin provides the data foundation to estimate what will happen next.",
@@ -81,7 +81,7 @@ const steps: Step[] = [
       pitch:
         "Director General, what you see on screen is our C1 through C6 connected corridor model. Every single second, our Go gateway processes real-time vehicle arrivals, queues, and signal indications across each approach. Crucially, this operates purely on synthetic simulation and camera feed analytics in demonstration mode. Zero live physical signals are actuated, guaranteeing absolute safety while we prove capability.",
       techTruth:
-        "SUMO micro-simulation emits state at 1 Hz over private gRPC to the Go gateway. The gateway validates every event before broadcasting to browsers.",
+        "An aggregate finite-capacity flow engine emits synthetic state at 1 Hz over private gRPC to the Go gateway. The gateway validates every event before broadcasting to browsers.",
       faqQuestion: "Is this connected to our live city signal controllers?",
       faqAnswer:
         "No sir. This operates in shadow mode with synthetic traffic only; human operators retain complete physical authority at all times.",
@@ -155,7 +155,7 @@ const steps: Step[] = [
     body: [
       "Operators can request an aggregate conservation-model comparison from the current snapshot.",
       "Baseline and candidate use the same aggregate initial state and seed; this is not paired vehicle-level trajectory playback.",
-      "The operator reviews 4 objective outcome metrics: maximum queue reduction, average delay, spillback duration, and vehicle stops.",
+      "The operator reviews four aggregate outputs: maximum queue estimate, queue-delay, boundary throughput, and congested-link exposure.",
     ],
     takeaway: "Review the measured comparison, including unchanged or worse outcomes, before making a decision.",
     icon: Layers,
@@ -320,7 +320,7 @@ const preflightItems = [
     id: "sim",
     title: "Private Python Simulation",
     target: "127.0.0.1:50051 (gRPC)",
-    description: "SUMO micro-simulation worker executing deterministic synthetic scenarios.",
+    description: "Aggregate cell-flow worker executing deterministic synthetic scenarios.",
     icon: Cpu,
     status: "healthy",
   },
@@ -458,7 +458,7 @@ export function DgpPresentationModal({
                       ● GOLDEN REPLAY STREAM · 1 Hz
                     </span>
                   ) : isLive ? (
-                    <span className="dgp-status-pill live" title="Live SUMO simulation stream active">
+                    <span className="dgp-status-pill live" title="Aggregate flow simulation stream active">
                       ● LIVE TWIN ACTIVE · {activeScenario} (Seed {activeSeed}) · t+{simTime}s
                     </span>
                   ) : (

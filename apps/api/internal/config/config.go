@@ -59,11 +59,22 @@ type Scenario struct {
 	Route           []string `json:"route_node_ids"`
 	Capacity        float64  `json:"capacity_ratio"`
 }
+type FlowModel struct {
+	Kind                 string  `json:"kind"`
+	CellLengthM          float64 `json:"cell_length_m"`
+	StepS                float64 `json:"step_s"`
+	BackwardWaveSpeedKph float64 `json:"backward_wave_speed_kph"`
+	QueueThresholdRatio  float64 `json:"queue_threshold_ratio"`
+	FlowWindowS          float64 `json:"flow_window_s"`
+	JunctionPolicy       string  `json:"junction_policy"`
+	MetricsVersion       string  `json:"metrics_version"`
+}
 type Network struct {
 	Version   string            `json:"schema_version"`
 	ID        string            `json:"id"`
 	Name      string            `json:"name"`
 	Units     map[string]string `json:"units"`
+	FlowModel FlowModel         `json:"flow_model"`
 	Nodes     []Node            `json:"nodes"`
 	Links     []Link            `json:"links"`
 	Movements []Movement        `json:"movements"`
@@ -94,6 +105,10 @@ func (n Network) Validate() error {
 	if n.Version != "1.0" || n.ID == "" || len(n.Nodes) < 2 {
 		return fail("version, id or nodes")
 	}
+	f := n.FlowModel
+	if f.Kind != "aggregate_ctm" || !finite(f.CellLengthM) || f.CellLengthM <= 0 || !finite(f.StepS) || f.StepS <= 0 || !finite(f.BackwardWaveSpeedKph) || f.BackwardWaveSpeedKph <= 0 || !finite(f.QueueThresholdRatio) || f.QueueThresholdRatio <= 0 || f.QueueThresholdRatio > 1 || !finite(f.FlowWindowS) || f.FlowWindowS <= 0 || f.JunctionPolicy != "strict_fifo" || f.MetricsVersion == "" {
+		return fail("aggregate flow model")
+	}
 	nodes := map[string]Node{}
 	coords := map[[2]float64]bool{}
 	for _, v := range n.Nodes {
@@ -112,6 +127,9 @@ func (n Network) Validate() error {
 			return fail("link endpoints/units/id")
 		}
 		links[v.ID] = v
+		if f.StepS > f.CellLengthM/math.Max(v.Speed, f.BackwardWaveSpeedKph)*3.6 {
+			return fail("unstable aggregate flow step")
+		}
 		edges[edge] = true
 	}
 	moves := map[string]Movement{}

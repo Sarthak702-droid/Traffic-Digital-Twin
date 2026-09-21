@@ -41,16 +41,15 @@ def test_vision_pipeline_processes_sample_feed(sample_video):
 
     # Privacy and disclaimer guarantees
     assert result["is_calibrated"] is False
-    assert "demo" in result["speed_disclaimer"].lower()
-    assert "estimate" in result["speed_disclaimer"].lower()
-    assert "camera-local" in result["privacy_disclosure"].lower()
+    assert "no authoritative" in result["speed_disclaimer"].lower()
+    assert "aggregate" in result["privacy_disclosure"].lower()
     assert "anpr" in result["privacy_disclosure"].lower()
 
     # Metrics summary
     metrics = result["summary_metrics"]
     assert metrics["total_vehicles_observed"] > 0
     assert metrics["total_crossed_line"] > 0
-    assert "demo estimate" in metrics["speed_label"].lower()
+    assert metrics["speed_status"] == "unavailable"
 
     # 5 vehicle classes present in breakdown
     classes = metrics["class_breakdown"]
@@ -63,29 +62,19 @@ def test_vision_pipeline_processes_sample_feed(sample_video):
     lane_ids = {lm["lane_id"] for lm in lane_metrics}
     assert lane_ids == {"lane_1_turn", "lane_2_thru", "lane_3_thru"}
 
-    # Upstream C1 impact
+    # Sample video does not fabricate whole-corridor forecasts.
     upstream = result["upstream_c1_impact"]
-    assert "expected_30s" in upstream
-    assert "expected_60s" in upstream
-    assert "expected_120s" in upstream
-    assert len(upstream["eta_range_s"]) == 2
-    assert upstream["risk_level"] in ["low", "moderate", "high"]
+    assert upstream["status"] == "unavailable"
 
 
-def test_tracks_use_camera_local_ids_and_no_anpr(sample_video):
+def test_public_vision_payload_has_no_tracks_or_fabricated_metric_speed(sample_video):
     pipeline = C3VisionPipeline(video_path=sample_video)
     result = pipeline.run_pipeline()
 
     for frame in result["frames"]:
-        for trk in frame["tracks"]:
-            assert trk["track_id"].startswith("CAM3-TK-")
-            assert "plate" not in trk
-            assert "license" not in trk
-            assert "face" not in trk
-            assert trk["lane"] in ["lane_1_turn", "lane_2_thru", "lane_3_thru"]
-            assert isinstance(trk["speed_kph"], (int, float))
-            assert isinstance(trk["is_queued"], bool)
-            assert isinstance(trk["crossed"], bool)
+        assert "tracks" not in frame
+        assert "average_speed_kph" not in frame
+        assert frame["speed_status"] == "unavailable"
 
 
 def test_run_and_save_c3_pipeline(sample_video, tmp_path):

@@ -11,20 +11,21 @@ export function KpiStrip({
 }) {
   const f = frame;
   const movements = f?.movements ?? [];
+  const links = f?.links ?? [];
 
   // 1. Vehicles in modeled network
-  const inNetwork = f ? f.vehicles_in_network : 0;
-  const completedTrips = f ? f.arrived_total : 0;
+  const inNetwork = links.length ? links.reduce((sum, link) => sum + link.stock_veh, 0) : (f?.vehicles_in_network ?? 0);
+  const boundaryExits = f?.cumulative_boundary_exits_veh ?? f?.arrived_total ?? 0;
 
   // 2. Average network speed
-  const avgSpeed =
-    movements.length > 0
-      ? movements.reduce((sum, m) => sum + m.avg_speed_kph, 0) / movements.length
-      : 0;
+  const speedLinks = links.filter((link) => link.mean_speed_kph != null);
+  const avgSpeed = speedLinks.length
+    ? speedLinks.reduce((sum, link) => sum + link.stock_veh * (link.mean_speed_kph ?? 0), 0) / Math.max(1, speedLinks.reduce((sum, link) => sum + link.stock_veh, 0))
+    : movements.length ? movements.reduce((sum, movement) => sum + movement.avg_speed_kph, 0) / movements.length : 0;
 
   // 3. Average queue length
-  const totalQueue = movements.reduce((sum, m) => sum + m.queue_veh, 0);
-  const avgQueue = movements.length > 0 ? totalQueue / movements.length : 0;
+  const totalQueue = links.length ? links.reduce((sum, link) => sum + link.queued_veh_estimate, 0) : movements.reduce((sum, movement) => sum + movement.queue_veh, 0);
+  const avgQueue = links.length > 0 ? totalQueue / links.length : movements.length ? totalQueue / movements.length : 0;
 
   // 4. Critical nodes (occupancy >= 70% or queue >= 10)
   const criticalNodesSet = new Set<string>();
@@ -69,7 +70,7 @@ export function KpiStrip({
           <small className="kpi-unit">veh</small>
         </strong>
         <span className="kpi-subtext">
-          {f ? `${completedTrips} completed trips` : "Awaiting scenario start"}
+          {f ? `${boundaryExits.toFixed(0)} boundary exits` : "Awaiting scenario start"}
         </span>
       </div>
 
@@ -84,7 +85,7 @@ export function KpiStrip({
           <small className="kpi-unit">km/h</small>
         </strong>
         <span className="kpi-subtext">
-          {f ? "Across modeled links" : "Baseline free-flow"}
+          {f ? "Mass-weighted modeled link speed" : "Speed unavailable"}
         </span>
       </div>
 
@@ -95,7 +96,7 @@ export function KpiStrip({
           <small className="kpi-unit">veh / approach</small>
         </strong>
         <span className="kpi-subtext">
-          {f ? `${totalQueue} total queued` : "Measurements unavailable"}
+          {f ? `${totalQueue.toFixed(1)} estimated queued` : "Measurements unavailable"}
         </span>
       </div>
 

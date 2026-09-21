@@ -21,9 +21,9 @@ export function outcome(base: number, candidate: number) {
 export function ComparisonTable({ comparison }: { comparison: ComparisonResult }) {
   const rows = [
     ["Maximum queue (veh)", comparison.baseline_max_queue_veh, comparison.candidate_max_queue_veh, "veh"],
-    ["Average modeled delay (s)", comparison.baseline_avg_delay_s, comparison.candidate_avg_delay_s, "s"],
-    ["Spillback (movement-seconds)", comparison.baseline_spillback_s, comparison.candidate_spillback_s, "s"],
-    ["Modeled stops / vehicle", comparison.baseline_stops_per_vehicle, comparison.candidate_stops_per_vehicle, "stops/veh"],
+    ["Queue-delay", comparison.baseline_queue_delay_veh_s ?? 0, comparison.candidate_queue_delay_veh_s ?? 0, "veh-s"],
+    ["Boundary throughput", comparison.baseline_boundary_throughput_veh ?? 0, comparison.candidate_boundary_throughput_veh ?? 0, "veh"],
+    ["Congested-link exposure", comparison.baseline_congested_link_s ?? 0, comparison.candidate_congested_link_s ?? 0, "link-s"],
   ] as const;
 
   return (
@@ -39,7 +39,7 @@ export function ComparisonTable({ comparison }: { comparison: ComparisonResult }
       </div>
 
       <p className="disclaimer-note">
-        Aggregate conservation simulation · {comparison.model_version} · horizon {comparison.horizon_s}s · initial {comparison.initial_time_s}s · seed {comparison.seed}
+        Aggregate modeled comparison · {comparison.model_version} · metrics {comparison.metrics_version} · horizon {comparison.horizon_s}s · initial {comparison.initial_time_s}s · seed {comparison.seed}
       </p>
       <p className="text-xs text-slate-400 mb-1">
         Run <code>{comparison.run_id}</code> · Recommendation <code>{comparison.recommendation_id}</code>

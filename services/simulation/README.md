@@ -1,11 +1,11 @@
 # Simulation boundary
 
-Python 3.12+, SUMO/TraCI. Implements seeded demand, reset/get-state/stop RPCs, 1 Hz state streaming, and fixed virtual signal cycles for C1/C3. No database credentials or browser HTTP routes belong here.
+Python 3.12+ aggregate cell-flow runtime. It implements seeded boundary demand, finite link/cell storage, external backlog, virtual signal-controlled junction transfers, reset/get-state/stop RPCs and 1 Hz streaming for C1/C3. No vehicle identities, SUMO binaries, database credentials or browser HTTP routes belong here.
 
 Run from root: `PYTHONPATH=.:packages/contracts/gen/python .venv/bin/python -m services.shared.server simulation --port 50051`.
 
-Install dependencies from `services/requirements.lock`. Set `SIMULATION_ADDR=127.0.0.1:50051` for Go. Generated SUMO files are cached under ignored `.runtime/sumo/`.
+Install dependencies from `services/requirements.lock`. Set `TWIN_ENGINE=aggregate` (the default) and `SIMULATION_ADDR=127.0.0.1:50051` for Go. Aggregate command receipts are stored under ignored `.runtime/aggregate/`.
 
-Test from root: `PYTHONPATH=.:packages/contracts/gen/python .venv/bin/python -m pytest services/simulation/tests -q`. SUMO needs permission to open a local TraCI socket.
+Test from root: `PYTHONPATH=.:packages/contracts/gen/python .venv/bin/python -m pytest services/simulation/tests -q`.
 
-The incident scenario currently changes demand only; capacity reduction is not applied. The ambulance scenario inserts an emergency vehicle but does not implement priority or recovery. See `docs/epic2-status.md` for acceptance gaps.
+The incident scenario applies an explicit C3 discharge-capacity multiplier only while active. Emergency progress and ETA are modeled events, not a measured vehicle location. Metrics are labeled `flow-metrics-v1`; link stock, density, queue estimate and modeled speed are aggregate outputs.

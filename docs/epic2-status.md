@@ -7,14 +7,14 @@ Status: Complete; all acceptance criteria met and verified.
 
 ## Implemented
 
-- S05: compile the configured network into SUMO, generate seeded demand for all three scenario IDs (`peak_surge`, `incident_c3`, `ambulance_corridor`) using configured turning ratios and scenario demand rates, start/reset through Go with persisted run activation and audit, and repeat initial conditions identically with the same seed.
+- S05: load the configured finite-capacity aggregate network, generate seeded boundary demand for all three scenario IDs (`peak_surge`, `incident_c3`, `ambulance_corridor`) using configured turning ratios and scenario demand rates, start/reset through Go with persisted run activation and audit, and repeat initial conditions identically with the same seed.
 - S06: Python gRPC stream, Go frame validation/fan-out, browser WebSocket subscription, live movement metrics with exponential observation smoothing (PRD §16), reconnect and stale/disconnected indicators. Frames include run ID, time, source, scenario, seed, and active plan.
 - S07: configured min/max green bounds, amber, all-red, clearance and conflict constraints enforced by a runtime safety validator; deterministic fixed and alternative signal cycles; current phase, countdown, permissions, and downstream storage estimates.
 
 ## Completed improvements
 
 - **Demand generation turning ratios & scenario rates**: `write_demand` draws turns conditionally based on movement `turning_ratio` at each controlled node and respects scenario-configured rates (`base_rate_vps`, `feeder_rate_vps`, `surge_rate_vps`, `surge_start_s`, `surge_end_s`, `demand_duration_s`).
-- **Runtime independent safety validator**: `validate_runtime_safety` in `services/simulation/safety.py` validates all signal states at runtime before applying them to SUMO. Detects and rejects conflicting green movements across the entire network, green permissions during amber or all-red/clearance, and timing bounds violations. Fails safe to all-red upon any violation.
+- **Runtime independent safety validator**: `validate_runtime_safety` in `services/simulation/safety.py` validates all signal states before applying them to the aggregate flow scheduler. It detects and rejects conflicting green movements across the entire network, green permissions during amber or all-red/clearance, and timing bounds violations. Fails safe to all-red upon any violation.
 - **Pedestrian and clearance constraint enforcement**: `all_red_s >= pedestrian_clearance_s` is strictly validated and asserted across full cycles on all controlled junctions. `ApplyPlan` gRPC endpoint and Go API bounded plan modifications are supported and validated.
 - **Observation smoothing**: Implemented exponential smoothing for `arrival_rate_vpm`, `departure_rate_vpm`, and `avg_speed_kph` in `services/simulation/engine.py` per PRD §16, dampening discrete one-second rate jumps while preserving exact integer vehicle conservation (`arrivals_total - departures_total == vehicle_count`).
 - **Dedicated automated Go test coverage**: `simulation_test.go` covers all component health states, input validation, launch failure modes (gRPC reset error 503, mismatched run/seed/scenario 502, contract validation error 502), frame filtering (mismatched runs, out-of-order frames), and non-blocking subscriber delivery.

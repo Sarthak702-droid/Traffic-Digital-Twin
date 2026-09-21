@@ -9,8 +9,6 @@ import {
   SkipBack,
   Video,
   VideoOff,
-  Eye,
-  Layers,
   ArrowRight,
   ShieldCheck,
   AlertTriangle,
@@ -24,7 +22,6 @@ import {
   c3VisionFallbackData,
   type VisionAggregatePayload,
   type VisionFrame,
-  type VisionTrack,
 } from "@/lib/vision-data";
 
 interface VisionAnalyticsPanelProps {
@@ -38,8 +35,6 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
   const [isPlaying, setIsPlaying] = useState(true);
   const [currentFrameIdx, setCurrentFrameIdx] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
-  const [showBoxes, setShowBoxes] = useState(true);
-  const [showTracks, setShowTracks] = useState(true);
   const [showLanes, setShowLanes] = useState(true);
   const [showCountingLine, setShowCountingLine] = useState(true);
   const [showQueueROI, setShowQueueROI] = useState(true);
@@ -197,62 +192,8 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
       ctx.fillText("COUNTING LINE ↓", width - 127, 361);
     }
 
-    // 5. Draw Tracked Vehicles for current frame
-    if (currentFrame?.tracks) {
-      currentFrame.tracks.forEach((trk: VisionTrack) => {
-        const [bx, by, bw, bh] = trk.bbox;
-
-        // Color coding by vehicle class
-        let strokeColor = "#3b82f6";
-        let fillBg = "rgba(59, 130, 246, 0.2)";
-        if (trk.class === "bike") {
-          strokeColor = "#10b981";
-          fillBg = "rgba(16, 185, 129, 0.2)";
-        } else if (trk.class === "auto") {
-          strokeColor = "#f59e0b";
-          fillBg = "rgba(245, 158, 11, 0.2)";
-        } else if (trk.class === "bus") {
-          strokeColor = "#ef4444";
-          fillBg = "rgba(239, 68, 68, 0.25)";
-        } else if (trk.class === "truck") {
-          strokeColor = "#a855f7";
-          fillBg = "rgba(168, 85, 247, 0.25)";
-        }
-
-        if (showBoxes) {
-          ctx.fillStyle = fillBg;
-          ctx.fillRect(bx, by, bw, bh);
-          ctx.strokeStyle = strokeColor;
-          ctx.lineWidth = 1.8;
-          ctx.strokeRect(bx, by, bw, bh);
-        }
-
-        if (showTracks) {
-          // Track ID and Class Tag
-          const tagH = 14;
-          const tagW = Math.max(bw, 74);
-          ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
-          ctx.fillRect(bx, Math.max(0, by - tagH), tagW, tagH);
-
-          ctx.fillStyle = strokeColor;
-          ctx.font = "bold 9px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-          ctx.textAlign = "left";
-          ctx.fillText(`${trk.track_id} (${trk.class})`, bx + 3, Math.max(10, by - 3));
-
-          // Queue indicator badge
-          if (trk.is_queued) {
-            ctx.fillStyle = "#ef4444";
-            ctx.fillRect(bx + bw - 18, by + 2, 16, 12);
-            ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 8px sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText("Q", bx + bw - 10, by + 11);
-          }
-        }
-      });
-    }
-
-    // 6. Camera Watermark & Frame Disclaimers
+    // Camera Watermark & Frame Disclaimers. This operational view deliberately
+    // never renders per-object boxes, IDs, or trajectories.
     ctx.fillStyle = "rgba(10, 15, 20, 0.8)";
     ctx.fillRect(0, 0, width, 24);
     ctx.fillStyle = "#fbbf24";
@@ -267,11 +208,9 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
     currentFrame,
     currentFrameIdx,
     isOffline,
-    showBoxes,
     showCountingLine,
     showLanes,
     showQueueROI,
-    showTracks,
     totalFrames,
     crossingPulse,
   ]);
@@ -350,8 +289,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
             </div>
             <h1 id="vision-title">Sample Video Feed &amp; Traffic State Extraction</h1>
             <p>
-              OpenCV background subtraction and ByteTrack vehicle tracking converting sample camera footage into
-              typed machine-readable traffic states mapped directly to the C1 corridor prediction model.
+              Optional sample-video processing produces isolated aggregate observations only. It is not a source of central traffic state or recommendations.
             </p>
           </div>
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
@@ -380,10 +318,10 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
             <AlertTriangle size={12} aria-hidden="true" /> NON-ODISHA SAMPLE VIDEO FEED
           </span>
           <span className="vision-badge vision-badge-success">
-            <ShieldCheck size={12} aria-hidden="true" /> TEMPORARY LOCAL IDS ONLY (NO ANPR / FACES)
+            <ShieldCheck size={12} aria-hidden="true" /> AGGREGATES ONLY · NO IDS / TRAJECTORIES / ANPR / FACES
           </span>
           <span className="vision-badge vision-badge-neutral">
-            <Compass size={12} aria-hidden="true" /> UNCALIBRATED SPEED: DEMO ESTIMATE ONLY
+            <Compass size={12} aria-hidden="true" /> UNCALIBRATED SPEED: UNAVAILABLE
           </span>
           <span className="vision-badge vision-badge-primary">
             <Activity size={12} aria-hidden="true" /> CORE SCENARIOS OPERATE INDEPENDENTLY
@@ -419,7 +357,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
               width={640}
               height={480}
               className="vision-canvas"
-              aria-label="Computer vision video viewport with bounding boxes and tracking lines"
+              aria-label="Sample video viewport with aggregate measurement zones"
             />
           </div>
 
@@ -427,22 +365,6 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
           <div className="vision-toolbar">
             {/* Overlay Switches */}
             <div className="vision-toggles-row" role="group" aria-label="Vision Overlay Toggles">
-              <button
-                type="button"
-                className={`vision-toggle-btn ${showBoxes ? "active" : ""}`}
-                onClick={() => setShowBoxes(!showBoxes)}
-                aria-pressed={showBoxes}
-              >
-                <Eye size={14} aria-hidden="true" /> Bounding Boxes
-              </button>
-              <button
-                type="button"
-                className={`vision-toggle-btn ${showTracks ? "active" : ""}`}
-                onClick={() => setShowTracks(!showTracks)}
-                aria-pressed={showTracks}
-              >
-                <Layers size={14} aria-hidden="true" /> Track IDs
-              </button>
               <button
                 type="button"
                 className={`vision-toggle-btn ${showLanes ? "active" : ""}`}
@@ -553,13 +475,11 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
           <div className="vision-speed-banner" role="region" aria-label="Estimated Traffic Speed">
             <div>
               <div className="vision-speed-tag">PRD §8.5 REQUIREMENT</div>
-              <div className="vision-speed-value">
-                {currentFrame?.average_speed_kph ?? summary?.average_speed_kph ?? 30.5} km/h
-              </div>
+              <div className="vision-speed-value">Unavailable</div>
             </div>
             <div className="vision-speed-note">
-              <strong style={{ color: "#fbc02d" }}>Demo Estimate (Uncalibrated)</strong>
-              <div>Pixel-displacement ratio without ground survey calibration.</div>
+              <strong style={{ color: "#fbc02d" }}>No calibrated speed measurement</strong>
+              <div>Uncalibrated sample video is not an authoritative km/h source.</div>
             </div>
           </div>
 
@@ -628,9 +548,9 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
                 {summary?.lane_metrics?.map((lane) => (
                   <tr key={lane.lane_id}>
                     <td>{lane.label}</td>
-                    <td>{lane.current_flow_vpm.toFixed(1)}</td>
-                    <td>{lane.current_queue} veh</td>
-                    <td>{(lane.occupancy * 100).toFixed(0)}%</td>
+                    <td>{lane.current_flow_vpm == null ? "Unavailable" : lane.current_flow_vpm.toFixed(1)}</td>
+                    <td>{lane.current_queue == null ? "Unavailable" : `${lane.current_queue} veh`}</td>
+                    <td>{lane.occupancy == null ? "Unavailable" : `${(lane.occupancy * 100).toFixed(0)}%`}</td>
                   </tr>
                 ))}
               </tbody>
@@ -658,32 +578,31 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
           </span>
         </div>
         <p style={{ fontSize: "12px", color: "#8da5b8", margin: "0 0 12px 0" }}>
-          Observed traffic volume passing C3 is projected downstream along Link C3-to-C1 (length 480m, storage capacity 58 veh).
-          The conservation physics model forecasts queue growth at C1 to recommend preemptive green split extensions.
+          This optional sample-video lane is not injected into the aggregate traffic model. Whole-link C3→C1 flow, density, ETA and risk remain unavailable without calibrated coverage and an approved estimator.
         </p>
 
         <div className="vision-upstream-grid">
           <div className="vision-upstream-box">
             <span className="vision-upstream-box-label">+30s Expected Inflow</span>
-            <span className="vision-upstream-box-val">{upstream?.expected_30s ?? 8} veh</span>
-            <span className="vision-upstream-box-sub">Approaching stop bar</span>
+            <span className="vision-upstream-box-val">—</span>
+            <span className="vision-upstream-box-sub">Unavailable from sample video</span>
           </div>
           <div className="vision-upstream-box">
             <span className="vision-upstream-box-label">+60s Expected Inflow</span>
-            <span className="vision-upstream-box-val">{upstream?.expected_60s ?? 16} veh</span>
-            <span className="vision-upstream-box-sub">Platoon arrival peak</span>
+            <span className="vision-upstream-box-val">—</span>
+            <span className="vision-upstream-box-sub">Unavailable from sample video</span>
           </div>
           <div className="vision-upstream-box">
             <span className="vision-upstream-box-label">+120s Expected Inflow</span>
-            <span className="vision-upstream-box-val">{upstream?.expected_120s ?? 33} veh</span>
-            <span className="vision-upstream-box-sub">Cumulative volume</span>
+            <span className="vision-upstream-box-val">—</span>
+            <span className="vision-upstream-box-sub">No central-model injection</span>
           </div>
           <div className="vision-upstream-box">
             <span className="vision-upstream-box-label">Estimated ETA to C1</span>
             <span className="vision-upstream-box-val">
-              {upstream?.eta_range_s ? `${upstream.eta_range_s[0]}s – ${upstream.eta_range_s[1]}s` : "42s – 68s"}
+              —
             </span>
-            <span className="vision-upstream-box-sub">Travel time corridor range</span>
+            <span className="vision-upstream-box-sub">Requires calibrated state estimation</span>
           </div>
         </div>
       </section>

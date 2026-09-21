@@ -2,7 +2,7 @@
 
 **Implemented architecture:** Browser → Go API gateway and orchestration (`apps/api/cmd/api`) → PostgreSQL through Go persistence modules. Private Python simulation (`services/simulation`) and intelligence (`services/intelligence`) services are reached only through typed gRPC/Protobuf calls from Go.
 
-The Go process owns public REST and WebSocket ingress, request/correlation IDs, validation, operator authorization, safety validation, audit records, migrations, and transactional durable writes through pgx/sqlc-backed repositories. Python computes forecasts, candidate plans, SUMO simulations, and CV aggregates; it never exposes the public API or writes authoritative business data. The MVP deliberately has no Python HTTP gateway and no separately deployed Go DB-writer service.
+The Go process owns public REST and WebSocket ingress, request/correlation IDs, validation, operator authorization, safety validation, audit records, migrations, and transactional durable writes through pgx/sqlc-backed repositories. Python computes forecasts, candidate plans, aggregate finite-capacity flow simulations, and optional CV aggregates; it never exposes the public API or writes authoritative business data. The MVP deliberately has no Python HTTP gateway and no separately deployed Go DB-writer service.
 
 See [API and architecture alignment](API-ARCHITECTURE-SPEC-ALIGNMENT.md), [delivery plan](DELIVERY-PLAN.md), and the supplied backend and API-concepts specifications.
 
@@ -22,7 +22,7 @@ Browser → same-origin Vite proxy → Go/chi API → PostgreSQL and Python gRPC
 
 - `apps/web`: Vite / React 19 / strict TypeScript, Tailwind, shadcn-style Radix primitives, TanStack Query for API state, Zustand for selection. ECharts is available for later forecasting; no empty or invented charts.
 - `apps/api`: request validation, immutable config registration, durable run preparation and atomic audit, in-memory high-frequency state and WebSocket transport. The seeded local operator is `demo-operator`; this is not a multi-user authentication system.
-- `services/simulation`: Python gRPC boundary; SUMO/TraCI execution belongs to Epic 2.
+- `services/simulation`: Python gRPC boundary; the default provider is the aggregate CTM-style flow engine with no per-vehicle runtime state.
 - `services/intelligence`: Python gRPC boundary; NumPy/SciPy forecasting and optimization belong to later epics. Python has no persistence connection.
 - `packages/contracts`: versioned protobuf, generated Go/Python and TypeScript, JSON schema, OpenAPI and fixtures.
 - `packages/scenario-config`: graph data, engineering timing assumptions, movement conflicts and deterministic scenario definitions.
@@ -34,7 +34,7 @@ The browser never calls Python. Go/Python communicate using generated `traffic.v
 
 The UI inspects configuration, not traffic measurements. The Go state endpoint returns 503 until a validated simulator state is present. No random traffic numbers, completed scenario claims, estimates of impact or dummy recommendations are displayed.
 
-`POST /api/v1/runs` prepares a persisted scenario/seed/mode record plus an audit entry in one transaction. It does not execute SUMO. A transaction failure leaves neither record behind. Runs survive restart and configuration is immutable per ID: changing config requires a new ID. Startup validates the file before registering it or listening.
+`POST /api/v1/runs` prepares a persisted scenario/seed/mode record plus an audit entry in one transaction. Aggregate simulation starts only through the private provider after durable preparation. A transaction failure leaves neither record behind. Runs survive restart and configuration is immutable per ID: changing config requires a new ID. Startup validates the file before registering it or listening.
 
 The simulator/state execution APIs and recommendation commands have explicit 501/503 responses until their owning epics. Every action remains subject to the future safety/application boundary. The UI cannot approve a signal plan prematurely.
 

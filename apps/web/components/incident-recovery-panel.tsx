@@ -17,10 +17,11 @@ export type IncidentRecovery = {
 export function incidentRecovery(network: Network, frame: TrafficState | null): IncidentRecovery {
   const incoming = new Set(network.movements.filter((movement) => movement.node_id === "C3").map((movement) => movement.id));
   const links = [...new Set(network.movements.filter((movement) => incoming.has(movement.id)).map((movement) => movement.incoming_link_id))];
+  const aggregates = (frame?.links ?? []).filter((link) => links.includes(link.link_id));
   const measured = frame?.movements.filter((movement) => incoming.has(movement.movement_id)) ?? [];
-  const upstreamQueueVeh = measured.reduce((sum, movement) => sum + movement.queue_veh, 0);
-  const upstreamDepartureVpm = measured.reduce((sum, movement) => sum + movement.departure_rate_vpm, 0);
-  const blocked = measured.some((movement) => movement.downstream_capacity_veh <= 0 || movement.occupancy_ratio >= 0.98);
+  const upstreamQueueVeh = aggregates.length ? aggregates.reduce((sum, link) => sum + link.queued_veh_estimate, 0) : measured.reduce((sum, movement) => sum + movement.queue_veh, 0);
+  const upstreamDepartureVpm = aggregates.length ? aggregates.reduce((sum, link) => sum + link.outflow_vpm, 0) : measured.reduce((sum, movement) => sum + movement.departure_rate_vpm, 0);
+  const blocked = aggregates.length ? aggregates.some((link) => link.receiving_blocked || link.storage_utilization_ratio >= 0.98) : measured.some((movement) => movement.downstream_capacity_veh <= 0 || movement.occupancy_ratio >= 0.98);
   const c3Phases = network.phases.filter((phase) => phase.node_id === "C3");
   const cycleSeconds = c3Phases.reduce((sum, phase) => {
     const green = frame?.active_plan.find((change) => change.phase_id === phase.id)?.green_s ?? phase.min_green_s;
@@ -84,22 +85,22 @@ export function IncidentRecoveryPanel({
         </label>
         <div className="incident-definition">
           <strong>capacity_reduction</strong>
-          <span>Virtual SUMO constraint only. No physical controller is connected.</span>
+          <span>Virtual aggregate-flow constraint only. No physical controller is connected.</span>
         </div>
       </div>
 
       <div className="incident-stat-grid">
         <div><span>Actual remaining capacity</span><strong>{Math.round((active?.capacity_ratio ?? configured) * 100)}%</strong></div>
         <div><span>Configured recovery countdown</span><strong>{active ? `${active.recovery_cycles} cycles` : "—"}</strong></div>
-        <div><span>Observed upstream queue</span><strong>{active ? `${recovery.upstreamQueueVeh.toFixed(0)} veh` : "—"}</strong></div>
+        <div><span>Modeled upstream queue</span><strong>{active ? `${recovery.upstreamQueueVeh.toFixed(0)} veh` : "—"}</strong></div>
       </div>
 
       {active ? (
         <div className={`incident-recovery-note ${recovery.blocked ? "incident-blocked" : ""}`} role="status">
           {recovery.blocked ? <AlertTriangle size={17} /> : <ShieldCheck size={17} />}
           <div>
-            <strong>{recovery.blocked ? "Release gate held: a receiving link is full or blocked." : recovery.estimateCycles !== null ? `Observed queue-drain estimate: about ${recovery.estimateCycles} C3 cycles (${recovery.estimateSeconds}s).` : "Recovery estimate unavailable until observed discharge is positive."}</strong>
-            <p>Affected approaches: {recovery.affectedLinks.join(", ") || "unavailable"}. This estimate uses current simulated queues and discharge; the configured countdown is not a measured clearance guarantee.</p>
+            <strong>{recovery.blocked ? "Release gate held: a receiving link is full or blocked." : recovery.estimateCycles !== null ? `Modeled queue-drain estimate: about ${recovery.estimateCycles} C3 cycles (${recovery.estimateSeconds}s).` : "Recovery estimate unavailable until modeled discharge is positive."}</strong>
+            <p>Affected approaches: {recovery.affectedLinks.join(", ") || "unavailable"}. This estimate uses current aggregate queues and discharge; the configured countdown is not a measured clearance guarantee.</p>
           </div>
         </div>
       ) : (

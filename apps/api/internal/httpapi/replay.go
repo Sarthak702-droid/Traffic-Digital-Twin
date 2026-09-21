@@ -50,13 +50,19 @@ func (s *Server) startReplay(w http.ResponseWriter, r *http.Request) {
 		directory = "packages/replay"
 	}
 	var manifest struct {
-		ConfigID   string `json:"config_id"`
-		Recordings map[string]struct {
-			SHA256 string `json:"sha256"`
+		ConfigID       string `json:"config_id"`
+		EngineKind     string `json:"engine_kind"`
+		ModelVersion   string `json:"model_version"`
+		MetricsVersion string `json:"metrics_version"`
+		Recordings     map[string]struct {
+			SHA256         string `json:"sha256"`
+			EngineKind     string `json:"engine_kind"`
+			ModelVersion   string `json:"model_version"`
+			MetricsVersion string `json:"metrics_version"`
 		} `json:"recordings"`
 	}
 	metadata, e := os.ReadFile(filepath.Join(directory, "manifest.json"))
-	if e != nil || json.Unmarshal(metadata, &manifest) != nil || manifest.ConfigID != s.Network.ID {
+	if e != nil || json.Unmarshal(metadata, &manifest) != nil || manifest.ConfigID != s.Network.ID || manifest.EngineKind != "aggregate_ctm" || manifest.ModelVersion == "" || manifest.MetricsVersion == "" {
 		problem(w, 503, "Replay manifest/configuration mismatch")
 		return
 	}
@@ -85,7 +91,7 @@ func (s *Server) startReplay(w http.ResponseWriter, r *http.Request) {
 		var record replayRecord
 		frame := new(pb.TrafficState)
 		analysis := new(pb.Analysis)
-		if json.Unmarshal(scanner.Bytes(), &record) != nil || protojson.Unmarshal(record.State, frame) != nil || frame.ScenarioType != scenario || contracts.ValidateState(frame) != nil {
+		if json.Unmarshal(scanner.Bytes(), &record) != nil || protojson.Unmarshal(record.State, frame) != nil || frame.ScenarioType != scenario || frame.EngineKind != manifest.EngineKind || frame.ModelVersion != manifest.ModelVersion || frame.MetricsVersion != manifest.MetricsVersion || contracts.ValidateState(frame) != nil {
 			problem(w, 503, "Invalid replay state")
 			return
 		}

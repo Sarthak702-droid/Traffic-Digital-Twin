@@ -8,7 +8,26 @@ message Link { string id = 1; string from_node = 2; string to_node = 3; double l
 message Movement { string id = 1; string node_id = 2; string incoming_link_id = 3; string outgoing_link_id = 4; double turning_ratio = 5; }
 message SignalPhase { string id = 1; string node_id = 2; repeated string movement_ids = 3; double min_green_s = 4; double max_green_s = 5; double amber_s = 6; double all_red_s = 7; double pedestrian_clearance_s = 8; double max_red_s = 9; }
 message MovementState { string movement_id = 1; double queue_veh = 2; double arrival_rate_vpm = 3; double departure_rate_vpm = 4; double avg_speed_kph = 5; double occupancy_ratio = 6; double downstream_capacity_veh = 7; string current_phase_id = 8; double waiting_age_s = 9; uint32 vehicle_count = 10; uint32 arrivals_total = 11; uint32 departures_total = 12; string permission = 13; }
-message TrafficState { string schema_version = 1; string run_id = 2; string timestamp = 3; double simulation_time_s = 4; string source = 5; repeated MovementState movements = 6; repeated SignalState signals = 7; uint32 vehicles_in_network = 8; uint32 inserted_total = 9; uint32 arrived_total = 10; uint32 teleported_total = 11; string scenario_type = 12; uint32 seed = 13; Incident incident = 14; EmergencyEvent emergency = 15; repeated TimingChange active_plan = 16; bool replay = 17; }
+message LinkAggregate {
+  string link_id = 1;
+  double stock_veh = 2;
+  double queued_veh_estimate = 3;
+  double density_veh_per_km_lane = 4;
+  double storage_utilization_ratio = 5;
+  double receiving_storage_veh = 6;
+  double inflow_vpm = 7;
+  double outflow_vpm = 8;
+  double flow_window_s = 9;
+  optional double mean_speed_kph = 10;
+  string speed_method = 11;
+  string speed_status = 12;
+  double queue_length_m_estimate = 13;
+  bool receiving_blocked = 14;
+}
+message SchedulerService { string phase_id = 1; uint64 last_served_tick = 2; }
+message SchedulerPriority { string node_id = 1; string phase_id = 2; }
+message SchedulerSnapshot { uint64 tick = 1; repeated TimingChange pending_plan = 2; repeated SchedulerService service_history = 3; repeated SchedulerPriority priority = 4; bool recovering = 5; }
+message TrafficState { string schema_version = 1; string run_id = 2; string timestamp = 3; double simulation_time_s = 4; string source = 5; repeated MovementState movements = 6; repeated SignalState signals = 7; uint32 vehicles_in_network = 8 [deprecated=true]; uint32 inserted_total = 9 [deprecated=true]; uint32 arrived_total = 10 [deprecated=true]; uint32 teleported_total = 11 [deprecated=true]; string scenario_type = 12; uint32 seed = 13; Incident incident = 14; EmergencyEvent emergency = 15; repeated TimingChange active_plan = 16; bool replay = 17; repeated LinkAggregate links = 18; string engine_kind = 19; string model_version = 20; string metrics_version = 21; string config_hash = 22; uint64 snapshot_sequence = 23; double boundary_backlog_veh = 24; double cumulative_demand_veh = 25; double cumulative_admitted_veh = 26; double cumulative_boundary_exits_veh = 27; string control_target = 28; SchedulerSnapshot scheduler = 29; }
 message Forecast { string id = 1; string run_id = 2; string movement_id = 3; uint32 horizon_s = 4; double queue_veh = 5; double occupancy_ratio = 6; double arrivals_veh = 7; string risk = 8; optional double spillback_eta_s = 9; string model_version = 10; repeated string explanation_facts = 11; }
 message TimingChange { string node_id = 1; string phase_id = 2; double green_s = 3; }
 message Recommendation { string id = 1; string run_id = 2; string timestamp = 3; string priority = 4; string reason = 5; repeated TimingChange changes = 6; string safety_status = 7; string status = 8; repeated string explanation_facts = 9; }
@@ -20,7 +39,7 @@ message HealthState { string timestamp = 1; repeated ComponentHealth components 
 message AuditEvent { string id = 1; string run_id = 2; string timestamp = 3; string actor = 4; string recommendation_id = 5; string event_type = 6; repeated TimingChange before = 7; repeated TimingChange after = 8; string reason = 9; string safety_result = 10; }
 message Alert { string id = 1; string run_id = 2; string severity = 3; string target_id = 4; string message = 5; }
 message SignalState { string node_id = 1; string phase_id = 2; string indication = 3; double remaining_s = 4; repeated string permitted_movement_ids = 5; }
-message ComparisonResult { string run_id = 1; string recommendation_id = 2; double baseline_max_queue_veh = 3; double candidate_max_queue_veh = 4; double baseline_avg_delay_s = 5; double candidate_avg_delay_s = 6; double initial_time_s = 7; string model_version = 8; double baseline_spillback_s = 9; double candidate_spillback_s = 10; double baseline_stops_per_vehicle = 11; double candidate_stops_per_vehicle = 12; uint32 horizon_s = 13; uint32 seed = 14; }
+message ComparisonResult { string run_id = 1; string recommendation_id = 2; double baseline_max_queue_veh = 3; double candidate_max_queue_veh = 4; double baseline_avg_delay_s = 5 [deprecated=true]; double candidate_avg_delay_s = 6 [deprecated=true]; double initial_time_s = 7; string model_version = 8; double baseline_spillback_s = 9 [deprecated=true]; double candidate_spillback_s = 10 [deprecated=true]; double baseline_stops_per_vehicle = 11 [deprecated=true]; double candidate_stops_per_vehicle = 12 [deprecated=true]; uint32 horizon_s = 13; uint32 seed = 14; double baseline_queue_delay_veh_s = 15; double candidate_queue_delay_veh_s = 16; double baseline_boundary_throughput_veh = 17; double candidate_boundary_throughput_veh = 18; double baseline_congested_link_s = 19; double candidate_congested_link_s = 20; double baseline_boundary_backlog_veh = 21; double candidate_boundary_backlog_veh = 22; string metrics_version = 23; }
 message EventEnvelope {
   string schema_version = 1;
   uint64 sequence = 2;

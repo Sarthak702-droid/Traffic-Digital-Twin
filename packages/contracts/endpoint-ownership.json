@@ -178,7 +178,7 @@
       "is_mutating": true,
       "required_role": "operator",
       "idempotency_supported": true,
-      "description": "Start a seeded SUMO scenario in observe, recommend, or manual mode"
+      "description": "Start a seeded aggregate-flow scenario in observe, recommend, or manual mode"
     },
     {
       "method": "POST",

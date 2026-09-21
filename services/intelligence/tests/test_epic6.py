@@ -153,9 +153,9 @@ def test_s19_structured_explanation_facts(model_and_state):
     assert "Trigger:" in facts_str
     assert "Upstream corridor:" in facts_str
     assert "Coordinated timing:" in facts_str
-    assert "120-second PN-MPC network cost:" in facts_str
+    assert "120-second PN-MPC normalized cost:" in facts_str
     assert "Human approval required" in facts_str
-    assert "conservation-v2" in facts_str
+    assert "aggregate-predictor-v1" in facts_str
     # Verify no fake ML or hallucinated confidence bands
     assert "neural" not in facts_str.lower()
     assert "deep learning" not in facts_str.lower()

@@ -38,7 +38,7 @@ The existing delivery dashboard is separate: `node server.mjs` from the reposito
 4. Check the saved run and its audit entry in Audit & Health.
 5. Restart Go and refresh: records remain in PostgreSQL.
 
-Preparing a run does not start SUMO or apply signal timing. Unimplemented runtime operations fail explicitly. Empty measurements remain unavailable.
+Starting a run launches the aggregate-flow digital twin and applies approved virtual timing only at a safe phase boundary. It never controls physical signals. Empty measurements remain unavailable.
 
 ## Verification
 
@@ -53,7 +53,7 @@ npm run build
 Full integration, with local PostgreSQL and the Python contract endpoint running:
 
 ```sh
-PYTHONPATH=.:packages/contracts/gen/python .venv/bin/python -m services.shared.server simulation --port 50051
+TWIN_ENGINE=aggregate PYTHONPATH=.:packages/contracts/gen/python .venv/bin/python -m services.shared.server simulation --port 50051
 # In another terminal:
 TEST_DATABASE_URL='postgres://traffic:traffic_demo@127.0.0.1:5433/traffic?sslmode=disable' \
 SIMULATION_GRPC_ADDR=127.0.0.1:50051 \

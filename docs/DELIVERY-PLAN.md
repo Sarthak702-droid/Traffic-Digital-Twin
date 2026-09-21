@@ -12,7 +12,7 @@ P0: mandatory release gate. P1: guided presentation can be simplified, but all d
 
 Sequence: complete Go gateway contract parity → verify in-process Go persistence and idempotency → prove gRPC degradation and live-event behavior → complete access/accessibility and real scenario acceptance. Design and test work can overlap; dependencies are acceptance gates.
 
-Cross-cutting rules: browser ingress is the Go API gateway; Go owns domain validation, safety, persistence, audit and WebSocket delivery; Python workers keep private SUMO/intelligence computation; reads/streams have explicit owners and persistence exemptions; no invented results or physical signal control. Every story must distinguish source implementation, historical evidence and newly measured acceptance.
+Cross-cutting rules: browser ingress is the Go API gateway; Go owns domain validation, safety, persistence, audit and WebSocket delivery; Python workers keep private aggregate-flow/intelligence computation; reads/streams have explicit owners and persistence exemptions; no invented results or physical signal control. Every story must distinguish source implementation, historical evidence and newly measured acceptance.
 
 ## E01 — Foundation & shared contracts [P0]
 
@@ -38,7 +38,7 @@ Acceptance criteria:
 
 - Create the required apps/web, apps/api, services/simulation, services/intelligence, packages/contracts, packages/scenario-config, db/migrations and db/queries layout.
 - Record Browser → Python gateway → owning Go service → Python gateway → Go DB writer → PostgreSQL for durable commands; Go owns domain/safety, Python compute remains private.
-- Use the prescribed Next.js/React/TypeScript, Go/chi/pgx/sqlc and Python/SUMO stack; exclude prohibited infrastructure and identity tracking.
+- Use the prescribed Next.js/React/TypeScript, Go/chi/pgx/sqlc and Python aggregate cell-flow stack; exclude prohibited infrastructure and identity tracking.
 - Document current Go-entry architecture separately from required Browser → Python gateway → Go domain service → gateway → Go DB writer; retain private Python compute. Publish an exhaustive route and persistence ownership matrix.
 - Treat historical demo completion as historical only; record production blockers and no-live-control scope. Specify which release is isolated demo versus shared deployment.
 
@@ -106,7 +106,7 @@ A credible digital twin is the base for prediction, comparison and every scenari
 
 **Findings:** A01, A06, A07, A09, A12, A14, A18
 
-### S05 — Build seeded SUMO scenarios and reset [P0]
+### S05 — Build seeded aggregate-flow scenarios and reset [P0]
 
 As an operator, I want repeatable demand and virtual signals, so that the same demo can be reproduced.
 
@@ -118,7 +118,7 @@ As an operator, I want repeatable demand and virtual signals, so that the same d
 
 Acceptance criteria:
 
-- Build SUMO/TraCI network, routes and synthetic demand for exactly peak_surge, incident_c3 and ambulance_corridor.
+- Build finite-capacity aggregate network configuration and seeded boundary demand for exactly peak_surge, incident_c3 and ambulance_corridor.
 - Apply plans only to virtual signals; seed and reset restore identical initial conditions.
 - Start and reset complete in less than 5 seconds on the demo machine.
 - Start/reset use canonical server mode and durable command identity through the Python gateway; lost responses and repeated submissions return the same command outcome.
@@ -442,7 +442,7 @@ Acceptance criteria:
 - Clone the same initial state and random seed for baseline and candidate.
 - Isolate rollout state from live scenario; validate candidate timing before execution.
 - Return max queue, average delay, spillback occurrence and stops/vehicle with units and simulation provenance.
-- Document aggregate conservation branches accurately: current comparison is a 120-second aggregate model, not two cloned SUMO vehicle trajectories. Provide trajectory data before promising synchronized vehicle-level playback.
+- Document aggregate conservation branches accurately: current comparison is a 120-second aggregate model, not two cloned vehicle trajectories. Provide trajectory data before promising synchronized vehicle-level playback.
 - Bind baseline/candidate to one immutable snapshot, seed, command and recommendation; verify zero mutation, cancellation, timeout and persistence/recovery of required comparison results.
 
 ### S22 — Show synchronized comparison and impact [P0]
@@ -511,7 +511,7 @@ Acceptance criteria:
 
 ### S27 — Build golden replay through the real delivery path [P0]
 
-As a presenter, I want a deterministic replay fallback, so that the demo survives SUMO or CV failure offline.
+As a presenter, I want a deterministic replay fallback, so that the demo survives aggregate-runtime or CV failure offline.
 
 **Owner:** Backend + QA · **Provisional days:** 3–14 · **Depends on:** S02, S06
 
@@ -525,7 +525,7 @@ Acceptance criteria:
 - Replay/reset preserve event order, timing and scenario/run identity; visibly indicate replay.
 - Capture a known-good eight-minute event stream once scenarios stabilize and verify failure switch-over.
 - Expose replay controls in the active Workspace; label all replay-derived views and disable live mutations while replay runs.
-- Test SUMO/intelligence failure, replay end/restart, checksum/config mismatch and WebSocket reconnect. Database loss must show a limitation rather than claiming database-independent replay.
+- Test aggregate-runtime/intelligence failure, replay end/restart, checksum/config mismatch and WebSocket reconnect. Database loss must show a limitation rather than claiming database-independent replay.
 
 ### S28 — Provide audit and health inspection [P0]
 
@@ -822,7 +822,7 @@ Acceptance criteria:
 
 - Go domain modules use pgx/sqlc repositories and PostgreSQL transactions to commit typed result/status/audit records atomically. No arbitrary SQL or blind payload insertion.
 - Persist command ID, actor, run/config/owner version and payload hash with a uniqueness constraint; replay the stored outcome on identical retry and return conflict for same ID/different payload.
-- For actuation, commit intent before dispatch, then reconcile applied/failed/unknown and finalize audit; never imply a database transaction can atomically cover SUMO RPC. Expose a permissioned command-status read contract.
+- For actuation, commit intent before dispatch, then reconcile applied/failed/unknown and finalize audit; never imply a database transaction can atomically cover an aggregate-runtime RPC. Expose a permissioned command-status read contract.
 - Inject database failure, timeout after commit, lost acknowledgment and restart; prove no duplicate effects or silent successful writes. Classify frames/reads separately from durable business results.
 
 ### S42 — Preserve state ownership and live-stream continuity [P0]

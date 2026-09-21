@@ -11,6 +11,16 @@
     "time": "seconds",
     "occupancy": "ratio 0\u20131"
   },
+  "flow_model": {
+    "kind": "aggregate_ctm",
+    "cell_length_m": 40,
+    "step_s": 1,
+    "backward_wave_speed_kph": 15,
+    "queue_threshold_ratio": 0.7,
+    "flow_window_s": 60,
+    "junction_policy": "strict_fifo",
+    "metrics_version": "flow-metrics-v1"
+  },
   "nodes": [
     {
       "id": "C1",

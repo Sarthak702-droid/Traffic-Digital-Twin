@@ -49,6 +49,7 @@ export function NetworkCanvas({
       signalsByNode.set(s.node_id, s);
     }
   }
+  const aggregatesByLink = new Map((frame?.links ?? []).map((link) => [link.link_id, link]));
 
   return (
     <div className="network-canvas-container">
@@ -130,8 +131,10 @@ export function NetworkCanvas({
             (id, i) => id === from.id && route[i + 1] === to.id,
           );
 
-          // Find live movements on this incoming link
+          // Link aggregates are authoritative. Movement values are retained for
+          // compatibility and phase detail only.
           const linkMovements = movementsByLink.get(link.id) ?? [];
+          const aggregate = aggregatesByLink.get(link.id);
           const linkConfigMoves = network.movements.filter((m) => m.incoming_link_id === link.id);
           const horizonForecasts =
             horizon > 0
@@ -148,22 +151,21 @@ export function NetworkCanvas({
               f.spillback_eta_s > 0,
           );
 
-          const liveLinkQueue = linkMovements.reduce((sum, m) => sum + m.queue_veh, 0);
+          const liveLinkQueue = aggregate?.queued_veh_estimate ?? linkMovements.reduce((sum, m) => sum + m.queue_veh, 0);
           const linkQueue =
             horizonForecasts.length > 0
               ? horizonForecasts.reduce((sum, f) => sum + f.queue_veh, 0)
               : liveLinkQueue;
 
-          const linkFlow = linkMovements.reduce((sum, m) => sum + m.arrival_rate_vpm, 0);
+          const linkFlow = aggregate?.inflow_vpm ?? linkMovements.reduce((sum, m) => sum + m.arrival_rate_vpm, 0);
           const avgLinkSpeed =
-            linkMovements.length > 0
+            aggregate?.speed_status === "modeled" || aggregate?.speed_status === "measured"
+              ? aggregate.mean_speed_kph
+              : linkMovements.length > 0
               ? linkMovements.reduce((sum, m) => sum + m.avg_speed_kph, 0) /
                 linkMovements.length
-              : link.free_flow_speed_kph;
-          const totalVehicles = linkMovements.reduce(
-            (sum, m) => sum + m.vehicle_count,
-            0,
-          );
+              : undefined;
+          const totalVehicles = aggregate?.stock_veh ?? linkMovements.reduce((sum, m) => sum + m.vehicle_count, 0);
 
           // Queue ratio relative to storage capacity
           const queueRatio = Math.min(
@@ -181,15 +183,12 @@ export function NetworkCanvas({
           const lx = midX - dy * labelShift;
           const ly = midY + dx * labelShift;
 
-          // Animation speed duration (faster when speed is high)
-          const animSpeed = Math.max(1.5, Math.min(6, 60 / Math.max(10, avgLinkSpeed)));
-
           return (
             <g key={link.id} className="network-link-group">
               <title>
                 {link.id}: {link.from_node} → {link.to_node} ({link.length_m}m,{" "}
                 {link.storage_capacity_veh} veh storage)
-                {frame ? ` · Queue: ${linkQueue} veh · Speed: ${avgLinkSpeed.toFixed(1)} km/h` : ""}
+                {frame ? ` · Queue estimate: ${linkQueue.toFixed(1)} veh · Speed: ${avgLinkSpeed == null ? "unavailable" : `${avgLinkSpeed.toFixed(1)} km/h`}` : ""}
               </title>
 
               {/* Roadway Base Track */}
@@ -235,32 +234,8 @@ export function NetworkCanvas({
                 }
               />
 
-              {/* Data-driven animated vehicle particles (Story S09) */}
-              {frame && totalVehicles > 0 && (
-                <>
-                  <circle r="3.2" fill={isRoute ? "#d1bbfb" : "#94d3b6"} className="flow-marker">
-                    <animateMotion
-                      dur={`${animSpeed.toFixed(1)}s`}
-                      repeatCount="indefinite"
-                      path={`M ${x1} ${y1} L ${x2} ${y2}`}
-                    />
-                  </circle>
-                  {totalVehicles > 3 && (
-                    <circle
-                      r="2.8"
-                      fill={isRoute ? "#b99bf2" : "#71b899"}
-                      className="flow-marker"
-                    >
-                      <animateMotion
-                        dur={`${animSpeed.toFixed(1)}s`}
-                        begin={`${(animSpeed * 0.45).toFixed(1)}s`}
-                        repeatCount="indefinite"
-                        path={`M ${x1} ${y1} L ${x2} ${y2}`}
-                      />
-                    </circle>
-                  )}
-                </>
-              )}
+              {/* A flow band is illustrative aggregate movement, never cars. */}
+              {frame && linkFlow > 0 && <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#94d3b6" strokeWidth={Math.min(8, 1 + linkFlow / 12)} strokeOpacity="0.28" strokeLinecap="round" />}
 
               {/* Overlay Badges: Speed & Queue Indicators (Story S09) */}
               {frame && (
@@ -282,10 +257,10 @@ export function NetworkCanvas({
                     textAnchor="middle"
                     className="canvas-metric-text"
                     fill={
-                      avgLinkSpeed > 30 ? "#8fc7ad" : avgLinkSpeed > 15 ? "#dfb677" : "#e8a4a0"
+                      avgLinkSpeed == null ? "#9aa8b1" : avgLinkSpeed > 30 ? "#8fc7ad" : avgLinkSpeed > 15 ? "#dfb677" : "#e8a4a0"
                     }
                   >
-                    {avgLinkSpeed.toFixed(0)} km/h
+                    {avgLinkSpeed == null ? "speed —" : `${avgLinkSpeed.toFixed(0)} km/h`}
                   </text>
 
                   {/* Spillback ETA Alert Badge (Story S12) */}

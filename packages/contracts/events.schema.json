@@ -493,11 +493,153 @@
         "permission"
       ]
     },
+    "LinkAggregate": {
+      "type": "object",
+      "properties": {
+        "link_id": {
+          "type": "string"
+        },
+        "stock_veh": {
+          "type": "number",
+          "minimum": 0
+        },
+        "queued_veh_estimate": {
+          "type": "number"
+        },
+        "density_veh_per_km_lane": {
+          "type": "number"
+        },
+        "storage_utilization_ratio": {
+          "type": "number"
+        },
+        "receiving_storage_veh": {
+          "type": "number",
+          "minimum": 0
+        },
+        "inflow_vpm": {
+          "type": "number",
+          "minimum": 0
+        },
+        "outflow_vpm": {
+          "type": "number",
+          "minimum": 0
+        },
+        "flow_window_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "mean_speed_kph": {
+          "type": "number"
+        },
+        "speed_method": {
+          "type": "string"
+        },
+        "speed_status": {
+          "type": "string"
+        },
+        "queue_length_m_estimate": {
+          "type": "number"
+        },
+        "receiving_blocked": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "link_id",
+        "stock_veh",
+        "queued_veh_estimate",
+        "density_veh_per_km_lane",
+        "storage_utilization_ratio",
+        "receiving_storage_veh",
+        "inflow_vpm",
+        "outflow_vpm",
+        "flow_window_s",
+        "speed_method",
+        "speed_status",
+        "queue_length_m_estimate",
+        "receiving_blocked"
+      ]
+    },
+    "SchedulerService": {
+      "type": "object",
+      "properties": {
+        "phase_id": {
+          "type": "string"
+        },
+        "last_served_tick": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "phase_id",
+        "last_served_tick"
+      ]
+    },
+    "SchedulerPriority": {
+      "type": "object",
+      "properties": {
+        "node_id": {
+          "type": "string"
+        },
+        "phase_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "node_id",
+        "phase_id"
+      ]
+    },
+    "SchedulerSnapshot": {
+      "type": "object",
+      "properties": {
+        "tick": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "pending_plan": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimingChange"
+          }
+        },
+        "service_history": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SchedulerService"
+          }
+        },
+        "priority": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SchedulerPriority"
+          }
+        },
+        "recovering": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "tick",
+        "pending_plan",
+        "service_history",
+        "priority",
+        "recovering"
+      ]
+    },
     "TrafficState": {
       "type": "object",
       "properties": {
         "schema_version": {
-          "const": "1.0"
+          "enum": [
+            "1.0",
+            "1.1"
+          ]
         },
         "run_id": {
           "type": "string"
@@ -575,6 +717,53 @@
         },
         "replay": {
           "type": "boolean"
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LinkAggregate"
+          }
+        },
+        "engine_kind": {
+          "type": "string"
+        },
+        "model_version": {
+          "type": "string"
+        },
+        "metrics_version": {
+          "type": "string"
+        },
+        "config_hash": {
+          "type": "string"
+        },
+        "snapshot_sequence": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "boundary_backlog_veh": {
+          "type": "number"
+        },
+        "cumulative_demand_veh": {
+          "type": "number"
+        },
+        "cumulative_admitted_veh": {
+          "type": "number"
+        },
+        "cumulative_boundary_exits_veh": {
+          "type": "number"
+        },
+        "control_target": {
+          "type": "string"
+        },
+        "scheduler": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SchedulerSnapshot"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false,
@@ -1055,6 +1244,33 @@
         "seed": {
           "type": "integer",
           "minimum": 0
+        },
+        "baseline_queue_delay_veh_s": {
+          "type": "number"
+        },
+        "candidate_queue_delay_veh_s": {
+          "type": "number"
+        },
+        "baseline_boundary_throughput_veh": {
+          "type": "number"
+        },
+        "candidate_boundary_throughput_veh": {
+          "type": "number"
+        },
+        "baseline_congested_link_s": {
+          "type": "number"
+        },
+        "candidate_congested_link_s": {
+          "type": "number"
+        },
+        "baseline_boundary_backlog_veh": {
+          "type": "number"
+        },
+        "candidate_boundary_backlog_veh": {
+          "type": "number"
+        },
+        "metrics_version": {
+          "type": "string"
         }
       },
       "additionalProperties": false,

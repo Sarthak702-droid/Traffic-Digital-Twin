@@ -83,6 +83,7 @@ function makeSampleState(overrides: Partial<TrafficState> = {}): TrafficState {
     seed: 1101,
     active_plan: [],
     replay: false,
+    links: [],
     ...overrides,
   };
 }

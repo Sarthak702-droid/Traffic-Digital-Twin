@@ -28,10 +28,9 @@ else:
         if str_site not in sys.path:
             sys.path.insert(0, str_site)
 
-# 3. Ensure bin directories are in PATH for SUMO/TraCI binaries
-flatpak_bin = Path.home() / ".var/app/com.visualstudio.code/data/python/bin"
+# 3. Keep the virtualenv executable path available for private Python services.
 venv_bin = ROOT / ".venv/bin"
-for b in [venv_bin, flatpak_bin]:
+for b in [venv_bin]:
     if b.is_dir() and str(b) not in os.environ.get("PATH", ""):
         os.environ["PATH"] = f"{b}:{os.environ.get('PATH', '')}"
 

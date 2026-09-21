@@ -1,21 +1,32 @@
 {
   "config_id": "c1-c6-v3",
-  "model_version": "conservation-v2",
+  "engine_kind": "aggregate_ctm",
+  "model_version": "aggregate-predictor-v1",
+  "metrics_version": "flow-metrics-v1",
   "recordings": {
     "peak_surge": {
       "seed": 1101,
       "frames": 480,
-      "sha256": "e21e7a809ef25050fa41423e06233f4a895ce8e812e820f478b5fea6527c0f87"
+      "engine_kind": "aggregate_ctm",
+      "model_version": "aggregate-predictor-v1",
+      "metrics_version": "flow-metrics-v1",
+      "sha256": "9680a851f34accaabbd068e50fa93cf3b356233785c8b6aa56d7c677650d715d"
     },
     "incident_c3": {
       "seed": 2202,
       "frames": 480,
-      "sha256": "7afb70ef81706e0015eb0e0e0ac405d1df1a40ffdc17ead3db15c2bd4a02316a"
+      "engine_kind": "aggregate_ctm",
+      "model_version": "aggregate-predictor-v1",
+      "metrics_version": "flow-metrics-v1",
+      "sha256": "01c605147bc577df469911ebb209b181b5ab0b8c4ad2fa88ba835357ae5fa6c6"
     },
     "ambulance_corridor": {
       "seed": 3303,
       "frames": 480,
-      "sha256": "42c102050ec5e12b7ac3a25c3e2058390299cd5a271d1afcd19b8bd33e9d2c47"
+      "engine_kind": "aggregate_ctm",
+      "model_version": "aggregate-predictor-v1",
+      "metrics_version": "flow-metrics-v1",
+      "sha256": "a3741989012049d6bcd265a6f83c9386675c0ab9f592709fd1e4bfcd6f75ad72"
     }
   }
 }

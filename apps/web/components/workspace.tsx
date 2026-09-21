@@ -594,7 +594,7 @@ export function Workspace() {
                             </span>
                           </div>
                           <span className="quiet-badge">
-                            {live.fresh ? "SUMO · SYNTHETIC 1 Hz" : "CONFIGURATION VIEW"}
+                            {live.fresh ? `${live.frame?.engine_kind ?? "AGGREGATE FLOW"} · SYNTHETIC 1 Hz` : "CONFIGURATION VIEW"}
                           </span>
                         </div>
 

@@ -23,14 +23,18 @@ for name,message in messages.items():
             if f.type in (F.TYPE_UINT32,F.TYPE_UINT64):schema['minimum']=0
         if f.is_repeated:
             schema={'type':'array','items':schema};typ=f'{typ}[]'
-        optional=f.containing_oneof is not None or f.type==F.TYPE_MESSAGE and not f.is_repeated
+        # Aggregate v1.1 fields are additive. Old replay JSON and UI fixtures
+        # remain valid while new producers publish the richer state.
+        compatibility_optional = (name == 'TrafficState' and f.number >= 18) or (name == 'ComparisonResult' and f.number >= 15)
+        optional=f.containing_oneof is not None or f.type==F.TYPE_MESSAGE and not f.is_repeated or compatibility_optional
         if f.type==F.TYPE_MESSAGE and not f.is_repeated:
             schema={"anyOf":[schema,{"type":"null"}]};typ+=" | null"
         if not optional and schema.get('type') in ('number','integer') and (f.name.endswith(('_s','_veh','_vpm','_kph')) or f.name=='occupancy_ratio'):schema['minimum']=0
         if f.name=='occupancy_ratio':schema['maximum']=1
-        if f.name=='schema_version':schema={'const':'1.0'};typ='"1.0"'
+        if f.name=='schema_version' and name=='TrafficState':schema={'enum':['1.0','1.1']};typ='"1.0" | "1.1"'
+        elif f.name=='schema_version':schema={'const':'1.0'};typ='"1.0"'
         props[f.name]=schema;fields.append(f'  {f.name}{"?" if optional else ""}: {typ};')
-    schemas[name]={'type':'object','properties':props,'additionalProperties':False,'required':[f.name for f in message.fields if f.containing_oneof is None and not (f.type==F.TYPE_MESSAGE and not f.is_repeated)]}
+    schemas[name]={'type':'object','properties':props,'additionalProperties':False,'required':[f.name for f in message.fields if f.containing_oneof is None and not (f.type==F.TYPE_MESSAGE and not f.is_repeated) and not ((name == 'TrafficState' and f.number >= 18) or (name == 'ComparisonResult' and f.number >= 15))]}
     interfaces.append(f'export interface {name} {{\n'+ '\n'.join(fields)+'\n}')
 # JSON events use the PRD names, with discriminated payloads. Protobuf uses a oneof.
 events={'network.state':'TrafficState','junction.state':'SignalState','forecast.updated':'Forecast','recommendation.created':'Recommendation','recommendation.updated':'Recommendation','incident.updated':'Incident','emergency.updated':'EmergencyEvent','health.updated':'HealthState','audit.appended':'AuditEvent'}

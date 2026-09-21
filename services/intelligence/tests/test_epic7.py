@@ -50,7 +50,7 @@ def test_s21_equal_seed_identical_initial_snapshot(sample_state):
     assert res.seed == 1337
     assert res.initial_time_s == 45.0
     assert res.horizon_s == 120
-    assert res.model_version == "conservation-v2"
+    assert res.model_version == "aggregate-predictor-v1"
     assert res.run_id == "run-epic7-eval"
     assert res.recommendation_id == "rec-test-s21"
 

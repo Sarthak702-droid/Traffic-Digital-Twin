@@ -578,7 +578,7 @@ Degraded components should never be hidden.
 
 ## 9. Backend architecture
 
-The browser uses the **Go API gateway** for all product REST and WebSocket traffic. Go performs validation, safety, orchestration, audit, and durable persistence; private Python SUMO/intelligence workers remain Go dependencies.
+The browser uses the **Go API gateway** for all product REST and WebSocket traffic. Go performs validation, safety, orchestration, audit, and durable persistence; private Python aggregate-flow and intelligence workers remain Go dependencies.
 
 For durable commands the required path is:
 
@@ -591,7 +591,7 @@ Go persistence modules commit business database mutations through repository int
 - Frontend: existing Next.js/React/TypeScript, React Query and Zustand.
 - Go API gateway and domain modules: chi handlers organized by configuration/query, lifecycle, decisions/safety, mode/locks, replay, WebSocket fan-out, and health. Logical owners share the modular-monolith deployment; do not invent one microservice per endpoint.
 - Go persistence module: pgx/sqlc repositories, migrations, idempotency, and transactional audit/status/outcome persistence behind clear interfaces. Keep it extractable, but do not deploy it as a service without a measured need.
-- Private Python simulation/intelligence: existing gRPC compute and SUMO/TraCI, not public HTTP ingress and not database writers.
+- Private Python simulation/intelligence: aggregate cell-flow gRPC compute, not public HTTP ingress and not database writers.
 - Go gateway clients and service connections use authenticated private boundaries outside an isolated local demo; production must not rely solely on loopback or Origin checks.
 
 ### 9.2 Responsibility boundaries
@@ -606,7 +606,7 @@ The original seeded demo operator is acceptable only in an explicitly isolated s
 
 ### 10.1 Simulation service
 
-Retain Python/SUMO/TraCI, seeded demand, aggregate 1 Hz stream, virtual phase progression, reset and safe plan application behind the owning Go domain service. Validate run/config identity and canonical mode contracts. Preserve deterministic seeds and clearance intervals through retries and owner changes. Actual aggregate comparison must not be described as cloned vehicle trajectories unless those trajectories are implemented and verified.
+Retain Python aggregate cell-flow, seeded boundary demand, aggregate 1 Hz stream, virtual phase progression, reset and safe plan application behind the owning Go domain service. Validate run/config identity and canonical mode contracts. Preserve deterministic seeds and clearance intervals through retries and owner changes. Actual aggregate comparison must not be described as cloned vehicle trajectories unless those trajectories are implemented and verified.
 
 ### 10.2 Intelligence service
 
@@ -622,7 +622,7 @@ The Python **gateway** is a separate responsibility from these workers. The brow
 flowchart LR
   UI[Frontend / same-origin Next proxy] <-- REST and WebSocket --> GW[Python API gateway]
   GW <-- typed domain requests/results --> GO[Owning Go domain service]
-  GO <-- private gRPC --> SIM[Python SUMO simulation]
+  GO <-- private gRPC --> SIM[Python aggregate-flow simulation]
   GO <-- private gRPC --> AI[Python intelligence]
   GW <-- typed writes and commit acknowledgments --> WR[Go DB writer]
   WR --> DB[(PostgreSQL)]
@@ -1376,7 +1376,7 @@ The DGP demo cannot depend on the internet.
 - fixed scenario seeds,
 - one-click reset,
 - scenario starts in < 5 sec,
-- replay mode can drive UI from prerecorded JSON if SUMO/CV fails,
+- replay mode can drive UI from prerecorded JSON if aggregate runtime/CV fails,
 - a backup demo video should exist,
 - no production service dependency,
 - no external map dependency.
@@ -1415,7 +1415,7 @@ traffic-digital-twin/
     web/                    # Next.js
     api/                    # Go backend
   services/
-    simulation/             # Python + SUMO + TraCI
+    simulation/             # Python aggregate cell-flow runtime
     intelligence/           # Python prediction/optimizer/CV
   packages/
     contracts/              # protobuf/JSON schemas
@@ -1455,14 +1455,14 @@ traffic-digital-twin/
 
 ### Day 2
 
-- SUMO network,
+- aggregate network configuration,
 - routes,
 - synthetic demand generator,
 - Go/Python gRPC contract.
 
 ### Day 3
 
-- live state stream from SUMO -> Go -> WebSocket -> UI,
+- live aggregate state stream from Python -> Go -> WebSocket -> UI,
 - C1-C6 animated canvas.
 
 ### Day 4

@@ -24,11 +24,11 @@ describe("Epic 9: C3 incident and network recovery", () => {
     expect(recovery.blocked).toBe(false);
   });
 
-  it("shows controls and clearly distinguishes an observed estimate from the configured countdown", () => {
+  it("shows controls and clearly distinguishes a modeled estimate from the configured countdown", () => {
     render(<IncidentRecoveryPanel network={network} frame={frame} capacityRatio={0.35} onCapacityRatio={() => {}} onLaunch={() => {}} onReset={() => {}} canOperate pending={false} />);
     expect(screen.getByLabelText("Remaining C3 capacity")).toBeInTheDocument();
     expect(screen.getByText(/Actual remaining capacity/)).toBeInTheDocument();
-    expect(screen.getByText(/Observed queue-drain estimate/)).toBeInTheDocument();
+    expect(screen.getByText(/Modeled queue-drain estimate/)).toBeInTheDocument();
     expect(screen.getByText(/not a measured clearance guarantee/)).toBeInTheDocument();
   });
 });

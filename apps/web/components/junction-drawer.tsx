@@ -61,6 +61,7 @@ export function JunctionDrawerContent({
   // Connected links
   const incomingLinks = network.links.filter((l) => l.to_node === chosen.id);
   const outgoingLinks = network.links.filter((l) => l.from_node === chosen.id);
+  const aggregateByLink = new Map((frame?.links ?? []).map((link) => [link.link_id, link]));
   const phases = network.phases.filter((p) => p.node_id === chosen.id);
 
   // Filter forecasts for movements at this junction
@@ -148,7 +149,7 @@ export function JunctionDrawerContent({
 
         <p className="horizon-disclaimer">
           {selectedHorizon === 0
-            ? "Live 1 Hz measurements from synthetic SUMO simulation."
+            ? "Live 1 Hz aggregate state from synthetic flow simulation."
             : selectedHorizon === 300
               ? "5-minute output advisory · Conservation model · No invented confidence bands."
               : "Simulation forecast · Conservation model · No invented confidence bands."}
@@ -156,47 +157,30 @@ export function JunctionDrawerContent({
 
         {/* Forecast / Current Movement Metrics */}
         {selectedHorizon === 0 ? (
-          /* NOW: Live approach measurements */
-          movements?.length ? (
+          /* NOW: authoritative aggregate link measurements */
+          (incomingLinks.length + outgoingLinks.length) > 0 ? (
             <div className="movement-cards-list">
-              {movements.map((m) => (
-                <article className="drawer-movement-card" key={m.movement_id}>
+              {[...incomingLinks, ...outgoingLinks].map((link) => {
+                const aggregate = aggregateByLink.get(link.id);
+                return (
+                <article className="drawer-movement-card" key={link.id}>
                   <div className="card-top">
-                    <strong>{m.movement_id}</strong>
-                    <span className={`permission-badge ${m.permission}`}>
-                      {m.permission}
+                    <strong>{link.id}</strong>
+                    <span className="permission-badge green">
+                      {link.to_node === chosen.id ? "incoming" : "outgoing"}
                     </span>
                   </div>
-                  <div className="metrics-grid">
-                    <div>
-                      <span className="m-label">Queue</span>
-                      <strong className="m-val">{m.queue_veh} veh</strong>
-                    </div>
-                    <div>
-                      <span className="m-label">Speed</span>
-                      <strong className="m-val">{m.avg_speed_kph.toFixed(1)} km/h</strong>
-                    </div>
-                    <div>
-                      <span className="m-label">Arrival / Departure</span>
-                      <strong className="m-val">
-                        {m.arrival_rate_vpm.toFixed(0)} / {m.departure_rate_vpm.toFixed(0)} vpm
-                      </strong>
-                    </div>
-                    <div>
-                      <span className="m-label">Storage Occupancy</span>
-                      <strong className="m-val">{Math.round(m.occupancy_ratio * 100)}%</strong>
-                    </div>
-                    <div>
-                      <span className="m-label">Downstream Space</span>
-                      <strong className="m-val">{m.downstream_capacity_veh} veh</strong>
-                    </div>
-                    <div>
-                      <span className="m-label">Max Wait Time</span>
-                      <strong className="m-val">{m.waiting_age_s.toFixed(0)}s</strong>
-                    </div>
-                  </div>
+                  {aggregate ? <div className="metrics-grid">
+                    <div><span className="m-label">Stock / Queue</span><strong className="m-val">{aggregate.stock_veh.toFixed(1)} / {aggregate.queued_veh_estimate.toFixed(1)} veh</strong></div>
+                    <div><span className="m-label">Density</span><strong className="m-val">{aggregate.density_veh_per_km_lane.toFixed(1)} veh/km-ln</strong></div>
+                    <div><span className="m-label">Flow window</span><strong className="m-val">{aggregate.inflow_vpm.toFixed(1)} / {aggregate.outflow_vpm.toFixed(1)} vpm · {aggregate.flow_window_s}s</strong></div>
+                    <div><span className="m-label">Storage use</span><strong className="m-val">{Math.round(aggregate.storage_utilization_ratio * 100)}%</strong></div>
+                    <div><span className="m-label">Receiving space</span><strong className="m-val">{aggregate.receiving_blocked ? "blocked" : `${aggregate.receiving_storage_veh.toFixed(1)} veh`}</strong></div>
+                    <div><span className="m-label">Speed</span><strong className="m-val">{aggregate.mean_speed_kph == null ? "unavailable" : `${aggregate.mean_speed_kph.toFixed(1)} km/h`}</strong></div>
+                  </div> : <p className="drawer-note-text">Aggregate link state is unavailable for this legacy replay frame.</p>}
                 </article>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p className="drawer-note-text">
@@ -424,6 +408,7 @@ export function JunctionDrawerContent({
               <span className="link-details">
                 {l.length_m}m · {l.lanes} lanes · {l.storage_capacity_veh} veh capacity
               </span>
+              {aggregateByLink.get(l.id) && <span className="link-details">Aggregate density {aggregateByLink.get(l.id)!.density_veh_per_km_lane.toFixed(1)} veh/km-ln · queue {aggregateByLink.get(l.id)!.queue_length_m_estimate.toFixed(0)}m</span>}
             </div>
           ))}
           {outgoingLinks.map((l) => (
@@ -434,6 +419,7 @@ export function JunctionDrawerContent({
               <span className="link-details">
                 {l.length_m}m · {l.lanes} lanes · {l.storage_capacity_veh} veh capacity
               </span>
+              {aggregateByLink.get(l.id) && <span className="link-details">Aggregate density {aggregateByLink.get(l.id)!.density_veh_per_km_lane.toFixed(1)} veh/km-ln · receiving {aggregateByLink.get(l.id)!.receiving_storage_veh.toFixed(1)} veh</span>}
             </div>
           ))}
         </div>

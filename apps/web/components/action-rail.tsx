@@ -742,7 +742,7 @@ export function ActionRail({
           onClick={handleStart}
           disabled={prepareMutation.isPending || resetMutation.isPending || !dbReady}
         >
-          {prepareMutation.isPending ? "Starting SUMO…" : "Start simulation"}
+          {prepareMutation.isPending ? "Starting aggregate flow…" : "Start simulation"}
           <ArrowRight size={15} />
         </Button>
 

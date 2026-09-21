@@ -53,8 +53,43 @@ export interface MovementState {
   permission: string;
 }
 
+export interface LinkAggregate {
+  link_id: string;
+  stock_veh: number;
+  queued_veh_estimate: number;
+  density_veh_per_km_lane: number;
+  storage_utilization_ratio: number;
+  receiving_storage_veh: number;
+  inflow_vpm: number;
+  outflow_vpm: number;
+  flow_window_s: number;
+  mean_speed_kph?: number;
+  speed_method: string;
+  speed_status: string;
+  queue_length_m_estimate: number;
+  receiving_blocked: boolean;
+}
+
+export interface SchedulerService {
+  phase_id: string;
+  last_served_tick: string;
+}
+
+export interface SchedulerPriority {
+  node_id: string;
+  phase_id: string;
+}
+
+export interface SchedulerSnapshot {
+  tick: string;
+  pending_plan: TimingChange[];
+  service_history: SchedulerService[];
+  priority: SchedulerPriority[];
+  recovering: boolean;
+}
+
 export interface TrafficState {
-  schema_version: "1.0";
+  schema_version: "1.0" | "1.1";
   run_id: string;
   timestamp: string;
   simulation_time_s: number;
@@ -71,6 +106,18 @@ export interface TrafficState {
   emergency?: EmergencyEvent | null;
   active_plan: TimingChange[];
   replay: boolean;
+  links?: LinkAggregate[];
+  engine_kind?: string;
+  model_version?: string;
+  metrics_version?: string;
+  config_hash?: string;
+  snapshot_sequence?: string;
+  boundary_backlog_veh?: number;
+  cumulative_demand_veh?: number;
+  cumulative_admitted_veh?: number;
+  cumulative_boundary_exits_veh?: number;
+  control_target?: string;
+  scheduler?: SchedulerSnapshot | null;
 }
 
 export interface Forecast {
@@ -191,6 +238,15 @@ export interface ComparisonResult {
   candidate_stops_per_vehicle: number;
   horizon_s: number;
   seed: number;
+  baseline_queue_delay_veh_s?: number;
+  candidate_queue_delay_veh_s?: number;
+  baseline_boundary_throughput_veh?: number;
+  candidate_boundary_throughput_veh?: number;
+  baseline_congested_link_s?: number;
+  candidate_congested_link_s?: number;
+  baseline_boundary_backlog_veh?: number;
+  candidate_boundary_backlog_veh?: number;
+  metrics_version?: string;
 }
 
 export interface EventEnvelope {

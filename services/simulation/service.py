@@ -2,11 +2,11 @@ import grpc
 import twin_pb2 as pb
 import twin_pb2_grpc as rpc
 from services.shared.validation import validate_state
-from services.simulation.engine import Engine
+from services.simulation.providers import build_engine
 
 class Simulation(rpc.SimulationServicer):
     def __init__(self, engine=None):
-        self.engine=engine or Engine()
+        self.engine=engine or build_engine()
         self.engine.start_clock()
     def ValidateState(self, request, context):
         errors=validate_state(request)

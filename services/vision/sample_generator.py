@@ -156,7 +156,7 @@ def generate_c3_sample_video(
 
         # Footer camera info
         cv2.rectangle(frame, (0, height - 28), (width, height), (16, 18, 22), -1)
-        info_str = f"CAM-C3-N · FRAME {frame_idx:04d}/{num_frames} · LOCAL TRACK IDS ONLY · DEMO SPEED EST"
+        info_str = f"CAM-C3-N · FRAME {frame_idx:04d}/{num_frames} · AGGREGATE OBSERVATIONS ONLY"
         cv2.putText(
             frame,
             info_str,

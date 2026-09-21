@@ -59,7 +59,7 @@ class TrackedVehicle:
     is_queued: bool = False
     crossed_counting_line: bool = False
     stationary_frames: int = 0
-    speed_estimate_kph: float = 0.0
+    relative_motion_px_per_frame: float = 0.0
     last_seen_frame: int = 0
 
 
@@ -248,22 +248,22 @@ class C3VisionPipeline:
                         dx = trk.history[-1][0] - trk.history[-2][0]
                         dy = trk.history[-1][1] - trk.history[-2][1]
                         dist_px = math.hypot(dx, dy)
-                        # Reference: ~10 pixels per meter in perspective center, scaled to km/h
-                        # Strictly documented as uncalibrated demo estimate
-                        trk.speed_estimate_kph = round(max(15.0, min(58.0, dist_px * (fps * 3.6 / 8.5))), 1)
+                        # No calibration means no metric speed. Keep only local
+                        # relative motion for association/queue heuristics.
+                        trk.relative_motion_px_per_frame = dist_px
 
                         if dist_px < 1.2:
                             trk.stationary_frames += 1
                         else:
                             trk.stationary_frames = 0
                     else:
-                        trk.speed_estimate_kph = 32.0
+                        trk.relative_motion_px_per_frame = 0.0
 
                     # Lane assignment & Queue detection
                     bc = bbox.bottom_center
                     trk.lane_id = self.assign_lane(bc)
                     in_q = self.is_in_queue_roi(bc)
-                    trk.is_queued = in_q and (trk.stationary_frames >= 3 or trk.speed_estimate_kph < 16.0)
+                    trk.is_queued = in_q and (trk.stationary_frames >= 3 or trk.relative_motion_px_per_frame < 1.2)
 
                     # Virtual crossing line check (y = 360)
                     if not trk.crossed_counting_line and len(trk.history) >= 2:
@@ -288,59 +288,37 @@ class C3VisionPipeline:
                     lane_id=self.assign_lane(bbox.bottom_center),
                     is_queued=False,
                     crossed_counting_line=(bbox.bottom_center[1] >= self.crossing_line_y),
-                    speed_estimate_kph=28.0,
+                    relative_motion_px_per_frame=0.0,
                     last_seen_frame=frame_idx,
                 )
                 self.tracks[trk_id] = new_trk
                 updated_tracks.append(trk_id)
 
             # Active frame snapshot
-            active_tracks_snapshot = []
             queue_veh_count = 0
             lane_vehicle_counts = {"lane_1_turn": 0, "lane_2_thru": 0, "lane_3_thru": 0}
 
             for trk_id in updated_tracks:
                 trk = self.tracks[trk_id]
                 if trk.last_seen_frame == frame_idx and trk.current_bbox:
-                    active_tracks_snapshot.append({
-                        "track_id": trk.track_id,
-                        "class": trk.vehicle_class,
-                        "bbox": [trk.current_bbox.x, trk.current_bbox.y, trk.current_bbox.w, trk.current_bbox.h],
-                        "lane": trk.lane_id,
-                        "speed_kph": trk.speed_estimate_kph,
-                        "is_queued": trk.is_queued,
-                        "crossed": trk.crossed_counting_line,
-                    })
                     lane_vehicle_counts[trk.lane_id] = lane_vehicle_counts.get(trk.lane_id, 0) + 1
                     if trk.is_queued:
                         queue_veh_count += 1
 
-            # Upstream impact for C1 (30s, 60s, 120s)
+            # Sample video is a separate observation lane. It does not fabricate
+            # whole-corridor arrivals, ETAs, occupancy, or metric speed.
             elapsed_sec = frame_idx / fps
-            simulated_inflow_rate = max(12.0, min(45.0, (len(active_tracks_snapshot) * 2.5) + (self.total_counted / max(1.0, elapsed_sec / 60.0))))
-            expected_c1_30 = int(simulated_inflow_rate * 0.5)
-            expected_c1_60 = int(simulated_inflow_rate * 1.0)
-            expected_c1_120 = int(simulated_inflow_rate * 2.0)
-            c1_risk = "high" if expected_c1_60 > 25 else "moderate" if expected_c1_60 > 14 else "low"
 
             frame_data = {
                 "frame_index": frame_idx,
                 "timestamp_s": round(elapsed_sec, 2),
-                "active_vehicles": len(active_tracks_snapshot),
+                "active_vehicles": sum(lane_vehicle_counts.values()),
                 "total_crossed": self.total_counted,
                 "queue_vehicles": queue_veh_count,
-                "occupancy_ratio": min(1.0, round((len(active_tracks_snapshot) * 0.08), 2)),
-                "average_speed_kph": round(np.mean([t["speed_kph"] for t in active_tracks_snapshot]) if active_tracks_snapshot else 32.0, 1),
-                "speed_label": f"{round(np.mean([t['speed_kph'] for t in active_tracks_snapshot]) if active_tracks_snapshot else 32.0, 1)} km/h (demo estimate)",
+                "image_occupancy_status": "unavailable",
+                "speed_status": "unavailable",
                 "lane_counts": lane_vehicle_counts,
-                "tracks": active_tracks_snapshot,
-                "c1_impact": {
-                    "expected_30s": expected_c1_30,
-                    "expected_60s": expected_c1_60,
-                    "expected_120s": expected_c1_120,
-                    "eta_range_s": [42, 68],
-                    "risk_level": c1_risk,
-                },
+                "flow_window_s": round(elapsed_sec, 2),
             }
             self.processed_frames.append(frame_data)
             frame_idx += 1
@@ -359,50 +337,43 @@ class C3VisionPipeline:
             "target_junction_id": "C1",
             "sample_video_label": "Intersection C3 North Approach (Non-Odisha Sample Feed)",
             "sample_provenance": "Controlled demonstration video footage (640x480, 10 fps)",
-            "privacy_disclosure": "Camera-local temporary IDs only; zero ANPR; zero facial recognition; no cross-camera identity tracking.",
+            "privacy_disclosure": "Only aggregate observations leave the sample pipeline; zero ANPR, face recognition, track IDs or trajectories are exported.",
             "is_calibrated": False,
-            "speed_disclaimer": "Uncalibrated demo speed estimate; not for legal or certified enforcement.",
+            "speed_disclaimer": "Uncalibrated video has no authoritative km/h measurement.",
             "total_frames": len(self.processed_frames),
             "fps": fps,
             "summary_metrics": {
                 "total_vehicles_observed": total_unique_tracks,
                 "total_crossed_line": self.total_counted,
                 "current_queue_estimate": last_frame.get("queue_vehicles", 0),
-                "current_occupancy_ratio": last_frame.get("occupancy_ratio", 0.35),
-                "average_speed_kph": last_frame.get("average_speed_kph", 30.5),
-                "speed_label": last_frame.get("speed_label", "30.5 km/h (demo estimate)"),
+                "image_occupancy_status": "unavailable",
+                "speed_status": "unavailable",
                 "class_breakdown": self.class_counts,
                 "lane_metrics": [
                     {
                         "lane_id": "lane_1_turn",
                         "label": "Lane 1 (Left / Turning)",
-                        "current_flow_vpm": round(last_frame.get("lane_counts", {}).get("lane_1_turn", 0) * 3.5, 1),
-                        "current_queue": min(4, last_frame.get("lane_counts", {}).get("lane_1_turn", 0)),
-                        "occupancy": 0.26,
+                        "current_flow_vpm": None,
+                        "current_queue": None,
+                        "occupancy": None,
                     },
                     {
                         "lane_id": "lane_2_thru",
                         "label": "Lane 2 (Through / Main)",
-                        "current_flow_vpm": round(last_frame.get("lane_counts", {}).get("lane_2_thru", 0) * 4.2, 1),
-                        "current_queue": min(6, last_frame.get("lane_counts", {}).get("lane_2_thru", 0)),
-                        "occupancy": 0.52,
+                        "current_flow_vpm": None,
+                        "current_queue": None,
+                        "occupancy": None,
                     },
                     {
                         "lane_id": "lane_3_thru",
                         "label": "Lane 3 (Through / Curb)",
-                        "current_flow_vpm": round(last_frame.get("lane_counts", {}).get("lane_3_thru", 0) * 2.8, 1),
-                        "current_queue": min(3, last_frame.get("lane_counts", {}).get("lane_3_thru", 0)),
-                        "occupancy": 0.22,
+                        "current_flow_vpm": None,
+                        "current_queue": None,
+                        "occupancy": None,
                     },
                 ],
             },
-            "upstream_c1_impact": last_frame.get("c1_impact", {
-                "expected_30s": 8,
-                "expected_60s": 17,
-                "expected_120s": 32,
-                "eta_range_s": [42, 68],
-                "risk_level": "moderate",
-            }),
+            "upstream_c1_impact": {"status": "unavailable", "reason": "Sample-video observation is not injected into the aggregate traffic model."},
             "frames": self.processed_frames,
         }
         return result_payload

@@ -46,7 +46,7 @@ try {
   );
   await page
     .getByRole("button", {
-      name: "Build seeded SUMO scenarios and reset",
+      name: "Build seeded aggregate-flow scenarios and reset",
       exact: true,
     })
     .click();

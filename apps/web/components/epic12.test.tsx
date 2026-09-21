@@ -34,8 +34,8 @@ describe("Epic 12: Vision Analytics & Presentation Polish (S36, S37, S38)", () =
 
     // Mandatory Disclaimers (PRD §8.5, §15.2, S36)
     expect(screen.getAllByText(/NON-ODISHA SAMPLE VIDEO FEED/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/TEMPORARY LOCAL IDS ONLY/i)).toBeInTheDocument();
-    expect(screen.getByText(/UNCALIBRATED SPEED: DEMO ESTIMATE ONLY/i)).toBeInTheDocument();
+    expect(screen.getByText(/AGGREGATES ONLY/i)).toBeInTheDocument();
+    expect(screen.getByText(/UNCALIBRATED SPEED: UNAVAILABLE/i)).toBeInTheDocument();
     expect(screen.getByText(/CORE SCENARIOS OPERATE INDEPENDENTLY/i)).toBeInTheDocument();
   });
 
@@ -58,11 +58,11 @@ describe("Epic 12: Vision Analytics & Presentation Polish (S36, S37, S38)", () =
     expect(screen.getByText(/Lane 3 \(Through \/ Curb\)/i)).toBeInTheDocument();
   });
 
-  it("renders uncalibrated demo speed estimate banner with explicit disclosure (S36)", () => {
+  it("marks uncalibrated metric speed unavailable (S36)", () => {
     render(<VisionAnalyticsPanel />);
 
-    expect(screen.getByText(/Demo Estimate \(Uncalibrated\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/Pixel-displacement ratio without ground survey calibration/i)).toBeInTheDocument();
+    expect(screen.getByText(/No calibrated speed measurement/i)).toBeInTheDocument();
+    expect(screen.getByText(/not an authoritative km\/h source/i)).toBeInTheDocument();
   });
 
   it("displays downstream impact on Corridor Junction C1 with 3 horizons and ETA (S37, PRD §8.5)", () => {
@@ -75,18 +75,12 @@ describe("Epic 12: Vision Analytics & Presentation Polish (S36, S37, S38)", () =
     expect(screen.getByText(/Estimated ETA to C1/i)).toBeInTheDocument();
   });
 
-  it("toggles overlay controls (bounding boxes, tracks, lanes, line, queue ROI) (S37)", () => {
+  it("keeps aggregate zone overlays without exposing boxes or track IDs (S37)", () => {
     render(<VisionAnalyticsPanel />);
 
-    const boxesBtn = screen.getByRole("button", { name: /Bounding Boxes/i });
-    expect(boxesBtn).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(boxesBtn);
-    expect(boxesBtn).toHaveAttribute("aria-pressed", "false");
-
-    const tracksBtn = screen.getByRole("button", { name: /Track IDs/i });
-    expect(tracksBtn).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(tracksBtn);
-    expect(tracksBtn).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByRole("button", { name: /Bounding Boxes/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Track IDs/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /Counting Line/i })).toBeInTheDocument();
   });
 
   it("supports video playback play/pause and frame stepping transport controls", () => {

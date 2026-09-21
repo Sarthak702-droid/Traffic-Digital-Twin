@@ -9,6 +9,18 @@ def validate_config(config):
     phases = {p['id']: p for p in config['phases']}
     if len(nodes) != len(config['nodes']) or len(moves) != len(config['movements']) or len(phases) != len(config['phases']):
         raise ValueError('Duplicate configuration IDs')
+    for link in links.values():
+        values = (link['length_m'], link['lanes'], link['storage_capacity_veh'], link['free_flow_speed_kph'])
+        if any(not math.isfinite(v) or v <= 0 for v in values):
+            raise ValueError('Invalid link geometry or capacity')
+        flow = config.get('flow_model', {})
+        cell_length = float(flow.get('cell_length_m', 40))
+        wave = float(flow.get('backward_wave_speed_kph', 15))
+        dt = float(flow.get('step_s', 1))
+        if any(not math.isfinite(v) or v <= 0 for v in (cell_length, wave, dt)):
+            raise ValueError('Invalid aggregate flow parameters')
+        if dt > cell_length / max(link['free_flow_speed_kph'], wave) * 3.6:
+            raise ValueError('Unstable aggregate flow step')
     conflicts = {frozenset(pair) for pair in config['conflicts']}
     for pair in conflicts:
         if len(pair) != 2 or not pair <= moves.keys():
@@ -131,6 +143,27 @@ class Signals:
     def apply(self, plan):
         validate_plan(self.config, plan)
         self.pending = dict(plan)
+
+    def snapshot(self):
+        """Return every scheduler field needed for deterministic continuation."""
+        return {
+            'plan': dict(self.plan),
+            'pending': dict(self.pending),
+            'state': {node: list(value) for node, value in self.state.items()},
+            'priority': dict(self.priority),
+            'recovering': bool(self.recovering),
+            'last_served': dict(self.last_served),
+            'tick': int(self.tick),
+        }
+
+    def restore(self, snapshot):
+        self.plan = dict(snapshot['plan'])
+        self.pending = dict(snapshot['pending'])
+        self.state = {node: list(value) for node, value in snapshot['state'].items()}
+        self.priority = dict(snapshot['priority'])
+        self.recovering = bool(snapshot['recovering'])
+        self.last_served = dict(snapshot['last_served'])
+        self.tick = int(snapshot['tick'])
 
     def advance(self):
         self.tick += 1

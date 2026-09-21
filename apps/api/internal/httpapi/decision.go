@@ -214,9 +214,6 @@ func validateChanges(n config.Network, state *pb.TrafficState, changes []*pb.Tim
 					if m.DownstreamCapacityVeh <= 0 && plan[p.ID] > current[p.ID] {
 						return fmt.Errorf("cannot extend release into blocked/full downstream link")
 					}
-					if m.OccupancyRatio >= 1.0 && plan[p.ID] > current[p.ID] {
-						return fmt.Errorf("cannot extend release into blocked/full downstream link")
-					}
 				}
 			}
 		}

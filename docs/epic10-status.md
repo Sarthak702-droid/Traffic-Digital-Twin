@@ -7,8 +7,8 @@ Epic 10 remains a deterministic, synthetic-only emergency scenario. Browser comm
 ## S31 — Track the simulated emergency route and ETA
 
 - The seeded `ambulance_corridor` scenario follows **C6 → C3 → C1 → C2**. The simulator emits only the published lifecycle states: `scheduled`, `pre_clearance`, `priority`, `recovery`, and `complete`.
-- The live state contract validates event identity, a route-aligned finite ETA array, vehicle ID, and the lifecycle enum before the API broadcasts or persists it.
-- The Emergency workspace now has a route-readiness console: reported route position, every route point’s ETA, C3/C1’s current signal indication and transition countdown, lifecycle track, and reset-to-same-seed action.
+- The live state contract validates event identity, a route-aligned finite modeled ETA array, and the lifecycle enum before the API broadcasts or persists it.
+- The Emergency workspace now has a route-readiness console: modeled route progress, every route point’s ETA, C3/C1’s current signal indication and transition countdown, lifecycle track, and reset-to-same-seed action.
 - C6 and C2 are explicitly shown as boundary route points with **Not configured** signal state. The UI does not invent a C2 signal or promise a green wave.
 - A failed, offline, unauthorised, or stale command remains disabled or presents the API error. The persistent simulation health and product-wide synthetic/no-live-control disclosure remain visible.
 
@@ -17,7 +17,7 @@ Epic 10 remains a deterministic, synthetic-only emergency scenario. Browser comm
 - The Python scheduler applies emergency preference only at normal safe transition boundaries: green → amber → all-red → priority. It retains conflict validation and downstream receiving-capacity gating for every permitted movement.
 - A manual mode or any timing lock makes the Go gateway reject an emergency start before it is sent to Python. The persistence module appends `emergency.rejected` with `rejected: safety_protection`, providing a durable safe outcome rather than silently overriding operator protection.
 - The panel displays live non-corridor queue displacement at controlled corridor junctions plus the configured recovery-cycle bound. During recovery, the simulator’s bounded fairness selection restores cross traffic; completion is shown as live scenario state, not as a queue-clearance guarantee.
-- The engine produces deterministic pre-dispatch ETAs, then substitutes SUMO-observed route ETAs once the virtual ambulance exists. It clears emergency priority after passage and reports bounded recovery/complete states.
+- The engine produces deterministic modeled ETAs throughout the synthetic event. It clears emergency priority after passage and reports bounded recovery/complete states; it does not claim observed vehicle position.
 
 ## Verification
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"time"
 	"traffic.local/twin/apps/api/internal/contracts"
 	pb "traffic.local/twin/packages/contracts/gen/go"
 )
@@ -23,6 +24,21 @@ func (s *Store) SaveLifecycle(ctx context.Context, data []byte) error {
 		return e
 	}
 	defer tx.Rollback(ctx)
+	if frame.SchemaVersion == "1.1" {
+		_, e = tx.Exec(ctx, "UPDATE scenario_runs SET engine_kind=$1,model_version=$2,metrics_version=$3,config_hash=$4 WHERE id=$5", frame.EngineKind, frame.ModelVersion, frame.MetricsVersion, frame.ConfigHash, frame.RunId)
+		if e != nil {
+			return e
+		}
+		// Persist public aggregate summaries at a bounded one-minute cadence;
+		// never persist individual cells or every 1 Hz state frame.
+		if int(frame.SimulationTimeS) > 0 && int(frame.SimulationTimeS)%60 == 0 {
+			windowStart := time.Unix(int64(frame.SimulationTimeS/60)*60, 0).UTC()
+			_, e = tx.Exec(ctx, "INSERT INTO traffic_state_snapshots(id,run_id,window_start,window_s,aggregate) VALUES($1,$2,$3,60,$4) ON CONFLICT(run_id,window_start,window_s) DO UPDATE SET aggregate=EXCLUDED.aggregate", UUID(), frame.RunId, windowStart, marshalProto(frame))
+			if e != nil {
+				return e
+			}
+		}
+	}
 	type transition struct {
 		kind, status string
 		payload      []byte

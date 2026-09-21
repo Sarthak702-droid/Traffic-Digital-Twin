@@ -37,13 +37,13 @@ export function corridorRows(network: Network, frame: TrafficState | null): Corr
 }
 
 function currentLocation(rows: CorridorRow[], stage: EmergencyStage | null): string {
-  if (!stage) return "Location unavailable until a valid live emergency event arrives.";
+  if (!stage) return "Modeled emergency progress unavailable until a valid event arrives.";
   if (stage === "scheduled") return "Awaiting deterministic virtual dispatch at C6.";
   if (stage === "recovery" || stage === "complete") return "Vehicle has cleared the configured corridor.";
   const passed = rows.reduce((latest, row, index) => row.eta === 0 ? index : latest, -1);
-  if (passed < 0) return "Vehicle position has not been reported by the simulator.";
-  if (passed >= rows.length - 1) return `Reported at ${rows[passed].nodeID}.`;
-  return `Reported between ${rows[passed].nodeID} and ${rows[passed + 1].nodeID}.`;
+  if (passed < 0) return "Modeled arrival window has not reached the corridor.";
+  if (passed >= rows.length - 1) return `Model indicates clearance through ${rows[passed].nodeID}.`;
+  return `Modeled between ${rows[passed].nodeID} and ${rows[passed + 1].nodeID}.`;
 }
 
 function displacedQueues(network: Network, frame: TrafficState | null, route: string[]) {
@@ -91,7 +91,7 @@ export function EmergencyCorridorPanel({
         <>
           <div className="emergency-location" role="status">
             <MapPin size={17} />
-            <div><span>REPORTED ROUTE POSITION</span><strong>{currentLocation(rows, stage)}</strong></div>
+            <div><span>MODELED ROUTE PROGRESS</span><strong>{currentLocation(rows, stage)}</strong></div>
           </div>
           <ol className="emergency-stage-track" aria-label="Emergency lifecycle">
             {stages.map((item, index) => <li key={item} className={index <= activeIndex ? "reached" : ""} aria-current={item === stage ? "step" : undefined}><span>{index < activeIndex ? <Check size={12} /> : index + 1}</span><small>{item.replace("_", " ")}</small></li>)}
@@ -115,7 +115,7 @@ export function EmergencyCorridorPanel({
           </div>
         </>
       ) : (
-        <div className="emergency-empty" role="status"><Siren size={21} /><p>Launch the seeded virtual ambulance corridor to receive route position, signal transitions and recovery progress. C6 and C2 are boundary route points; they have no configured signals.</p></div>
+        <div className="emergency-empty" role="status"><Siren size={21} /><p>Launch the seeded virtual ambulance corridor to view modeled ETA, safe signal transitions and recovery progress. C6 and C2 are boundary route points; they have no configured signals.</p></div>
       )}
 
       {blocked && <p className="emergency-blocked" role="alert"><AlertTriangle size={16} />{locked ? "Clear active manual timing locks before scheduling this protected scenario." : "A fresh authorized database and service connection is required to schedule the virtual scenario."}</p>}
