@@ -587,6 +587,15 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
     : queuePressure >= 0.3
     ? "Queue building"
     : "Free-moving frame";
+  const clipDurationS = Number(activeTelemetry?.duration_s ?? 10);
+  const replayTimeS = Number(activeFrameData?.time_s ?? currentFrameIdx / 10);
+  const replayProgress = clipDurationS > 0 ? Math.min(100, (replayTimeS / clipDurationS) * 100) : 0;
+  const peakActiveVehicles = streamFrames?.length
+    ? Math.max(...streamFrames.map((frame) => Number(frame?.active_count ?? 0)))
+    : displayActiveVehicles;
+  const peakQueueVehicles = streamFrames?.length
+    ? Math.max(...streamFrames.map((frame) => Number(frame?.queue_count ?? 0)))
+    : displayQueueVehicles;
 
   return (
     <div className="vision-container" data-testid="vision-analytics-panel">
@@ -1057,39 +1066,39 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
         </div>
       </div>
 
-      {/* Per-stream provenance and totals. This replaces the old C3-only
-          upstream card so CAM-01 through CAM-12 never inherit another feed's dashboard. */}
+      {/* Selected clip summary. All values below are derived from the active
+          stream, so CAM-01 through CAM-12 never inherit another feed's data. */}
       <section className="vision-upstream-card" aria-labelledby="upstream-heading">
         <div className="vision-card-header" style={{ marginBottom: "8px" }}>
           <h2 id="upstream-heading" style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "#e5edf5" }}>
-            {selectedCamera} Stream Coverage &amp; Network Scope
+            {selectedCamera} Clip Summary
           </h2>
-          <span className="vision-badge vision-badge-primary">{streamRole.networkUse.toUpperCase()}</span>
+          <span className="vision-badge vision-badge-success">LIVE REPLAY</span>
         </div>
         <p style={{ fontSize: "12px", color: "#8da5b8", margin: "0 0 12px 0" }}>
-          Dashboard values below belong to {selectedCamera} only. They come from its 10-second sample stream and are kept separate from central traffic state and recommendations.
+          {selectedCamera} · {activeCamInfo.approach} · Values update from the selected video stream as playback moves.
         </p>
 
         <div className="vision-upstream-grid">
           <div className="vision-upstream-box">
+            <span className="vision-upstream-box-label">Replay progress</span>
+            <span className="vision-upstream-box-val">{replayProgress.toFixed(0)}%</span>
+            <span className="vision-upstream-box-sub">{replayTimeS.toFixed(1)}s / {clipDurationS.toFixed(1)}s</span>
+          </div>
+          <div className="vision-upstream-box">
+            <span className="vision-upstream-box-label">Peak active vehicles</span>
+            <span className="vision-upstream-box-val">{peakActiveVehicles}</span>
+            <span className="vision-upstream-box-sub">Highest tracked frame in this clip</span>
+          </div>
+          <div className="vision-upstream-box">
+            <span className="vision-upstream-box-label">Peak queue ROI</span>
+            <span className="vision-upstream-box-val">{peakQueueVehicles} veh</span>
+            <span className="vision-upstream-box-sub">Highest queue observation in this clip</span>
+          </div>
+          <div className="vision-upstream-box">
             <span className="vision-upstream-box-label">Observed unique vehicles</span>
             <span className="vision-upstream-box-val">{displayTotalVehicles}</span>
-            <span className="vision-upstream-box-sub">{selectedCamera} complete clip</span>
-          </div>
-          <div className="vision-upstream-box">
-            <span className="vision-upstream-box-label">Counting-line crossings</span>
-            <span className="vision-upstream-box-val">{displayCrossed}</span>
-            <span className="vision-upstream-box-sub">Current replay position</span>
-          </div>
-          <div className="vision-upstream-box">
-            <span className="vision-upstream-box-label">Current queue ROI</span>
-            <span className="vision-upstream-box-val">{displayQueueVehicles} veh</span>
-            <span className="vision-upstream-box-sub">Frame-level observation</span>
-          </div>
-          <div className="vision-upstream-box">
-            <span className="vision-upstream-box-label">Model integration</span>
-            <span className="vision-upstream-box-val">—</span>
-            <span className="vision-upstream-box-sub">{streamRole.networkUse}; no central-state injection</span>
+            <span className="vision-upstream-box-sub">Whole {selectedCamera} video stream</span>
           </div>
         </div>
       </section>
