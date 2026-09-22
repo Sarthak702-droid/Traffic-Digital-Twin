@@ -1,0 +1,60 @@
+{
+  "schema_version": "screenshots-manifest-v1",
+  "generated_at": "2026-09-22T14:42:15+05:30",
+  "views": [
+    {
+      "view_id": "command_center_network_view",
+      "title": "Command Center C1-C6 Network Overview",
+      "route": "/",
+      "state_description": "Authoritative CTM link states, signal status, queue lengths, and active recommendations",
+      "authority_level": "MODELED_NETWORK_STATE"
+    },
+    {
+      "view_id": "vision_analytics_panel_cached",
+      "title": "Vision Analytics Panel (Cached Observations)",
+      "route": "/?view=vision",
+      "camera": "CAM-01",
+      "state_description": "Synchronized MP4 video playback with ITD v1.2 ByteTrack counting line and queue ROI overlay",
+      "authority_level": "OBSERVED_FROM_VIDEO",
+      "overlay_elements": ["lane_polygons", "counting_line", "queue_roi_zone"]
+    },
+    {
+      "view_id": "vision_analytics_panel_online",
+      "title": "Vision Analytics Panel (Online Inference Stream)",
+      "route": "/?view=vision&mode=online",
+      "camera": "CAM-02",
+      "state_description": "Concurrent multi-camera pipeline streaming with backpressure handling",
+      "authority_level": "OBSERVED_FROM_VIDEO"
+    },
+    {
+      "view_id": "decision_simulation_panel",
+      "title": "Candidate Signal Plan Decision & Simulation Comparison",
+      "route": "/?panel=decision",
+      "state_description": "Equal-snapshot 120s rollout comparison between baseline and proposed signal plans",
+      "authority_level": "FORECAST"
+    },
+    {
+      "view_id": "junction_drawer_c3",
+      "title": "Junction C3 Capacity & Manual Override Drawer",
+      "route": "/?drawer=junction-c3",
+      "state_description": "Manual phase hold, lock status, and capacity reduction sliders",
+      "authority_level": "OPERATOR_AUTHORITY"
+    },
+    {
+      "view_id": "vision_offline_recovery",
+      "title": "Vision Feed Offline & Reconnection State",
+      "route": "/?view=vision&offline=true",
+      "state_description": "Honest degraded status display with independent scenario operation guarantee",
+      "authority_level": "UNAVAILABLE"
+    }
+  ],
+  "geometry_evidence_previews": [
+    ".runtime/evidence/geometry_previews/CAM-01_geometry.png",
+    ".runtime/evidence/geometry_previews/CAM-02_geometry.png",
+    ".runtime/evidence/geometry_previews/CAM-03_geometry.png",
+    ".runtime/evidence/geometry_previews/CAM-04_geometry.png",
+    ".runtime/evidence/geometry_previews/CAM-05_geometry.png",
+    ".runtime/evidence/geometry_previews/CAM-06_geometry.png"
+  ],
+  "verification_status": "PASS"
+}

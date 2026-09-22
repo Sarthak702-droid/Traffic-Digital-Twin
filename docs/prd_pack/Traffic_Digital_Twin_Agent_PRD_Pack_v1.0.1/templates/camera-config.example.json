@@ -1,0 +1,23 @@
+{
+  "schema_version": "camera-config-template-v1",
+  "template_only": true,
+  "camera_id": "CAM-01",
+  "clip_id": null,
+  "media_sha256": null,
+  "geometry_version": null,
+  "status": "draft",
+  "reviewer_type": null,
+  "validation_level": "unreviewed",
+  "coordinate_space": "normalized_source_display_frame",
+  "road_polygons": [],
+  "counting_lines": [],
+  "direction_regions": [],
+  "queue_roi": null,
+  "metric_calibration": null,
+  "virtual_mapping": {
+    "incoming_link_id": "C2-C1",
+    "role": "external_boundary_profile",
+    "geographic_equivalence_claim": false
+  },
+  "evidence_paths": []
+}

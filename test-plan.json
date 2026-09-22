@@ -1,0 +1,125 @@
+{
+  "schema_version": "test-plan-v1",
+  "generated_at": "2026-09-22T14:15:00+05:30",
+  "target_tasks": [
+    {
+      "id": "T01",
+      "name": "Discover workspace, hardware and assets",
+      "test_type": "smoke_environment",
+      "expected_outputs": ["environment.json", "baseline-status.json", "blockers.json"],
+      "criteria": "Accurate detection of Pop!_OS, i7-1065G7, MX230, 12 videos, and ITD model; baseline tests recorded honestly."
+    },
+    {
+      "id": "T02",
+      "name": "Freeze schemas, clocks and evidence plan",
+      "test_type": "contract_freeze",
+      "expected_outputs": ["contracts-plan.md", "test-plan.json"],
+      "criteria": "Explicit 4-clock specification, CameraObservation schema, and PredictionSnapshot sanitizer definition."
+    },
+    {
+      "id": "T03",
+      "name": "Verify already-downloaded ITD v1.2 and dependency compatibility",
+      "test_type": "model_verification",
+      "expected_outputs": ["downloads.lock.json", "model-report.json", "services/vision/requirements.lock"],
+      "criteria": "SHA-256 match, 8 classes mapped, Ultralytics/ByteTrack loader verification, PyTorch CPU test."
+    },
+    {
+      "id": "T04",
+      "name": "Inventory twelve clips and source records",
+      "test_type": "media_verification",
+      "expected_outputs": ["asset-manifest.json", "media-review.json"],
+      "criteria": "12 clips indexed with SHA-256, duration, resolution, frame rate, and operational slot assignment."
+    },
+    {
+      "id": "T05",
+      "name": "Propose and verify camera geometry",
+      "test_type": "geometry_automation",
+      "expected_outputs": ["geometry-review.json", "packages/camera-config/cameras.json"],
+      "criteria": "Deterministic counting line, ROI polygon, and directional orientation for CAM-01..06 with valid coordinate bounds."
+    },
+    {
+      "id": "T06",
+      "name": "Implement detector, tracker and aggregate counts",
+      "test_type": "vision_analytics",
+      "expected_outputs": ["observation-manifest.json", "vision-test-report.json"],
+      "criteria": "Single-camera ByteTrack crossing counts, 5-second binning, valid JSONL observations matching camera-observation-v1 schema."
+    },
+    {
+      "id": "T07",
+      "name": "Implement concurrent processing",
+      "test_type": "concurrency_orchestration",
+      "expected_outputs": ["concurrency-test-report.json"],
+      "criteria": "Concurrent processing of 12 camera sessions, bounded queues, backpressure handling, isolated tracker states."
+    },
+    {
+      "id": "T08",
+      "name": "Repair flow dynamics and metrics",
+      "test_type": "numerical_dynamics",
+      "expected_outputs": ["conservation-test-report.json"],
+      "criteria": "Strict mass conservation, no negative queues, FIFO cell transfers, stability under CFL dt<=L/v condition."
+    },
+    {
+      "id": "T09",
+      "name": "Implement complete snapshot and sanitizer",
+      "test_type": "snapshot_sanitizer",
+      "expected_outputs": ["snapshot-equivalence-report.json", "causality-report.json"],
+      "criteria": "State continuation equivalence test from snapshot, zero future event or seed leakage into predictor input."
+    },
+    {
+      "id": "T10",
+      "name": "Implement video-derived boundary demand",
+      "test_type": "demand_adapter",
+      "expected_outputs": ["demand-profile-manifest.json", "demand-conservation-report.json"],
+      "criteria": "Delayed uniform release adapter from 5s bins, exact cumulative mass conservation check."
+    },
+    {
+      "id": "T11",
+      "name": "Implement causal demand forecasts and comparisons",
+      "test_type": "forecasting",
+      "expected_outputs": ["forecast-report.json", "candidate-test-report.json"],
+      "criteria": "Persistence and EWMA forecasting over 30s/60s/120s/300s horizons; candidate timing simulation scoring."
+    },
+    {
+      "id": "T12",
+      "name": "Implement Go API and persistence extensions",
+      "test_type": "api_persistence",
+      "expected_outputs": ["api-contract-report.json", "migration-test-report.json"],
+      "criteria": "REST/WebSocket observation endpoints, mode selection (cached vs online), migration for video observation runs."
+    },
+    {
+      "id": "T13",
+      "name": "Integrate actual video and graph UI",
+      "test_type": "ui_integration",
+      "expected_outputs": ["ui-test-report.json", "screenshots-manifest.json"],
+      "criteria": "Dual mode selection in UI, MP4 video player synchronization, source-derived flow charts."
+    },
+    {
+      "id": "T14",
+      "name": "Automate pre-annotation and qualified review",
+      "test_type": "annotation_provenance",
+      "expected_outputs": ["annotation-provenance.json", "reference-quality-report.json"],
+      "criteria": "Export pseudo-labels in YOLO format, agent review log, comparison against baseline sample counts."
+    },
+    {
+      "id": "T15",
+      "name": "Execute integrated normal and failure tests",
+      "test_type": "integration_tests",
+      "expected_outputs": ["integration-test-report.json"],
+      "criteria": "End-to-end simulation driven by video observations, camera disconnection degradation, surge recovery."
+    },
+    {
+      "id": "T16",
+      "name": "Benchmark target machine",
+      "test_type": "hardware_benchmark",
+      "expected_outputs": ["benchmark-report.json"],
+      "criteria": "FPS, latency (ms), CPU/VRAM usage for single camera and concurrent 12 sessions on target host."
+    },
+    {
+      "id": "T17",
+      "name": "Document, package and rehearse",
+      "test_type": "packaging_and_readiness",
+      "expected_outputs": ["readiness.json", "RUNBOOK.md", "ROLLBACK.md", "KNOWN_LIMITATIONS.md"],
+      "criteria": "Complete offline-ready package, documented procedures, honest readiness matrix."
+    }
+  ]
+}

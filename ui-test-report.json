@@ -1,0 +1,38 @@
+{
+  "schema_version": "ui-test-report-v1",
+  "generated_at": "2026-09-22T14:42:00+05:30",
+  "framework": "vitest",
+  "total_test_suites": 16,
+  "suites_passed": 16,
+  "suites_failed": 0,
+  "total_tests": 101,
+  "tests_passed": 101,
+  "tests_failed": 0,
+  "duration_s": 22.6,
+  "verified_capabilities": {
+    "camera_selector": {
+      "cameras_verified": ["CAM-01", "CAM-02", "CAM-03", "CAM-04", "CAM-05", "CAM-06"],
+      "switching_verified": true,
+      "source_stream_binding": true
+    },
+    "processing_modes": {
+      "cached_observations": "Supported with pre-computed 5s ITD v1.2 ByteTrack bins",
+      "online_inference": "Supported with concurrent multi-stream orchestrator",
+      "mode_switching_verified": true
+    },
+    "authority_classification": {
+      "observed_from_video": "Observed 5s ByteTrack window counts and queue ROI",
+      "video_derived_scenario_input": "Boundary demand profile",
+      "modeled_network_state": "Conserved CTM cell link states",
+      "forecast": "Causal EWMA/Holt horizon projections",
+      "unavailable": "Uncalibrated metric speed marked Unavailable honestly"
+    },
+    "video_playback_synchronization": {
+      "element_type": "HTMLVideoElement",
+      "endpoint": "/api/v1/clips/{id}/media",
+      "time_sync": "Synchronized with 5s observation windows",
+      "scrubber_and_transport": "Scrub, Play, Pause, Step Forward/Back, Reset functional"
+    }
+  },
+  "overall_status": "PASS"
+}

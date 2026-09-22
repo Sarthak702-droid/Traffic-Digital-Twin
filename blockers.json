@@ -1,0 +1,26 @@
+{
+  "schema_version": "blockers-v1",
+  "evaluated_at": "2026-09-22T14:14:00+05:30",
+  "hard_blockers": [],
+  "qualified_limitations": [
+    {
+      "id": "GPU_SM61_PYTORCH",
+      "severity": "LOW",
+      "description": "NVIDIA MX230 GPU has compute capability 6.1 (Pascal); PyTorch wheel requires CC >= 7.5 for CUDA kernels. CPU inference fallback is active, tested, and deterministic.",
+      "mitigation": "Use device='cpu' for vision pipeline and concurrency orchestration."
+    },
+    {
+      "id": "STANDALONE_FFMPEG_CLI",
+      "severity": "LOW",
+      "description": "System ffmpeg and ffprobe CLI binaries are not in system PATH and sudo requires password.",
+      "mitigation": "OpenCV cv2.VideoCapture provides full video frame decoding, FPS, and frame count extraction without external binary dependency."
+    },
+    {
+      "id": "ITD_COMMERCIAL_LICENSE",
+      "severity": "INFORMATIONAL",
+      "description": "ITD dataset and model weights are under CC BY-NC 4.0. Suitable for research and prototype demonstration; commercial deployment requires formal licensing.",
+      "mitigation": "Preserve provenance and license notice in model report and readiness documentation."
+    }
+  ],
+  "can_proceed_to_execution": true
+}

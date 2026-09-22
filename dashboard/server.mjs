@@ -25,20 +25,44 @@ const server = http.createServer(async (req,res) => {
       }
       return send(200,JSON.stringify(plan));
     }
-    if(path === '/evidence/epic1' || path === '/evidence/e01') return send(200,await readFile(resolve(root,'docs/epic1-acceptance.md'),'utf8'),'text/plain');
-    if(path === '/evidence/epic2' || path === '/evidence/e02') return send(200,await readFile(resolve(root,'docs/epic2-status.md'),'utf8'),'text/plain');
-    if(path === '/evidence/epic3' || path === '/evidence/e03') return send(200,await readFile(resolve(root,'docs/epic3-status.md'),'utf8'),'text/plain');
-    if(path === '/evidence/epic4' || path === '/evidence/e04') return send(200,await readFile(resolve(root,'docs/epic4-status.md'),'utf8'),'text/plain');
-    if(path === '/evidence/epic5' || path === '/evidence/e05') return send(200,await readFile(resolve(root,'docs/epic5-status.md'),'utf8'),'text/plain');
-    if(path === '/evidence/epic6' || path === '/evidence/e06') return send(200,await readFile(resolve(root,'docs/epic6-status.md'),'utf8'),'text/plain');
-    if(path === '/evidence/epic7' || path === '/evidence/e07') return send(200,await readFile(resolve(root,'docs/epic7-status.md'),'utf8'),'text/plain');
-    if(path === '/evidence/epic8' || path === '/evidence/e08') return send(200,await readFile(resolve(root,'docs/epic8-status.md'),'utf8'),'text/plain');
-    if(path === '/evidence/epic9' || path === '/evidence/e09') return send(200,await readFile(resolve(root,'docs/epic9-status.md'),'utf8'),'text/plain');
-    if(path === '/evidence/epic10' || path === '/evidence/e10') return send(200,await readFile(resolve(root,'docs/epic10-status.md'),'utf8'),'text/plain');
-    if(path === '/evidence/epic11' || path === '/evidence/e11') return send(200,await readFile(resolve(root,'docs/epic11-status.md'),'utf8'),'text/plain');
-    if(path === '/evidence/epic12' || path === '/evidence/e12') return send(200,await readFile(resolve(root,'docs/epic12-status.md'),'utf8'),'text/plain');
-    if(path === '/evidence/epic13' || path === '/evidence/e13') return send(200,await readFile(resolve(root,'docs/epic13-status.md'),'utf8'),'text/plain');
-    if(path === '/evidence/epic14' || path === '/evidence/e14') return send(200,await readFile(resolve(root,'docs/epic14-status.md'),'utf8'),'text/plain');
+    if(path.startsWith('/evidence/')) {
+      const target = decodeURIComponent(path.slice(10));
+      const epicMap = {
+        'epic1': 'docs/epic1-acceptance.md', 'e01': 'docs/epic1-acceptance.md',
+        'epic2': 'docs/epic2-status.md', 'e02': 'docs/epic2-status.md',
+        'epic3': 'docs/epic3-status.md', 'e03': 'docs/epic3-status.md',
+        'epic4': 'docs/epic4-status.md', 'e04': 'docs/epic4-status.md',
+        'epic5': 'docs/epic5-status.md', 'e05': 'docs/epic5-status.md',
+        'epic6': 'docs/epic6-status.md', 'e06': 'docs/epic6-status.md',
+        'epic7': 'docs/epic7-status.md', 'e07': 'docs/epic7-status.md',
+        'epic8': 'docs/epic8-status.md', 'e08': 'docs/epic8-status.md',
+        'epic9': 'docs/epic9-status.md', 'e09': 'docs/epic9-status.md',
+        'epic10': 'docs/epic10-status.md', 'e10': 'docs/epic10-status.md',
+        'epic11': 'docs/epic11-status.md', 'e11': 'docs/epic11-status.md',
+        'epic12': 'docs/epic12-status.md', 'e12': 'docs/epic12-status.md',
+        'epic13': 'docs/epic13-status.md', 'e13': 'docs/epic13-status.md',
+        'epic14': 'docs/epic14-status.md', 'e14': 'docs/epic14-status.md',
+        'epic15': 'docs/epic15-status.md', 'e15': 'docs/epic15-status.md',
+        'epic16': 'docs/epic16-status.md', 'e16': 'docs/epic16-status.md',
+        'epic17': 'docs/epic17-status.md', 'e17': 'docs/epic17-status.md',
+        'epic18': 'docs/epic18-status.md', 'e18': 'docs/epic18-status.md',
+        'epic19': 'docs/epic19-status.md', 'e19': 'docs/epic19-status.md'
+      };
+      const candidatePaths = [
+        epicMap[target.toLowerCase()],
+        target,
+        `docs/${target}`,
+        `.runtime/evidence/${target}`
+      ].filter(Boolean);
+
+      for (const rel of candidatePaths) {
+        try {
+          const content = await readFile(resolve(root, rel), 'utf8');
+          const mime = rel.endsWith('.json') ? 'application/json' : 'text/plain';
+          return send(200, content, mime);
+        } catch {}
+      }
+    }
     if(path === '/api/git') {
       try {
         const [{stdout:branch},{stdout:status}] = await Promise.all([run('git',['branch','--show-current'],{cwd:root}),run('git',['status','--short'],{cwd:root})]);

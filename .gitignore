@@ -15,3 +15,5 @@ docs/planning-dashboard/
 dist/
 bin/
 .pytest_cache/
+*.mp4
+*.pt

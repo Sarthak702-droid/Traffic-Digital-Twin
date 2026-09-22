@@ -1,0 +1,116 @@
+{
+  "schema_version": "vision-test-report-v1",
+  "evaluated_at": "2026-09-22T14:18:00+05:30",
+  "model": "best_xl_ITD_v1.2.pt",
+  "tracker": "ByteTrack",
+  "results_by_camera": {
+    "CAM-01": {
+      "status": "PASS",
+      "elapsed_s": 139.57,
+      "bins_generated": 4,
+      "total_crossings": 3,
+      "class_distribution": {
+        "two_wheeler": 0,
+        "autorickshaw": 0,
+        "car": 1,
+        "bus": 0,
+        "lcv": 1,
+        "truck": 0,
+        "bicycle": 0,
+        "pedestrain": 1
+      },
+      "queue_status": "estimated_visible_region",
+      "speed_status": "uncalibrated"
+    },
+    "CAM-02": {
+      "status": "PASS",
+      "elapsed_s": 110.18,
+      "bins_generated": 4,
+      "total_crossings": 18,
+      "class_distribution": {
+        "two_wheeler": 2,
+        "autorickshaw": 0,
+        "car": 12,
+        "bus": 0,
+        "lcv": 4,
+        "truck": 0,
+        "bicycle": 0,
+        "pedestrain": 0
+      },
+      "queue_status": "estimated_visible_region",
+      "speed_status": "uncalibrated"
+    },
+    "CAM-03": {
+      "status": "PASS",
+      "elapsed_s": 117.37,
+      "bins_generated": 4,
+      "total_crossings": 11,
+      "class_distribution": {
+        "two_wheeler": 0,
+        "autorickshaw": 0,
+        "car": 11,
+        "bus": 0,
+        "lcv": 0,
+        "truck": 0,
+        "bicycle": 0,
+        "pedestrain": 0
+      },
+      "queue_status": "estimated_visible_region",
+      "speed_status": "uncalibrated"
+    },
+    "CAM-04": {
+      "status": "PASS",
+      "elapsed_s": 244.64,
+      "bins_generated": 4,
+      "total_crossings": 6,
+      "class_distribution": {
+        "two_wheeler": 0,
+        "autorickshaw": 0,
+        "car": 2,
+        "bus": 1,
+        "lcv": 2,
+        "truck": 0,
+        "bicycle": 0,
+        "pedestrain": 1
+      },
+      "queue_status": "estimated_visible_region",
+      "speed_status": "uncalibrated"
+    },
+    "CAM-05": {
+      "status": "PASS",
+      "elapsed_s": 125.31,
+      "bins_generated": 4,
+      "total_crossings": 40,
+      "class_distribution": {
+        "two_wheeler": 12,
+        "autorickshaw": 3,
+        "car": 22,
+        "bus": 1,
+        "lcv": 1,
+        "truck": 0,
+        "bicycle": 0,
+        "pedestrain": 1
+      },
+      "queue_status": "estimated_visible_region",
+      "speed_status": "uncalibrated"
+    },
+    "CAM-06": {
+      "status": "PASS",
+      "elapsed_s": 109.21,
+      "bins_generated": 4,
+      "total_crossings": 0,
+      "class_distribution": {
+        "two_wheeler": 0,
+        "autorickshaw": 0,
+        "car": 0,
+        "bus": 0,
+        "lcv": 0,
+        "truck": 0,
+        "bicycle": 0,
+        "pedestrain": 0
+      },
+      "queue_status": "estimated_visible_region",
+      "speed_status": "uncalibrated"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": "clip-manifest-template-v1",
+  "template_only": true,
+  "expected_asset_count": 12,
+  "clips": [],
+  "required_per_clip_fields": [
+    "clip_id",
+    "local_path_override",
+    "sha256",
+    "source_url",
+    "rights_status",
+    "duration_s",
+    "width_px",
+    "height_px",
+    "rotation_deg",
+    "timebase",
+    "usable_segments",
+    "stationarity_status",
+    "visible_directions",
+    "queue_coverage",
+    "review_status"
+  ],
+  "notes": [
+    "Populate only from actual discovered files.",
+    "Eight historical source URLs in PRD Appendix A are not a verified local mapping.",
+    "Four filenames from the conversation do not prove twelve files are mounted."
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "schema_version": "readiness-template-v1",
+  "template_only": true,
+  "run_id": null,
+  "commit": null,
+  "labels": {
+    "ENGINEERING_DEMO_READY": {
+      "status": "NOT_RUN",
+      "evidence": [],
+      "blockers": []
+    },
+    "CONCURRENT_INFERENCE_SUPPORTED": {
+      "status": "NOT_RUN",
+      "evidence": [],
+      "blockers": []
+    },
+    "REALTIME_12_VALIDATED": {
+      "status": "NOT_RUN",
+      "evidence": [],
+      "blockers": []
+    },
+    "ACCURACY_VALIDATED": {
+      "status": "NOT_RUN",
+      "evidence": [],
+      "blockers": []
+    },
+    "COMMERCIAL_RIGHTS_CLEAR": {
+      "status": "NOT_RUN",
+      "evidence": [],
+      "blockers": []
+    }
+  },
+  "field_ready": {
+    "status": "OUT_OF_SCOPE",
+    "reason": "No live signal control or field validation is part of this release."
+  },
+  "performance_claims": [],
+  "known_limitations": []
+}

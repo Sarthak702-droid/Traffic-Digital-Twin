@@ -19,6 +19,9 @@ var decisions string
 //go:embed migrations/004_aggregate_flow.sql
 var aggregateFlow string
 
+//go:embed migrations/005_video_observations.sql
+var videoObservations string
+
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	tx, e := pool.Begin(ctx)
 	if e != nil {
@@ -70,6 +73,14 @@ func applyControl(ctx context.Context, tx pgx.Tx) error {
 	}
 	if !done {
 		if _, err := tx.Exec(ctx, aggregateFlow); err != nil {
+			return err
+		}
+	}
+	if err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=5)").Scan(&done); err != nil {
+		return err
+	}
+	if !done {
+		if _, err := tx.Exec(ctx, videoObservations); err != nil {
 			return err
 		}
 	}

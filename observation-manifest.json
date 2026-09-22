@@ -1,0 +1,60 @@
+{
+  "schema_version": "observation-manifest-v1",
+  "generated_at": "2026-09-22T14:18:00+05:30",
+  "observations": [
+    {
+      "camera_id": "CAM-01",
+      "video": "12937197_3840_2160_30fps.mp4",
+      "file_path": ".runtime/vision/observations/CAM-01_observations.jsonl",
+      "sha256": "483a0a539ddc1f15e7b21d4fb8d25ba72e861f86b2856ddf2b1cc0fa490b269f",
+      "bins_count": 4,
+      "total_crossings": 3,
+      "duration_s": 20.0
+    },
+    {
+      "camera_id": "CAM-02",
+      "video": "12954360_3840_2160_30fps.mp4",
+      "file_path": ".runtime/vision/observations/CAM-02_observations.jsonl",
+      "sha256": "3fa26f5b7396875bb1a6dcea0d518645ec5720a20c31076f3fa9ffd501e31f0b",
+      "bins_count": 4,
+      "total_crossings": 18,
+      "duration_s": 20.0
+    },
+    {
+      "camera_id": "CAM-03",
+      "video": "12960820_3840_2160_30fps.mp4",
+      "file_path": ".runtime/vision/observations/CAM-03_observations.jsonl",
+      "sha256": "8462970543ff993e8c413d0d8fee308717433e1ac57ef561bf5d47901812fe8d",
+      "bins_count": 4,
+      "total_crossings": 11,
+      "duration_s": 20.0
+    },
+    {
+      "camera_id": "CAM-04",
+      "video": "12972416_3840_2160_30fps.mp4",
+      "file_path": ".runtime/vision/observations/CAM-04_observations.jsonl",
+      "sha256": "79911ec8127b859fe34b7f4a195712f2d0ee675c5c55ca84b5367059597e39da",
+      "bins_count": 4,
+      "total_crossings": 6,
+      "duration_s": 20.0
+    },
+    {
+      "camera_id": "CAM-05",
+      "video": "13268898_3840_2160_30fps.mp4",
+      "file_path": ".runtime/vision/observations/CAM-05_observations.jsonl",
+      "sha256": "7edc2f14d1732a1cacc17b5b6e979dab358d8e52554c446e8a8ded2ddbda83ef",
+      "bins_count": 4,
+      "total_crossings": 40,
+      "duration_s": 20.0
+    },
+    {
+      "camera_id": "CAM-06",
+      "video": "13105470_3840_2160_30fps.mp4",
+      "file_path": ".runtime/vision/observations/CAM-06_observations.jsonl",
+      "sha256": "776976a335af1bd9952890a67b3b43e3f16c032e39b834dcc8b34f8488a577ce",
+      "bins_count": 4,
+      "total_crossings": 0,
+      "duration_s": 20.0
+    }
+  ]
+}

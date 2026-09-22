@@ -29,6 +29,24 @@ interface VisionAnalyticsPanelProps {
   initialOffline?: boolean;
 }
 
+export interface CameraSlot {
+  id: string;
+  label: string;
+  approach: string;
+  role: string;
+  resolution: string;
+  fps: number;
+}
+
+const CAMERA_SLOTS: CameraSlot[] = [
+  { id: "CAM-01", label: "CAM-01", approach: "C2 → C1 Approach", role: "external_boundary_input", resolution: "3840x2160", fps: 30 },
+  { id: "CAM-02", label: "CAM-02", approach: "C4 → C1 Approach", role: "external_boundary_input", resolution: "3840x2160", fps: 30 },
+  { id: "CAM-03", label: "CAM-03", approach: "C5 → C1 Approach", role: "external_boundary_input", resolution: "3840x2160", fps: 30 },
+  { id: "CAM-04", label: "CAM-04", approach: "C1 → C2 Internal", role: "internal_link_observation", resolution: "3840x2160", fps: 30 },
+  { id: "CAM-05", label: "CAM-05", approach: "C1 → C4 Internal", role: "internal_link_observation", resolution: "3840x2160", fps: 30 },
+  { id: "CAM-06", label: "CAM-06", approach: "C6 Approach", role: "external_boundary_input", resolution: "3840x2160", fps: 30 },
+];
+
 export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: VisionAnalyticsPanelProps) {
   const [data, setData] = useState<VisionAggregatePayload>(c3VisionFallbackData);
   const [isOffline, setIsOffline] = useState(initialOffline);
@@ -40,14 +58,34 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
   const [showQueueROI, setShowQueueROI] = useState(true);
   const [crossingPulse, setCrossingPulse] = useState(false);
 
+  // T13 Dual-mode & Camera selection
+  const [selectedCamera, setSelectedCamera] = useState<string>("CAM-01");
+  const [processingMode, setProcessingMode] = useState<"cached_observations" | "online_inference">("cached_observations");
+  const [liveObservations, setLiveObservations] = useState<any[]>([]);
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const playIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevCrossedCountRef = useRef<number>(0);
 
-  // Fetch live vision state from Go API gateway if available
+  // Fetch live vision state or real observations from Go API gateway
   useEffect(() => {
     if (isOffline) return;
     let isMounted = true;
+    
+    // Fetch observations for selected camera & mode
+    fetch(`/api/v1/observations?camera_id=${selectedCamera}&mode=${processingMode}`)
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then((payload) => {
+        if (isMounted && payload && Array.isArray(payload.observations) && payload.observations.length > 0) {
+          setLiveObservations(payload.observations);
+        }
+      })
+      .catch(() => {});
+
     fetch("/api/v1/vision/c3")
       .then((res) => {
         if (!res.ok) throw new Error("Vision endpoint unavailable");
@@ -64,7 +102,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
     return () => {
       isMounted = false;
     };
-  }, [isOffline]);
+  }, [isOffline, selectedCamera, processingMode]);
 
   const totalFrames = data.frames?.length || 240;
   const currentFrame: VisionFrame | null = data.frames?.[currentFrameIdx] ?? null;
@@ -327,6 +365,70 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
             <Activity size={12} aria-hidden="true" /> CORE SCENARIOS OPERATE INDEPENDENTLY
           </span>
         </div>
+
+        {/* T13 Stream Selection & Mode Controls */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "center", marginTop: "14px", padding: "10px 14px", background: "#161b22", borderRadius: "6px", border: "1px solid #30363d" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 600, color: "#8da5b8", textTransform: "uppercase", letterSpacing: "0.5px" }}>Active Camera:</span>
+            <div style={{ display: "flex", gap: "4px" }} role="group" aria-label="Camera Selector">
+              {CAMERA_SLOTS.map((cam) => (
+                <button
+                  key={cam.id}
+                  type="button"
+                  onClick={() => setSelectedCamera(cam.id)}
+                  aria-pressed={selectedCamera === cam.id}
+                  className={`vision-toggle-btn ${selectedCamera === cam.id ? "active" : ""}`}
+                  style={{ minHeight: "28px", padding: "2px 8px", fontSize: "11px" }}
+                >
+                  {cam.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" }}>
+            <span style={{ fontSize: "11px", fontWeight: 600, color: "#8da5b8", textTransform: "uppercase", letterSpacing: "0.5px" }}>Processing Mode:</span>
+            <div style={{ display: "flex", gap: "4px" }} role="group" aria-label="Processing Mode Selector">
+              <button
+                type="button"
+                onClick={() => setProcessingMode("cached_observations")}
+                aria-pressed={processingMode === "cached_observations"}
+                className={`vision-toggle-btn ${processingMode === "cached_observations" ? "active" : ""}`}
+                style={{ minHeight: "28px", padding: "2px 8px", fontSize: "11px" }}
+              >
+                Cached Observations (ITD v1.2)
+              </button>
+              <button
+                type="button"
+                onClick={() => setProcessingMode("online_inference")}
+                aria-pressed={processingMode === "online_inference"}
+                className={`vision-toggle-btn ${processingMode === "online_inference" ? "active" : ""}`}
+                style={{ minHeight: "28px", padding: "2px 8px", fontSize: "11px" }}
+              >
+                Online Inference Stream
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* PRD §19.3 Authority Classification Strip */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "10px", fontSize: "10px" }} role="region" aria-label="Authority Classification">
+          <span style={{ padding: "3px 8px", borderRadius: "4px", background: "rgba(16, 185, 129, 0.12)", color: "#10b981", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
+            <strong>OBSERVED FROM VIDEO:</strong> {selectedCamera} 5s Windows
+          </span>
+          <span style={{ padding: "3px 8px", borderRadius: "4px", background: "rgba(59, 130, 246, 0.12)", color: "#3b82f6", border: "1px solid rgba(59, 130, 246, 0.3)" }}>
+            <strong>VIDEO-DERIVED SCENARIO INPUT:</strong> Boundary Inflow
+          </span>
+          <span style={{ padding: "3px 8px", borderRadius: "4px", background: "rgba(168, 85, 247, 0.12)", color: "#a855f7", border: "1px solid rgba(168, 85, 247, 0.3)" }}>
+            <strong>MODELED NETWORK STATE:</strong> Conserved CTM Cells
+          </span>
+          <span style={{ padding: "3px 8px", borderRadius: "4px", background: "rgba(245, 158, 11, 0.12)", color: "#f59e0b", border: "1px solid rgba(245, 158, 11, 0.3)" }}>
+            <strong>FORECAST:</strong> EWMA Horizons
+          </span>
+          <span style={{ padding: "3px 8px", borderRadius: "4px", background: "rgba(239, 68, 68, 0.12)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.3)" }}>
+            <strong>UNAVAILABLE:</strong> Uncalibrated Speed
+          </span>
+        </div>
       </section>
 
       {/* Main Grid: Video Player on Left, Metrics on Right */}
@@ -336,7 +438,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
           <div className="vision-video-header">
             <div className="vision-video-header-title">
               <Video size={16} color="#64b5f6" aria-hidden="true" />
-              <span>Camera CAM-C3-NORTH (Approach to Junction C1)</span>
+              <span>Camera {selectedCamera} (Approach to Junction C1)</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <span
@@ -351,12 +453,30 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
             </div>
           </div>
 
-          <div className="vision-canvas-wrapper">
+          <div className="vision-canvas-wrapper" style={{ position: "relative" }}>
+            <video
+              ref={videoRef}
+              src={`/api/v1/clips/${selectedCamera}/media`}
+              muted
+              playsInline
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                zIndex: 1,
+                opacity: 0.85,
+              }}
+              aria-label="Authoritative MP4 Video Feed"
+            />
             <canvas
               ref={canvasRef}
               width={640}
               height={480}
               className="vision-canvas"
+              style={{ position: "relative", zIndex: 2 }}
               aria-label="Sample video viewport with aggregate measurement zones"
             />
           </div>
@@ -396,7 +516,14 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
               <button
                 type="button"
                 className="vision-transport-btn"
-                onClick={() => setIsPlaying(!isPlaying)}
+                onClick={() => {
+                  const next = !isPlaying;
+                  setIsPlaying(next);
+                  if (videoRef.current) {
+                    if (next) videoRef.current.play().catch(() => {});
+                    else videoRef.current.pause();
+                  }
+                }}
                 aria-label={isPlaying ? "Pause video" : "Play video"}
               >
                 {isPlaying ? <Pause size={18} /> : <Play size={18} />}
@@ -425,7 +552,10 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
               <button
                 type="button"
                 className="vision-transport-btn"
-                onClick={() => setCurrentFrameIdx(0)}
+                onClick={() => {
+                  setCurrentFrameIdx(0);
+                  if (videoRef.current) videoRef.current.currentTime = 0;
+                }}
                 aria-label="Reset video to frame 0"
                 title="Reset to beginning"
               >
@@ -439,7 +569,13 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
                   min={0}
                   max={totalFrames - 1}
                   value={currentFrameIdx}
-                  onChange={(e) => setCurrentFrameIdx(Number(e.target.value))}
+                  onChange={(e) => {
+                    const idx = Number(e.target.value);
+                    setCurrentFrameIdx(idx);
+                    if (videoRef.current && videoRef.current.duration) {
+                      videoRef.current.currentTime = (idx / totalFrames) * videoRef.current.duration;
+                    }
+                  }}
                   aria-label="Video frame scrubber"
                 />
                 <div className="vision-scrubber-labels">
@@ -458,7 +594,10 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
                     type="button"
                     className={`vision-toggle-btn ${playbackSpeed === spd ? "active" : ""}`}
                     style={{ minHeight: "32px", padding: "4px 8px", fontSize: "11px" }}
-                    onClick={() => setPlaybackSpeed(spd)}
+                    onClick={() => {
+                      setPlaybackSpeed(spd);
+                      if (videoRef.current) videoRef.current.playbackRate = spd;
+                    }}
                     aria-pressed={playbackSpeed === spd}
                   >
                     {spd}x
@@ -488,7 +627,11 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
             <div className="vision-card-header">
               <h3>
                 <Car size={16} color="#64b5f6" aria-hidden="true" />
-                Class Breakdown (Observed {summary?.total_vehicles_observed ?? 0} Vehicles)
+                Class Breakdown (Observed {
+                  liveObservations.length > 0
+                    ? liveObservations[Math.min(Math.floor(currentFrameIdx / 50), liveObservations.length - 1)]?.forward_count ?? summary?.total_vehicles_observed ?? 0
+                    : summary?.total_vehicles_observed ?? 0
+                } Vehicles)
               </h3>
               <span style={{ fontSize: "11px", color: "#8da5b8" }}>Crossed: {currentFrame?.total_crossed ?? summary?.total_crossed_line ?? 0}</span>
             </div>
@@ -496,31 +639,41 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
               <div className="vision-class-item">
                 <span className="vision-class-label">Bike</span>
                 <span className="vision-class-count" style={{ color: "#10b981" }}>
-                  {summary?.class_breakdown?.bike ?? 0}
+                  {liveObservations.length > 0
+                    ? (liveObservations[Math.min(Math.floor(currentFrameIdx / 50), liveObservations.length - 1)]?.class_counts?.["two wheeler"] ?? summary?.class_breakdown?.bike ?? 0)
+                    : (summary?.class_breakdown?.bike ?? 0)}
                 </span>
               </div>
               <div className="vision-class-item">
                 <span className="vision-class-label">Car</span>
                 <span className="vision-class-count" style={{ color: "#3b82f6" }}>
-                  {summary?.class_breakdown?.car ?? 0}
+                  {liveObservations.length > 0
+                    ? (liveObservations[Math.min(Math.floor(currentFrameIdx / 50), liveObservations.length - 1)]?.class_counts?.car ?? summary?.class_breakdown?.car ?? 0)
+                    : (summary?.class_breakdown?.car ?? 0)}
                 </span>
               </div>
               <div className="vision-class-item">
                 <span className="vision-class-label">Auto</span>
                 <span className="vision-class-count" style={{ color: "#f59e0b" }}>
-                  {summary?.class_breakdown?.auto ?? 0}
+                  {liveObservations.length > 0
+                    ? (liveObservations[Math.min(Math.floor(currentFrameIdx / 50), liveObservations.length - 1)]?.class_counts?.autorickshaw ?? summary?.class_breakdown?.auto ?? 0)
+                    : (summary?.class_breakdown?.auto ?? 0)}
                 </span>
               </div>
               <div className="vision-class-item">
                 <span className="vision-class-label">Bus</span>
                 <span className="vision-class-count" style={{ color: "#ef4444" }}>
-                  {summary?.class_breakdown?.bus ?? 0}
+                  {liveObservations.length > 0
+                    ? (liveObservations[Math.min(Math.floor(currentFrameIdx / 50), liveObservations.length - 1)]?.class_counts?.bus ?? summary?.class_breakdown?.bus ?? 0)
+                    : (summary?.class_breakdown?.bus ?? 0)}
                 </span>
               </div>
               <div className="vision-class-item">
                 <span className="vision-class-label">Truck</span>
                 <span className="vision-class-count" style={{ color: "#a855f7" }}>
-                  {summary?.class_breakdown?.truck ?? 0}
+                  {liveObservations.length > 0
+                    ? (liveObservations[Math.min(Math.floor(currentFrameIdx / 50), liveObservations.length - 1)]?.class_counts?.truck ?? summary?.class_breakdown?.truck ?? 0)
+                    : (summary?.class_breakdown?.truck ?? 0)}
                 </span>
               </div>
             </div>

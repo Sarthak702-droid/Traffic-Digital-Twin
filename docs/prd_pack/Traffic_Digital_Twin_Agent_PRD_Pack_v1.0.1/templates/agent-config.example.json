@@ -1,0 +1,98 @@
+{
+  "schema_version": "agent-config-template-v1",
+  "template_only": true,
+  "repository": {
+    "url": "https://github.com/Sarthak702-droid/Traffic-Digital-Twin",
+    "expected_baseline_commit": "d6d774f6fb187ffc07925e0768add15ab53d548c",
+    "local_path": null,
+    "preserve_uncommitted_changes": true
+  },
+  "assets": {
+    "authorized_search_roots": [],
+    "expected_unique_video_count": 12,
+    "itd_checkpoint_path": null,
+    "rediscover_missing_assets": true,
+    "allow_unapproved_downloads": false,
+    "itd_version": "1.2",
+    "itd_download_status": "downloaded_owner_confirmed",
+    "itd_verification_status": "NOT_VERIFIED",
+    "reuse_existing_itd_checkpoint": true,
+    "allow_itd_redownload": false
+  },
+  "agent": {
+    "mode": "agent_led",
+    "geometry_review_policy": "agent_accepted_demo_with_evidence",
+    "annotation_review_policy": "agent_reviewed_not_independent",
+    "independent_accuracy_claim_allowed": false,
+    "max_concurrent_build_workstreams": 3,
+    "serialize_gpu_benchmarks": true
+  },
+  "permissions": {
+    "paid_resource_budget": 0,
+    "budget_currency": null,
+    "allow_external_media_upload": false,
+    "allow_main_push": false,
+    "allow_raw_asset_deletion": false,
+    "allow_driver_changes": false,
+    "intended_use_rights_status": "UNRESOLVED"
+  },
+  "runtime": {
+    "processing_modes_required": [
+      "cached_observations",
+      "online_inference"
+    ],
+    "media_source": "recorded_video",
+    "max_camera_sessions": 12,
+    "target_inference_fps": 8,
+    "batch_max": 4,
+    "batch_wait_ms": 20,
+    "queue_frames_per_camera": 4,
+    "recorded_overload_policy": "backpressure",
+    "state_interval_s": 1,
+    "analysis_interval_s": 5,
+    "control_target": "virtual_only"
+  },
+  "observations": {
+    "bin_s": 5,
+    "missing_is_zero": false,
+    "source_time_required": true,
+    "publish_tracks": false,
+    "output_dir": ".runtime/vision/observations"
+  },
+  "demand": {
+    "provider_options": [
+      "seeded",
+      "video_profile"
+    ],
+    "default_profile_mapping": "causal_delayed_uniform",
+    "internal_link_injection_allowed": false,
+    "default_scale": 1.0,
+    "eof_policy": "pause_at_committed_watermark"
+  },
+  "forecast": {
+    "baseline": "persistence",
+    "default": "ewma",
+    "alpha_starting_assumption": 0.3,
+    "warmup_valid_bins": 6,
+    "challenger": "damped_holt",
+    "challenger_promotion_required": true,
+    "horizons_s": [
+      30,
+      60,
+      120,
+      300
+    ],
+    "candidate_horizon_s": 120,
+    "allow_hidden_future_data": false,
+    "uncertainty_type": "named_scenarios_not_confidence_intervals"
+  },
+  "outputs": {
+    "evidence_dir": ".runtime/evidence",
+    "readiness_file": ".runtime/evidence/readiness.json"
+  },
+  "unresolved_owner_inputs": [
+    "authorized_asset_roots",
+    "intended_use_and_permissions",
+    "presentation_deadline_if_any"
+  ]
+}

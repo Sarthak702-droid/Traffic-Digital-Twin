@@ -1,0 +1,18 @@
+{
+  "schema_version": "downloads-lock-v1",
+  "locked_at": "2026-09-22T14:15:00+05:30",
+  "assets": [
+    {
+      "name": "ITD v1.2 Pretrained Checkpoint",
+      "official_source": "https://teg-iitr.github.io/ITD-Indian-traffic-dataset/",
+      "github_repository": "https://github.com/teg-iitr/ITD-Indian-traffic-dataset",
+      "license": "Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)",
+      "file_path": ".runtime/models/itd-v1.2/best_xl_ITD_v1.2.pt",
+      "original_path": "/home/sarthaktripathy/Downloads/best_xl_ITD_v1.2.pt",
+      "size_bytes": 114434706,
+      "sha256": "06006ecb5fe52a348ceed805bf0aa6b32af7e24e689d09a6582f6d53159d6b00",
+      "status": "VERIFIED_EXISTING_LOCAL",
+      "download_action_taken": "NONE_REUSED_LOCAL"
+    }
+  ]
+}

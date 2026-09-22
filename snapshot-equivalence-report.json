@@ -1,0 +1,11 @@
+{
+  "schema_version": "snapshot-equivalence-report-v1",
+  "evaluated_at": "2026-09-22T14:33:00+05:30",
+  "status": "PASS",
+  "continuation_equivalent": true,
+  "total_steps": 30,
+  "fork_step": 15,
+  "max_stock_difference": 1.000000000139778e-05,
+  "boundary_exits_difference": 1.994760703551482e-06,
+  "backlog_difference": 0.0
+}

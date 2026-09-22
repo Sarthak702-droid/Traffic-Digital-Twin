@@ -1,0 +1,57 @@
+{
+  "schema_version": "readiness-report-v1",
+  "generated_at": "2026-09-22T14:47:00+05:30",
+  "prd_version": "1.0.1",
+  "repository": {
+    "url": "https://github.com/Sarthak702-droid/Traffic-Digital-Twin",
+    "branch": "feature/itd-traffic-twin-v1",
+    "baseline_commit": "d6d774f6fb187ffc07925e0768add15ab53d548c"
+  },
+  "overall_release_readiness": "READY_FOR_QUALIFIED_DEMO_AND_REVIEW",
+  "tasks_summary": {
+    "total_tasks": 17,
+    "completed_tasks": 17,
+    "blocked_independent_gates": 1
+  },
+  "tasks": {
+    "T01": {"status": "DONE", "title": "Hardware & baseline discovery", "evidence": "baseline-status.json"},
+    "T02": {"status": "DONE", "title": "Contracts & time semantics plan", "evidence": "contracts-plan.md"},
+    "T03": {"status": "DONE", "title": "ITD checkpoint verification", "evidence": "model-report.json"},
+    "T04": {"status": "DONE", "title": "Media inventory & slot mapping", "evidence": "asset-manifest.json"},
+    "T05": {"status": "DONE", "title": "Automated geometry proposals", "evidence": "geometry-review.json"},
+    "T06": {"status": "DONE", "title": "Vision detection, tracking & 5s bins", "evidence": "observation-manifest.json"},
+    "T07": {"status": "DONE", "title": "Concurrent multi-stream orchestrator", "evidence": "concurrency-test-report.json"},
+    "T08": {"status": "DONE", "title": "Flow dynamics & mass conservation", "evidence": "conservation-test-report.json"},
+    "T09": {"status": "DONE", "title": "Simulation snapshot & sanitizer", "evidence": "snapshot-equivalence-report.json"},
+    "T10": {"status": "DONE", "title": "Video-derived demand adapter", "evidence": "demand-profile-manifest.json"},
+    "T11": {"status": "DONE", "title": "Causal demand forecasts & comparison", "evidence": "forecast-report.json"},
+    "T12": {"status": "DONE", "title": "Go API & persistence extensions", "evidence": "api-contract-report.json"},
+    "T13": {"status": "DONE", "title": "Actual video & graph UI integration", "evidence": "ui-test-report.json"},
+    "T14": {"status": "DONE", "title": "Pre-annotation & review evaluation", "evidence": "annotation-provenance.json"},
+    "T15": {"status": "DONE", "title": "Integrated normal and failure tests", "evidence": "integration-test-report.json"},
+    "T16": {"status": "DONE", "title": "Target-machine benchmark", "evidence": "benchmark-report.json"},
+    "T17": {"status": "DONE", "title": "Document, package and rehearse", "evidence": "readiness.json"}
+  },
+  "runtime_mode_readiness": {
+    "cached_observations": {
+      "status": "READY",
+      "realtime_supported": true,
+      "latency_ms": 0.5,
+      "description": "Deterministic 5s observations pre-computed using authentic ITD v1.2 YOLO and ByteTrack; zero lag on host machine."
+    },
+    "online_concurrent_inference": {
+      "status": "FUNCTIONAL_CPU_BOUND",
+      "realtime_12_validated": false,
+      "achieved_fps_per_stream": 0.28,
+      "description": "Functional multi-camera worker architecture with bounded queues and backpressure; CPU execution limits aggregate throughput."
+    }
+  },
+  "independent_validation_gate": {
+    "status": "BLOCKED_WITHOUT_INDEPENDENT_GROUND_TRUTH",
+    "description": "No human-annotated ground-truth datasets exist for the 12 video clips; agent self-agreement is not claimed as municipal accuracy."
+  },
+  "speed_measurement_status": {
+    "status": "UNAVAILABLE",
+    "description": "Uncalibrated perspective video cannot produce authoritative km/h speed; explicitly marked Unavailable across UI and API."
+  }
+}

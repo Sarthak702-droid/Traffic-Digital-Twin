@@ -1,0 +1,38 @@
+{
+  "schema_version": "api-contract-report-v1",
+  "generated_at": "2026-09-22T14:32:00+05:30",
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/v1/observations",
+      "parameters": ["camera_id", "start_s", "end_s", "mode"],
+      "schema_version": "camera-observation-v1",
+      "status": "IMPLEMENTED_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/cameras",
+      "schema_version": "camera-config-v1",
+      "status": "IMPLEMENTED_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/demand-profiles",
+      "schema_version": "demand-profile-manifest-v1",
+      "status": "IMPLEMENTED_VERIFIED"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/vision/{id}",
+      "schema_version": "c3-vision-v1",
+      "status": "RETAINED_COMPATIBLE"
+    },
+    {
+      "method": "GET",
+      "path": "/ws/v1/live",
+      "status": "WEBSOCKET_STREAMING_ACTIVE"
+    }
+  ],
+  "go_test_status": "PASS",
+  "go_test_duration_s": 4.85
+}
