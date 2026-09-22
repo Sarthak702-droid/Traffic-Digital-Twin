@@ -255,7 +255,15 @@ def _listener_pids(ports: set[int], proc_root: Path = Path("/proc")) -> set[int]
                     found.add(int(entry.name))
                     break
 
-    # Supplemental host-level resolution using lsof and fuser
+    # Supplemental host-level resolution using ss, lsof, and fuser
+    try:
+        ss_filter = " or ".join(f"sport = :{p}" for p in ports)
+        out = subprocess.run(["ss", "-tlnp", ss_filter], capture_output=True, text=True, timeout=1)
+        import re
+        for match in re.finditer(r"pid=(\d+)", out.stdout):
+            found.add(int(match.group(1)))
+    except Exception:
+        pass
     for p in ports:
         try:
             out = subprocess.run(["lsof", "-ti", f":{p}"], capture_output=True, text=True, timeout=1)
@@ -416,7 +424,7 @@ def cleanup_stale_services():
                 break
             time.sleep(0.08)
 
-    # If any port is still busy, check if there are newly resolved listener PIDs and force kill them
+    # If any port is still busy, forcefully kill remaining listener processes and release ports
     busy_ports = [p for p in ports if check_port("127.0.0.1", p, timeout=0.2)]
     if busy_ports:
         leftover_pids = _listener_pids(set(busy_ports)) - {os.getpid()}
@@ -424,7 +432,27 @@ def cleanup_stale_services():
             log(f"Force-stopping remaining listener process(es) on port(s) {busy_ports}: {leftover_pids}")
             for pid in leftover_pids:
                 _terminate_pid(pid, signal.SIGKILL)
-            time.sleep(0.5)
+
+        # Use fuser and lsof to forcefully drop lingering sockets on still-busy ports
+        for p in busy_ports:
+            try:
+                subprocess.run(["fuser", "-k", "-9", f"{p}/tcp"], capture_output=True, timeout=1)
+            except Exception:
+                pass
+            try:
+                out = subprocess.run(["lsof", "-ti", f":{p}"], capture_output=True, text=True, timeout=1)
+                for line in out.stdout.splitlines():
+                    if line.strip().isdigit():
+                        _terminate_pid(int(line.strip()), signal.SIGKILL)
+            except Exception:
+                pass
+
+        # Wait up to 3.0s for the kernel to release all busy ports
+        deadline = time.monotonic() + 3.0
+        while time.monotonic() < deadline:
+            if not any(check_port("127.0.0.1", p, timeout=0.1) for p in busy_ports):
+                break
+            time.sleep(0.1)
 
     busy = [str(p) for p in ports if check_port("127.0.0.1", p, timeout=0.2)]
     if busy:
@@ -543,12 +571,24 @@ def main():
 
     signal.signal(signal.SIGINT, shutdown)
     signal.signal(signal.SIGTERM, shutdown)
+    try:
+        signal.signal(signal.SIGHUP, shutdown)
+    except (AttributeError, ValueError):
+        pass
+
+    def _set_pdeathsig():
+        try:
+            import ctypes
+            libc = ctypes.CDLL("libc.so.6")
+            libc.prctl(1, signal.SIGTERM)  # PR_SET_PDEATHSIG = 1
+        except Exception:
+            pass
 
     log("Starting services stack...")
     try:
         for name, cmd in commands:
             log(f"Launching {name}...")
-            proc = subprocess.Popen(cmd, env=env, cwd=str(ROOT), start_new_session=True)
+            proc = subprocess.Popen(cmd, env=env, cwd=str(ROOT), start_new_session=True, preexec_fn=_set_pdeathsig)
             children.append((name, proc))
             _write_service_state(children)
 
