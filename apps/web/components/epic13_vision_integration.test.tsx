@@ -24,16 +24,18 @@ afterEach(() => {
 });
 
 describe("T13: Vision & Network UI Integration (PRD §19.3)", () => {
-  it("renders camera selector with CAM-01 through CAM-06 and switches cameras", () => {
+  it("renders all 12 camera selectors and switches to the matching stream dashboard", () => {
     render(<VisionAnalyticsPanel />);
 
-    // Verify all 6 camera buttons exist
+    // Verify the first six cameras and the second bank of six all exist.
     const cam1 = screen.getByRole("button", { name: "CAM-01" });
     const cam2 = screen.getByRole("button", { name: "CAM-02" });
     const cam3 = screen.getByRole("button", { name: "CAM-03" });
     const cam4 = screen.getByRole("button", { name: "CAM-04" });
     const cam5 = screen.getByRole("button", { name: "CAM-05" });
     const cam6 = screen.getByRole("button", { name: "CAM-06" });
+    const cam7 = screen.getByRole("button", { name: "CAM-07" });
+    const cam12 = screen.getByRole("button", { name: "CAM-12" });
 
     expect(cam1).toBeInTheDocument();
     expect(cam2).toBeInTheDocument();
@@ -41,16 +43,25 @@ describe("T13: Vision & Network UI Integration (PRD §19.3)", () => {
     expect(cam4).toBeInTheDocument();
     expect(cam5).toBeInTheDocument();
     expect(cam6).toBeInTheDocument();
+    expect(cam7).toBeInTheDocument();
+    expect(cam12).toBeInTheDocument();
 
     // Default selected camera is CAM-01
     expect(cam1).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByText(/Camera CAM-01 \(Approach to Junction C1\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Camera CAM-01 \(C2 → C1 Approach\)/i)).toBeInTheDocument();
 
     // Switch to CAM-02
     fireEvent.click(cam2);
     expect(cam2).toHaveAttribute("aria-pressed", "true");
     expect(cam1).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByText(/Camera CAM-02 \(Approach to Junction C1\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Camera CAM-02 \(C4 → C1 Approach\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/CAM-02 Stream Dashboard/i)).toBeInTheDocument();
+
+    // A stream in the second bank receives its own selected-camera dashboard too.
+    fireEvent.click(cam12);
+    expect(cam12).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText(/Camera CAM-12 \(Intersection 4\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/CAM-12 Stream Dashboard/i)).toBeInTheDocument();
   });
 
   it("renders dual processing modes and toggles between cached and online inference", () => {
@@ -77,7 +88,7 @@ describe("T13: Vision & Network UI Integration (PRD §19.3)", () => {
 
     // Check all 5 authority classification labels
     expect(screen.getByText(/OBSERVED FROM VIDEO:/i)).toBeInTheDocument();
-    expect(screen.getByText(/VIDEO-DERIVED SCENARIO INPUT:/i)).toBeInTheDocument();
+    expect(screen.getByText(/VIDEO STREAM SCOPE:/i)).toBeInTheDocument();
     expect(screen.getByText(/MODELED NETWORK STATE:/i)).toBeInTheDocument();
     expect(screen.getByText(/FORECAST:/i)).toBeInTheDocument();
     expect(screen.getByText(/UNAVAILABLE:/i)).toBeInTheDocument();

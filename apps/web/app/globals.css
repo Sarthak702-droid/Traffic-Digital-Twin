@@ -4199,6 +4199,56 @@ input, textarea, select { max-width: 100%; font-size: 1rem; }
   gap: 8px;
 }
 
+/* Per-camera dashboard. Values are sourced from the selected clip telemetry. */
+.vision-stream-dashboard {
+  padding-bottom: 14px;
+}
+.vision-stream-role {
+  color: #75bff1;
+  border: 1px solid #27506c;
+  background: #102536;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.35px;
+  padding: 4px 7px;
+  text-transform: uppercase;
+}
+.vision-stream-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.vision-stream-kpis > div {
+  background: #101820;
+  border: 1px solid #213241;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 9px;
+}
+.vision-stream-kpis span,
+.vision-stream-kpis small {
+  color: #8da5b8;
+  font-size: 10px;
+}
+.vision-stream-kpis strong {
+  color: #e5edf5;
+  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+.vision-stream-coverage,
+.vision-roi-note {
+  color: #6e8697;
+  font-size: 10px;
+  line-height: 1.45;
+  margin: 10px 0 0;
+  overflow-wrap: anywhere;
+}
+
 /* Speed Banner (Demo Estimate) */
 .vision-speed-banner {
   background: #172433;
@@ -4426,6 +4476,9 @@ input, textarea, select { max-width: 100%; font-size: 1rem; }
   .vision-classes-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  .vision-stream-kpis {
+    grid-template-columns: 1fr;
+  }
   .vision-upstream-grid {
     grid-template-columns: 1fr;
   }
@@ -4500,4 +4553,3 @@ input, textarea, select { max-width: 100%; font-size: 1rem; }
 .network-tab-btn:active {
   transform: scale(0.98);
 }
-

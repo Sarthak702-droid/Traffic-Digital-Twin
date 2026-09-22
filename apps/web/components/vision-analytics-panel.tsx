@@ -55,6 +55,77 @@ export const ALL_CAMERA_SLOTS: CameraSlot[] = [
   { id: "CAM-12", label: "CAM-12", approach: "Intersection 4", videoFile: "14938748_2160_3840_30fps.mp4", role: "concurrent_benchmark_only", resolution: "2160x3840 (4K UHD)", fps: 30 },
 ];
 
+type StreamLaneMetric = {
+  id: string;
+  label: string;
+  active: number;
+  queue: number;
+  share: number;
+};
+
+const STREAM_ROLE_DETAILS: Record<CameraSlot["role"], { label: string; description: string; networkUse: string }> = {
+  external_boundary_input: {
+    label: "Boundary approach",
+    description: "This sample observes an incoming boundary approach. It remains an isolated video observation until an approved estimator is enabled.",
+    networkUse: "Boundary observation only",
+  },
+  internal_link_observation: {
+    label: "Internal corridor link",
+    description: "This sample observes an internal corridor movement. It is displayed independently and does not override modeled network state.",
+    networkUse: "Internal observation only",
+  },
+  concurrent_benchmark_only: {
+    label: "Independent benchmark stream",
+    description: "This sample is a separate benchmark stream. It is not mapped to a live junction or injected into the traffic model.",
+    networkUse: "No network injection",
+  },
+};
+
+function getStreamLaneMetrics(frame: any, telemetry: any): StreamLaneMetric[] {
+  const detections = frame?.detections || [];
+  const bands = [
+    { id: "left", label: "Left ROI band", active: 0 },
+    { id: "centre", label: "Centre ROI band", active: 0 },
+    { id: "right", label: "Right ROI band", active: 0 },
+  ];
+
+  detections.forEach((detection: any) => {
+    const bbox = detection?.bbox;
+    if (!Array.isArray(bbox) || bbox.length < 4) return;
+    const centreX = (Number(bbox[0]) + Number(bbox[2])) / 2;
+    const band = centreX < 1 / 3 ? 0 : centreX < 2 / 3 ? 1 : 2;
+    bands[band].active += 1;
+  });
+
+  const activeCount = Number(frame?.active_count ?? detections.length ?? 0);
+  const queueCount = Number(frame?.queue_count ?? 0);
+  const knownActive = bands.reduce((total, band) => total + band.active, 0);
+  const effectiveActive = Math.max(activeCount, knownActive, 1);
+
+  return bands.map((band) => {
+    const share = band.active / effectiveActive;
+    return {
+      id: band.id,
+      label: band.label,
+      active: band.active,
+      // The pipeline supplies a stream-wide queue count, so distribute it by the
+      // observed ROI-band activity rather than pretending it is lane calibrated.
+      queue: Math.round(queueCount * share),
+      share,
+    };
+  });
+}
+
+function getObservedFlowVpm(frames: any[] | undefined, frameIndex: number): number | null {
+  if (!frames?.length) return null;
+  const current = frames[Math.min(frameIndex, frames.length - 1)];
+  const windowStart = frames[Math.max(0, frameIndex - 49)];
+  const elapsedSeconds = Number(current?.time_s) - Number(windowStart?.time_s);
+  const crossed = Number(current?.cumulative_crossed ?? 0) - Number(windowStart?.cumulative_crossed ?? 0);
+  if (!Number.isFinite(elapsedSeconds) || elapsedSeconds <= 0 || !Number.isFinite(crossed)) return null;
+  return Math.max(0, (crossed / elapsedSeconds) * 60);
+}
+
 function safePlayVideo(video: HTMLVideoElement | null) {
   if (!video) return;
   if (typeof process !== "undefined" && process.env?.NODE_ENV === "test") return;
@@ -482,12 +553,19 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
   }
 
   const summary = data.summary_metrics;
-  const upstream = data.upstream_c1_impact;
+  const streamRole = STREAM_ROLE_DETAILS[activeCamInfo.role];
+  const streamFrames = activeTelemetry?.frames as any[] | undefined;
 
-  // Active counts from telemetry or fallback
+  // Each selected video owns the numbers in its dashboard. The C3 fallback is
+  // used only until the selected clip's telemetry has loaded.
   const displayTotalVehicles = activeTelemetry?.summary?.total_unique_vehicles ?? summary?.total_vehicles_observed ?? 28;
   const displayCrossed = activeFrameData?.cumulative_crossed ?? activeTelemetry?.summary?.total_crossed ?? summary?.total_crossed_line ?? 0;
+  const displayActiveVehicles = activeFrameData?.active_count ?? 0;
+  const displayQueueVehicles = activeFrameData?.queue_count ?? 0;
   const classBreakdown = activeTelemetry?.summary?.class_breakdown || summary?.class_breakdown || {};
+  const laneMetrics = getStreamLaneMetrics(activeFrameData, activeTelemetry);
+  const observedFlowVpm = getObservedFlowVpm(streamFrames, currentFrameIdx);
+  const coverageLabel = activeTelemetry ? `${activeTelemetry.duration_s ?? "10"}s clip · ${activeCamInfo.resolution}` : "Loading stream telemetry…";
 
   return (
     <div className="vision-container" data-testid="vision-analytics-panel">
@@ -496,20 +574,19 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
         <div className="vision-header-top">
           <div className="vision-title-group">
             <span style={{ fontSize: "11px", fontWeight: 700, color: "#38bdf8", textTransform: "uppercase", letterSpacing: "1px" }}>
-              COMPUTER VISION EDGE ANALYTICS · JUNCTION C3
+              COMPUTER VISION EDGE ANALYTICS · {selectedCamera} · {streamRole.label.toUpperCase()}
             </span>
             <h1 id="vision-title" style={{ fontSize: "20px", fontWeight: 700, margin: "4px 0", color: "#f8fafc" }}>
               Sample Video Feed &amp; Traffic State Extraction
             </h1>
             <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0 }}>
-              Optional sample-video processing produces isolated aggregate observations only. It is not a source of central traffic state or recommendations.
+              {activeCamInfo.approach} · {streamRole.description}
             </p>
           </div>
 
           <div style={{ display: "flex", gap: "8px" }}>
             <Button
               variant="outline"
-              size="sm"
               onClick={() => setIsOffline(true)}
               aria-label="Simulate Offline Pipeline State"
             >
@@ -518,7 +595,6 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
             {onReturn && (
               <Button
                 variant="outline"
-                size="sm"
                 onClick={onReturn}
                 aria-label="Return to Command Center"
               >
@@ -655,7 +731,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
             <strong>OBSERVED FROM VIDEO:</strong> {selectedCamera} 5s Windows
           </span>
           <span style={{ padding: "3px 8px", borderRadius: "4px", background: "rgba(59, 130, 246, 0.12)", color: "#3b82f6", border: "1px solid rgba(59, 130, 246, 0.3)" }}>
-            <strong>VIDEO-DERIVED SCENARIO INPUT:</strong> Boundary Inflow
+            <strong>VIDEO STREAM SCOPE:</strong> {streamRole.networkUse}
           </span>
           <span style={{ padding: "3px 8px", borderRadius: "4px", background: "rgba(168, 85, 247, 0.12)", color: "#a855f7", border: "1px solid rgba(168, 85, 247, 0.3)" }}>
             <strong>MODELED NETWORK STATE:</strong> Conserved CTM Cells
@@ -676,7 +752,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
           <div className="vision-video-header">
             <div className="vision-video-header-title">
               <Video size={16} color="#64b5f6" aria-hidden="true" />
-              <span>Camera {selectedCamera} (Approach to Junction C1)</span>
+              <span>Camera {selectedCamera} ({activeCamInfo.approach})</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <span
@@ -854,6 +930,23 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
 
         {/* RIGHT: Realtime Aggregates Column */}
         <div className="vision-metrics-col">
+          {/* Selected-stream dashboard — changes with every camera switch. */}
+          <div className="vision-card vision-stream-dashboard" role="region" aria-label={`${selectedCamera} stream dashboard`}>
+            <div className="vision-card-header">
+              <h3>
+                <Layers size={16} color="#64b5f6" aria-hidden="true" />
+                {selectedCamera} Stream Dashboard
+              </h3>
+              <span className="vision-stream-role">{streamRole.label}</span>
+            </div>
+            <div className="vision-stream-kpis">
+              <div><span>Active now</span><strong>{displayActiveVehicles}</strong><small>tracked in frame</small></div>
+              <div><span>Queue ROI</span><strong>{displayQueueVehicles}</strong><small>observed vehicles</small></div>
+              <div><span>Line flow</span><strong>{observedFlowVpm == null ? "—" : observedFlowVpm.toFixed(1)}</strong><small>{observedFlowVpm == null ? "window not ready" : "vpm · observed"}</small></div>
+            </div>
+            <p className="vision-stream-coverage">{coverageLabel} · {activeCamInfo.fps} FPS · {activeCamInfo.videoFile}</p>
+          </div>
+
           {/* Uncalibrated Speed Banner (S36, PRD §8.5) */}
           <div className="vision-speed-banner" role="region" aria-label="Estimated Traffic Speed">
             <div>
@@ -878,114 +971,107 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
               </span>
             </div>
             <div className="vision-classes-grid">
-              <div className="vision-class-item">
-                <span className="vision-class-label">Bike</span>
-                <span className="vision-class-count" style={{ color: "#10b981" }}>
-                  {classBreakdown?.two_wheeler ?? classBreakdown?.bike ?? 1}
-                </span>
-              </div>
-              <div className="vision-class-item">
-                <span className="vision-class-label">Car</span>
-                <span className="vision-class-count" style={{ color: "#3b82f6" }}>
-                  {classBreakdown?.car ?? 3}
-                </span>
-              </div>
-              <div className="vision-class-item">
-                <span className="vision-class-label">Auto</span>
-                <span className="vision-class-count" style={{ color: "#f59e0b" }}>
-                  {classBreakdown?.autorickshaw ?? classBreakdown?.auto ?? 1}
-                </span>
-              </div>
-              <div className="vision-class-item">
-                <span className="vision-class-label">Bus</span>
-                <span className="vision-class-count" style={{ color: "#ef4444" }}>
-                  {classBreakdown?.bus ?? 3}
-                </span>
-              </div>
-              <div className="vision-class-item">
-                <span className="vision-class-label">Truck</span>
-                <span className="vision-class-count" style={{ color: "#a855f7" }}>
-                  {classBreakdown?.truck ?? 1}
-                </span>
-              </div>
+              {(() => {
+                const CLASS_DISPLAY: Record<string, { label: string; color: string }> = {
+                  two_wheeler: { label: "Bike", color: "#10b981" },
+                  car: { label: "Car", color: "#3b82f6" },
+                  autorickshaw: { label: "Auto", color: "#f59e0b" },
+                  bus: { label: "Bus", color: "#ef4444" },
+                  truck: { label: "Truck", color: "#a855f7" },
+                  lcv: { label: "LCV", color: "#06b6d4" },
+                  pedestrain: { label: "Pedestrian", color: "#ec4899" },
+                  bicycle: { label: "Bicycle", color: "#84cc16" },
+                };
+                const entries = Object.entries(classBreakdown || {}).sort(([, a], [, b]) => (b as number) - (a as number));
+                if (entries.length === 0) {
+                  return Object.entries(CLASS_DISPLAY).slice(0, 5).map(([key, meta]) => (
+                    <div className="vision-class-item" key={key}>
+                      <span className="vision-class-label">{meta.label}</span>
+                      <span className="vision-class-count" style={{ color: meta.color }}>0</span>
+                    </div>
+                  ));
+                }
+                return entries.map(([cls, count]) => {
+                  const meta = CLASS_DISPLAY[cls] || { label: cls.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()), color: "#94a3b8" };
+                  return (
+                    <div className="vision-class-item" key={cls}>
+                      <span className="vision-class-label">{meta.label}</span>
+                      <span className="vision-class-count" style={{ color: meta.color }}>{count as number}</span>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
 
-          {/* Lane-wise Flow and Queue Table */}
+          {/* Selected-stream ROI activity table. It deliberately avoids calling
+              video zones calibrated physical lanes. */}
           <div className="vision-card" role="region" aria-label="Lane-Wise Traffic Metrics">
             <div className="vision-card-header">
               <h3>
                 <Activity size={16} color="#64b5f6" aria-hidden="true" />
-                Lane Flow &amp; Queue Assignment
+                {selectedCamera} ROI Activity Assignment
               </h3>
-              <span style={{ fontSize: "11px", color: "#8da5b8" }}>3 Polygonal ROIs</span>
+              <span style={{ fontSize: "11px", color: "#8da5b8" }}>Frame {currentFrameIdx + 1} · 3 ROI bands</span>
             </div>
             <table className="vision-lane-table">
               <thead>
                 <tr>
-                  <th scope="col">Lane</th>
-                  <th scope="col">Flow (vpm)</th>
-                  <th scope="col">Queue</th>
-                  <th scope="col">Occupancy</th>
+                  <th scope="col">ROI band</th>
+                  <th scope="col">Active</th>
+                  <th scope="col">Queue est.</th>
+                  <th scope="col">Activity share</th>
                 </tr>
               </thead>
               <tbody>
-                {summary?.lane_metrics?.map((lane) => (
-                  <tr key={lane.lane_id}>
+                {laneMetrics.map((lane) => (
+                  <tr key={lane.id}>
                     <td>{lane.label}</td>
-                    <td>{lane.current_flow_vpm == null ? "Unavailable" : lane.current_flow_vpm.toFixed(1)}</td>
-                    <td>{lane.current_queue == null ? "Unavailable" : `${lane.current_queue} veh`}</td>
-                    <td>{lane.occupancy == null ? "Unavailable" : `${(lane.occupancy * 100).toFixed(0)}%`}</td>
+                    <td>{lane.active}</td>
+                    <td>{lane.queue} veh</td>
+                    <td>{(lane.share * 100).toFixed(0)}%</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            <p className="vision-roi-note">Queue estimates are apportioned from this stream&apos;s aggregate queue ROI; they are not calibrated lane measurements.</p>
           </div>
         </div>
       </div>
 
-      {/* BOTTOM: Upstream Impact to C1 (PRD §8.5) */}
+      {/* Per-stream provenance and totals. This replaces the old C3-only
+          upstream card so CAM-01 through CAM-12 never inherit another feed's dashboard. */}
       <section className="vision-upstream-card" aria-labelledby="upstream-heading">
         <div className="vision-card-header" style={{ marginBottom: "8px" }}>
           <h2 id="upstream-heading" style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "#e5edf5" }}>
-            Upstream Impact on Corridor Junction C1
+            {selectedCamera} Stream Coverage &amp; Network Scope
           </h2>
-          <span
-            className={`vision-badge ${
-              upstream?.risk_level === "high"
-                ? "vision-badge-warning"
-                : upstream?.risk_level === "moderate"
-                ? "vision-badge-primary"
-                : "vision-badge-success"
-            }`}
-          >
-            {upstream?.risk_level ? `${upstream.risk_level.toUpperCase()} RISK` : "MODERATE RISK"}
-          </span>
+          <span className="vision-badge vision-badge-primary">{streamRole.networkUse.toUpperCase()}</span>
         </div>
         <p style={{ fontSize: "12px", color: "#8da5b8", margin: "0 0 12px 0" }}>
-          This optional sample-video lane is not injected into the aggregate traffic model. Whole-link C3→C1 flow, density, ETA and risk remain unavailable without calibrated coverage and an approved estimator.
+          Dashboard values below belong to {selectedCamera} only. They come from its 10-second sample stream and are kept separate from the central traffic state, recommendations and uncalibrated speed measurements.
         </p>
 
         <div className="vision-upstream-grid">
           <div className="vision-upstream-box">
-            <span className="vision-upstream-box-label">+30s Expected Inflow</span>
-            <span className="vision-upstream-box-val">—</span>
-            <span className="vision-upstream-box-sub">Unavailable from sample video</span>
+            <span className="vision-upstream-box-label">Observed unique vehicles</span>
+            <span className="vision-upstream-box-val">{displayTotalVehicles}</span>
+            <span className="vision-upstream-box-sub">{selectedCamera} complete clip</span>
           </div>
           <div className="vision-upstream-box">
-            <span className="vision-upstream-box-label">+60s Expected Inflow</span>
-            <span className="vision-upstream-box-val">—</span>
-            <span className="vision-upstream-box-sub">Unavailable from sample video</span>
+            <span className="vision-upstream-box-label">Counting-line crossings</span>
+            <span className="vision-upstream-box-val">{displayCrossed}</span>
+            <span className="vision-upstream-box-sub">Current replay position</span>
           </div>
           <div className="vision-upstream-box">
-            <span className="vision-upstream-box-label">+120s Expected Inflow</span>
-            <span className="vision-upstream-box-val">—</span>
-            <span className="vision-upstream-box-sub">No central-model injection</span>
+            <span className="vision-upstream-box-label">Current queue ROI</span>
+            <span className="vision-upstream-box-val">{displayQueueVehicles} veh</span>
+            <span className="vision-upstream-box-sub">Frame-level observation</span>
           </div>
           <div className="vision-upstream-box">
-            <span className="vision-upstream-box-label">Estimated ETA to C1</span>
+            <span className="vision-upstream-box-label">Model integration</span>
             <span className="vision-upstream-box-val">—</span>
-            <span className="vision-upstream-box-sub">Requires calibrated state estimation</span>
+            <span className="vision-upstream-box-sub">{streamRole.networkUse}; no central-state injection</span>
           </div>
         </div>
       </section>
