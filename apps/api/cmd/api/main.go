@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 	"traffic.local/twin/apps/api/internal/config"
@@ -18,7 +20,53 @@ import (
 	"traffic.local/twin/db"
 )
 
+func loadEnvFallback() {
+	dir, err := os.Getwd()
+	if err != nil {
+		return
+	}
+	var envPath string
+	var scenarioPath string
+	for {
+		candidate := filepath.Join(dir, ".runtime", "local-env.json")
+		if _, err := os.Stat(candidate); err == nil && envPath == "" {
+			envPath = candidate
+		}
+		scCandidate := filepath.Join(dir, "packages", "scenario-config", "c1-c6.json")
+		if _, err := os.Stat(scCandidate); err == nil && scenarioPath == "" {
+			scenarioPath = scCandidate
+		}
+		if envPath != "" && scenarioPath != "" {
+			break
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+
+	if scenarioPath != "" && os.Getenv("NETWORK_CONFIG") == "" {
+		_ = os.Setenv("NETWORK_CONFIG", scenarioPath)
+	}
+
+	if envPath != "" {
+		data, err := os.ReadFile(envPath)
+		if err == nil {
+			var envMap map[string]string
+			if err := json.Unmarshal(data, &envMap); err == nil {
+				for k, v := range envMap {
+					if os.Getenv(k) == "" {
+						_ = os.Setenv(k, v)
+					}
+				}
+			}
+		}
+	}
+}
+
 func main() {
+	loadEnvFallback()
 	if e := run(); e != nil {
 		slog.Error("API stopped", "error", e)
 		os.Exit(1)
