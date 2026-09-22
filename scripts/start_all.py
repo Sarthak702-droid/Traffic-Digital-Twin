@@ -557,11 +557,17 @@ def main():
     if to_add:
         env["PATH"] = ":".join(to_add) + (":" + cur_path if cur_path else "")
 
+    vite_bin = ROOT / "apps/web" / "node_modules" / ".bin" / "vite"
+    if vite_bin.exists() and os.access(vite_bin, os.X_OK):
+        vite_cmd = [str(vite_bin), "--host", "127.0.0.1", "--port", "3100"]
+    else:
+        vite_cmd = [npm_bin, "run", "dev", "-w", "apps/web"]
+
     commands = [
-        ("Python Simulation gRPC", [py_bin, "-m", "services.shared.server", "simulation", "--port", "50051"]),
-        ("Python Intelligence gRPC", [py_bin, "-m", "services.shared.server", "intelligence", "--port", "50052"]),
-        ("Go API Gateway", api_cmd),
-        ("Frontend Web (Vite)", [npm_bin, "run", "dev", "-w", "apps/web"]),
+        ("Python Simulation gRPC", [py_bin, "-m", "services.shared.server", "simulation", "--port", "50051"], str(ROOT)),
+        ("Python Intelligence gRPC", [py_bin, "-m", "services.shared.server", "intelligence", "--port", "50052"], str(ROOT)),
+        ("Go API Gateway", api_cmd, str(ROOT)),
+        ("Frontend Web (Vite)", vite_cmd, str(ROOT / "apps/web")),
     ]
 
     children = []
@@ -586,9 +592,9 @@ def main():
 
     log("Starting services stack...")
     try:
-        for name, cmd in commands:
+        for name, cmd, workdir in commands:
             log(f"Launching {name}...")
-            proc = subprocess.Popen(cmd, env=env, cwd=str(ROOT), start_new_session=True, preexec_fn=_set_pdeathsig)
+            proc = subprocess.Popen(cmd, env=env, cwd=workdir, start_new_session=True, preexec_fn=_set_pdeathsig)
             children.append((name, proc))
             _write_service_state(children)
 
@@ -643,6 +649,13 @@ Press \033[1;31mCtrl+C\033[0m to stop all services.
     except KeyboardInterrupt:
         log("Shutting down services stack...")
     finally:
+        # Ignore further signals during shutdown so a second Ctrl+C doesn't cause KeyboardInterrupt in cleanup
+        try:
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        except Exception:
+            pass
+
         for name, p in children:
             if p.poll() is None:
                 try:
@@ -652,7 +665,7 @@ Press \033[1;31mCtrl+C\033[0m to stop all services.
         for name, p in children:
             try:
                 p.wait(timeout=3)
-            except subprocess.TimeoutExpired:
+            except (subprocess.TimeoutExpired, KeyboardInterrupt, Exception):
                 try:
                     os.killpg(p.pid, signal.SIGKILL)
                 except OSError:
