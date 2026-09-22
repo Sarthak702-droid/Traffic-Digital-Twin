@@ -86,12 +86,11 @@ describe("T13: Vision & Network UI Integration (PRD §19.3)", () => {
   it("renders PRD §19.3 authority classification labels clearly differentiating observation from modeled state", () => {
     render(<VisionAnalyticsPanel />);
 
-    // Check all 5 authority classification labels
+    // Check the active data-authority classifications.
     expect(screen.getByText(/OBSERVED FROM VIDEO:/i)).toBeInTheDocument();
     expect(screen.getByText(/VIDEO STREAM SCOPE:/i)).toBeInTheDocument();
     expect(screen.getByText(/MODELED NETWORK STATE:/i)).toBeInTheDocument();
     expect(screen.getByText(/FORECAST:/i)).toBeInTheDocument();
-    expect(screen.getByText(/UNAVAILABLE:/i)).toBeInTheDocument();
   });
 
   it("mounts authoritative MP4 video element linked to media endpoint", () => {
@@ -108,10 +107,12 @@ describe("T13: Vision & Network UI Integration (PRD §19.3)", () => {
     expect(videoEl.src).toContain("/api/v1/clips/CAM-03/media");
   });
 
-  it("honestly marks uncalibrated speed unavailable without fabricating values", () => {
+  it("shows useful selected-camera live frame insights", () => {
     render(<VisionAnalyticsPanel />);
 
-    expect(screen.getByText(/No calibrated speed measurement/i)).toBeInTheDocument();
-    expect(screen.getByText(/Uncalibrated sample video is not an authoritative km\/h source/i)).toBeInTheDocument();
+    expect(screen.getByText(/Live Frame Insights/i)).toBeInTheDocument();
+    expect(screen.getByText(/Queue pressure/i)).toBeInTheDocument();
+    expect(screen.getByText(/Dominant type/i)).toBeInTheDocument();
+    expect(screen.getByText(/Detected classes/i)).toBeInTheDocument();
   });
 });

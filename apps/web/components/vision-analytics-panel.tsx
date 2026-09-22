@@ -12,7 +12,6 @@ import {
   ArrowRight,
   ShieldCheck,
   AlertTriangle,
-  Info,
   Car,
   Activity,
   Compass,
@@ -80,6 +79,16 @@ const STREAM_ROLE_DETAILS: Record<CameraSlot["role"], { label: string; descripti
     networkUse: "No network injection",
   },
 };
+
+function displayVehicleClass(className: string) {
+  const labels: Record<string, string> = {
+    two_wheeler: "Bike",
+    autorickshaw: "Auto",
+    pedestrain: "Pedestrian",
+    lcv: "LCV",
+  };
+  return labels[className] || className.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
 
 function getStreamLaneMetrics(frame: any, telemetry: any): StreamLaneMetric[] {
   const detections = frame?.detections || [];
@@ -566,6 +575,18 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
   const laneMetrics = getStreamLaneMetrics(activeFrameData, activeTelemetry);
   const observedFlowVpm = getObservedFlowVpm(streamFrames, currentFrameIdx);
   const coverageLabel = activeTelemetry ? `${activeTelemetry.duration_s ?? "10"}s clip · ${activeCamInfo.resolution}` : "Loading stream telemetry…";
+  const activeClassCounts = activeFrameData?.class_counts || {};
+  const [dominantClass, dominantClassCount] = Object.entries(activeClassCounts)
+    .sort(([, left], [, right]) => Number(right) - Number(left))[0] || ["—", 0];
+  const detectedClassCount = Object.values(activeClassCounts).filter((count) => Number(count) > 0).length;
+  const queuePressure = displayActiveVehicles > 0 ? displayQueueVehicles / displayActiveVehicles : 0;
+  const queuePressureLabel = displayActiveVehicles === 0
+    ? "No vehicles in frame"
+    : queuePressure >= 0.6
+    ? "High queue pressure"
+    : queuePressure >= 0.3
+    ? "Queue building"
+    : "Free-moving frame";
 
   return (
     <div className="vision-container" data-testid="vision-analytics-panel">
@@ -611,9 +632,6 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
           </span>
           <span className="vision-badge vision-badge-primary">
             <ShieldCheck size={12} /> AGGREGATES ONLY · NO IDS / TRAJECTORIES / ANPR / FACES
-          </span>
-          <span className="vision-badge vision-badge-neutral">
-            <Info size={12} /> UNCALIBRATED SPEED: UNAVAILABLE
           </span>
           <span className="vision-badge vision-badge-primary">
             <Compass size={12} /> CORE SCENARIOS OPERATE INDEPENDENTLY
@@ -738,9 +756,6 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
           </span>
           <span style={{ padding: "3px 8px", borderRadius: "4px", background: "rgba(245, 158, 11, 0.12)", color: "#f59e0b", border: "1px solid rgba(245, 158, 11, 0.3)" }}>
             <strong>FORECAST:</strong> EWMA Horizons
-          </span>
-          <span style={{ padding: "3px 8px", borderRadius: "4px", background: "rgba(239, 68, 68, 0.12)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.3)" }}>
-            <strong>UNAVAILABLE:</strong> Uncalibrated Speed
           </span>
         </div>
       </section>
@@ -947,15 +962,18 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
             <p className="vision-stream-coverage">{coverageLabel} · {activeCamInfo.fps} FPS · {activeCamInfo.videoFile}</p>
           </div>
 
-          {/* Uncalibrated Speed Banner (S36, PRD §8.5) */}
-          <div className="vision-speed-banner" role="region" aria-label="Estimated Traffic Speed">
-            <div>
-              <div className="vision-speed-tag">PRD §8.5 REQUIREMENT</div>
-              <div className="vision-speed-value">Unavailable</div>
+          <div className="vision-card vision-live-insights" role="region" aria-label={`${selectedCamera} live frame insights`}>
+            <div className="vision-card-header">
+              <h3>
+                <Activity size={16} color="#64b5f6" aria-hidden="true" />
+                Live Frame Insights
+              </h3>
+              <span style={{ fontSize: "11px", color: "#8da5b8" }}>{(activeFrameData?.time_s ?? currentFrameIdx / 10).toFixed(1)}s</span>
             </div>
-            <div className="vision-speed-note">
-              <strong style={{ color: "#fbc02d" }}>No calibrated speed measurement</strong>
-              <div>Uncalibrated sample video is not an authoritative km/h source.</div>
+            <div className="vision-stream-kpis">
+              <div><span>Queue pressure</span><strong>{(queuePressure * 100).toFixed(0)}%</strong><small>{queuePressureLabel}</small></div>
+              <div><span>Dominant type</span><strong>{displayVehicleClass(String(dominantClass))}</strong><small>{Number(dominantClassCount)} active tracked</small></div>
+              <div><span>Detected classes</span><strong>{detectedClassCount}</strong><small>in this camera frame</small></div>
             </div>
           </div>
 
@@ -1049,7 +1067,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
           <span className="vision-badge vision-badge-primary">{streamRole.networkUse.toUpperCase()}</span>
         </div>
         <p style={{ fontSize: "12px", color: "#8da5b8", margin: "0 0 12px 0" }}>
-          Dashboard values below belong to {selectedCamera} only. They come from its 10-second sample stream and are kept separate from the central traffic state, recommendations and uncalibrated speed measurements.
+          Dashboard values below belong to {selectedCamera} only. They come from its 10-second sample stream and are kept separate from central traffic state and recommendations.
         </p>
 
         <div className="vision-upstream-grid">
