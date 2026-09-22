@@ -1,0 +1,406 @@
+{
+  "schema_version": "agent-task-plan-v1",
+  "plan_only": true,
+  "baseline_commit": "d6d774f6fb187ffc07925e0768add15ab53d548c",
+  "tasks": [
+    {
+      "id": "T01",
+      "title": "Discover workspace, hardware and assets",
+      "owner": "lead",
+      "priority": "P0",
+      "status": "NOT_STARTED",
+      "depends_on": [],
+      "prd_sections": [
+        1,
+        5,
+        7,
+        8,
+        9
+      ],
+      "outputs": [
+        "environment.json",
+        "baseline-status.json",
+        "blockers.json"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": false
+    },
+    {
+      "id": "T02",
+      "title": "Freeze schemas, clocks and evidence plan",
+      "owner": "lead_qa",
+      "priority": "P0",
+      "status": "NOT_STARTED",
+      "depends_on": [
+        "T01"
+      ],
+      "prd_sections": [
+        6,
+        12,
+        21
+      ],
+      "outputs": [
+        "contracts-plan.md",
+        "test-plan.json"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": false
+    },
+    {
+      "id": "T03",
+      "title": "Verify already-downloaded ITD v1.2 and dependency compatibility",
+      "owner": "vision",
+      "priority": "P0",
+      "status": "NOT_STARTED",
+      "depends_on": [
+        "T01"
+      ],
+      "prd_sections": [
+        8
+      ],
+      "outputs": [
+        "downloads.lock.json",
+        "model-report.json",
+        "services/vision/requirements.lock"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": false,
+      "asset_status": "itd_v1.2_downloaded_owner_confirmed",
+      "checkpoint_verification_status": "NOT_VERIFIED",
+      "execution_notes": [
+        "Locate and reuse the existing checkpoint within authorized asset roots.",
+        "If inaccessible, request its local path/access rather than automatically downloading it again.",
+        "Verify filename, format, SHA-256, actual class mapping and load/inference compatibility.",
+        "Redownload or replacement requires explicit owner authorization; no generic-model substitution."
+      ]
+    },
+    {
+      "id": "T04",
+      "title": "Inventory twelve clips and source records",
+      "owner": "vision",
+      "priority": "P0",
+      "status": "NOT_STARTED",
+      "depends_on": [
+        "T01"
+      ],
+      "prd_sections": [
+        9
+      ],
+      "outputs": [
+        "asset-manifest.json",
+        "media-review.json"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": false
+    },
+    {
+      "id": "T05",
+      "title": "Propose and verify camera geometry",
+      "owner": "vision",
+      "priority": "P0",
+      "status": "NOT_STARTED",
+      "depends_on": [
+        "T02",
+        "T03",
+        "T04"
+      ],
+      "prd_sections": [
+        10
+      ],
+      "outputs": [
+        "geometry-review.json",
+        "packages/camera-config/cameras.json"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": false
+    },
+    {
+      "id": "T06",
+      "title": "Implement detector, tracker and aggregate counts",
+      "owner": "vision",
+      "priority": "P0",
+      "status": "NOT_STARTED",
+      "depends_on": [
+        "T02",
+        "T03",
+        "T05"
+      ],
+      "prd_sections": [
+        11,
+        12
+      ],
+      "outputs": [
+        "observation-manifest.json",
+        "vision-test-report.json"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": false
+    },
+    {
+      "id": "T07",
+      "title": "Implement concurrent processing",
+      "owner": "vision",
+      "priority": "P0",
+      "status": "NOT_STARTED",
+      "depends_on": [
+        "T06"
+      ],
+      "prd_sections": [
+        17
+      ],
+      "outputs": [
+        "concurrency-test-report.json"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": false
+    },
+    {
+      "id": "T08",
+      "title": "Repair flow dynamics and metrics",
+      "owner": "dynamics",
+      "priority": "P0",
+      "status": "NOT_STARTED",
+      "depends_on": [
+        "T02"
+      ],
+      "prd_sections": [
+        5,
+        14
+      ],
+      "outputs": [
+        "conservation-test-report.json"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": false
+    },
+    {
+      "id": "T09",
+      "title": "Implement complete snapshot and sanitizer",
+      "owner": "dynamics",
+      "priority": "P0",
+      "status": "NOT_STARTED",
+      "depends_on": [
+        "T02",
+        "T08"
+      ],
+      "prd_sections": [
+        12,
+        15
+      ],
+      "outputs": [
+        "snapshot-equivalence-report.json",
+        "causality-report.json"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": false
+    },
+    {
+      "id": "T10",
+      "title": "Implement video-derived boundary demand",
+      "owner": "dynamics",
+      "priority": "P0",
+      "status": "NOT_STARTED",
+      "depends_on": [
+        "T02",
+        "T06",
+        "T08"
+      ],
+      "prd_sections": [
+        13
+      ],
+      "outputs": [
+        "demand-profile-manifest.json",
+        "demand-conservation-report.json"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": false
+    },
+    {
+      "id": "T11",
+      "title": "Implement causal demand forecasts and comparisons",
+      "owner": "dynamics",
+      "priority": "P0",
+      "status": "NOT_STARTED",
+      "depends_on": [
+        "T09",
+        "T10"
+      ],
+      "prd_sections": [
+        15,
+        16
+      ],
+      "outputs": [
+        "forecast-report.json",
+        "candidate-test-report.json"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": false
+    },
+    {
+      "id": "T12",
+      "title": "Implement Go API and persistence extensions",
+      "owner": "api",
+      "priority": "P0",
+      "status": "NOT_STARTED",
+      "depends_on": [
+        "T02"
+      ],
+      "prd_sections": [
+        19,
+        20
+      ],
+      "outputs": [
+        "api-contract-report.json",
+        "migration-test-report.json"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": false
+    },
+    {
+      "id": "T13",
+      "title": "Integrate actual video and graph UI",
+      "owner": "ui",
+      "priority": "P0",
+      "status": "NOT_STARTED",
+      "depends_on": [
+        "T02",
+        "T12"
+      ],
+      "prd_sections": [
+        19
+      ],
+      "outputs": [
+        "ui-test-report.json",
+        "screenshots-manifest.json"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": false
+    },
+    {
+      "id": "T14",
+      "title": "Automate pre-annotation and qualified review",
+      "owner": "vision_qa",
+      "priority": "P0",
+      "status": "NOT_STARTED",
+      "depends_on": [
+        "T06"
+      ],
+      "prd_sections": [
+        18
+      ],
+      "outputs": [
+        "annotation-provenance.json",
+        "reference-quality-report.json"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": false
+    },
+    {
+      "id": "T15",
+      "title": "Execute integrated normal and failure tests",
+      "owner": "qa",
+      "priority": "P0",
+      "status": "NOT_STARTED",
+      "depends_on": [
+        "T07",
+        "T11",
+        "T12",
+        "T13"
+      ],
+      "prd_sections": [
+        21,
+        25
+      ],
+      "outputs": [
+        "integration-test-report.json"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": false
+    },
+    {
+      "id": "T16",
+      "title": "Benchmark target machine",
+      "owner": "qa",
+      "priority": "P0",
+      "status": "NOT_STARTED",
+      "depends_on": [
+        "T15"
+      ],
+      "prd_sections": [
+        17,
+        21
+      ],
+      "outputs": [
+        "benchmark-report.json"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": false
+    },
+    {
+      "id": "T17",
+      "title": "Document, package and rehearse",
+      "owner": "lead",
+      "priority": "P0",
+      "status": "NOT_STARTED",
+      "depends_on": [
+        "T14",
+        "T15",
+        "T16"
+      ],
+      "prd_sections": [
+        24,
+        25,
+        26,
+        27,
+        28
+      ],
+      "outputs": [
+        "readiness.json",
+        "RUNBOOK.md",
+        "ROLLBACK.md",
+        "KNOWN_LIMITATIONS.md"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": false
+    },
+    {
+      "id": "T18",
+      "title": "Optional evaluated challenger or optimization",
+      "owner": "specialist",
+      "priority": "P1_CONDITIONAL",
+      "status": "NOT_STARTED",
+      "depends_on": [
+        "T17"
+      ],
+      "prd_sections": [
+        8,
+        15,
+        18
+      ],
+      "outputs": [
+        "optimization-report.json"
+      ],
+      "evidence_required": true,
+      "allow_fabricated_outputs": false,
+      "extra_authorization_required": true
+    }
+  ],
+  "prd_version": "1.0.1"
+}

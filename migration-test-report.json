@@ -1,0 +1,38 @@
+{
+  "schema_version": "migration-test-report-v1",
+  "evaluated_at": "2026-09-22T14:32:00+05:30",
+  "migrations_applied": [
+    {
+      "version": 1,
+      "file": "001_foundation.sql",
+      "status": "APPLIED"
+    },
+    {
+      "version": 2,
+      "file": "002_control.sql",
+      "status": "APPLIED"
+    },
+    {
+      "version": 3,
+      "file": "003_decisions.sql",
+      "status": "APPLIED"
+    },
+    {
+      "version": 4,
+      "file": "004_aggregate_flow.sql",
+      "status": "APPLIED"
+    },
+    {
+      "version": 5,
+      "file": "005_video_observations.sql",
+      "table_created": "camera_observations",
+      "indexes_created": [
+        "idx_camera_obs_cam_window",
+        "idx_camera_obs_run_cam"
+      ],
+      "status": "APPLIED"
+    }
+  ],
+  "verification_suite": "go test ./apps/api/internal/store ...",
+  "test_status": "PASS"
+}

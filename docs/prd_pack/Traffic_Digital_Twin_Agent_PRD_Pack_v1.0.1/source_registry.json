@@ -1,0 +1,356 @@
+{
+  "schema_version": "source-registry-v1",
+  "baseline_commit": "d6d774f6fb187ffc07925e0768add15ab53d548c",
+  "sources": [
+    {
+      "id": "R01",
+      "title": "Current main branch metadata",
+      "url": "https://api.github.com/repos/Sarthak702-droid/Traffic-Digital-Twin/branches/main",
+      "verification_status": "connector_checked_this_preparation",
+      "checked_on": "2026-09-22",
+      "note": "Resolved commit d6d774f6fb187ffc07925e0768add15ab53d548c"
+    },
+    {
+      "id": "R02",
+      "title": "Existing agent architecture rules",
+      "url": "https://github.com/Sarthak702-droid/Traffic-Digital-Twin/blob/d6d774f6fb187ffc07925e0768add15ab53d548c/AGENT.MD",
+      "verification_status": "connector_checked_this_preparation",
+      "checked_on": "2026-09-22",
+      "note": "Static source only; application and tests not executed."
+    },
+    {
+      "id": "R03",
+      "title": "Current sample vision pipeline",
+      "url": "https://github.com/Sarthak702-droid/Traffic-Digital-Twin/blob/d6d774f6fb187ffc07925e0768add15ab53d548c/services/vision/pipeline.py",
+      "verification_status": "prior_conversation_source_read_at_same_commit",
+      "checked_on": "2026-09-22",
+      "note": "Static source only; application and tests not executed."
+    },
+    {
+      "id": "R04",
+      "title": "Aggregate runtime and demand source",
+      "url": "https://github.com/Sarthak702-droid/Traffic-Digital-Twin/blob/d6d774f6fb187ffc07925e0768add15ab53d548c/services/simulation/aggregate_engine.py",
+      "verification_status": "prior_conversation_source_read_at_same_commit",
+      "checked_on": "2026-09-22",
+      "note": "Static source only; application and tests not executed.",
+      "additional_urls": [
+        "https://github.com/Sarthak702-droid/Traffic-Digital-Twin/blob/d6d774f6fb187ffc07925e0768add15ab53d548c/services/simulation/demand.py"
+      ]
+    },
+    {
+      "id": "R05",
+      "title": "Finite-capacity flow kernel",
+      "url": "https://github.com/Sarthak702-droid/Traffic-Digital-Twin/blob/d6d774f6fb187ffc07925e0768add15ab53d548c/services/simulation/flow_kernel.py",
+      "verification_status": "prior_conversation_source_read_at_same_commit",
+      "checked_on": "2026-09-22",
+      "note": "Static source only; application and tests not executed."
+    },
+    {
+      "id": "R06",
+      "title": "Versioned aggregate metrics",
+      "url": "https://github.com/Sarthak702-droid/Traffic-Digital-Twin/blob/d6d774f6fb187ffc07925e0768add15ab53d548c/services/simulation/metrics.py",
+      "verification_status": "prior_conversation_source_read_at_same_commit",
+      "checked_on": "2026-09-22",
+      "note": "Static source only; application and tests not executed."
+    },
+    {
+      "id": "R07",
+      "title": "Forecast rollouts and plan comparisons",
+      "url": "https://github.com/Sarthak702-droid/Traffic-Digital-Twin/blob/d6d774f6fb187ffc07925e0768add15ab53d548c/services/intelligence/model.py",
+      "verification_status": "prior_conversation_source_read_at_same_commit",
+      "checked_on": "2026-09-22",
+      "note": "Static source only; application and tests not executed."
+    },
+    {
+      "id": "R08",
+      "title": "Recent-flow demand estimator",
+      "url": "https://github.com/Sarthak702-droid/Traffic-Digital-Twin/blob/d6d774f6fb187ffc07925e0768add15ab53d548c/services/intelligence/forecast_demand.py",
+      "verification_status": "prior_conversation_source_read_at_same_commit",
+      "checked_on": "2026-09-22",
+      "note": "Static source only; application and tests not executed."
+    },
+    {
+      "id": "R09",
+      "title": "Vision UI and fallback types",
+      "url": "https://github.com/Sarthak702-droid/Traffic-Digital-Twin/blob/d6d774f6fb187ffc07925e0768add15ab53d548c/apps/web/components/vision-analytics-panel.tsx",
+      "verification_status": "prior_conversation_source_read_at_same_commit",
+      "checked_on": "2026-09-22",
+      "note": "Static source only; application and tests not executed.",
+      "additional_urls": [
+        "https://github.com/Sarthak702-droid/Traffic-Digital-Twin/blob/d6d774f6fb187ffc07925e0768add15ab53d548c/apps/web/lib/vision-data.ts"
+      ]
+    },
+    {
+      "id": "R10",
+      "title": "Shared protobuf contracts",
+      "url": "https://github.com/Sarthak702-droid/Traffic-Digital-Twin/blob/d6d774f6fb187ffc07925e0768add15ab53d548c/packages/contracts/proto/twin.proto",
+      "verification_status": "prior_conversation_source_read_at_same_commit",
+      "checked_on": "2026-09-22",
+      "note": "Static source only; application and tests not executed."
+    },
+    {
+      "id": "R11",
+      "title": "Shared Python dependency lock",
+      "url": "https://github.com/Sarthak702-droid/Traffic-Digital-Twin/blob/d6d774f6fb187ffc07925e0768add15ab53d548c/services/requirements.lock",
+      "verification_status": "prior_conversation_source_read_at_same_commit",
+      "checked_on": "2026-09-22",
+      "note": "Static source only; application and tests not executed."
+    },
+    {
+      "id": "R12",
+      "title": "C1-C6 network configuration",
+      "url": "https://github.com/Sarthak702-droid/Traffic-Digital-Twin/blob/d6d774f6fb187ffc07925e0768add15ab53d548c/packages/scenario-config/c1-c6.json",
+      "verification_status": "prior_conversation_source_read_at_same_commit",
+      "checked_on": "2026-09-22",
+      "note": "Static source only; application and tests not executed."
+    },
+    {
+      "id": "R13",
+      "title": "Intelligence tests",
+      "url": "https://github.com/Sarthak702-droid/Traffic-Digital-Twin/blob/d6d774f6fb187ffc07925e0768add15ab53d548c/services/intelligence/tests/test_model.py",
+      "verification_status": "prior_conversation_source_read_at_same_commit",
+      "checked_on": "2026-09-22",
+      "note": "Static source only; application and tests not executed."
+    },
+    {
+      "id": "R14",
+      "title": "Actual root build scripts/dependencies",
+      "url": "https://github.com/Sarthak702-droid/Traffic-Digital-Twin/blob/d6d774f6fb187ffc07925e0768add15ab53d548c/package.json",
+      "verification_status": "connector_checked_this_preparation",
+      "checked_on": "2026-09-22",
+      "note": "Static source only; application and tests not executed."
+    },
+    {
+      "id": "E01",
+      "title": "Codex CLI / worktrees",
+      "url": "https://developers.openai.com/codex/cli/",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution.",
+      "additional_urls": [
+        "https://developers.openai.com/codex/app/worktrees/"
+      ]
+    },
+    {
+      "id": "E02",
+      "title": "Google Antigravity download / project features",
+      "url": "https://antigravity.google/download",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution.",
+      "additional_urls": [
+        "https://www.antigravity.google/docs/features"
+      ]
+    },
+    {
+      "id": "E03",
+      "title": "ITD v1.2 model entry / model description",
+      "url": "https://teg-iitr.github.io/ITD-Indian-traffic-dataset/",
+      "verification_status": "official_model_page_and_repository_from_prior_conversation",
+      "checked_on": "2026-09-22",
+      "note": "No model binary or direct authenticated download inspected. Reuse existing trusted local file.",
+      "additional_urls": [
+        "https://github.com/teg-iitr/ITD-Indian-traffic-dataset"
+      ]
+    },
+    {
+      "id": "E04",
+      "title": "ITD weights license and CC terms",
+      "url": "https://github.com/teg-iitr/ITD-Indian-traffic-dataset/blob/main/LICENSE",
+      "verification_status": "connector_license_and_official_cc_terms_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution.",
+      "additional_urls": [
+        "https://creativecommons.org/licenses/by-nc/4.0/"
+      ]
+    },
+    {
+      "id": "E05",
+      "title": "Python downloads",
+      "url": "https://www.python.org/downloads/",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution."
+    },
+    {
+      "id": "E06",
+      "title": "PyTorch local installation selector",
+      "url": "https://pytorch.org/get-started/locally/",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution."
+    },
+    {
+      "id": "E07",
+      "title": "Ultralytics installation / prediction",
+      "url": "https://docs.ultralytics.com/quickstart/",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution.",
+      "additional_urls": [
+        "https://docs.ultralytics.com/modes/predict/"
+      ]
+    },
+    {
+      "id": "E08",
+      "title": "Ultralytics tracking / explicit ByteTrack",
+      "url": "https://docs.ultralytics.com/modes/track",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution."
+    },
+    {
+      "id": "E09",
+      "title": "FFmpeg downloads / ffprobe reference",
+      "url": "https://www.ffmpeg.org/download.html",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution.",
+      "additional_urls": [
+        "https://ffmpeg.org/ffprobe.html"
+      ]
+    },
+    {
+      "id": "E10",
+      "title": "OpenCV Python headless package",
+      "url": "https://pypi.org/project/opencv-python-headless/",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution."
+    },
+    {
+      "id": "E11",
+      "title": "NumPy installation",
+      "url": "https://numpy.org/install/",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution."
+    },
+    {
+      "id": "E12",
+      "title": "Node.js download",
+      "url": "https://nodejs.org/en/download",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution."
+    },
+    {
+      "id": "E13",
+      "title": "Go toolchains",
+      "url": "https://go.dev/dl/",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution."
+    },
+    {
+      "id": "E14",
+      "title": "Docker Compose installation",
+      "url": "https://docs.docker.com/compose/install/",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution."
+    },
+    {
+      "id": "E15",
+      "title": "Ultralytics licensing",
+      "url": "https://www.ultralytics.com/license",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution."
+    },
+    {
+      "id": "E16",
+      "title": "CVAT auto-annotation SDK / installation",
+      "url": "https://docs.cvat.ai/docs/api_sdk/sdk/auto-annotation/",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution.",
+      "additional_urls": [
+        "https://docs.cvat.ai/docs/administration/basics/installation/"
+      ]
+    },
+    {
+      "id": "E17",
+      "title": "Statsmodels damped Holt",
+      "url": "https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.Holt.html",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution."
+    },
+    {
+      "id": "E18",
+      "title": "ONNX Runtime installation",
+      "url": "https://onnxruntime.ai/docs/install/",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution."
+    },
+    {
+      "id": "E19",
+      "title": "TensorRT installation",
+      "url": "https://docs.nvidia.com/deeplearning/tensorrt/latest/installing-tensorrt/installing.html",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution."
+    },
+    {
+      "id": "E20",
+      "title": "PyTorch checkpoint-loading warning",
+      "url": "https://docs.pytorch.org/docs/stable/generated/torch.load",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution."
+    },
+    {
+      "id": "E21",
+      "title": "OpenCV geometric transforms",
+      "url": "https://docs.opencv.org/4.x/da/d54/group__imgproc__transform.html",
+      "verification_status": "official_link_browser_extraction_unavailable",
+      "checked_on": "2026-09-22",
+      "note": "Official documentation URL is provided, but browser extraction failed. Agent must verify the installed-version API; no version-specific capability claimed."
+    },
+    {
+      "id": "E22",
+      "title": "Daganzo: CTM network traffic",
+      "url": "https://its.berkeley.edu/node/4770",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution.",
+      "additional_urls": [
+        "https://its.berkeley.edu/node/4777"
+      ]
+    },
+    {
+      "id": "E23",
+      "title": "Exponentially weighted recurrence reference",
+      "url": "https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.ewm.html",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution."
+    },
+    {
+      "id": "E24",
+      "title": "Chronological time-series validation",
+      "url": "https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution."
+    },
+    {
+      "id": "E25",
+      "title": "Python concurrent futures / process workers",
+      "url": "https://docs.python.org/3/library/concurrent.futures.html",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution."
+    },
+    {
+      "id": "E26",
+      "title": "Protocol Buffers schema evolution",
+      "url": "https://protobuf.dev/programming-guides/proto3/",
+      "verification_status": "official_documentation_checked",
+      "checked_on": "2026-09-22",
+      "note": "Source supports general tool/algorithm facts, not project performance. Recheck compatible versions at execution."
+    }
+  ]
+}

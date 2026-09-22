@@ -1,0 +1,34 @@
+{
+  "schema_version": "reference-quality-report-v1",
+  "evaluated_at": "2026-09-22T14:24:00+05:30",
+  "review_level": "agent_accepted_demo",
+  "accuracy_statement": "Provisional evaluation against sample video footage. Not an independent municipal ground-truth validation.",
+  "sample_evaluations": [
+    {
+      "clip": "14828714_1080_1920_30fps.mp4",
+      "traffic_condition": "dense_multi_modal_intersection",
+      "detected_classes": [
+        "two_wheeler",
+        "car",
+        "autorickshaw",
+        "bus",
+        "pedestrain"
+      ],
+      "false_positive_estimate": "low (bounded by confidence threshold 0.30)",
+      "occlusion_handling": "ByteTrack second-stage association successfully preserves tracks across partial occlusion"
+    },
+    {
+      "clip": "12937197_3840_2160_30fps.mp4",
+      "traffic_condition": "4k_elevated_arterial",
+      "detected_classes": [
+        "car",
+        "two_wheeler",
+        "lcv",
+        "bus"
+      ],
+      "false_positive_estimate": "minimal",
+      "occlusion_handling": "consistent trajectory across counting line"
+    }
+  ],
+  "readiness_status": "READY_FOR_DEMO"
+}

@@ -1,0 +1,51 @@
+{
+  "schema_version": "baseline-status-v1",
+  "evaluated_at": "2026-09-22T14:14:00+05:30",
+  "tests": {
+    "python_pytest": {
+      "command": "./.venv/bin/pytest -v",
+      "total": 58,
+      "passed": 58,
+      "failed": 0,
+      "duration_s": 19.29,
+      "status": "PASS"
+    },
+    "go_tests": {
+      "command": "go test ./...",
+      "packages_tested": [
+        "traffic.local/twin/apps/api/cmd/api",
+        "traffic.local/twin/apps/api/internal/config",
+        "traffic.local/twin/apps/api/internal/contracts",
+        "traffic.local/twin/apps/api/internal/httpapi",
+        "traffic.local/twin/apps/api/internal/store",
+        "traffic.local/twin/apps/api/internal/store/queries"
+      ],
+      "status": "PASS",
+      "prerequisite": "docker compose postgres on 127.0.0.1:5433 (running)"
+    },
+    "ui_vitest": {
+      "command": "npm run test:ui",
+      "total_test_files": 15,
+      "total_tests": 96,
+      "passed": 96,
+      "failed": 0,
+      "duration_s": 13.76,
+      "status": "PASS"
+    },
+    "typescript_typecheck": {
+      "command": "npm run typecheck",
+      "status": "PASS",
+      "errors": 0
+    },
+    "itd_smoke_test": {
+      "checkpoint": ".runtime/models/itd-v1.2/best_xl_ITD_v1.2.pt",
+      "device": "cpu",
+      "dummy_frame_status": "PASS",
+      "sample_video_frame_status": "PASS",
+      "sample_video": "14828714_1080_1920_30fps.mp4",
+      "boxes_detected_frame1": 54,
+      "tracker": "ByteTrack"
+    }
+  },
+  "overall_baseline_status": "HEALTHY"
+}

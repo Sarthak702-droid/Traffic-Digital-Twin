@@ -1,0 +1,47 @@
+{
+  "schema_version": "model-report-v1",
+  "generated_at": "2026-09-22T14:15:00+05:30",
+  "model_identity": {
+    "name": "ITD v1.2 YOLO Extra-Large Checkpoint",
+    "filename": "best_xl_ITD_v1.2.pt",
+    "local_path": ".runtime/models/itd-v1.2/best_xl_ITD_v1.2.pt",
+    "sha256": "06006ecb5fe52a348ceed805bf0aa6b32af7e24e689d09a6582f6d53159d6b00",
+    "size_bytes": 114434706,
+    "license": "CC BY-NC 4.0",
+    "task": "detect"
+  },
+  "classes": {
+    "count": 8,
+    "mapping": {
+      "0": "two wheeler",
+      "1": "autorickshaw",
+      "2": "car",
+      "3": "bus",
+      "4": "LCV",
+      "5": "truck",
+      "6": "bicycle",
+      "7": "pedestrain"
+    },
+    "canonical_mapping": {
+      "two wheeler": "two_wheeler",
+      "autorickshaw": "autorickshaw",
+      "car": "car",
+      "bus": "bus",
+      "LCV": "lcv",
+      "truck": "truck",
+      "bicycle": "bicycle",
+      "pedestrain": "pedestrain"
+    }
+  },
+  "runtime_compatibility": {
+    "pytorch_version": "2.13.0+cu130",
+    "ultralytics_version": "8.4.129",
+    "loader": "ultralytics.YOLO",
+    "active_compute_device": "cpu",
+    "cuda_status": "DEVICE_CC61_REQUIRES_CPU_FALLBACK",
+    "smoke_test_status": "PASS",
+    "first_frame_detections_count": 54,
+    "tracker_integration": "ByteTrack via bytetrack.yaml (lap 0.5.13)"
+  },
+  "operational_readiness": "READY_FOR_VISION_PIPELINE"
+}

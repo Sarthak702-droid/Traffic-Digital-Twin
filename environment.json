@@ -1,0 +1,63 @@
+{
+  "schema_version": "environment-v1",
+  "generated_at": "2026-09-22T14:14:00+05:30",
+  "system": {
+    "os_name": "Pop!_OS",
+    "os_version": "24.04 LTS",
+    "kernel": "7.1.5-76070105-generic",
+    "architecture": "x86_64",
+    "cpu_model": "Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz",
+    "cpu_logical_cores": 8,
+    "total_memory_mb": 15755,
+    "available_memory_mb": 7510,
+    "free_disk_gb": 168
+  },
+  "gpu": {
+    "present": true,
+    "model": "NVIDIA GeForce MX230",
+    "vram_total_mb": 4096,
+    "compute_capability": "6.1",
+    "driver_version": "580.173.02",
+    "cuda_version": "13.0",
+    "pytorch_cuda_sm61_compatible": false,
+    "execution_target": "cpu",
+    "notes": "Installed PyTorch wheel supports sm_75+; MX230 is sm_61. Inference executes deterministically on CPU."
+  },
+  "runtimes": {
+    "python": "3.12.3",
+    "node": "v24.18.0",
+    "go": "go1.25.1 linux/amd64",
+    "docker": "29.8.0",
+    "torch": "2.13.0+cu130",
+    "ultralytics": "8.4.129",
+    "opencv": "5.0.0.93",
+    "lap": "0.5.13"
+  },
+  "repository": {
+    "git_branch": "feature/itd-traffic-twin-v1",
+    "git_commit": "d6d774f6fb187ffc07925e0768add15ab53d548c",
+    "is_clean": false,
+    "untracked_assets": 12
+  },
+  "assets": {
+    "video_count_discovered": 12,
+    "video_root": "/home/sarthaktripathy/Documents/Traffic digital twin",
+    "itd_checkpoint": {
+      "path": ".runtime/models/itd-v1.2/best_xl_ITD_v1.2.pt",
+      "original_path": "/home/sarthaktripathy/Downloads/best_xl_ITD_v1.2.pt",
+      "size_bytes": 114434706,
+      "sha256": "06006ecb5fe52a348ceed805bf0aa6b32af7e24e689d09a6582f6d53159d6b00",
+      "verified": true,
+      "classes": [
+        "two wheeler",
+        "autorickshaw",
+        "car",
+        "bus",
+        "LCV",
+        "truck",
+        "bicycle",
+        "pedestrain"
+      ]
+    }
+  }
+}

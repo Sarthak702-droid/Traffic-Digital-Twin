@@ -1,0 +1,39 @@
+{
+  "schema_version": "demand-profile-manifest-v1",
+  "scale": 1.0,
+  "eof_policy": "drain_with_warning",
+  "boundary_links": {
+    "C2-C1": {
+      "assigned_camera": "CAM-01",
+      "total_profile_mass_veh": 3.0,
+      "total_offered_mass_veh": 3.0,
+      "pending_unreleased_mass_veh": 0.0,
+      "last_committed_watermark_s": 25.0,
+      "bins_count": 4
+    },
+    "C4-C1": {
+      "assigned_camera": "CAM-02",
+      "total_profile_mass_veh": 18.0,
+      "total_offered_mass_veh": 18.0,
+      "pending_unreleased_mass_veh": 0.0,
+      "last_committed_watermark_s": 25.0,
+      "bins_count": 4
+    },
+    "C5-C1": {
+      "assigned_camera": "CAM-03",
+      "total_profile_mass_veh": 11.0,
+      "total_offered_mass_veh": 11.0,
+      "pending_unreleased_mass_veh": 0.0,
+      "last_committed_watermark_s": 25.0,
+      "bins_count": 4
+    },
+    "C6-C3": {
+      "assigned_camera": "CAM-06",
+      "total_profile_mass_veh": 0.0,
+      "total_offered_mass_veh": 0.0,
+      "pending_unreleased_mass_veh": 0.0,
+      "last_committed_watermark_s": 25.0,
+      "bins_count": 4
+    }
+  }
+}

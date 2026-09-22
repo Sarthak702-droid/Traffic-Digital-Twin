@@ -1,0 +1,41 @@
+{
+  "schema_version": "candidate-test-report-v1",
+  "evaluated_at": "2026-09-22T14:34:00+05:30",
+  "snapshot_id": "snap-0010-56f2c33941",
+  "rollout_horizon_s": 120,
+  "candidate_evaluations": [
+    {
+      "candidate_index": 0,
+      "plan": {
+        "C1-FROM-C2": 35,
+        "C1-FROM-C3": 35,
+        "C1-FROM-C4": 35,
+        "C1-FROM-C5": 35,
+        "C3-FROM-C1": 35,
+        "C3-FROM-C6": 35
+      },
+      "horizon_s": 120,
+      "average_queue_veh": 38.57,
+      "final_vehicles_in_network": 188,
+      "cumulative_boundary_exits": 13.412062500948611,
+      "boundary_backlog": 68.0
+    },
+    {
+      "candidate_index": 1,
+      "plan": {
+        "C1-FROM-C2": 25,
+        "C1-FROM-C3": 25,
+        "C1-FROM-C4": 25,
+        "C1-FROM-C5": 25,
+        "C3-FROM-C1": 25,
+        "C3-FROM-C6": 25
+      },
+      "horizon_s": 120,
+      "average_queue_veh": 34.49,
+      "final_vehicles_in_network": 185,
+      "cumulative_boundary_exits": 15.746919742811334,
+      "boundary_backlog": 68.0
+    }
+  ],
+  "status": "PASS"
+}

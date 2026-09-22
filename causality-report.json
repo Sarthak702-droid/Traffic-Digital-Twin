@@ -1,0 +1,13 @@
+{
+  "schema_version": "causality-report-v1",
+  "evaluated_at": "2026-09-22T14:33:00+05:30",
+  "snapshot_id": "snap-0010-56f2c33941",
+  "simulation_time_s": 10,
+  "sanitizer_checks": {
+    "random_generator_stripped": true,
+    "future_scenario_events_hidden": true,
+    "unreleased_video_bins_hidden": true,
+    "zero_future_leakage_verified": true
+  },
+  "status": "PASS"
+}

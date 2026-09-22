@@ -180,9 +180,77 @@
     "S48": {
       "status": "completed",
       "evidence": "docs/epic14-status.md"
+    },
+    "T01": {
+      "status": "completed",
+      "evidence": "baseline-status.json"
+    },
+    "T02": {
+      "status": "completed",
+      "evidence": "contracts-plan.md"
+    },
+    "T03": {
+      "status": "completed",
+      "evidence": "model-report.json"
+    },
+    "T04": {
+      "status": "completed",
+      "evidence": "asset-manifest.json"
+    },
+    "T05": {
+      "status": "completed",
+      "evidence": "geometry-review.json"
+    },
+    "T06": {
+      "status": "completed",
+      "evidence": "observation-manifest.json"
+    },
+    "T07": {
+      "status": "completed",
+      "evidence": "concurrency-test-report.json"
+    },
+    "T08": {
+      "status": "completed",
+      "evidence": "conservation-test-report.json"
+    },
+    "T09": {
+      "status": "completed",
+      "evidence": "snapshot-equivalence-report.json"
+    },
+    "T10": {
+      "status": "completed",
+      "evidence": "demand-profile-manifest.json"
+    },
+    "T11": {
+      "status": "completed",
+      "evidence": "forecast-report.json"
+    },
+    "T12": {
+      "status": "completed",
+      "evidence": "api-contract-report.json"
+    },
+    "T13": {
+      "status": "completed",
+      "evidence": "ui-test-report.json"
+    },
+    "T14": {
+      "status": "completed",
+      "evidence": "annotation-provenance.json"
+    },
+    "T15": {
+      "status": "completed",
+      "evidence": "integration-test-report.json"
+    },
+    "T16": {
+      "status": "completed",
+      "evidence": "benchmark-report.json"
+    },
+    "T17": {
+      "status": "completed",
+      "evidence": "readiness.json"
     }
   },
-  "audit_date": "2026-09-19",
-  "release_status": "production_ready",
-  "note": "All 14 epics and 45 stories verified against the Go public gateway, private Python gRPC compute, modular Go persistence, and responsive production UX. Recorded evidence attached to each completed story."
+  "audit_date": "2026-09-22",
+  "release_status": "ready_for_qualified_demo",
+  "note": "Epics E01-E19 and Tasks T01-T17 completed with grounded empirical evidence across Go gateway, CTM aggregate simulation kernel, ITD v1.2 ByteTrack vision analytics, and Next.js UI."
 }

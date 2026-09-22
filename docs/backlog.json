@@ -1,5 +1,5 @@
 {
-  "title": "Traffic Digital Twin · Delivery plan",
+  "title": "Traffic Digital Twin \u00b7 Delivery plan",
   "version": "2.1",
   "sourceFiles": [
     "traffic_digital_twin_backend_architecture_spec.docx",
@@ -35,9 +35,9 @@
       ],
       "why": "Every downstream feature depends on a single, typed and configurable model.",
       "sources": [
-        "PRD §§2, 7, 9–14, 26",
+        "PRD \u00a7\u00a72, 7, 9\u201314, 26",
         "AGENT.MD: Architecture, Core traffic state",
-        "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
+        "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
       ],
       "dependencies": [],
       "stories": [
@@ -53,16 +53,16 @@
           "userStory": "As the engineering team, I want a documented architecture and scope freeze, so that implementation stays within the MVP.",
           "acceptance": [
             "Create the required apps/web, apps/api, services/simulation, services/intelligence, packages/contracts, packages/scenario-config, db/migrations and db/queries layout.",
-            "Record Browser → Python gateway → owning Go service → Python gateway → Go DB writer → PostgreSQL for durable commands; Go owns domain/safety, Python compute remains private.",
+            "Record Browser \u2192 Python gateway \u2192 owning Go service \u2192 Python gateway \u2192 Go DB writer \u2192 PostgreSQL for durable commands; Go owns domain/safety, Python compute remains private.",
             "Use the prescribed Next.js/React/TypeScript, Go/chi/pgx/sqlc and Python aggregate cell-flow stack; exclude prohibited infrastructure and identity tracking.",
-            "Document current Go-entry architecture separately from required Browser → Python gateway → Go domain service → gateway → Go DB writer; retain private Python compute. Publish an exhaustive route and persistence ownership matrix.",
+            "Document current Go-entry architecture separately from required Browser \u2192 Python gateway \u2192 Go domain service \u2192 gateway \u2192 Go DB writer; retain private Python compute. Publish an exhaustive route and persistence ownership matrix.",
             "Treat historical demo completion as historical only; record production blockers and no-live-control scope. Specify which release is isolated demo versus shared deployment."
           ],
           "dependencies": [],
           "sources": [
-            "PRD §§2, 7, 9–14, 26",
+            "PRD \u00a7\u00a72, 7, 9\u201314, 26",
             "AGENT.MD: Architecture, Core traffic state",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A01",
@@ -93,9 +93,9 @@
             "S01"
           ],
           "sources": [
-            "PRD §§2, 7, 9–14, 26",
+            "PRD \u00a7\u00a72, 7, 9\u201314, 26",
             "AGENT.MD: Architecture, Core traffic state",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A01",
@@ -107,7 +107,7 @@
         },
         {
           "id": "S03",
-          "title": "Configure the C1–C6 network as data",
+          "title": "Configure the C1\u2013C6 network as data",
           "priority": "P0",
           "owner": "Simulation",
           "days": [
@@ -116,7 +116,7 @@
           ],
           "userStory": "As a scenario author, I want graph and signal configuration outside UI code, so that another corridor can be loaded without rewriting components.",
           "acceptance": [
-            "Represent the supplied C1–C6 topology, directed links, turning ratios, lengths and storage in configuration.",
+            "Represent the supplied C1\u2013C6 topology, directed links, turning ratios, lengths and storage in configuration.",
             "C1 and C3 are controlled junctions; C2/C4/C5/C6 start as boundaries.",
             "Validate geometry, phase conflicts, timing bounds and deterministic scenario seeds.",
             "Use configured 35% remaining incident capacity and configured timing bounds consistently in UI and briefing; do not imply C6/C2 signal control.",
@@ -126,9 +126,9 @@
             "S02"
           ],
           "sources": [
-            "PRD §§2, 7, 9–14, 26",
+            "PRD \u00a7\u00a72, 7, 9\u201314, 26",
             "AGENT.MD: Architecture, Core traffic state",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A03"
@@ -156,9 +156,9 @@
             "S02"
           ],
           "sources": [
-            "PRD §§2, 7, 9–14, 26",
+            "PRD \u00a7\u00a72, 7, 9\u201314, 26",
             "AGENT.MD: Architecture, Core traffic state",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A01",
@@ -192,9 +192,9 @@
       ],
       "why": "A credible digital twin is the base for prediction, comparison and every scenario.",
       "sources": [
-        "PRD §§10, 13–14, 16, 21, 24",
+        "PRD \u00a7\u00a710, 13\u201314, 16, 21, 24",
         "AGENT.MD: Demo scenarios, Golden replay",
-        "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
+        "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
       ],
       "dependencies": [
         "E01"
@@ -221,9 +221,9 @@
             "S03"
           ],
           "sources": [
-            "PRD §§10, 13–14, 16, 21, 24",
+            "PRD \u00a7\u00a710, 13\u201314, 16, 21, 24",
             "AGENT.MD: Demo scenarios, Golden replay",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A07",
@@ -242,10 +242,10 @@
           ],
           "userStory": "As an operator, I want fresh traffic state in the browser, so that the view reflects the active simulation.",
           "acceptance": [
-            "Publish aggregates at 1 Hz via Python compute gRPC → owning Go service → Python gateway WebSocket → browser; no direct browser access to private services.",
+            "Publish aggregates at 1 Hz via Python compute gRPC \u2192 owning Go service \u2192 Python gateway WebSocket \u2192 browser; no direct browser access to private services.",
             "Carry run ID, timestamp, source and per-movement state; include smoothing for noisy observations when applicable.",
             "Measure state-to-browser latency below 500 ms locally; make stale/disconnected state visible.",
-            "Forward state through owning Go service → Python gateway → browser; validate before persistence or fanout and bind events to run/config/owner epoch.",
+            "Forward state through owning Go service \u2192 Python gateway \u2192 browser; validate before persistence or fanout and bind events to run/config/owner epoch.",
             "Invalidate stale analysis as well as frames; prove ordered reconnect, bounded buffers, jittered retry, multiple clients and stale-owner rejection."
           ],
           "dependencies": [
@@ -253,9 +253,9 @@
             "S05"
           ],
           "sources": [
-            "PRD §§10, 13–14, 16, 21, 24",
+            "PRD \u00a7\u00a710, 13\u201314, 16, 21, 24",
             "AGENT.MD: Demo scenarios, Golden replay",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A01",
@@ -287,9 +287,9 @@
             "S05"
           ],
           "sources": [
-            "PRD §§10, 13–14, 16, 21, 24",
+            "PRD \u00a7\u00a710, 13\u201314, 16, 21, 24",
             "AGENT.MD: Demo scenarios, Golden replay",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A14"
@@ -319,9 +319,9 @@
       ],
       "why": "The operator must understand current state and future risk without a dense wall of charts.",
       "sources": [
-        "PRD §§5–8.4",
+        "PRD \u00a7\u00a75\u20138.4",
         "AGENT.MD: Product UI",
-        "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
+        "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
       ],
       "dependencies": [
         "E01",
@@ -340,7 +340,7 @@
           "userStory": "As an executive viewer, I want a calm and honest operational interface, so that demo outputs cannot be mistaken for live control.",
           "acceptance": [
             "Provide only Command Center, Network/Junction Intelligence, Vision Analytics, Incidents, Emergency and Audit & Health product navigation.",
-            "Always display DEMONSTRATION MODE · SYNTHETIC TRAFFIC DATA · NO LIVE SIGNAL CONTROL.",
+            "Always display DEMONSTRATION MODE \u00b7 SYNTHETIC TRAFFIC DATA \u00b7 NO LIVE SIGNAL CONTROL.",
             "Use a dark neutral theme, restrained status colors and accessible controls; support operator/supervisor/viewer needs.",
             "Render truthful loading/unknown/offline/degraded/denied states and distinguish demo personas from authenticated roles; no empty health response may show Normal.",
             "Define URL/back/reload behavior for all six sections; verify narrow screens, keyboard, focus, zoom, text scaling and dark-theme readability."
@@ -349,9 +349,9 @@
             "S01"
           ],
           "sources": [
-            "PRD §§5–8.4",
+            "PRD \u00a7\u00a75\u20138.4",
             "AGENT.MD: Product UI",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A03",
@@ -372,7 +372,7 @@
             3,
             4
           ],
-          "userStory": "As an operator, I want moving traffic and signal state on C1–C6, so that I can see how connected traffic evolves.",
+          "userStory": "As an operator, I want moving traffic and signal state on C1\u2013C6, so that I can see how connected traffic evolves.",
           "acceptance": [
             "Load geometry from configuration; never hard-code it in React.",
             "Render direction, queue, flow, speed and signal overlays with smooth interpolation between 1 Hz updates.",
@@ -386,9 +386,9 @@
             "S08"
           ],
           "sources": [
-            "PRD §§5–8.4",
+            "PRD \u00a7\u00a75\u20138.4",
             "AGENT.MD: Product UI",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A04",
@@ -418,9 +418,9 @@
             "S12"
           ],
           "sources": [
-            "PRD §§5–8.4",
+            "PRD \u00a7\u00a75\u20138.4",
             "AGENT.MD: Product UI",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A03",
@@ -454,9 +454,9 @@
       ],
       "why": "Prediction before C1 congestion is the key proof of value.",
       "sources": [
-        "PRD §§16–17, 20–21",
+        "PRD \u00a7\u00a716\u201317, 20\u201321",
         "AGENT.MD: Forecasting",
-        "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
+        "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
       ],
       "dependencies": [
         "E02"
@@ -473,7 +473,7 @@
           ],
           "userStory": "As an operator, I want bounded queue forecasts, so that I can anticipate congestion.",
           "acceptance": [
-            "Implement Q(t+1) = max(0, Q(t) + arrivals − departures).",
+            "Implement Q(t+1) = max(0, Q(t) + arrivals \u2212 departures).",
             "Limit departures by phase, saturation, queue and downstream receiving capacity.",
             "Output queues, occupancy and arrivals at 30/60/120/300 seconds; test non-negative queues and conservation.",
             "Reject invalid/version-mismatched inputs and validate forecast outputs; expose model version and freshness through Go and gateway, never substitute unavailable forecasts with healthy values.",
@@ -484,9 +484,9 @@
             "S07"
           ],
           "sources": [
-            "PRD §§16–17, 20–21",
+            "PRD \u00a7\u00a716\u201317, 20\u201321",
             "AGENT.MD: Forecasting",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [],
           "verificationStatus": "Completed and verified against gateway/writer and forecasting release gates."
@@ -504,7 +504,7 @@
           "acceptance": [
             "Propagate discharge using link travel time, destination split and ETA tolerance.",
             "Return spillback risk/ETA and deterministic explanation facts including upstream source.",
-            "Peak-surge fixture alerts before C1 becomes critical, with approximately 90–120-second scenario lead time; verify against seeded simulation.",
+            "Peak-surge fixture alerts before C1 becomes critical, with approximately 90\u2013120-second scenario lead time; verify against seeded simulation.",
             "Replace static ETA bands/lead-time claims with sourced model evidence; document and test actual dispersion assumptions and distinguish travel ETA from spillback ETA.",
             "Verify each horizon/run mapping and before-congestion warning against seeded simulation; unavailable/expired evidence must not produce no-risk UI."
           ],
@@ -512,9 +512,9 @@
             "S11"
           ],
           "sources": [
-            "PRD §§16–17, 20–21",
+            "PRD \u00a7\u00a716\u201317, 20\u201321",
             "AGENT.MD: Forecasting",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A03"
@@ -538,9 +538,9 @@
       ],
       "why": "Safety is a prerequisite for any candidate application, including emergency priority.",
       "sources": [
-        "PRD §§8.3, 18.3, 22–23",
+        "PRD \u00a7\u00a78.3, 18.3, 22\u201323",
         "AGENT.MD: Safety validator, Recommendation actions",
-        "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
+        "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
       ],
       "dependencies": [
         "E01",
@@ -570,9 +570,9 @@
             "S07"
           ],
           "sources": [
-            "PRD §§8.3, 18.3, 22–23",
+            "PRD \u00a7\u00a78.3, 18.3, 22\u201323",
             "AGENT.MD: Safety validator, Recommendation actions",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A03",
@@ -603,9 +603,9 @@
             "S08"
           ],
           "sources": [
-            "PRD §§8.3, 18.3, 22–23",
+            "PRD \u00a7\u00a78.3, 18.3, 22\u201323",
             "AGENT.MD: Safety validator, Recommendation actions",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A05",
@@ -640,9 +640,9 @@
             "S25"
           ],
           "sources": [
-            "PRD §§8.3, 18.3, 22–23",
+            "PRD \u00a7\u00a78.3, 18.3, 22\u201323",
             "AGENT.MD: Safety validator, Recommendation actions",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A05",
@@ -677,9 +677,9 @@
       ],
       "why": "Recommendations must coordinate C1/C3 and explain why they improve predicted conditions.",
       "sources": [
-        "PRD §§18–20",
+        "PRD \u00a7\u00a718\u201320",
         "AGENT.MD: Signal decision algorithm",
-        "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
+        "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
       ],
       "dependencies": [
         "E04",
@@ -697,7 +697,7 @@
           ],
           "userStory": "As a traffic engineer, I want demand and fairness aware allocation, so that green time serves need without feeding blocked links.",
           "acceptance": [
-            "Normalize queue, predicted arrivals and wait age; use weights 0.8 and 0.4 with receiving factor 1 − occupancy².",
+            "Normalize queue, predicted arrivals and wait age; use weights 0.8 and 0.4 with receiving factor 1 \u2212 occupancy\u00b2.",
             "Apply fairness, emergency boost and incident penalty; allocate flexible green with clipping/redistribution inside the cycle budget.",
             "Test bounds, budget feasibility, waiting-age fairness and blocked receiving links; reject infeasible budgets.",
             "Demonstrate emergency/incident modifiers and downstream constraints with explicit regression cases; a bounded allocation alone is not proof that every requested modifier exists.",
@@ -708,9 +708,9 @@
             "S13"
           ],
           "sources": [
-            "PRD §§18–20",
+            "PRD \u00a7\u00a718\u201320",
             "AGENT.MD: Signal decision algorithm",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [],
           "verificationStatus": "Completed and verified against gateway/writer and schema release gates; evidence in docs/epic6-status.md."
@@ -726,10 +726,10 @@
           ],
           "userStory": "As an operator, I want bounded network candidates, so that C1 clearance and C3 release work together.",
           "acceptance": [
-            "Use AGDA plus ±5/10-second split/offset adjustments, allowed cycle lengths and safe configured phase order.",
+            "Use AGDA plus \u00b15/10-second split/offset adjustments, allowed cycle lengths and safe configured phase order.",
             "Coordinate green windows with platoon ETA and gate upstream release when storage is constrained.",
             "Discard unsafe plans before rollout; do not create arbitrary phases.",
-            "Implement or explicitly defer each claimed ±5/10 split/offset and cycle/phase capability with evidence; current model uses bounded green candidates, not demonstrated full offset search.",
+            "Implement or explicitly defer each claimed \u00b15/10 split/offset and cycle/phase capability with evidence; current model uses bounded green candidates, not demonstrated full offset search.",
             "Include candidate provenance/config/run/initial state and validate receiving capacity/locks/emergency conditions before exposing and again before applying."
           ],
           "dependencies": [
@@ -737,9 +737,9 @@
             "S16"
           ],
           "sources": [
-            "PRD §§18–20",
+            "PRD \u00a7\u00a718\u201320",
             "AGENT.MD: Signal decision algorithm",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [],
           "verificationStatus": "Completed and verified against gateway/writer and schema release gates; evidence in docs/epic6-status.md."
@@ -767,9 +767,9 @@
             "S21"
           ],
           "sources": [
-            "PRD §§18–20",
+            "PRD \u00a7\u00a718\u201320",
             "AGENT.MD: Signal decision algorithm",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [],
           "verificationStatus": "Completed and verified against gateway/writer and schema release gates; evidence in docs/epic6-status.md."
@@ -795,9 +795,9 @@
             "S18"
           ],
           "sources": [
-            "PRD §§18–20",
+            "PRD \u00a7\u00a718\u201320",
             "AGENT.MD: Signal decision algorithm",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A02",
@@ -823,9 +823,9 @@
       ],
       "why": "The operator must test the proposed intervention on equal initial conditions.",
       "sources": [
-        "PRD §§8.4, 10.1, 13, 21.1",
+        "PRD \u00a7\u00a78.4, 10.1, 13, 21.1",
         "AGENT.MD: Definition of done",
-        "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
+        "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
       ],
       "dependencies": [
         "E02",
@@ -855,9 +855,9 @@
             "S13"
           ],
           "sources": [
-            "PRD §§8.4, 10.1, 13, 21.1",
+            "PRD \u00a7\u00a78.4, 10.1, 13, 21.1",
             "AGENT.MD: Definition of done",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A02"
@@ -887,9 +887,9 @@
             "S21"
           ],
           "sources": [
-            "PRD §§8.4, 10.1, 13, 21.1",
+            "PRD \u00a7\u00a78.4, 10.1, 13, 21.1",
             "AGENT.MD: Definition of done",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A02",
@@ -917,9 +917,9 @@
       "sources": [
         "traffic_digital_twin_backend_architecture_spec.docx",
         "traffic_digital_twin_api_concepts_spec.docx",
-        "PRD §§8.8, 12–13, 23–25",
+        "PRD \u00a7\u00a78.8, 12\u201313, 23\u201325",
         "AGENT.MD: Audit, Golden replay",
-        "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
+        "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
       ],
       "dependencies": [
         "E01",
@@ -947,9 +947,9 @@
             "S04"
           ],
           "sources": [
-            "PRD §§8.8, 12–13, 23–25",
+            "PRD \u00a7\u00a78.8, 12\u201313, 23\u201325",
             "AGENT.MD: Audit, Golden replay",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A05",
@@ -981,9 +981,9 @@
             "S08"
           ],
           "sources": [
-            "PRD §§8.8, 12–13, 23–25",
+            "PRD \u00a7\u00a78.8, 12\u201313, 23\u201325",
             "AGENT.MD: Audit, Golden replay",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A04",
@@ -1014,9 +1014,9 @@
             "S06"
           ],
           "sources": [
-            "PRD §§8.8, 12–13, 23–25",
+            "PRD \u00a7\u00a78.8, 12\u201313, 23\u201325",
             "AGENT.MD: Audit, Golden replay",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A11",
@@ -1037,7 +1037,7 @@
           "acceptance": [
             "Display timestamp, type, junction, recommendation, operator action, before/after, reason and result.",
             "Navigate from decisions to their audit evidence and display degraded states without hiding them.",
-            "Test critical operator action → persisted audit → visible timeline flow.",
+            "Test critical operator action \u2192 persisted audit \u2192 visible timeline flow.",
             "Consume next_after or implement explicit newest pagination; display recommendation ID, before/after, actor, reason, outcome and run links. Prove navigation beyond 100 events.",
             "Refresh on audit.appended or documented polling, reconcile cursor on reconnect and distinguish loading/empty/error; show uncertain application alongside durable intent."
           ],
@@ -1047,9 +1047,9 @@
             "S26"
           ],
           "sources": [
-            "PRD §§8.8, 12–13, 23–25",
+            "PRD \u00a7\u00a78.8, 12\u201313, 23\u201325",
             "AGENT.MD: Audit, Golden replay",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A10"
@@ -1082,9 +1082,9 @@
       "sources": [
         "traffic_digital_twin_backend_architecture_spec.docx",
         "traffic_digital_twin_api_concepts_spec.docx",
-        "PRD §§8.6, 21.2",
+        "PRD \u00a7\u00a78.6, 21.2",
         "AGENT.MD: Incident mode",
-        "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
+        "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
       ],
       "dependencies": [
         "E06",
@@ -1115,9 +1115,9 @@
             "S25"
           ],
           "sources": [
-            "PRD §§8.6, 21.2",
+            "PRD \u00a7\u00a78.6, 21.2",
             "AGENT.MD: Incident mode",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A03",
@@ -1148,9 +1148,9 @@
             "S22"
           ],
           "sources": [
-            "PRD §§8.6, 21.2",
+            "PRD \u00a7\u00a78.6, 21.2",
             "AGENT.MD: Incident mode",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A17"
@@ -1175,9 +1175,9 @@
       ],
       "why": "Emergency priority is only credible with safe transitions and a bounded return to normal.",
       "sources": [
-        "PRD §§8.7, 21.3, 23",
+        "PRD \u00a7\u00a78.7, 21.3, 23",
         "AGENT.MD: Emergency mode",
-        "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
+        "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
       ],
       "dependencies": [
         "E06",
@@ -1194,9 +1194,9 @@
             11,
             11
           ],
-          "userStory": "As an operator, I want a simulated emergency on C6 → C3 → C1 → C2, so that I can see corridor readiness ahead of the vehicle.",
+          "userStory": "As an operator, I want a simulated emergency on C6 \u2192 C3 \u2192 C1 \u2192 C2, so that I can see corridor readiness ahead of the vehicle.",
           "acceptance": [
-            "Create a simulated authenticated emergency event through Python gateway → Go owner; persist its typed result through gateway → Go writer.",
+            "Create a simulated authenticated emergency event through Python gateway \u2192 Go owner; persist its typed result through gateway \u2192 Go writer.",
             "Display vehicle location, per-junction ETA, pre-clearance schedule, signal state and transition countdown.",
             "Treat boundary nodes as route points unless explicitly configured as signalized; do not invent a C2 signal.",
             "Match scheduled/pre_clearance/priority/recovery/complete enums in all screens; show actual ETA, stage/countdown and route position where data exists.",
@@ -1208,9 +1208,9 @@
             "S25"
           ],
           "sources": [
-            "PRD §§8.7, 21.3, 23",
+            "PRD \u00a7\u00a78.7, 21.3, 23",
             "AGENT.MD: Emergency mode",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A03",
@@ -1230,7 +1230,7 @@
           ],
           "userStory": "As an operator, I want safe priority followed by recovery, so that emergency passage does not starve cross traffic.",
           "acceptance": [
-            "Enforce normal → amber → all-red → priority → passage → recovery at controlled junctions.",
+            "Enforce normal \u2192 amber \u2192 all-red \u2192 priority \u2192 passage \u2192 recovery at controlled junctions.",
             "Emergency priority cannot bypass conflicts, manual/safety constraints or downstream protections; conflicts yield a visible safe outcome.",
             "Show displaced queues, compensating cycles and return to normal within a configured bound; end-to-end test the full sequence.",
             "Prove manual locks and emergency scheduling have a consistent protection contract across Go and Python; audit conflicts and preserve safe amber/all-red.",
@@ -1243,9 +1243,9 @@
             "S30"
           ],
           "sources": [
-            "PRD §§8.7, 21.3, 23",
+            "PRD \u00a7\u00a78.7, 21.3, 23",
             "AGENT.MD: Emergency mode",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A17"
@@ -1271,9 +1271,9 @@
       ],
       "why": "A reliable eight-minute offline demonstration is the release gate.",
       "sources": [
-        "PRD §§5, 21, 24–28",
+        "PRD \u00a7\u00a75, 21, 24\u201328",
         "AGENT.MD: Tests required, Definition of done",
-        "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
+        "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
       ],
       "dependencies": [
         "E03",
@@ -1300,7 +1300,7 @@
             "Cover Go validation/safety/audit, forecast propagation, AGDA bounds/fairness, PN-MPC scoring and frontend operator flows.",
             "Run an end-to-end test for peak surge, C3 incident and ambulance corridor with deterministic resets.",
             "Verify early congestion warning, equal-seed comparison, reasons/audit, safe emergency transitions and recovery.",
-            "Run real browser → gateway → Go → Python compute → gateway/writer → PostgreSQL scenarios without API mocks; test every route/method and independent read-only/stream paths.",
+            "Run real browser \u2192 gateway \u2192 Go \u2192 Python compute \u2192 gateway/writer \u2192 PostgreSQL scenarios without API mocks; test every route/method and independent read-only/stream paths.",
             "Exercise invalid payloads, offline/slow/lost response, 401/403/409/429/503/504, concurrency, persistence failure, restart and >100 audit records; report skipped/blocked tests separately."
           ],
           "dependencies": [
@@ -1311,9 +1311,9 @@
             "S32"
           ],
           "sources": [
-            "PRD §§5, 21, 24–28",
+            "PRD \u00a7\u00a75, 21, 24\u201328",
             "AGENT.MD: Tests required, Definition of done",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A02",
@@ -1333,7 +1333,7 @@
           ],
           "userStory": "As a presenter, I want an eight-minute guided story, so that executives understand the outcome without verbal rescue.",
           "acceptance": [
-            "Provide START DGP DEMONSTRATION with current state → prediction → recommendation → comparison → incident → ambulance → human override/audit → shadow-pilot ask.",
+            "Provide START DGP DEMONSTRATION with current state \u2192 prediction \u2192 recommendation \u2192 comparison \u2192 incident \u2192 ambulance \u2192 human override/audit \u2192 shadow-pilot ask.",
             "Use deterministic scenarios and visibly preserve synthetic/no-live-control disclosure.",
             "Prepare a concise demo script and preflight checklist; presentation polish cannot block core functionality.",
             "Remove fixed gains, zero-risk/readiness guarantees and unsupported timing from briefing; use sourced run results or clearly labeled explanatory content.",
@@ -1345,9 +1345,9 @@
             "S32"
           ],
           "sources": [
-            "PRD §§5, 21, 24–28",
+            "PRD \u00a7\u00a75, 21, 24\u201328",
             "AGENT.MD: Tests required, Definition of done",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A03",
@@ -1379,9 +1379,9 @@
             "S33"
           ],
           "sources": [
-            "PRD §§5, 21, 24–28",
+            "PRD \u00a7\u00a75, 21, 24\u201328",
             "AGENT.MD: Tests required, Definition of done",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A11",
@@ -1414,9 +1414,9 @@
       ],
       "why": "Useful supporting evidence, but explicitly cut before any protected core capability.",
       "sources": [
-        "PRD §§3.1, 8.5, 15, 27",
+        "PRD \u00a7\u00a73.1, 8.5, 15, 27",
         "AGENT.MD: Computer Vision, Priority if time slips",
-        "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
+        "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md (2026-09-17)"
       ],
       "dependencies": [
         "E01",
@@ -1435,7 +1435,7 @@
           ],
           "userStory": "As a viewer, I want sample-video traffic analytics at C3, so that I understand how cameras could supply state.",
           "acceptance": [
-            "Use OpenCV → pretrained YOLO → ByteTrack → lane/ROI mapping → typed aggregate TrafficState via private Go ownership and Python gateway.",
+            "Use OpenCV \u2192 pretrained YOLO \u2192 ByteTrack \u2192 lane/ROI mapping \u2192 typed aggregate TrafficState via private Go ownership and Python gateway.",
             "Count once at the directional crossing line, estimate queues/occupancy and label uncalibrated speed as a demo estimate.",
             "Use clearly labeled non-Odisha sample video, temporary camera-local IDs only; no ANPR, faces or cross-camera identity.",
             "Current CV is not implemented; keep unavailable until a real sample pipeline passes. Send typed aggregates through its Go owner and gateway; writer persists only declared durable events/aggregates.",
@@ -1446,9 +1446,9 @@
             "S06"
           ],
           "sources": [
-            "PRD §§3.1, 8.5, 15, 27",
+            "PRD \u00a7\u00a73.1, 8.5, 15, 27",
             "AGENT.MD: Computer Vision, Priority if time slips",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A17"
@@ -1478,9 +1478,9 @@
             "S08"
           ],
           "sources": [
-            "PRD §§3.1, 8.5, 15, 27",
+            "PRD \u00a7\u00a73.1, 8.5, 15, 27",
             "AGENT.MD: Computer Vision, Priority if time slips",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A17"
@@ -1499,7 +1499,7 @@
           "userStory": "As a viewer, I want restrained presentation polish, so that the explanation is easier to follow.",
           "acceptance": [
             "Add heatmaps/advanced charts only if they clarify already-tested behavior and time remains.",
-            "Use 150–250ms transitions and smooth vehicle interpolation; critical alerts pulse once rather than continuously.",
+            "Use 150\u2013250ms transitions and smooth vehicle interpolation; critical alerts pulse once rather than continuously.",
             "Respect reduced motion; remove nonessential animation before compromising reliability.",
             "Retain reduced-motion behavior and verify no looping or inaccessible alert motion; measure contrast/text/targets and avoid status conveyed only by color.",
             "Optional polish cannot mask stale/unavailable data, add invented comparisons or block critical flows; scope and accept it only after mandatory gates."
@@ -1509,9 +1509,9 @@
             "S22"
           ],
           "sources": [
-            "PRD §§3.1, 8.5, 15, 27",
+            "PRD \u00a7\u00a73.1, 8.5, 15, 27",
             "AGENT.MD: Computer Vision, Priority if time slips",
-            "PRD §§32–34; docs/UX-PRODUCTION-AUDIT.md"
+            "PRD \u00a7\u00a732\u201334; docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
             "A16"
@@ -1536,8 +1536,8 @@
       ],
       "why": "Align the Go public control plane, modular persistence, gRPC controls, and API contracts with the supplied specifications.",
       "sources": [
-        "traffic_digital_twin_backend_architecture_spec.docx §§1–20",
-        "traffic_digital_twin_api_concepts_spec.docx §§1–18"
+        "traffic_digital_twin_backend_architecture_spec.docx \u00a7\u00a71\u201320",
+        "traffic_digital_twin_api_concepts_spec.docx \u00a7\u00a71\u201318"
       ],
       "dependencies": [
         "E01"
@@ -1577,7 +1577,7 @@
             "S02"
           ],
           "sources": [
-            "PRD §§32–34",
+            "PRD \u00a7\u00a732\u201334",
             "docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
@@ -1598,7 +1598,7 @@
           ],
           "userStory": "As the release team, I want to make endpoint ownership and contracts exhaustive, so that the requested architecture and operator journeys are verifiable.",
           "acceptance": [
-            "Maintain machine-checkable method/path → Go owner → RPC → persistence-class mapping for every row in the audit inventory and every frontend request; include mode, locks, replay, stream and compatibility aliases.",
+            "Maintain machine-checkable method/path \u2192 Go owner \u2192 RPC \u2192 persistence-class mapping for every row in the audit inventory and every frontend request; include mode, locks, replay, stream and compatibility aliases.",
             "Generate/validate OpenAPI, protobuf and runtime response schemas; use canonical modes and distinct start/decision/comparison types. Unknown route/method and invalid versions fail explicitly.",
             "Contract tests prove each route reaches its specified owner, wrong-owner requests fail, and reads/health/stream do not accidentally create writes."
           ],
@@ -1607,7 +1607,7 @@
             "S39"
           ],
           "sources": [
-            "PRD §§32–34",
+            "PRD \u00a7\u00a732\u201334",
             "docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
@@ -1639,7 +1639,7 @@
             "S40"
           ],
           "sources": [
-            "PRD §§32–34",
+            "PRD \u00a7\u00a732\u201334",
             "docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
@@ -1671,7 +1671,7 @@
             "S41"
           ],
           "sources": [
-            "PRD §§32–34",
+            "PRD \u00a7\u00a732\u201334",
             "docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
@@ -1704,7 +1704,7 @@
             "S42"
           ],
           "sources": [
-            "PRD §§32–34",
+            "PRD \u00a7\u00a732\u201334",
             "docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
@@ -1728,7 +1728,7 @@
       ],
       "why": "Mandatory revised release scope; scheduling is provisional and must be re-estimated after design and evidence review.",
       "sources": [
-        "PRD §§32–34",
+        "PRD \u00a7\u00a732\u201334",
         "docs/UX-PRODUCTION-AUDIT.md"
       ],
       "dependencies": [
@@ -1776,7 +1776,7 @@
             "S26"
           ],
           "sources": [
-            "PRD §§32–34",
+            "PRD \u00a7\u00a732\u201334",
             "docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
@@ -1812,7 +1812,7 @@
             "S41"
           ],
           "sources": [
-            "PRD §§32–34",
+            "PRD \u00a7\u00a732\u201334",
             "docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
@@ -1846,7 +1846,7 @@
             "S40"
           ],
           "sources": [
-            "PRD §§32–34",
+            "PRD \u00a7\u00a732\u201334",
             "docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
@@ -1875,7 +1875,7 @@
             "S44"
           ],
           "sources": [
-            "PRD §§32–34",
+            "PRD \u00a7\u00a732\u201334",
             "docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
@@ -1908,7 +1908,7 @@
             "S47"
           ],
           "sources": [
-            "PRD §§32–34",
+            "PRD \u00a7\u00a732\u201334",
             "docs/UX-PRODUCTION-AUDIT.md"
           ],
           "auditFindings": [
@@ -1918,12 +1918,529 @@
           "verificationStatus": "Completed and verified; evidence in docs/epic14-status.md."
         }
       ]
+    },
+    {
+      "id": "E15",
+      "title": "Environment Discovery, Contracts & Baseline Assets",
+      "priority": "P0",
+      "owner": "Lead & QA",
+      "days": [
+        1,
+        2
+      ],
+      "why": "Establishes verified hardware, dependency locks, ITD weights, 12-video asset provenance, and frozen time contracts.",
+      "sources": [
+        "PRD \u00a7\u00a71, 5, 7, 8, 9, 12, 21",
+        "agent_tasks.json T01-T04"
+      ],
+      "dependencies": [],
+      "stories": [
+        {
+          "id": "T01",
+          "title": "Discover workspace, hardware and assets",
+          "priority": "P0",
+          "owner": "Lead",
+          "days": [
+            1,
+            1
+          ],
+          "userStory": "As the lead agent, I want genuine hardware and asset discovery so that execution proceeds with verified local resources.",
+          "acceptance": [
+            "Discover Pop!_OS, Intel i7-1065G7 (8 vCPUs), 15.7GB RAM, and NVIDIA MX230 (sm_61).",
+            "Test PyTorch 2.13.0 CPU execution target and record honest GPU limitation.",
+            "Locate and verify all 12 MP4 videos and local ITD v1.2 model checkpoint.",
+            "Execute baseline tests across Python (58 passed), Go (passed), and UI Vitest (96 passed).",
+            "Emit environment.json, baseline-status.json, and blockers.json."
+          ],
+          "dependencies": [],
+          "sources": [
+            "PRD \u00a7\u00a71, 5, 7, 8, 9",
+            "agent_tasks.json T01"
+          ]
+        },
+        {
+          "id": "T02",
+          "title": "Freeze schemas, clocks and evidence plan",
+          "priority": "P0",
+          "owner": "Lead & QA",
+          "days": [
+            1,
+            1
+          ],
+          "userStory": "As the systems architect, I want 4 distinct clocks and schemas frozen so that downstream vision and dynamics pipelines operate on typed contracts.",
+          "acceptance": [
+            "Define source_time_s, event_time_s, available_at_s, and simulation_time_s clocks.",
+            "Specify CameraObservation schema (camera-observation-v1) with 5s binning.",
+            "Define PredictionSnapshot schema and hidden-future data sanitizer rules.",
+            "Produce contracts-plan.md and test-plan.json."
+          ],
+          "dependencies": [
+            "T01"
+          ],
+          "sources": [
+            "PRD \u00a7\u00a76, 12, 21",
+            "agent_tasks.json T02"
+          ]
+        },
+        {
+          "id": "T03",
+          "title": "Verify already-downloaded ITD v1.2 and dependency compatibility",
+          "priority": "P0",
+          "owner": "Vision Specialist",
+          "days": [
+            1,
+            2
+          ],
+          "userStory": "As the vision engineer, I want the local ITD checkpoint verified so that traffic detection runs on genuine Indian Traffic Dataset weights.",
+          "acceptance": [
+            "Verify best_xl_ITD_v1.2.pt SHA-256 (06006ecb5fe52a348ceed805bf0aa6b32af7e24e689d09a6582f6d53159d6b00).",
+            "Verify 8 canonical ITD classes (two wheeler, autorickshaw, car, bus, LCV, truck, bicycle, pedestrain).",
+            "Run inference smoke test on sample video frame with ByteTrack association.",
+            "Produce downloads.lock.json, model-report.json, and services/vision/requirements.lock."
+          ],
+          "dependencies": [
+            "T01"
+          ],
+          "sources": [
+            "PRD \u00a78",
+            "agent_tasks.json T03"
+          ]
+        },
+        {
+          "id": "T04",
+          "title": "Inventory twelve clips and source records",
+          "priority": "P0",
+          "owner": "Vision Specialist",
+          "days": [
+            1,
+            2
+          ],
+          "userStory": "As the vision engineer, I want all 12 video clips indexed with hashes, resolutions, and operational slots so that scenario driving is deterministic.",
+          "acceptance": [
+            "Index all 12 MP4 videos with SHA-256 hashes, frame rates, durations, and resolutions.",
+            "Map CAM-01..03 and CAM-06 to external boundary inputs C2-C1, C4-C1, C5-C1, C6-C3.",
+            "Assign CAM-04 and CAM-05 to internal links C3-C1 and C1-C3 without mass injection.",
+            "Produce asset-manifest.json and media-review.json."
+          ],
+          "dependencies": [
+            "T01"
+          ],
+          "sources": [
+            "PRD \u00a79",
+            "agent_tasks.json T04"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E16",
+      "title": "Automated Vision Analytics & Multi-Stream Processing",
+      "priority": "P0",
+      "owner": "Vision Specialist",
+      "days": [
+        2,
+        4
+      ],
+      "why": "Implements ITD YOLO detection, ByteTrack tracking, directional line crossing, and concurrent video ingestion.",
+      "sources": [
+        "PRD \u00a7\u00a710, 11, 17, 18",
+        "agent_tasks.json T05, T06, T07, T14"
+      ],
+      "dependencies": [
+        "E15"
+      ],
+      "stories": [
+        {
+          "id": "T05",
+          "title": "Propose and verify camera geometry",
+          "priority": "P0",
+          "owner": "Vision Specialist",
+          "days": [
+            2,
+            2
+          ],
+          "userStory": "As the vision engineer, I want automated normalized counting lines and ROIs for CAM-01..06 so that vehicle counting is reproducible.",
+          "acceptance": [
+            "Propose non-self-intersecting road ROI polygons and directional counting lines.",
+            "Generate annotated visual preview overlays for each camera slot.",
+            "Produce packages/camera-config/cameras.json and geometry-review.json."
+          ],
+          "dependencies": [
+            "T02",
+            "T03",
+            "T04"
+          ],
+          "sources": [
+            "PRD \u00a710",
+            "agent_tasks.json T05"
+          ]
+        },
+        {
+          "id": "T06",
+          "title": "Implement detector, tracker and aggregate counts",
+          "priority": "P0",
+          "owner": "Vision Specialist",
+          "days": [
+            2,
+            3
+          ],
+          "userStory": "As an operator, I want real-time vehicle detections tracked across counting lines and aggregated into 5-second bins.",
+          "acceptance": [
+            "Integrate ITD detector with ByteTrack tracker per camera session.",
+            "Enforce directional line crossing state machine preventing duplicate counts.",
+            "Emit camera-observation-v1 JSONL records with class breakdown and visible queue estimate.",
+            "Generate observation-manifest.json and vision-test-report.json."
+          ],
+          "dependencies": [
+            "T02",
+            "T03",
+            "T05"
+          ],
+          "sources": [
+            "PRD \u00a7\u00a711, 12",
+            "agent_tasks.json T06"
+          ]
+        },
+        {
+          "id": "T07",
+          "title": "Implement concurrent processing",
+          "priority": "P0",
+          "owner": "Vision Specialist",
+          "days": [
+            3,
+            4
+          ],
+          "userStory": "As a systems engineer, I want concurrent processing across video sessions with bounded queues and backpressure.",
+          "acceptance": [
+            "Orchestrate concurrent video ingestion across camera sessions.",
+            "Implement bounded frame queues and overload backpressure policy.",
+            "Produce concurrency-test-report.json with throughput and lag measurements."
+          ],
+          "dependencies": [
+            "T06"
+          ],
+          "sources": [
+            "PRD \u00a717",
+            "agent_tasks.json T07"
+          ]
+        },
+        {
+          "id": "T14",
+          "title": "Automate pre-annotation and qualified review",
+          "priority": "P0",
+          "owner": "Vision & QA",
+          "days": [
+            3,
+            4
+          ],
+          "userStory": "As a QA engineer, I want automated pre-annotation and reference-count evaluation without claiming unverified ground truth.",
+          "acceptance": [
+            "Export YOLO-format pseudo-labels with class IDs and normalized bounding boxes.",
+            "Record agent review provenance and comparative count accuracy against sample references.",
+            "Produce annotation-provenance.json and reference-quality-report.json."
+          ],
+          "dependencies": [
+            "T06"
+          ],
+          "sources": [
+            "PRD \u00a718",
+            "agent_tasks.json T14"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E17",
+      "title": "Numerical Dynamics, Mass Conservation & Causal Forecasting",
+      "priority": "P0",
+      "owner": "Dynamics Specialist",
+      "days": [
+        3,
+        5
+      ],
+      "why": "Ensures macroscopic cell transmission model conserves mass, bridges video observations to boundary inputs, and computes causal forecasts.",
+      "sources": [
+        "PRD \u00a7\u00a75, 13, 14, 15, 16",
+        "agent_tasks.json T08, T09, T10, T11"
+      ],
+      "dependencies": [
+        "E15"
+      ],
+      "stories": [
+        {
+          "id": "T08",
+          "title": "Repair flow dynamics and metrics",
+          "priority": "P0",
+          "owner": "Dynamics Specialist",
+          "days": [
+            3,
+            3
+          ],
+          "userStory": "As a traffic engineer, I want strict mass conservation, numerical stability, and FIFO cell flow without artificial clamps.",
+          "acceptance": [
+            "Verify CFL condition dt <= L/v across all network links.",
+            "Enforce strict FIFO and shared receiving capacity across merge junctions.",
+            "Verify physical conservation: initial + inflows = current + backlogs + exits.",
+            "Produce conservation-test-report.json."
+          ],
+          "dependencies": [
+            "T02"
+          ],
+          "sources": [
+            "PRD \u00a7\u00a75, 14",
+            "agent_tasks.json T08"
+          ]
+        },
+        {
+          "id": "T09",
+          "title": "Implement complete snapshot and sanitizer",
+          "priority": "P0",
+          "owner": "Dynamics Specialist",
+          "days": [
+            3,
+            4
+          ],
+          "userStory": "As a prediction engineer, I want complete sanitized snapshots that enable identical continuation without future data leakage.",
+          "acceptance": [
+            "Serialize full state including cells, backlogs, cumulative counters, and signal timings.",
+            "Verify continuation equivalence: snapshot restore yields identical future steps.",
+            "Sanitize snapshot to strip future scenario events and random seeds.",
+            "Produce snapshot-equivalence-report.json and causality-report.json."
+          ],
+          "dependencies": [
+            "T02",
+            "T08"
+          ],
+          "sources": [
+            "PRD \u00a7\u00a712, 15",
+            "agent_tasks.json T09"
+          ]
+        },
+        {
+          "id": "T10",
+          "title": "Implement video-derived boundary demand",
+          "priority": "P0",
+          "owner": "Dynamics Specialist",
+          "days": [
+            4,
+            4
+          ],
+          "userStory": "As an operator, I want video observation flows to drive virtual boundary demand causally with delayed uniform release.",
+          "acceptance": [
+            "Implement VideoProfileDemandProvider bridging 5s observation bins into 1s discrete simulation ticks.",
+            "Enforce causal delayed uniform release: bin [t-5, t) supplies mass over [t, t+5).",
+            "Map CAM-01, CAM-02, CAM-03, CAM-06 to C2-C1, C4-C1, C5-C1, C6-C3.",
+            "Verify exact mass conservation between video crossings and cumulative offered demand.",
+            "Produce demand-profile-manifest.json and demand-conservation-report.json."
+          ],
+          "dependencies": [
+            "T02",
+            "T06",
+            "T08"
+          ],
+          "sources": [
+            "PRD \u00a713",
+            "agent_tasks.json T10"
+          ]
+        },
+        {
+          "id": "T11",
+          "title": "Implement causal demand forecasts and comparisons",
+          "priority": "P0",
+          "owner": "Dynamics Specialist",
+          "days": [
+            4,
+            5
+          ],
+          "userStory": "As a traffic controller, I want causal EWMA and persistence forecasts (+30s, +1m, +2m, +5m) and candidate timing plan scoring.",
+          "acceptance": [
+            "Implement persistence and EWMA (alpha=0.3) demand predictors.",
+            "Simulate 120s candidate plan rollouts from sanitized snapshots.",
+            "Evaluate candidate signal plans against delay, queue, and spillback metrics.",
+            "Produce forecast-report.json and candidate-test-report.json."
+          ],
+          "dependencies": [
+            "T09",
+            "T10"
+          ],
+          "sources": [
+            "PRD \u00a7\u00a715, 16",
+            "agent_tasks.json T11"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E18",
+      "title": "Go API Gateway, Persistence & Dual-Mode Dashboard UI",
+      "priority": "P0",
+      "owner": "API & UI Specialist",
+      "days": [
+        4,
+        6
+      ],
+      "why": "Provides public Go REST/WebSocket endpoints and dual-mode UI for cached observation replay and online inference.",
+      "sources": [
+        "PRD \u00a7\u00a76, 19, 20",
+        "agent_tasks.json T12, T13"
+      ],
+      "dependencies": [
+        "E15"
+      ],
+      "stories": [
+        {
+          "id": "T12",
+          "title": "Implement Go API and persistence extensions",
+          "priority": "P0",
+          "owner": "API Specialist",
+          "days": [
+            4,
+            5
+          ],
+          "userStory": "As a frontend developer, I want Go REST and WebSocket endpoints for camera observations, jobs, and run configurations.",
+          "acceptance": [
+            "Expose GET /api/v1/observations and WebSocket streaming in Go Chi API.",
+            "Support mode parameter: cached_observations vs online_inference.",
+            "Apply database migration for camera observation runs.",
+            "Produce api-contract-report.json and migration-test-report.json."
+          ],
+          "dependencies": [
+            "T02"
+          ],
+          "sources": [
+            "PRD \u00a7\u00a719, 20",
+            "agent_tasks.json T12"
+          ]
+        },
+        {
+          "id": "T13",
+          "title": "Integrate actual video and graph UI",
+          "priority": "P0",
+          "owner": "UI Specialist",
+          "days": [
+            5,
+            6
+          ],
+          "userStory": "As a traffic control room operator, I want to toggle between cached playback and live video inference with synchronized playback.",
+          "acceptance": [
+            "Integrate playable MP4 video streams with synchronized observation overlays.",
+            "Provide dual-mode selector (Cached Observation Playback vs Concurrent Online Inference).",
+            "Display explicit source provenance, 5-second observation lag disclosure, and uncalibrated speed disclaimer.",
+            "Produce ui-test-report.json and screenshots-manifest.json."
+          ],
+          "dependencies": [
+            "T02",
+            "T12"
+          ],
+          "sources": [
+            "PRD \u00a719",
+            "agent_tasks.json T13"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E19",
+      "title": "Verification, Benchmarking, Packaging & Operational Rehearsal",
+      "priority": "P0",
+      "owner": "QA & Lead",
+      "days": [
+        6,
+        7
+      ],
+      "why": "Validates end-to-end integration, measures target-machine performance, and packages runbooks and rollback procedures.",
+      "sources": [
+        "PRD \u00a7\u00a721, 24, 25, 26, 27, 28",
+        "agent_tasks.json T15, T16, T17"
+      ],
+      "dependencies": [
+        "E16",
+        "E17",
+        "E18"
+      ],
+      "stories": [
+        {
+          "id": "T15",
+          "title": "Execute integrated normal and failure tests",
+          "priority": "P0",
+          "owner": "QA Specialist",
+          "days": [
+            6,
+            6
+          ],
+          "userStory": "As a quality engineer, I want integrated normal, degraded, and failure scenarios verified under automated testing.",
+          "acceptance": [
+            "Execute end-to-end normal scenario with video-driven external demand.",
+            "Test camera failure/disconnection and verify honest degraded state.",
+            "Test C3 incident capacity reduction and emergency corridor priority recovery.",
+            "Produce integration-test-report.json."
+          ],
+          "dependencies": [
+            "T07",
+            "T11",
+            "T12",
+            "T13"
+          ],
+          "sources": [
+            "PRD \u00a7\u00a721, 25",
+            "agent_tasks.json T15"
+          ]
+        },
+        {
+          "id": "T16",
+          "title": "Benchmark target machine",
+          "priority": "P0",
+          "owner": "QA Specialist",
+          "days": [
+            6,
+            7
+          ],
+          "userStory": "As a DevOps engineer, I want measured throughput, FPS, latency, and memory utilization on the host machine.",
+          "acceptance": [
+            "Measure per-camera FPS and inference latency on target host.",
+            "Measure concurrent multi-stream memory and CPU usage.",
+            "Produce benchmark-report.json with genuine hardware measurements."
+          ],
+          "dependencies": [
+            "T15"
+          ],
+          "sources": [
+            "PRD \u00a7\u00a717, 21",
+            "agent_tasks.json T16"
+          ]
+        },
+        {
+          "id": "T17",
+          "title": "Document, package and rehearse",
+          "priority": "P0",
+          "owner": "Lead",
+          "days": [
+            7,
+            7
+          ],
+          "userStory": "As an executive stakeholder, I want complete runbooks, rollback guides, and an honest readiness matrix for demonstration.",
+          "acceptance": [
+            "Produce RUNBOOK.md, ROLLBACK.md, and KNOWN_LIMITATIONS.md.",
+            "Emit readiness.json with separate engineering, concurrency, and licensing statuses.",
+            "Ensure unified scripts/twin.py CLI provides doctor, assets, model-check, geometry, process, and verify commands."
+          ],
+          "dependencies": [
+            "T14",
+            "T15",
+            "T16"
+          ],
+          "sources": [
+            "PRD \u00a7\u00a724, 25, 26, 27, 28",
+            "agent_tasks.json T17"
+          ]
+        }
+      ]
     }
   ],
   "decisions": [
     {
       "title": "CV has conflicting scope language",
-      "detail": "PRD §3.1 lists a sample-video pipeline as must-build. AGENT.MD explicitly calls it optional, and PRD §27 cuts it in a 10-day build. Plan it as P2; core traffic remains synthetic."
+      "detail": "PRD \u00a73.1 lists a sample-video pipeline as must-build. AGENT.MD explicitly calls it optional, and PRD \u00a727 cuts it in a 10-day build. Plan it as P2; core traffic remains synthetic."
     },
     {
       "title": "Safety and replay move earlier",
@@ -1931,7 +2448,7 @@
     },
     {
       "title": "C2 is a boundary in the first build",
-      "detail": "The emergency route reaches C2, but PRD §2.1 controls only C1/C3. Show ETA and route progress at C2; signal offsets/pre-clearance there require explicit signal configuration."
+      "detail": "The emergency route reaches C2, but PRD \u00a72.1 controls only C1/C3. Show ETA and route progress at C2; signal offsets/pre-clearance there require explicit signal configuration."
     },
     {
       "title": "Ten days requires parallel capacity",
@@ -1943,7 +2460,7 @@
     },
     {
       "title": "Python gateway and Go writer are now required",
-      "detail": "User requirement supersedes original Go-only browser ingress/no-extra-services rule for these boundaries. Existing Python compute remains private. See PRD §32 and exhaustive audit route inventory."
+      "detail": "User requirement supersedes original Go-only browser ingress/no-extra-services rule for these boundaries. Existing Python compute remains private. See PRD \u00a732 and exhaustive audit route inventory."
     },
     {
       "title": "Durable results are not every network frame",
@@ -1951,129 +2468,129 @@
     },
     {
       "title": "Completion must be reaccepted",
-      "detail": "Prior S01–S15 acceptance records remain historical. Revised acceptance and production evidence are pending; personal dashboard status cannot approve release."
+      "detail": "Prior S01\u2013S15 acceptance records remain historical. Revised acceptance and production evidence are pending; personal dashboard status cannot approve release."
     }
   ],
   "risks": [
     {
-      "title": "A01 — Critical: Requested gateway, writer boundary and load balancing are absent",
-      "mitigation": "Implement and verify PRD §§32–34 before claiming the requested architecture or load-balancing readiness. Do not simply round-robin stateful commands.",
+      "title": "A01 \u2014 Critical: Requested gateway, writer boundary and load balancing are absent",
+      "mitigation": "Implement and verify PRD \u00a7\u00a732\u201334 before claiming the requested architecture or load-balancing readiness. Do not simply round-robin stateful commands.",
       "owner": "Platform / Platform + Backend / Simulation",
-      "gate": "S01 · S02 · S04 · S06 · S39 · S40 · S41 · S42 · S43"
+      "gate": "S01 \u00b7 S02 \u00b7 S04 \u00b7 S06 \u00b7 S39 \u00b7 S40 \u00b7 S41 \u00b7 S42 \u00b7 S43"
     },
     {
-      "title": "A02 — Critical: Network comparison presents fabricated fallback outcomes",
+      "title": "A02 \u2014 Critical: Network comparison presents fabricated fallback outcomes",
       "mitigation": "Remove operational fallback numbers; show not simulated/unavailable. Bind metrics and both views to one validated comparison, or explicitly present an aggregate-only comparison. Calculate signed outcomes, including worse/unchanged/zero baseline.",
       "owner": "Intelligence / QA + Product / Simulation + Frontend",
-      "gate": "S19 · S21 · S22 · S33"
+      "gate": "S19 \u00b7 S21 \u00b7 S22 \u00b7 S33"
     },
     {
-      "title": "A03 — High: Static narratives and safety guarantees overstate evidence",
+      "title": "A03 \u2014 High: Static narratives and safety guarantees overstate evidence",
       "mitigation": "Derive facts, bounds and lifecycle from current configuration and response provenance. Mark unavailable facts unknown; label illustrative briefing content as illustrative and remove unsupported completion/safety guarantees.",
       "owner": "Backend / Frontend / Intelligence / Platform / QA + Product / Simulation + Intelligence",
-      "gate": "S03 · S08 · S10 · S12 · S13 · S19 · S29 · S31 · S34"
+      "gate": "S03 \u00b7 S08 \u00b7 S10 \u00b7 S12 \u00b7 S13 \u00b7 S19 \u00b7 S29 \u00b7 S31 \u00b7 S34"
     },
     {
-      "title": "A04 — High: No data can look healthy",
+      "title": "A04 \u2014 High: No data can look healthy",
       "mitigation": "Represent loading, unknown, failed, stale and bundled-offline topology explicitly. Healthy claims require fresh validated evidence. Keep controls disabled when authoritative dependencies are unavailable.",
       "owner": "Backend + QA / Frontend / Frontend + QA",
-      "gate": "S08 · S09 · S10 · S26 · S44"
+      "gate": "S08 \u00b7 S09 \u00b7 S10 \u00b7 S26 \u00b7 S44"
     },
     {
-      "title": "A05 — High: Active decision and mode errors are invisible",
+      "title": "A05 \u2014 High: Active decision and mode errors are invisible",
       "mitigation": "Keep inputs until confirmed success, display accessible server errors and reconciliation status, attach command/audit identifiers, and allow safe recovery without blindly repeating an uncertain write.",
       "owner": "Backend / Backend + QA / Frontend + QA",
-      "gate": "S14 · S15 · S25 · S44 · S45"
+      "gate": "S14 \u00b7 S15 \u00b7 S25 \u00b7 S44 \u00b7 S45"
     },
     {
-      "title": "A06 — High: Stale analysis and cross-run comparison can remain actionable",
+      "title": "A06 \u2014 High: Stale analysis and cross-run comparison can remain actionable",
       "mitigation": "Gate decisions and forecasts on freshness, identity, mode, replay, permissions and dependencies. Invalidate comparison/edits on run or recommendation change; reject late responses from superseded requests.",
       "owner": "Backend / Frontend / Frontend + QA / Simulation / Simulation + Frontend",
-      "gate": "S06 · S09 · S10 · S14 · S15 · S22 · S44 · S45"
+      "gate": "S06 \u00b7 S09 \u00b7 S10 \u00b7 S14 \u00b7 S15 \u00b7 S22 \u00b7 S44 \u00b7 S45"
     },
     {
-      "title": "A07 — High: Mode changes contain invalid SQL and state cannot reconcile after reload",
+      "title": "A07 \u2014 High: Mode changes contain invalid SQL and state cannot reconcile after reload",
       "mitigation": "Parameterize and integration-test mode writes; persist canonical mode, hydrate it on startup/reconnect, use the acknowledged server value and unify start/reset mode contracts. Cover every mode with real PostgreSQL and Python.",
       "owner": "Backend / Platform / Platform + Backend / QA + Product / Simulation",
-      "gate": "S02 · S05 · S14 · S33 · S40"
+      "gate": "S02 \u00b7 S05 \u00b7 S14 \u00b7 S33 \u00b7 S40"
     },
     {
-      "title": "A08 — High: Locks can succeed without audit and disappear on restart",
+      "title": "A08 \u2014 High: Locks can succeed without audit and disappear on restart",
       "mitigation": "Validate configured target IDs; make lock state and audit durable through the writer before acknowledgment; serialize with application, restore state on restart and expose actual lock controls and denied/error states.",
       "owner": "Backend / Backend + QA / Frontend + QA / Platform + Backend",
-      "gate": "S13 · S14 · S25 · S41 · S45"
+      "gate": "S13 \u00b7 S14 \u00b7 S25 \u00b7 S41 \u00b7 S45"
     },
     {
-      "title": "A09 — High: Persistence ordering and ambiguous decisions need reconciliation",
-      "mitigation": "Validate before writes/publication; atomically commit result/status/audit with a durable command ID and payload hash. Use intent → dispatch → applied/failed/unknown reconciliation across simulator and database, including restart and changed-payload retries.",
+      "title": "A09 \u2014 High: Persistence ordering and ambiguous decisions need reconciliation",
+      "mitigation": "Validate before writes/publication; atomically commit result/status/audit with a durable command ID and payload hash. Use intent \u2192 dispatch \u2192 applied/failed/unknown reconciliation across simulator and database, including restart and changed-payload retries.",
       "owner": "Backend / Backend + QA / Platform / Platform + Backend / Simulation",
-      "gate": "S04 · S06 · S13 · S15 · S25 · S41 · S43"
+      "gate": "S04 \u00b7 S06 \u00b7 S13 \u00b7 S15 \u00b7 S25 \u00b7 S41 \u00b7 S43"
     },
     {
-      "title": "A10 — High: Audit view loses later events and omits decision evidence",
+      "title": "A10 \u2014 High: Audit view loses later events and omits decision evidence",
       "mitigation": "Implement explicit newest/history pagination and inspectable decision links and values; consume events or documented polling and reconcile from durable cursor after reconnect. Test more than 100 events and multiple clients.",
       "owner": "Backend + QA / Frontend + QA / Platform + Backend",
-      "gate": "S25 · S28 · S42 · S45"
+      "gate": "S25 \u00b7 S28 \u00b7 S42 \u00b7 S45"
     },
     {
-      "title": "A11 — High: Replay recovery is unreachable from the active workspace",
+      "title": "A11 \u2014 High: Replay recovery is unreachable from the active workspace",
       "mitigation": "Mount a controlled, visible fallback/restart flow using the normal gateway path; distinguish replay, completion and live state throughout. Return explicit errors for missing dependencies and test aggregate-runtime/intelligence loss, missing replay files and database loss.",
       "owner": "Backend + QA / Frontend + QA / Platform + Backend / QA + Product",
-      "gate": "S26 · S27 · S35 · S42 · S44"
+      "gate": "S26 \u00b7 S27 \u00b7 S35 \u00b7 S42 \u00b7 S44"
     },
     {
-      "title": "A12 — High: Network requests have no client deadline or structured recovery policy",
+      "title": "A12 \u2014 High: Network requests have no client deadline or structured recovery policy",
       "mitigation": "Define a bounded end-to-end deadline budget; distinguish offline, 401/403, 409, 429, 503/504, cancellation and uncertain commands; use bounded jittered reconnect/read retry and command reconciliation rather than automatic mutation replay.",
       "owner": "Backend + QA / Frontend + QA / Platform / Platform + Backend / QA + Product / Simulation",
-      "gate": "S02 · S06 · S26 · S35 · S39 · S42 · S44"
+      "gate": "S02 \u00b7 S06 \u00b7 S26 \u00b7 S35 \u00b7 S39 \u00b7 S42 \u00b7 S44"
     },
     {
-      "title": "A13 — High: Production authentication and authorization do not exist",
+      "title": "A13 \u2014 High: Production authentication and authorization do not exist",
       "mitigation": "Retain explicit local demo persona labeling; require authenticated principals and per-route roles for shared production, service identity for private calls, and accessible expired-session/denied recovery without losing drafts.",
       "owner": "Backend / Frontend / Frontend + QA / Platform / Platform + Backend / Simulation + Intelligence",
-      "gate": "S01 · S08 · S14 · S15 · S31 · S39 · S46"
+      "gate": "S01 \u00b7 S08 \u00b7 S14 \u00b7 S15 \u00b7 S31 \u00b7 S39 \u00b7 S46"
     },
     {
-      "title": "A14 — High: Start/reset retries and concurrent tabs can create extra runs",
+      "title": "A14 \u2014 High: Start/reset retries and concurrent tabs can create extra runs",
       "mitigation": "Use durable request idempotency and one active run owner; confirm replacement/reset, preserve old safe state until transition outcome is known, and reconcile the saved command after timeout or failover.",
       "owner": "Backend + QA / Frontend + QA / Platform + Backend / Simulation",
-      "gate": "S05 · S07 · S27 · S41 · S43 · S45"
+      "gate": "S05 \u00b7 S07 \u00b7 S27 \u00b7 S41 \u00b7 S43 \u00b7 S45"
     },
     {
-      "title": "A15 — Medium: Navigation and form state have no location/history model",
+      "title": "A15 \u2014 Medium: Navigation and form state have no location/history model",
       "mitigation": "Define URL/back/refresh behavior and preserve or deliberately discard drafts with confirmation; bind edits to run/recommendation version and restore authoritative mode from server.",
       "owner": "Backend / Frontend / Frontend + QA",
-      "gate": "S08 · S10 · S15 · S45"
+      "gate": "S08 \u00b7 S10 \u00b7 S15 \u00b7 S45"
     },
     {
-      "title": "A16 — Medium: Accessibility coverage is partial",
+      "title": "A16 \u2014 Medium: Accessibility coverage is partial",
       "mitigation": "Test and fix focus/escape/return, tab semantics, announcements, screen readers, 200% text, 400% zoom, narrow viewport and virtual keyboard. Measure contrast and target sizes; document supported dark theme, do not claim an unmeasured accessibility pass.",
       "owner": "CV + Frontend / Frontend / Frontend + QA / QA + Product",
-      "gate": "S08 · S10 · S34 · S38 · S47"
+      "gate": "S08 \u00b7 S10 \u00b7 S34 \u00b7 S38 \u00b7 S47"
     },
     {
-      "title": "A17 — Medium: Incident, emergency and vision screens are partial",
+      "title": "A17 \u2014 Medium: Incident, emergency and vision screens are partial",
       "mitigation": "Render actual lifecycle enums and current-run data; expose planned incident controls through typed commands, show ETAs/recovery and unavailable states, and clearly mark optional CV unavailable until implemented.",
       "owner": "CV + Frontend / Simulation + Intelligence",
-      "gate": "S29 · S30 · S31 · S32 · S36 · S37"
+      "gate": "S29 \u00b7 S30 \u00b7 S31 \u00b7 S32 \u00b7 S36 \u00b7 S37"
     },
     {
-      "title": "A18 — Medium: API specification and runtime contract drift",
+      "title": "A18 \u2014 Medium: API specification and runtime contract drift",
       "mitigation": "Keep exhaustive method/path/owner schemas and action-specific response types; validate runtime payloads and show recoverable invalid-data UI. Add error boundaries and route parity tests, including unknown methods/actions and version mismatch.",
       "owner": "Frontend + QA / Platform / Platform + Backend / Simulation",
-      "gate": "S02 · S04 · S06 · S40 · S44"
+      "gate": "S02 \u00b7 S04 \u00b7 S06 \u00b7 S40 \u00b7 S44"
     },
     {
-      "title": "A19 — Medium: Existing tests and completion reports do not establish production acceptance",
+      "title": "A19 \u2014 Medium: Existing tests and completion reports do not establish production acceptance",
       "mitigation": "Preserve historical evidence but reopen revised acceptance; distinguish mocked/component checks from real integration. Base release decisions on recorded command output, routes, fault cases and machine measurements, not progress percentages.",
       "owner": "Frontend + QA / Platform / Platform + Backend / QA + Product",
-      "gate": "S01 · S33 · S35 · S43 · S48"
+      "gate": "S01 \u00b7 S33 \u00b7 S35 \u00b7 S43 \u00b7 S48"
     },
     {
-      "title": "A20 — Low: Documentation pointers and product copy retain stale implementation claims",
+      "title": "A20 \u2014 Low: Documentation pointers and product copy retain stale implementation claims",
       "mitigation": "Keep historical evidence dated and link authoritative current architecture/audit; remove internal planning labels from production copy when implementing UX fixes. Use canonical docs/backlog.json rather than the archival dashboard snapshot.",
       "owner": "Frontend / Frontend + QA / Platform / QA + Product",
-      "gate": "S01 · S08 · S34 · S48"
+      "gate": "S01 \u00b7 S08 \u00b7 S34 \u00b7 S48"
     }
   ],
   "deferred": [

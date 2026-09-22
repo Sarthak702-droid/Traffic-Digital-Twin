@@ -1,0 +1,75 @@
+{
+  "schema_version": "integration-test-report-v1",
+  "generated_at": "2026-09-22T14:44:30+05:30",
+  "environment": {
+    "os": "Pop!_OS 24.04 LTS (x86_64)",
+    "python": "3.12.3",
+    "pytest": "9.1.1",
+    "topology": "C1-C6 Network (6 Intersections, 12 Video Assets)",
+    "simulation_runtime": "no-SUMO Aggregate CTM flow kernel"
+  },
+  "scenarios_evaluated": [
+    {
+      "test_name": "test_normal_video_demand_simulation_with_mass_conservation",
+      "category": "normal_operation",
+      "status": "PASS",
+      "description": "Feeds 5s video-derived observations into C1-C6 CTM network across 30 steps",
+      "assertions": {
+        "mass_conservation_error": 0.0,
+        "tolerance": 1e-4,
+        "vehicles_offered": 32.0,
+        "boundary_links_fed": ["C2-C1", "C4-C1", "C5-C1", "C6-C3"]
+      }
+    },
+    {
+      "test_name": "test_camera_stream_interruption_degraded_mode",
+      "category": "failure_handling",
+      "status": "PASS",
+      "description": "Simulates stream interruption beyond observation watermark; verifies bounded drain and zero crash",
+      "assertions": {
+        "eof_policy": "drain_with_warning",
+        "uncaught_exceptions": 0,
+        "pending_mass_accounted": true
+      }
+    },
+    {
+      "test_name": "test_candidate_signal_rollout_from_snapshot",
+      "category": "intelligence_evaluation",
+      "status": "PASS",
+      "description": "Evaluates candidate signal timings against baseline from sanitized snapshot without state mutation",
+      "assertions": {
+        "fork_step": 15,
+        "rollout_steps": 10,
+        "baseline_ticks": 25,
+        "candidate_ticks": 25,
+        "state_isolation": true
+      }
+    },
+    {
+      "test_name": "test_incident_c3_capacity_reduction_and_recovery",
+      "category": "incident_simulation",
+      "status": "PASS",
+      "description": "Validates C3 bottleneck capacity reduction to 30% and queue clearance during recovery cycle",
+      "assertions": {
+        "incident_node": "C3",
+        "incident_kind": "capacity_reduction",
+        "applied_ratio": 0.3,
+        "status_at_t40": "active"
+      }
+    },
+    {
+      "test_name": "test_stale_and_invalid_command_rejection",
+      "category": "safety_and_authorization",
+      "status": "PASS",
+      "description": "Verifies engine rejects bad schema versions and invalid capacity ratios (>0.9) with strict ValueError",
+      "assertions": {
+        "invalid_version_rejected": true,
+        "invalid_ratio_rejected": true
+      }
+    }
+  ],
+  "total_scenarios": 5,
+  "scenarios_passed": 5,
+  "scenarios_failed": 0,
+  "overall_status": "PASS"
+}

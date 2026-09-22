@@ -1,0 +1,127 @@
+{
+  "schema_version": "forecast-report-v1",
+  "evaluated_at": "2026-09-22T14:34:00+05:30",
+  "horizons_s": [
+    30,
+    60,
+    120,
+    300
+  ],
+  "alpha": 0.3,
+  "warmup_bins": 4,
+  "forecasts_by_link": {
+    "C2-C1": {
+      "baseline_persistence_vpm": {
+        "30": 0.0,
+        "60": 0.0,
+        "120": 0.0,
+        "300": 0.0
+      },
+      "default_ewma_vpm": {
+        "30": 6.05,
+        "60": 6.05,
+        "120": 6.05,
+        "300": 6.05
+      },
+      "challenger_damped_holt_vpm": {
+        "30": 8.55,
+        "60": 9.45,
+        "120": 10.18,
+        "300": 10.46
+      },
+      "active_forecast_vpm": {
+        "30": 6.05,
+        "60": 6.05,
+        "120": 6.05,
+        "300": 6.05
+      },
+      "active_method": "ewma",
+      "warmup_status": "warmed_up"
+    },
+    "C4-C1": {
+      "baseline_persistence_vpm": {
+        "30": 48.0,
+        "60": 48.0,
+        "120": 48.0,
+        "300": 48.0
+      },
+      "default_ewma_vpm": {
+        "30": 53.12,
+        "60": 53.12,
+        "120": 53.12,
+        "300": 53.12
+      },
+      "challenger_damped_holt_vpm": {
+        "30": 50.11,
+        "60": 48.6,
+        "120": 47.37,
+        "300": 46.9
+      },
+      "active_forecast_vpm": {
+        "30": 53.12,
+        "60": 53.12,
+        "120": 53.12,
+        "300": 53.12
+      },
+      "active_method": "ewma",
+      "warmup_status": "warmed_up"
+    },
+    "C5-C1": {
+      "baseline_persistence_vpm": {
+        "30": 36.0,
+        "60": 36.0,
+        "120": 36.0,
+        "300": 36.0
+      },
+      "default_ewma_vpm": {
+        "30": 31.88,
+        "60": 31.88,
+        "120": 31.88,
+        "300": 31.88
+      },
+      "challenger_damped_holt_vpm": {
+        "30": 35.2,
+        "60": 36.69,
+        "120": 37.9,
+        "300": 38.36
+      },
+      "active_forecast_vpm": {
+        "30": 31.88,
+        "60": 31.88,
+        "120": 31.88,
+        "300": 31.88
+      },
+      "active_method": "ewma",
+      "warmup_status": "warmed_up"
+    },
+    "C6-C3": {
+      "baseline_persistence_vpm": {
+        "30": 0.0,
+        "60": 0.0,
+        "120": 0.0,
+        "300": 0.0
+      },
+      "default_ewma_vpm": {
+        "30": 0.0,
+        "60": 0.0,
+        "120": 0.0,
+        "300": 0.0
+      },
+      "challenger_damped_holt_vpm": {
+        "30": 0.0,
+        "60": 0.0,
+        "120": 0.0,
+        "300": 0.0
+      },
+      "active_forecast_vpm": {
+        "30": 0.0,
+        "60": 0.0,
+        "120": 0.0,
+        "300": 0.0
+      },
+      "active_method": "ewma",
+      "warmup_status": "warmed_up"
+    }
+  },
+  "status": "PASS"
+}
