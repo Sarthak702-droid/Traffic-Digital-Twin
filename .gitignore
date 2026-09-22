@@ -17,3 +17,4 @@ bin/
 .pytest_cache/
 *.mp4
 *.pt
+test_*.jpg

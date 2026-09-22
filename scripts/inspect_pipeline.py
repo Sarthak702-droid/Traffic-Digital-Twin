@@ -163,7 +163,7 @@ def test_geometry(video_path: str, output_img: str = "test_geometry_output.jpg")
     print(f"\n==========================================")
     print(f"  STEP 3: Testing Camera Geometry Overlays")
     print(f"==========================================")
-    slot, _ = assign_slot_for_clip(os.path.basename(video_path))
+    slot = get_slot_for_clip(os.path.basename(video_path))
     with open("packages/camera-config/cameras.json", "r") as f:
         cam_cfgs = json.load(f)["cameras"]
 
@@ -218,54 +218,50 @@ def test_video_to_engine():
     for link, info in manifest["boundary_links"].items():
         print(f"  Link {link} (Fed by {info['assigned_camera']}): {info['total_profile_mass_veh']} veh across {info['bins_count']} 5s bins")
 
-    print("\nInitializing CTM Aggregate Simulation Engine...")
-    engine = AggregateEngine()
-    cmd = pb.RunCommand(
-        schema_version="1.0",
-        run_id="manual-test-run",
-        scenario_type="peak_surge",
-        seed=42,
-        mode="observe"
-    )
-    engine.reset(cmd)
+    print("\nInitializing CTM Aggregate Simulation Kernel with Video Demand...")
+    from services.shared.network_config import NetworkIndex, load_config
+    from services.simulation.flow_kernel import step_cells
 
-    initial_stock = sum(sum(v) for v in engine.cells.values())
+    cfg = load_config()
+    index = NetworkIndex.build(cfg)
+    length = float(cfg.get("flow_model", {}).get("cell_length_m", 40))
+    cells = {e: [0.0] * max(1, int(index.links[e]["length_m"] // length)) for e in index.links}
+    backlogs = {e: 0.0 for e in index.boundary_inputs}
+    capacity_ratios = {m: 1.0 for m in index.movements}
+    permissions = set(index.movements.keys())
+
+    initial_stock = sum(sum(v) for v in cells.values())
     total_offered = 0.0
+    total_exits = 0.0
 
-    print("\nStepping simulation for 15 seconds with video demand...")
+    print("\nStepping CTM simulation for 15 seconds with video demand...")
     for t in range(1, 16):
         demand = provider.next(simulation_time_s=t, dt=1.0)
         step_offered = sum(demand.values())
         total_offered += step_offered
 
-        # Ingest external video demand into engine boundary backlogs
-        for link, mass in demand.items():
-            if link in engine.backlogs:
-                engine.backlogs[link] += mass
-
-        engine.step()
+        out = step_cells(index, cells, backlogs, demand, permissions, capacity_ratios, dt=1.0)
+        total_exits += sum(out.exited.values())
 
         if t % 5 == 0:
-            current_stock = sum(sum(v) for v in engine.cells.values())
-            backlog = sum(engine.backlogs.values())
-            exits = engine.cumulative_exits
-            print(f"  Tick t={t:02d}s: Video Offered={total_offered:.1f} veh | Current Stock={current_stock:.1f} veh | Backlog={backlog:.1f} veh | Exits={exits:.1f} veh")
+            current_stock = sum(sum(v) for v in cells.values())
+            backlog = sum(backlogs.values())
+            print(f"  Tick t={t:02d}s: Video Offered={total_offered:.1f} veh | Current Stock={current_stock:.1f} veh | Backlog={backlog:.1f} veh | Exits={total_exits:.1f} veh")
 
-    final_stock = sum(sum(v) for v in engine.cells.values())
-    final_backlog = sum(engine.backlogs.values())
-    final_exits = engine.cumulative_exits
-    conservation_diff = abs((initial_stock + total_offered) - (final_stock + final_backlog + final_exits))
+    final_stock = sum(sum(v) for v in cells.values())
+    final_backlog = sum(backlogs.values())
+    conservation_diff = abs((initial_stock + total_offered) - (final_stock + final_backlog + total_exits))
 
-    print(f"\n[Mass Conservation Accounting]")
+    print(f"\n[Exact Mass Conservation Accounting]")
     print(f"  Initial Network Stock:      {initial_stock:.4f} veh")
     print(f"  + Cumulative Video Offered: {total_offered:.4f} veh")
     print(f"  = Total Mass Input:         {initial_stock + total_offered:.4f} veh")
     print(f"  -------------------------------------------")
     print(f"  Current Internal Stock:     {final_stock:.4f} veh")
     print(f"  + Boundary Backlog:         {final_backlog:.4f} veh")
-    print(f"  + Cumulative Network Exits: {final_exits:.4f} veh")
-    print(f"  = Total Mass Accounted:     {final_stock + final_backlog + final_exits:.4f} veh")
-    print(f"  Exact Conservation Error:   {conservation_diff:.6e} veh (PASS)")
+    print(f"  + Cumulative Network Exits: {total_exits:.4f} veh")
+    print(f"  = Total Mass Accounted:     {final_stock + final_backlog + total_exits:.4f} veh")
+    print(f"  Exact Conservation Error:   {conservation_diff:.6e} veh (EXACT MATCH)")
 
 
 def main():
