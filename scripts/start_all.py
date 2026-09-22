@@ -233,28 +233,45 @@ def _listening_socket_inodes(ports: set[int], proc_root: Path = Path("/proc")) -
 
 def _listener_pids(ports: set[int], proc_root: Path = Path("/proc")) -> set[int]:
     inodes = _listening_socket_inodes(ports, proc_root)
-    if not inodes:
-        return set()
     found: set[int] = set()
-    try:
-        entries = list(proc_root.iterdir())
-    except OSError:
-        return found
-    for entry in entries:
-        if not entry.name.isdigit():
-            continue
+    if inodes:
         try:
-            descriptors = list((entry / "fd").iterdir())
+            entries = list(proc_root.iterdir())
         except OSError:
-            continue
-        for descriptor in descriptors:
+            entries = []
+        for entry in entries:
+            if not entry.name.isdigit():
+                continue
             try:
-                target = os.readlink(descriptor)
+                descriptors = list((entry / "fd").iterdir())
             except OSError:
                 continue
-            if target.startswith("socket:[") and target[8:-1] in inodes:
-                found.add(int(entry.name))
-                break
+            for descriptor in descriptors:
+                try:
+                    target = os.readlink(descriptor)
+                except OSError:
+                    continue
+                if target.startswith("socket:[") and target[8:-1] in inodes:
+                    found.add(int(entry.name))
+                    break
+
+    # Supplemental host-level resolution using lsof and fuser
+    for p in ports:
+        try:
+            out = subprocess.run(["lsof", "-ti", f":{p}"], capture_output=True, text=True, timeout=1)
+            for line in out.stdout.splitlines():
+                if line.strip().isdigit():
+                    found.add(int(line.strip()))
+        except Exception:
+            pass
+        try:
+            out = subprocess.run(["fuser", f"{p}/tcp"], capture_output=True, text=True, timeout=1)
+            for token in (out.stdout + " " + out.stderr).split():
+                clean = token.strip().rstrip("/m").rstrip("/e")
+                if clean.isdigit():
+                    found.add(int(clean))
+        except Exception:
+            pass
     return found
 
 
@@ -305,11 +322,7 @@ def workspace_service_pids(proc_root: Path = Path("/proc")) -> set[int]:
             command = raw.replace(b"\0", b" ").decode(errors="replace")
         except OSError:
             continue
-        if not _belongs_to_workspace(entry):
-            continue
-        # A workspace-owned process actually listening on a stack port is the
-        # strongest signal. It also catches `go run` temporary executables and
-        # integration binaries under .runtime, whose command paths vary.
+        in_workspace = _belongs_to_workspace(entry)
         owns_stack_port = pid in listener_pids
         is_api = (
             str(ROOT / "bin" / "api") in command
@@ -317,10 +330,34 @@ def workspace_service_pids(proc_root: Path = Path("/proc")) -> set[int]:
             or (str(ROOT / ".runtime") in command and "traffic-api" in command)
         )
         is_compute = "services.shared.server" in command and (" simulation " in f" {command} " or " intelligence " in f" {command} ")
-        is_vite = "vite" in command and "--port 3100" in command
-        if owns_stack_port or is_api or is_compute or is_vite:
+        is_vite = ("vite" in command and "--port 3100" in command) or ("apps/web" in command and "vite" in command)
+
+        # Match workspace-owned stack processes, or any process listening on our specific stack ports
+        # that matches our service signatures
+        if in_workspace and (owns_stack_port or is_api or is_compute or is_vite):
+            found.add(pid)
+        elif owns_stack_port and (is_api or is_compute or is_vite or "vite" in command or "traffic" in command):
             found.add(pid)
     return found
+
+
+def _terminate_pid(pid: int, sig: signal.Signals):
+    """Terminate a process and its process group (unless it's the current launcher group)."""
+    own_pgid = os.getpgrp()
+    try:
+        pgid = os.getpgid(pid)
+    except OSError:
+        pgid = None
+
+    if pgid is not None and pgid > 1 and pgid != own_pgid:
+        try:
+            os.killpg(pgid, sig)
+        except OSError:
+            pass
+    try:
+        os.kill(pid, sig)
+    except OSError:
+        pass
 
 
 def acquire_instance_lock():
@@ -360,29 +397,16 @@ def cleanup_stale_services():
     if scoped:
         log(f"Stopping {len(scoped)} stale workspace service process(es)...")
     for pid in scoped:
-        try:
-            # Every launcher child starts a new session whose process-group ID
-            # equals its PID. Killing the group also reaches npm/go wrappers'
-            # descendants. Fall back to the process for legacy discoveries.
-            try:
-                os.killpg(pid, signal.SIGTERM)
-            except ProcessLookupError:
-                os.kill(pid, signal.SIGTERM)
-        except OSError:
-            pass
+        _terminate_pid(pid, signal.SIGTERM)
+
     if scoped:
         deadline = time.monotonic() + 2
         while time.monotonic() < deadline and any((Path("/proc") / str(pid)).exists() for pid in scoped):
             time.sleep(0.05)
         for pid in scoped:
             if (Path("/proc") / str(pid)).exists():
-                try:
-                    try:
-                        os.killpg(pid, signal.SIGKILL)
-                    except ProcessLookupError:
-                        os.kill(pid, signal.SIGKILL)
-                except OSError:
-                    pass
+                _terminate_pid(pid, signal.SIGKILL)
+
     SERVICE_STATE_FILE.unlink(missing_ok=True)
 
     # Wait for ports to be released by kernel
@@ -392,10 +416,35 @@ def cleanup_stale_services():
                 break
             time.sleep(0.08)
 
+    # If any port is still busy, check if there are newly resolved listener PIDs and force kill them
+    busy_ports = [p for p in ports if check_port("127.0.0.1", p, timeout=0.2)]
+    if busy_ports:
+        leftover_pids = _listener_pids(set(busy_ports)) - {os.getpid()}
+        if leftover_pids:
+            log(f"Force-stopping remaining listener process(es) on port(s) {busy_ports}: {leftover_pids}")
+            for pid in leftover_pids:
+                _terminate_pid(pid, signal.SIGKILL)
+            time.sleep(0.5)
+
     busy = [str(p) for p in ports if check_port("127.0.0.1", p, timeout=0.2)]
     if busy:
+        details = []
+        for port_str in busy:
+            p = int(port_str)
+            pids = _listener_pids({p}) - {os.getpid()}
+            pid_info = []
+            for pid in pids:
+                try:
+                    cmd = (Path("/proc") / str(pid) / "cmdline").read_bytes().replace(b"\0", b" ").decode(errors="replace")
+                    pid_info.append(f"PID {pid} ({cmd.strip()[:60]})")
+                except Exception:
+                    pid_info.append(f"PID {pid}")
+            if pid_info:
+                details.append(f"{p} [{' ; '.join(pid_info)}]")
+            else:
+                details.append(str(p))
         raise RuntimeError(
-            "Required local port(s) still occupied: " + ", ".join(busy) +
+            "Required local port(s) still occupied: " + ", ".join(details) +
             ". Stop the owning process; the launcher will not create a mixed stack on fallback ports."
         )
 
