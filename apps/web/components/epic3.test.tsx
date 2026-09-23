@@ -194,7 +194,7 @@ describe("Epic 3 S08: Product Shell & Disclosure", () => {
     );
 
     expect(screen.getByText("DEMONSTRATION MODE")).toBeInTheDocument();
-    expect(screen.getByText("SYNTHETIC DATA")).toBeInTheDocument();
+    expect(screen.getByText("RECORDED VIDEO + VIRTUAL TRAFFIC")).toBeInTheDocument();
     expect(screen.getByText("NO LIVE SIGNAL CONTROL")).toBeInTheDocument();
     expect(screen.getByText("START DGP DEMONSTRATION")).toBeInTheDocument();
     expect(screen.getByText(/System: Normal/)).toBeInTheDocument();

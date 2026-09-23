@@ -13,7 +13,7 @@ import (
 )
 
 const activateRun = `-- name: ActivateRun :one
-UPDATE scenario_runs SET status='running' WHERE id=$1 AND status='prepared' RETURNING id, config_id, scenario_type, seed, mode, status, started_at, ended_at
+UPDATE scenario_runs SET status='running' WHERE id=$1 AND status='prepared' RETURNING id, config_id, scenario_type, seed, mode, status, started_at, ended_at, demand_source
 `
 
 func (q *Queries) ActivateRun(ctx context.Context, id pgtype.UUID) (ScenarioRun, error) {
@@ -28,6 +28,7 @@ func (q *Queries) ActivateRun(ctx context.Context, id pgtype.UUID) (ScenarioRun,
 		&i.Status,
 		&i.StartedAt,
 		&i.EndedAt,
+		&i.DemandSource,
 	)
 	return i, err
 }
@@ -78,7 +79,7 @@ func (q *Queries) AppendAudit(ctx context.Context, arg AppendAuditParams) (Audit
 }
 
 const createRun = `-- name: CreateRun :one
-INSERT INTO scenario_runs (id,config_id,scenario_type,seed,mode,status) VALUES ($1,$2,$3,$4,$5,'prepared') RETURNING id, config_id, scenario_type, seed, mode, status, started_at, ended_at
+INSERT INTO scenario_runs (id,config_id,scenario_type,seed,mode,status,demand_source) VALUES ($1,$2,$3,$4,$5,'prepared',$6) RETURNING id, config_id, scenario_type, seed, mode, status, started_at, ended_at, demand_source
 `
 
 type CreateRunParams struct {
@@ -87,6 +88,7 @@ type CreateRunParams struct {
 	ScenarioType string      `json:"scenario_type"`
 	Seed         int64       `json:"seed"`
 	Mode         string      `json:"mode"`
+	DemandSource string      `json:"demand_source"`
 }
 
 func (q *Queries) CreateRun(ctx context.Context, arg CreateRunParams) (ScenarioRun, error) {
@@ -96,6 +98,7 @@ func (q *Queries) CreateRun(ctx context.Context, arg CreateRunParams) (ScenarioR
 		arg.ScenarioType,
 		arg.Seed,
 		arg.Mode,
+		arg.DemandSource,
 	)
 	var i ScenarioRun
 	err := row.Scan(
@@ -107,6 +110,7 @@ func (q *Queries) CreateRun(ctx context.Context, arg CreateRunParams) (ScenarioR
 		&i.Status,
 		&i.StartedAt,
 		&i.EndedAt,
+		&i.DemandSource,
 	)
 	return i, err
 }
@@ -137,7 +141,7 @@ func (q *Queries) GetConfig(ctx context.Context, id string) (NetworkConfig, erro
 }
 
 const getRun = `-- name: GetRun :one
-SELECT id, config_id, scenario_type, seed, mode, status, started_at, ended_at FROM scenario_runs WHERE id=$1
+SELECT id, config_id, scenario_type, seed, mode, status, started_at, ended_at, demand_source FROM scenario_runs WHERE id=$1
 `
 
 func (q *Queries) GetRun(ctx context.Context, id pgtype.UUID) (ScenarioRun, error) {
@@ -152,6 +156,7 @@ func (q *Queries) GetRun(ctx context.Context, id pgtype.UUID) (ScenarioRun, erro
 		&i.Status,
 		&i.StartedAt,
 		&i.EndedAt,
+		&i.DemandSource,
 	)
 	return i, err
 }
@@ -198,7 +203,7 @@ func (q *Queries) ListAudit(ctx context.Context, arg ListAuditParams) ([]AuditEv
 }
 
 const listRuns = `-- name: ListRuns :many
-SELECT id, config_id, scenario_type, seed, mode, status, started_at, ended_at FROM scenario_runs ORDER BY started_at DESC,id DESC LIMIT $1
+SELECT id, config_id, scenario_type, seed, mode, status, started_at, ended_at, demand_source FROM scenario_runs ORDER BY started_at DESC,id DESC LIMIT $1
 `
 
 func (q *Queries) ListRuns(ctx context.Context, limit int32) ([]ScenarioRun, error) {
@@ -219,6 +224,7 @@ func (q *Queries) ListRuns(ctx context.Context, limit int32) ([]ScenarioRun, err
 			&i.Status,
 			&i.StartedAt,
 			&i.EndedAt,
+			&i.DemandSource,
 		); err != nil {
 			return nil, err
 		}

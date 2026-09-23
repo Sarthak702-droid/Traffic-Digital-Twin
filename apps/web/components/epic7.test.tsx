@@ -172,7 +172,7 @@ describe("Epic 7: Before-vs-after Evidence (S21, S22)", () => {
       expect(screen.getByTestId("baseline-canvas-column")).toBeInTheDocument();
       expect(screen.getByTestId("candidate-canvas-column")).toBeInTheDocument();
       expect(screen.getByText("BASELINE STRATEGY (CURRENT TIMING)")).toBeInTheDocument();
-      expect(screen.getByText("PREDICTIVE RECOMMENDATION (AGDA PLAN)")).toBeInTheDocument();
+      expect(screen.getByText("CANDIDATE PLAN · SAME INITIAL STATE")).toBeInTheDocument();
     });
 
     it("displays exactly 4 PRD §8.4 outcome metrics with SIMULATED badge", () => {

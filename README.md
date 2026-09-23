@@ -2,7 +2,7 @@
 
 # Traffic Digital Twin
 
-Local, synthetic demonstration software. **No live signal control.** Epic 1 provides a validated network foundation, shared contracts, durable scenario preparation and a working configuration UI. Traffic simulation, forecasts and recommendations belong to subsequent epics.
+Local virtual traffic demonstration with recorded ITD v1.2 video analytics, aggregate network flow, forecasts and operator-reviewed signal plans. **No live CCTV or physical signal control.** The 12 clips are independent samples; four selected boundary profiles can drive the C1-C6 model.
 
 ## Start
 
@@ -38,7 +38,7 @@ The existing delivery dashboard is separate: `node server.mjs` from the reposito
 4. Check the saved run and its audit entry in Audit & Health.
 5. Restart Go and refresh: records remain in PostgreSQL.
 
-Starting a run launches the aggregate-flow digital twin and applies approved virtual timing only at a safe phase boundary. It never controls physical signals. Empty measurements remain unavailable.
+Starting a run with **ITD v1.2 recorded-video counts** supplies four boundary inputs from finalized observation windows. The model propagates this mass through the configured links and compares virtual signal plans; approved timing applies only at a safe phase boundary. Select **Seeded reference scenario** when testing independent synthetic demand.
 
 ## Verification
 

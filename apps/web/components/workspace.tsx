@@ -87,6 +87,7 @@ export function Workspace() {
   const setView=(next:View)=>{if(dirty&&!window.confirm("Discard unsent decision draft and change section?"))return;setDirty(false);setViewState(next);const url=new URL(location.href);url.searchParams.set("view",next);history.pushState(null,"",url);acceptedURL.current=url.href};
   useEffect(()=>{const read=()=>{const next=new URL(location.href).searchParams.get("view");if(sections.some(s=>s.id===next))setViewState(next as View);acceptedURL.current=location.href};read();const back=()=>{if(!dirty||window.confirm("Leave the unsent draft?")){setDirty(false);read()}else if(acceptedURL.current){history.pushState(null,"",acceptedURL.current)}};const connectivity=()=>setOnline(navigator.onLine);connectivity();window.addEventListener("popstate",back);window.addEventListener("online",connectivity);window.addEventListener("offline",connectivity);const leave=(e:BeforeUnloadEvent)=>{if(dirty){e.preventDefault();e.returnValue=""}};window.addEventListener("beforeunload",leave);return()=>{window.removeEventListener("popstate",back);window.removeEventListener("online",connectivity);window.removeEventListener("offline",connectivity);window.removeEventListener("beforeunload",leave)}},[dirty]);
   const [scenarioID, setScenarioID] = useState<Scenario["id"]>("peak_surge");
+  const [demandSource, setDemandSource] = useState<"seeded" | "video_profile">("video_profile");
   const [seed, setSeed] = useState("1101");
   const [incidentCapacity, setIncidentCapacity] = useState(0.35);
 
@@ -301,6 +302,7 @@ export function Workspace() {
           schema_version: "1.0",
           seed: Number(seed),
           mode: systemMode,
+          demand_source: demandSource,
           ...(scenarioID === "incident_c3" ? { incident: { kind: "capacity_reduction", capacity_ratio: incidentCapacity } } : {}),
         }),
       }),
@@ -574,12 +576,20 @@ export function Workspace() {
                           className={`status-dot ${live.fresh ? "" : "unknown"}`}
                         />{" "}
                         {live.fresh
-                          ? "Live synthetic traffic · 1 Hz"
+                          ? `Virtual network · ${live.frame?.demand_source === "video_profile" ? "ITD video-derived demand" : "seeded demand"} · 1 Hz`
                           : live.frame
                             ? "Traffic stream stale / disconnected"
                             : "Start a scenario to receive traffic"}
                       </span>
                       <span className="config-version">{data.id}</span>
+                    </div>
+                    <div className="workspace-status" aria-label="Traffic demand source">
+                      <label htmlFor="demand-source">Boundary demand source</label>
+                      <select id="demand-source" value={demandSource} onChange={(event) => setDemandSource(event.target.value as "seeded" | "video_profile")} disabled={anyCommandPending}>
+                        <option value="video_profile">ITD v1.2 recorded-video counts</option>
+                        <option value="seeded">Seeded reference scenario</option>
+                      </select>
+                      <span>{live.frame ? `Active run: ${live.frame.demand_source || "seeded"}` : "Selection applies when a scenario starts"}</span>
                     </div>
 
                     {/* Operations Grid: 8-column Canvas + 4-column Action Rail */}
@@ -607,6 +617,25 @@ export function Workspace() {
                           forecasts={analysis?.forecasts}
                           horizon={selectedHorizon}
                         />
+                        <div className="network-flow-table-wrap" role="region" aria-label="Directional link flow and forecast">
+                          <h3>Directional link flow · {data.links.length} modeled links</h3>
+                          <p>ITD video counts feed the four boundary approaches when video demand is selected. Internal movement and future values are aggregate model estimates.</p>
+                          <table>
+                            <thead><tr><th>Direction</th><th>Lanes</th><th>Current flow</th><th>Queue</th><th>Forecast {selectedHorizon || 30}s</th></tr></thead>
+                            <tbody>{data.links.map((link) => {
+                              const current = live.fresh ? live.frame?.links?.find((item) => item.link_id === link.id) : undefined;
+                              const horizon = selectedHorizon || 30;
+                              const incoming = data.movements.filter((movement) => movement.incoming_link_id === link.id);
+                              const projected = analysis?.forecasts.filter((forecast) => forecast.horizon_s === horizon && incoming.some((movement) => movement.id === forecast.movement_id));
+                              return <tr key={link.id}>
+                                <th scope="row">{link.from_node} → {link.to_node}</th><td>{link.lanes}</td>
+                                <td>{current ? `${current.inflow_vpm.toFixed(1)} veh/min` : "—"}</td>
+                                <td>{current ? `${current.queued_veh_estimate.toFixed(1)} veh` : "—"}</td>
+                                <td>{projected?.length ? `${projected.reduce((sum, item) => sum + item.queue_veh, 0).toFixed(1)} veh queue` : "—"}</td>
+                              </tr>;
+                            })}</tbody>
+                          </table>
+                        </div>
 
                         {/* Node Shortcuts */}
                         <div

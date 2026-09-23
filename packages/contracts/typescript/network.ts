@@ -53,6 +53,7 @@ export interface Run {
   config_id: string;
   scenario_type: Scenario["id"];
   seed: number;
+  demand_source?: "seeded" | "video_profile";
   mode: "observe" | "recommend";
   status: "prepared" | "running" | "ended";
   started_at: string;

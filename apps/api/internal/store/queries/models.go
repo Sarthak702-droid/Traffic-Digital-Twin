@@ -74,6 +74,7 @@ type ScenarioRun struct {
 	ScenarioType string             `json:"scenario_type"`
 	Seed         int64              `json:"seed"`
 	Mode         string             `json:"mode"`
+	DemandSource string             `json:"demand_source"`
 	Status       string             `json:"status"`
 	StartedAt    pgtype.Timestamptz `json:"started_at"`
 	EndedAt      pgtype.Timestamptz `json:"ended_at"`

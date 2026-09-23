@@ -235,7 +235,7 @@ export function NetworkCanvas({
               />
 
               {/* A flow band is illustrative aggregate movement, never cars. */}
-              {frame && linkFlow > 0 && <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#94d3b6" strokeWidth={Math.min(8, 1 + linkFlow / 12)} strokeOpacity="0.28" strokeLinecap="round" />}
+              {frame && linkFlow > 0 && <line className="network-flow-motion" x1={x1} y1={y1} x2={x2} y2={y2} stroke="#94d3b6" strokeWidth={Math.min(8, 1 + linkFlow / 12)} strokeOpacity="0.7" strokeDasharray="8 12" strokeLinecap="round" />}
 
               {/* Overlay Badges: Speed & Queue Indicators (Story S09) */}
               {frame && (

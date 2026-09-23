@@ -6,6 +6,7 @@ from pathlib import Path
 import twin_pb2 as pb
 from services.shared.network_config import NetworkIndex, config_hash, load_config, ROOT
 from services.simulation.demand import BoundaryDemand
+from services.simulation.video_demand import VideoProfileDemandProvider
 from services.simulation.emergency import lifecycle
 from services.simulation.flow_kernel import step_cells
 from services.simulation.metrics import METRICS_VERSION, link_metrics
@@ -24,6 +25,7 @@ class AggregateEngine:
         self.config_digest=config_hash(self.config)
     def _validate_command(self,c):
         if c.schema_version!='1.0' or not c.run_id or c.mode not in ('observe','recommend','manual') or c.seed<1 or c.scenario_type not in {s['id'] for s in self.config['scenarios']}: raise ValueError('Invalid version, scenario, seed, mode or run ID')
+        if c.demand_source not in ('', 'seeded', 'video_profile'): raise ValueError('Unsupported demand source')
         if c.scenario_type!='incident_c3' and (c.incident_kind or c.incident_capacity_ratio): raise ValueError('Incident controls are only valid for incident_c3')
         if c.incident_kind and c.incident_kind!='capacity_reduction': raise ValueError('Unsupported incident kind')
         if c.incident_capacity_ratio and not .1<=c.incident_capacity_ratio<=.9: raise ValueError('Incident capacity must be between 10% and 90%')
@@ -33,8 +35,16 @@ class AggregateEngine:
             self.command=pb.RunCommand(); self.command.CopyFrom(command); self.scenario=next(s for s in self.config['scenarios'] if s['id']==command.scenario_type)
             length=float(self.config.get('flow_model',{}).get('cell_length_m',40))
             self.cells={e:[0.0]*max(1,math.ceil(l['length_m']/length)) for e,l in self.links.items()}; self.backlogs={e:0.0 for e in self.index.boundary_inputs}
-            self.demand=BoundaryDemand(self.config,self.index,self.scenario,command.seed); self.scheduler=Signals(self.config); self.tick=0
+            self.demand_source=command.demand_source or 'seeded'
+            if self.demand_source == 'video_profile':
+                self.demand=VideoProfileDemandProvider(observations_dir=os.environ.get('VIDEO_OBSERVATIONS_DIR', '.runtime/vision/observations'))
+                if any(not self.demand.commitments_by_link[edge] for edge in self.index.boundary_inputs):
+                    raise ValueError('Video profile requires valid observations for every boundary camera')
+            else:
+                self.demand=BoundaryDemand(self.config,self.index,self.scenario,command.seed)
+            self.scheduler=Signals(self.config); self.tick=0
             self.cumulative_demand=self.cumulative_admitted=self.cumulative_exits=0.0
+            self.offered_history={e:deque(maxlen=5) for e in self.index.boundary_inputs}
             self.flow_history={e:deque(maxlen=60) for e in self.links}; self.movement_arrivals={m:0.0 for m in self.moves}; self.movement_departures={m:0.0 for m in self.moves}; self.waiting_age={m:0.0 for m in self.moves}
             self.failure=None; self.incident=None; self.emergency=None; self.version=0; self._events(); self.signal_states=self._signal_states(); self.latest=self._snapshot(); self.running=True; self.version+=1; self.changed.notify_all(); return self.copy_state()
     def _events(self):
@@ -63,6 +73,7 @@ class AggregateEngine:
         with self.lock:
             if not self.running: raise RuntimeError('No active simulation')
             self.tick+=1; ratios=self._events(); external=self.demand.next(self.tick); self.cumulative_demand+=sum(external.values()); permissions={m for s in self.signal_states for m in s.permitted_movement_ids}
+            for edge in self.offered_history:self.offered_history[edge].append(external.get(edge,0.0))
             out=step_cells(self.index,self.cells,self.backlogs,external,permissions,ratios); self.cumulative_admitted+=sum(out.admitted.values()); self.cumulative_exits+=sum(out.exited.values())
             for edge in self.links:
                 incoming=out.admitted.get(edge,0.0)+sum(v for m,v in out.junction_flows.items() if self.moves[m]['outgoing_link_id']==edge); outgoing=out.exited.get(edge,0.0)+sum(v for m,v in out.junction_flows.items() if self.moves[m]['incoming_link_id']==edge); self.flow_history[edge].append((incoming,outgoing))
@@ -71,8 +82,12 @@ class AggregateEngine:
                 added=(out.admitted.get(m['incoming_link_id'],0.0)+sum(v for source,v in out.junction_flows.items() if self.moves[source]['outgoing_link_id']==m['incoming_link_id']))*m['turning_ratio']; self.movement_arrivals[mid]+=added; self.waiting_age[mid]=self.waiting_age[mid]+1 if stock>.1 and departed<.01 else 0.0
             self.scheduler.advance(); self.signal_states=self._signal_states(); self.latest=self._snapshot(); self.version+=1; self.changed.notify_all(); return self.copy_state()
     def _snapshot(self):
-        r=pb.TrafficState(schema_version='1.1',run_id=self.command.run_id,timestamp=datetime.now(timezone.utc).isoformat(),simulation_time_s=self.tick,source='synthetic',signals=self.signal_states,vehicles_in_network=round(sum(map(sum,self.cells.values()))),inserted_total=round(self.cumulative_admitted),arrived_total=round(self.cumulative_exits),teleported_total=0,scenario_type=self.command.scenario_type,seed=self.command.seed,active_plan=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=self.scheduler.plan[p['id']]) for p in self.config['phases']],engine_kind=self.engine_kind,model_version=self.model_version,metrics_version=METRICS_VERSION,config_hash=self.config_digest,snapshot_sequence=self.version+1,boundary_backlog_veh=sum(self.backlogs.values()),cumulative_demand_veh=self.cumulative_demand,cumulative_admitted_veh=self.cumulative_admitted,cumulative_boundary_exits_veh=self.cumulative_exits,control_target='virtual_only')
+        r=pb.TrafficState(schema_version='1.1',run_id=self.command.run_id,timestamp=datetime.now(timezone.utc).isoformat(),simulation_time_s=self.tick,source='synthetic',signals=self.signal_states,vehicles_in_network=round(sum(map(sum,self.cells.values()))),inserted_total=round(self.cumulative_admitted),arrived_total=round(self.cumulative_exits),teleported_total=0,scenario_type=self.command.scenario_type,seed=self.command.seed,active_plan=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=self.scheduler.plan[p['id']]) for p in self.config['phases']],engine_kind=self.engine_kind,model_version=self.model_version,metrics_version=METRICS_VERSION,config_hash=self.config_digest,snapshot_sequence=self.version+1,boundary_backlog_veh=sum(self.backlogs.values()),cumulative_demand_veh=self.cumulative_demand,cumulative_admitted_veh=self.cumulative_admitted,cumulative_boundary_exits_veh=self.cumulative_exits,control_target='virtual_only',demand_source=self.demand_source)
         r.scheduler.tick=self.scheduler.tick; r.scheduler.recovering=self.scheduler.recovering
+        for edge, stocks in self.cells.items():r.cells.add(link_id=edge, stock_veh=stocks)
+        for edge, backlog in self.backlogs.items():
+            samples=self.offered_history[edge]
+            r.boundary_demand.add(link_id=edge,backlog_veh=backlog,offered_rate_vpm=60*sum(samples)/len(samples) if samples else 0.0)
         r.scheduler.pending_plan.extend(pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=self.scheduler.pending[p['id']]) for p in self.config['phases'])
         r.scheduler.service_history.extend(pb.SchedulerService(phase_id=pid,last_served_tick=tick) for pid,tick in self.scheduler.last_served.items())
         r.scheduler.priority.extend(pb.SchedulerPriority(node_id=node,phase_id=pid) for node,pid in self.scheduler.priority.items())

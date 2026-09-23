@@ -25,6 +25,7 @@ export const liveSchema = z.object({
   timestamp: z.string().datetime({ offset: true }),
   simulation_time_s: nonnegative,
   source: z.literal("synthetic"),
+  demand_source: z.enum(["seeded", "video_profile"]).optional(),
   replay: z.boolean().default(false),
   movements: z.array(movement),
   signals: z.array(

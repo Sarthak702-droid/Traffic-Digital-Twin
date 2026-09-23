@@ -6,12 +6,62 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 )
+
+func videoProfileReady() bool {
+	data, err := os.ReadFile("packages/camera-config/cameras.json")
+	if err != nil {
+		return false
+	}
+	var config struct {
+		Cameras map[string]struct {
+			AssignedVideo       string `json:"assigned_video"`
+			InjectsBoundaryMass bool   `json:"injects_boundary_mass"`
+		} `json:"cameras"`
+	}
+	if json.Unmarshal(data, &config) != nil {
+		return false
+	}
+	ready := 0
+	for id, camera := range config.Cameras {
+		if !camera.InjectsBoundaryMass {
+			continue
+		}
+		if camera.AssignedVideo == "" {
+			return false
+		}
+		if info, err := os.Lstat(camera.AssignedVideo); err != nil || !info.Mode().IsRegular() {
+			return false
+		}
+		file, err := os.Open(filepath.Join(".runtime/vision/observations", id+"_observations.jsonl"))
+		if err != nil {
+			return false
+		}
+		scanner := bufio.NewScanner(file)
+		valid := false
+		for scanner.Scan() {
+			var observation struct {
+				Status string `json:"observation_status"`
+			}
+			if json.Unmarshal(scanner.Bytes(), &observation) == nil && observation.Status == "valid" {
+				valid = true
+				break
+			}
+		}
+		file.Close()
+		if !valid {
+			return false
+		}
+		ready++
+	}
+	return ready == 4
+}
 
 type ObservationResponse struct {
 	SchemaVersion string           `json:"schema_version"`
@@ -22,9 +72,17 @@ type ObservationResponse struct {
 
 func (s *Server) getObservations(w http.ResponseWriter, r *http.Request) {
 	camID := r.URL.Query().Get("camera_id")
+	if camID != "" && !regexp.MustCompile(`^CAM-[0-9]{2}$`).MatchString(camID) {
+		problem(w, 400, "Invalid registered camera ID")
+		return
+	}
 	mode := r.URL.Query().Get("mode")
 	if mode == "" {
 		mode = "cached_observations"
+	}
+	if mode != "cached_observations" {
+		problem(w, 409, "Online inference requires a running vision job; select cached observations")
+		return
 	}
 
 	startS := -1.0
@@ -76,7 +134,7 @@ func (s *Server) getObservations(w http.ResponseWriter, r *http.Request) {
 				wStart, _ := obs["window_start_s"].(float64)
 				wEnd, _ := obs["window_end_s"].(float64)
 				if (startS < 0 || wStart >= startS) && wEnd <= endS {
-					obs["processing_mode"] = mode
+					obs["processing_mode"] = "cached_observations"
 					results = append(results, obs)
 				}
 			}
@@ -112,6 +170,14 @@ func (s *Server) getCameras(w http.ResponseWriter, r *http.Request) {
 	if err := json.Unmarshal(data, &res); err != nil {
 		problem(w, 500, "Corrupt camera configuration")
 		return
+	}
+	if manifest, err := os.ReadFile("asset-manifest.json"); err == nil {
+		var assets struct {
+			Assets []map[string]any `json:"assets"`
+		}
+		if json.Unmarshal(manifest, &assets) == nil {
+			res["assets"] = assets.Assets
+		}
 	}
 	send(w, 200, res)
 }
@@ -162,23 +228,19 @@ func (s *Server) getClipMedia(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if targetFilename == "" {
-		// Fallback check if direct mp4 in directory
-		if strings.HasSuffix(clipID, ".mp4") {
-			targetFilename = clipID
-		} else {
-			targetFilename = clipID + ".mp4"
-		}
+		problem(w, 404, "Clip is not registered")
+		return
 	}
 
 	// Canonicalize and prevent path traversal
 	cleanPath := filepath.Clean(targetFilename)
-	if strings.Contains(cleanPath, "..") || filepath.IsAbs(cleanPath) {
+	if cleanPath != filepath.Base(cleanPath) || filepath.IsAbs(cleanPath) {
 		problem(w, 403, "Access to path forbidden")
 		return
 	}
 
-	info, err := os.Stat(cleanPath)
-	if err != nil || info.IsDir() {
+	info, err := os.Lstat(cleanPath)
+	if err != nil || !info.Mode().IsRegular() {
 		problem(w, 404, "Requested media clip not found")
 		return
 	}

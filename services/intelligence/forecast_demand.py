@@ -18,8 +18,12 @@ HORIZONS_S = [30, 60, 120, 300]
 
 def boundary_rates(state, index):
     links = {value.link_id: value for value in state.links}
+    offered = {value.link_id: value for value in state.boundary_demand}
     rates = {}
     for edge in index.boundary_inputs:
+        if edge in offered:
+            rates[edge] = max(0.0, offered[edge].offered_rate_vpm / 60.0)
+            continue
         observed = links.get(edge)
         if observed is not None:
             rates[edge] = max(0.0, observed.inflow_vpm / 60.0)

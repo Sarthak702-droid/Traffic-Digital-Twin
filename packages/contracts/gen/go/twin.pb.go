@@ -842,6 +842,118 @@ func (x *SchedulerSnapshot) GetRecovering() bool {
 	return false
 }
 
+type CellStock struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	LinkId        string                 `protobuf:"bytes,1,opt,name=link_id,json=linkId,proto3" json:"link_id,omitempty"`
+	StockVeh      []float64              `protobuf:"fixed64,2,rep,packed,name=stock_veh,json=stockVeh,proto3" json:"stock_veh,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CellStock) Reset() {
+	*x = CellStock{}
+	mi := &file_twin_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CellStock) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CellStock) ProtoMessage() {}
+
+func (x *CellStock) ProtoReflect() protoreflect.Message {
+	mi := &file_twin_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CellStock.ProtoReflect.Descriptor instead.
+func (*CellStock) Descriptor() ([]byte, []int) {
+	return file_twin_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *CellStock) GetLinkId() string {
+	if x != nil {
+		return x.LinkId
+	}
+	return ""
+}
+
+func (x *CellStock) GetStockVeh() []float64 {
+	if x != nil {
+		return x.StockVeh
+	}
+	return nil
+}
+
+type BoundaryDemandState struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	LinkId         string                 `protobuf:"bytes,1,opt,name=link_id,json=linkId,proto3" json:"link_id,omitempty"`
+	BacklogVeh     float64                `protobuf:"fixed64,2,opt,name=backlog_veh,json=backlogVeh,proto3" json:"backlog_veh,omitempty"`
+	OfferedRateVpm float64                `protobuf:"fixed64,3,opt,name=offered_rate_vpm,json=offeredRateVpm,proto3" json:"offered_rate_vpm,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *BoundaryDemandState) Reset() {
+	*x = BoundaryDemandState{}
+	mi := &file_twin_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BoundaryDemandState) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BoundaryDemandState) ProtoMessage() {}
+
+func (x *BoundaryDemandState) ProtoReflect() protoreflect.Message {
+	mi := &file_twin_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BoundaryDemandState.ProtoReflect.Descriptor instead.
+func (*BoundaryDemandState) Descriptor() ([]byte, []int) {
+	return file_twin_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *BoundaryDemandState) GetLinkId() string {
+	if x != nil {
+		return x.LinkId
+	}
+	return ""
+}
+
+func (x *BoundaryDemandState) GetBacklogVeh() float64 {
+	if x != nil {
+		return x.BacklogVeh
+	}
+	return 0
+}
+
+func (x *BoundaryDemandState) GetOfferedRateVpm() float64 {
+	if x != nil {
+		return x.OfferedRateVpm
+	}
+	return 0
+}
+
 type TrafficState struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	SchemaVersion   string                 `protobuf:"bytes,1,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
@@ -858,32 +970,35 @@ type TrafficState struct {
 	// Deprecated: Marked as deprecated in twin.proto.
 	ArrivedTotal uint32 `protobuf:"varint,10,opt,name=arrived_total,json=arrivedTotal,proto3" json:"arrived_total,omitempty"`
 	// Deprecated: Marked as deprecated in twin.proto.
-	TeleportedTotal            uint32             `protobuf:"varint,11,opt,name=teleported_total,json=teleportedTotal,proto3" json:"teleported_total,omitempty"`
-	ScenarioType               string             `protobuf:"bytes,12,opt,name=scenario_type,json=scenarioType,proto3" json:"scenario_type,omitempty"`
-	Seed                       uint32             `protobuf:"varint,13,opt,name=seed,proto3" json:"seed,omitempty"`
-	Incident                   *Incident          `protobuf:"bytes,14,opt,name=incident,proto3" json:"incident,omitempty"`
-	Emergency                  *EmergencyEvent    `protobuf:"bytes,15,opt,name=emergency,proto3" json:"emergency,omitempty"`
-	ActivePlan                 []*TimingChange    `protobuf:"bytes,16,rep,name=active_plan,json=activePlan,proto3" json:"active_plan,omitempty"`
-	Replay                     bool               `protobuf:"varint,17,opt,name=replay,proto3" json:"replay,omitempty"`
-	Links                      []*LinkAggregate   `protobuf:"bytes,18,rep,name=links,proto3" json:"links,omitempty"`
-	EngineKind                 string             `protobuf:"bytes,19,opt,name=engine_kind,json=engineKind,proto3" json:"engine_kind,omitempty"`
-	ModelVersion               string             `protobuf:"bytes,20,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
-	MetricsVersion             string             `protobuf:"bytes,21,opt,name=metrics_version,json=metricsVersion,proto3" json:"metrics_version,omitempty"`
-	ConfigHash                 string             `protobuf:"bytes,22,opt,name=config_hash,json=configHash,proto3" json:"config_hash,omitempty"`
-	SnapshotSequence           uint64             `protobuf:"varint,23,opt,name=snapshot_sequence,json=snapshotSequence,proto3" json:"snapshot_sequence,omitempty"`
-	BoundaryBacklogVeh         float64            `protobuf:"fixed64,24,opt,name=boundary_backlog_veh,json=boundaryBacklogVeh,proto3" json:"boundary_backlog_veh,omitempty"`
-	CumulativeDemandVeh        float64            `protobuf:"fixed64,25,opt,name=cumulative_demand_veh,json=cumulativeDemandVeh,proto3" json:"cumulative_demand_veh,omitempty"`
-	CumulativeAdmittedVeh      float64            `protobuf:"fixed64,26,opt,name=cumulative_admitted_veh,json=cumulativeAdmittedVeh,proto3" json:"cumulative_admitted_veh,omitempty"`
-	CumulativeBoundaryExitsVeh float64            `protobuf:"fixed64,27,opt,name=cumulative_boundary_exits_veh,json=cumulativeBoundaryExitsVeh,proto3" json:"cumulative_boundary_exits_veh,omitempty"`
-	ControlTarget              string             `protobuf:"bytes,28,opt,name=control_target,json=controlTarget,proto3" json:"control_target,omitempty"`
-	Scheduler                  *SchedulerSnapshot `protobuf:"bytes,29,opt,name=scheduler,proto3" json:"scheduler,omitempty"`
+	TeleportedTotal            uint32                 `protobuf:"varint,11,opt,name=teleported_total,json=teleportedTotal,proto3" json:"teleported_total,omitempty"`
+	ScenarioType               string                 `protobuf:"bytes,12,opt,name=scenario_type,json=scenarioType,proto3" json:"scenario_type,omitempty"`
+	Seed                       uint32                 `protobuf:"varint,13,opt,name=seed,proto3" json:"seed,omitempty"`
+	Incident                   *Incident              `protobuf:"bytes,14,opt,name=incident,proto3" json:"incident,omitempty"`
+	Emergency                  *EmergencyEvent        `protobuf:"bytes,15,opt,name=emergency,proto3" json:"emergency,omitempty"`
+	ActivePlan                 []*TimingChange        `protobuf:"bytes,16,rep,name=active_plan,json=activePlan,proto3" json:"active_plan,omitempty"`
+	Replay                     bool                   `protobuf:"varint,17,opt,name=replay,proto3" json:"replay,omitempty"`
+	Links                      []*LinkAggregate       `protobuf:"bytes,18,rep,name=links,proto3" json:"links,omitempty"`
+	EngineKind                 string                 `protobuf:"bytes,19,opt,name=engine_kind,json=engineKind,proto3" json:"engine_kind,omitempty"`
+	ModelVersion               string                 `protobuf:"bytes,20,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
+	MetricsVersion             string                 `protobuf:"bytes,21,opt,name=metrics_version,json=metricsVersion,proto3" json:"metrics_version,omitempty"`
+	ConfigHash                 string                 `protobuf:"bytes,22,opt,name=config_hash,json=configHash,proto3" json:"config_hash,omitempty"`
+	SnapshotSequence           uint64                 `protobuf:"varint,23,opt,name=snapshot_sequence,json=snapshotSequence,proto3" json:"snapshot_sequence,omitempty"`
+	BoundaryBacklogVeh         float64                `protobuf:"fixed64,24,opt,name=boundary_backlog_veh,json=boundaryBacklogVeh,proto3" json:"boundary_backlog_veh,omitempty"`
+	CumulativeDemandVeh        float64                `protobuf:"fixed64,25,opt,name=cumulative_demand_veh,json=cumulativeDemandVeh,proto3" json:"cumulative_demand_veh,omitempty"`
+	CumulativeAdmittedVeh      float64                `protobuf:"fixed64,26,opt,name=cumulative_admitted_veh,json=cumulativeAdmittedVeh,proto3" json:"cumulative_admitted_veh,omitempty"`
+	CumulativeBoundaryExitsVeh float64                `protobuf:"fixed64,27,opt,name=cumulative_boundary_exits_veh,json=cumulativeBoundaryExitsVeh,proto3" json:"cumulative_boundary_exits_veh,omitempty"`
+	ControlTarget              string                 `protobuf:"bytes,28,opt,name=control_target,json=controlTarget,proto3" json:"control_target,omitempty"`
+	Scheduler                  *SchedulerSnapshot     `protobuf:"bytes,29,opt,name=scheduler,proto3" json:"scheduler,omitempty"`
+	DemandSource               string                 `protobuf:"bytes,30,opt,name=demand_source,json=demandSource,proto3" json:"demand_source,omitempty"`
+	Cells                      []*CellStock           `protobuf:"bytes,31,rep,name=cells,proto3" json:"cells,omitempty"`
+	BoundaryDemand             []*BoundaryDemandState `protobuf:"bytes,32,rep,name=boundary_demand,json=boundaryDemand,proto3" json:"boundary_demand,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
 
 func (x *TrafficState) Reset() {
 	*x = TrafficState{}
-	mi := &file_twin_proto_msgTypes[9]
+	mi := &file_twin_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -895,7 +1010,7 @@ func (x *TrafficState) String() string {
 func (*TrafficState) ProtoMessage() {}
 
 func (x *TrafficState) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[9]
+	mi := &file_twin_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -908,7 +1023,7 @@ func (x *TrafficState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TrafficState.ProtoReflect.Descriptor instead.
 func (*TrafficState) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{9}
+	return file_twin_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *TrafficState) GetSchemaVersion() string {
@@ -1118,6 +1233,27 @@ func (x *TrafficState) GetScheduler() *SchedulerSnapshot {
 	return nil
 }
 
+func (x *TrafficState) GetDemandSource() string {
+	if x != nil {
+		return x.DemandSource
+	}
+	return ""
+}
+
+func (x *TrafficState) GetCells() []*CellStock {
+	if x != nil {
+		return x.Cells
+	}
+	return nil
+}
+
+func (x *TrafficState) GetBoundaryDemand() []*BoundaryDemandState {
+	if x != nil {
+		return x.BoundaryDemand
+	}
+	return nil
+}
+
 type Forecast struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1137,7 +1273,7 @@ type Forecast struct {
 
 func (x *Forecast) Reset() {
 	*x = Forecast{}
-	mi := &file_twin_proto_msgTypes[10]
+	mi := &file_twin_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1149,7 +1285,7 @@ func (x *Forecast) String() string {
 func (*Forecast) ProtoMessage() {}
 
 func (x *Forecast) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[10]
+	mi := &file_twin_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1162,7 +1298,7 @@ func (x *Forecast) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Forecast.ProtoReflect.Descriptor instead.
 func (*Forecast) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{10}
+	return file_twin_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *Forecast) GetId() string {
@@ -1253,7 +1389,7 @@ type TimingChange struct {
 
 func (x *TimingChange) Reset() {
 	*x = TimingChange{}
-	mi := &file_twin_proto_msgTypes[11]
+	mi := &file_twin_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1265,7 +1401,7 @@ func (x *TimingChange) String() string {
 func (*TimingChange) ProtoMessage() {}
 
 func (x *TimingChange) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[11]
+	mi := &file_twin_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1278,7 +1414,7 @@ func (x *TimingChange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimingChange.ProtoReflect.Descriptor instead.
 func (*TimingChange) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{11}
+	return file_twin_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *TimingChange) GetNodeId() string {
@@ -1319,7 +1455,7 @@ type Recommendation struct {
 
 func (x *Recommendation) Reset() {
 	*x = Recommendation{}
-	mi := &file_twin_proto_msgTypes[12]
+	mi := &file_twin_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1331,7 +1467,7 @@ func (x *Recommendation) String() string {
 func (*Recommendation) ProtoMessage() {}
 
 func (x *Recommendation) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[12]
+	mi := &file_twin_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1344,7 +1480,7 @@ func (x *Recommendation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Recommendation.ProtoReflect.Descriptor instead.
 func (*Recommendation) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{12}
+	return file_twin_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *Recommendation) GetId() string {
@@ -1426,7 +1562,7 @@ type OperatorAction struct {
 
 func (x *OperatorAction) Reset() {
 	*x = OperatorAction{}
-	mi := &file_twin_proto_msgTypes[13]
+	mi := &file_twin_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1438,7 +1574,7 @@ func (x *OperatorAction) String() string {
 func (*OperatorAction) ProtoMessage() {}
 
 func (x *OperatorAction) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[13]
+	mi := &file_twin_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1451,7 +1587,7 @@ func (x *OperatorAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OperatorAction.ProtoReflect.Descriptor instead.
 func (*OperatorAction) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{13}
+	return file_twin_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *OperatorAction) GetId() string {
@@ -1525,7 +1661,7 @@ type Incident struct {
 
 func (x *Incident) Reset() {
 	*x = Incident{}
-	mi := &file_twin_proto_msgTypes[14]
+	mi := &file_twin_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1537,7 +1673,7 @@ func (x *Incident) String() string {
 func (*Incident) ProtoMessage() {}
 
 func (x *Incident) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[14]
+	mi := &file_twin_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1550,7 +1686,7 @@ func (x *Incident) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Incident.ProtoReflect.Descriptor instead.
 func (*Incident) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{14}
+	return file_twin_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *Incident) GetId() string {
@@ -1617,7 +1753,7 @@ type EmergencyEvent struct {
 
 func (x *EmergencyEvent) Reset() {
 	*x = EmergencyEvent{}
-	mi := &file_twin_proto_msgTypes[15]
+	mi := &file_twin_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1629,7 +1765,7 @@ func (x *EmergencyEvent) String() string {
 func (*EmergencyEvent) ProtoMessage() {}
 
 func (x *EmergencyEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[15]
+	mi := &file_twin_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1642,7 +1778,7 @@ func (x *EmergencyEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EmergencyEvent.ProtoReflect.Descriptor instead.
 func (*EmergencyEvent) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{15}
+	return file_twin_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *EmergencyEvent) GetId() string {
@@ -1705,7 +1841,7 @@ type ComponentHealth struct {
 
 func (x *ComponentHealth) Reset() {
 	*x = ComponentHealth{}
-	mi := &file_twin_proto_msgTypes[16]
+	mi := &file_twin_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1717,7 +1853,7 @@ func (x *ComponentHealth) String() string {
 func (*ComponentHealth) ProtoMessage() {}
 
 func (x *ComponentHealth) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[16]
+	mi := &file_twin_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1730,7 +1866,7 @@ func (x *ComponentHealth) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComponentHealth.ProtoReflect.Descriptor instead.
 func (*ComponentHealth) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{16}
+	return file_twin_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ComponentHealth) GetComponent() string {
@@ -1764,7 +1900,7 @@ type HealthState struct {
 
 func (x *HealthState) Reset() {
 	*x = HealthState{}
-	mi := &file_twin_proto_msgTypes[17]
+	mi := &file_twin_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1776,7 +1912,7 @@ func (x *HealthState) String() string {
 func (*HealthState) ProtoMessage() {}
 
 func (x *HealthState) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[17]
+	mi := &file_twin_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1789,7 +1925,7 @@ func (x *HealthState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HealthState.ProtoReflect.Descriptor instead.
 func (*HealthState) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{17}
+	return file_twin_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *HealthState) GetTimestamp() string {
@@ -1824,7 +1960,7 @@ type AuditEvent struct {
 
 func (x *AuditEvent) Reset() {
 	*x = AuditEvent{}
-	mi := &file_twin_proto_msgTypes[18]
+	mi := &file_twin_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1836,7 +1972,7 @@ func (x *AuditEvent) String() string {
 func (*AuditEvent) ProtoMessage() {}
 
 func (x *AuditEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[18]
+	mi := &file_twin_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1849,7 +1985,7 @@ func (x *AuditEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuditEvent.ProtoReflect.Descriptor instead.
 func (*AuditEvent) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{18}
+	return file_twin_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *AuditEvent) GetId() string {
@@ -1935,7 +2071,7 @@ type Alert struct {
 
 func (x *Alert) Reset() {
 	*x = Alert{}
-	mi := &file_twin_proto_msgTypes[19]
+	mi := &file_twin_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1947,7 +2083,7 @@ func (x *Alert) String() string {
 func (*Alert) ProtoMessage() {}
 
 func (x *Alert) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[19]
+	mi := &file_twin_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1960,7 +2096,7 @@ func (x *Alert) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Alert.ProtoReflect.Descriptor instead.
 func (*Alert) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{19}
+	return file_twin_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *Alert) GetId() string {
@@ -2011,7 +2147,7 @@ type SignalState struct {
 
 func (x *SignalState) Reset() {
 	*x = SignalState{}
-	mi := &file_twin_proto_msgTypes[20]
+	mi := &file_twin_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2023,7 +2159,7 @@ func (x *SignalState) String() string {
 func (*SignalState) ProtoMessage() {}
 
 func (x *SignalState) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[20]
+	mi := &file_twin_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2036,7 +2172,7 @@ func (x *SignalState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignalState.ProtoReflect.Descriptor instead.
 func (*SignalState) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{20}
+	return file_twin_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *SignalState) GetNodeId() string {
@@ -2111,7 +2247,7 @@ type ComparisonResult struct {
 
 func (x *ComparisonResult) Reset() {
 	*x = ComparisonResult{}
-	mi := &file_twin_proto_msgTypes[21]
+	mi := &file_twin_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2123,7 +2259,7 @@ func (x *ComparisonResult) String() string {
 func (*ComparisonResult) ProtoMessage() {}
 
 func (x *ComparisonResult) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[21]
+	mi := &file_twin_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2136,7 +2272,7 @@ func (x *ComparisonResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComparisonResult.ProtoReflect.Descriptor instead.
 func (*ComparisonResult) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{21}
+	return file_twin_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ComparisonResult) GetRunId() string {
@@ -2329,7 +2465,7 @@ type EventEnvelope struct {
 
 func (x *EventEnvelope) Reset() {
 	*x = EventEnvelope{}
-	mi := &file_twin_proto_msgTypes[22]
+	mi := &file_twin_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2341,7 +2477,7 @@ func (x *EventEnvelope) String() string {
 func (*EventEnvelope) ProtoMessage() {}
 
 func (x *EventEnvelope) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[22]
+	mi := &file_twin_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2354,7 +2490,7 @@ func (x *EventEnvelope) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventEnvelope.ProtoReflect.Descriptor instead.
 func (*EventEnvelope) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{22}
+	return file_twin_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *EventEnvelope) GetSchemaVersion() string {
@@ -2536,13 +2672,14 @@ type RunCommand struct {
 	RunId                 string                 `protobuf:"bytes,5,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
 	IncidentKind          string                 `protobuf:"bytes,6,opt,name=incident_kind,json=incidentKind,proto3" json:"incident_kind,omitempty"`
 	IncidentCapacityRatio float64                `protobuf:"fixed64,7,opt,name=incident_capacity_ratio,json=incidentCapacityRatio,proto3" json:"incident_capacity_ratio,omitempty"`
+	DemandSource          string                 `protobuf:"bytes,8,opt,name=demand_source,json=demandSource,proto3" json:"demand_source,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
 
 func (x *RunCommand) Reset() {
 	*x = RunCommand{}
-	mi := &file_twin_proto_msgTypes[23]
+	mi := &file_twin_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2554,7 +2691,7 @@ func (x *RunCommand) String() string {
 func (*RunCommand) ProtoMessage() {}
 
 func (x *RunCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[23]
+	mi := &file_twin_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2567,7 +2704,7 @@ func (x *RunCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunCommand.ProtoReflect.Descriptor instead.
 func (*RunCommand) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{23}
+	return file_twin_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *RunCommand) GetSchemaVersion() string {
@@ -2619,6 +2756,13 @@ func (x *RunCommand) GetIncidentCapacityRatio() float64 {
 	return 0
 }
 
+func (x *RunCommand) GetDemandSource() string {
+	if x != nil {
+		return x.DemandSource
+	}
+	return ""
+}
+
 type RunRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
@@ -2628,7 +2772,7 @@ type RunRequest struct {
 
 func (x *RunRequest) Reset() {
 	*x = RunRequest{}
-	mi := &file_twin_proto_msgTypes[24]
+	mi := &file_twin_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2640,7 +2784,7 @@ func (x *RunRequest) String() string {
 func (*RunRequest) ProtoMessage() {}
 
 func (x *RunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[24]
+	mi := &file_twin_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2653,7 +2797,7 @@ func (x *RunRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunRequest.ProtoReflect.Descriptor instead.
 func (*RunRequest) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{24}
+	return file_twin_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *RunRequest) GetRunId() string {
@@ -2673,7 +2817,7 @@ type ValidationResult struct {
 
 func (x *ValidationResult) Reset() {
 	*x = ValidationResult{}
-	mi := &file_twin_proto_msgTypes[25]
+	mi := &file_twin_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2685,7 +2829,7 @@ func (x *ValidationResult) String() string {
 func (*ValidationResult) ProtoMessage() {}
 
 func (x *ValidationResult) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[25]
+	mi := &file_twin_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2698,7 +2842,7 @@ func (x *ValidationResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidationResult.ProtoReflect.Descriptor instead.
 func (*ValidationResult) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{25}
+	return file_twin_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *ValidationResult) GetValid() bool {
@@ -2726,7 +2870,7 @@ type PlanCommand struct {
 
 func (x *PlanCommand) Reset() {
 	*x = PlanCommand{}
-	mi := &file_twin_proto_msgTypes[26]
+	mi := &file_twin_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2738,7 +2882,7 @@ func (x *PlanCommand) String() string {
 func (*PlanCommand) ProtoMessage() {}
 
 func (x *PlanCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[26]
+	mi := &file_twin_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2751,7 +2895,7 @@ func (x *PlanCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanCommand.ProtoReflect.Descriptor instead.
 func (*PlanCommand) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{26}
+	return file_twin_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *PlanCommand) GetRunId() string {
@@ -2786,7 +2930,7 @@ type PlanOutcome struct {
 
 func (x *PlanOutcome) Reset() {
 	*x = PlanOutcome{}
-	mi := &file_twin_proto_msgTypes[27]
+	mi := &file_twin_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2798,7 +2942,7 @@ func (x *PlanOutcome) String() string {
 func (*PlanOutcome) ProtoMessage() {}
 
 func (x *PlanOutcome) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[27]
+	mi := &file_twin_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2811,7 +2955,7 @@ func (x *PlanOutcome) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanOutcome.ProtoReflect.Descriptor instead.
 func (*PlanOutcome) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{27}
+	return file_twin_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *PlanOutcome) GetCommandId() string {
@@ -2849,7 +2993,7 @@ type Analysis struct {
 
 func (x *Analysis) Reset() {
 	*x = Analysis{}
-	mi := &file_twin_proto_msgTypes[28]
+	mi := &file_twin_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2861,7 +3005,7 @@ func (x *Analysis) String() string {
 func (*Analysis) ProtoMessage() {}
 
 func (x *Analysis) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[28]
+	mi := &file_twin_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2874,7 +3018,7 @@ func (x *Analysis) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Analysis.ProtoReflect.Descriptor instead.
 func (*Analysis) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{28}
+	return file_twin_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *Analysis) GetRunId() string {
@@ -2930,7 +3074,7 @@ type CompareCommand struct {
 
 func (x *CompareCommand) Reset() {
 	*x = CompareCommand{}
-	mi := &file_twin_proto_msgTypes[29]
+	mi := &file_twin_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2942,7 +3086,7 @@ func (x *CompareCommand) String() string {
 func (*CompareCommand) ProtoMessage() {}
 
 func (x *CompareCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[29]
+	mi := &file_twin_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2955,7 +3099,7 @@ func (x *CompareCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompareCommand.ProtoReflect.Descriptor instead.
 func (*CompareCommand) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{29}
+	return file_twin_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *CompareCommand) GetState() *TrafficState {
@@ -3066,7 +3210,15 @@ const file_twin_proto_rawDesc = "" +
 	"\bpriority\x18\x04 \x03(\v2\x1d.traffic.v1.SchedulerPriorityR\bpriority\x12\x1e\n" +
 	"\n" +
 	"recovering\x18\x05 \x01(\bR\n" +
-	"recovering\"\xfc\t\n" +
+	"recovering\"A\n" +
+	"\tCellStock\x12\x17\n" +
+	"\alink_id\x18\x01 \x01(\tR\x06linkId\x12\x1b\n" +
+	"\tstock_veh\x18\x02 \x03(\x01R\bstockVeh\"y\n" +
+	"\x13BoundaryDemandState\x12\x17\n" +
+	"\alink_id\x18\x01 \x01(\tR\x06linkId\x12\x1f\n" +
+	"\vbacklog_veh\x18\x02 \x01(\x01R\n" +
+	"backlogVeh\x12(\n" +
+	"\x10offered_rate_vpm\x18\x03 \x01(\x01R\x0eofferedRateVpm\"\x98\v\n" +
 	"\fTrafficState\x12%\n" +
 	"\x0eschema_version\x18\x01 \x01(\tR\rschemaVersion\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1c\n" +
@@ -3100,7 +3252,10 @@ const file_twin_proto_rawDesc = "" +
 	"\x17cumulative_admitted_veh\x18\x1a \x01(\x01R\x15cumulativeAdmittedVeh\x12A\n" +
 	"\x1dcumulative_boundary_exits_veh\x18\x1b \x01(\x01R\x1acumulativeBoundaryExitsVeh\x12%\n" +
 	"\x0econtrol_target\x18\x1c \x01(\tR\rcontrolTarget\x12;\n" +
-	"\tscheduler\x18\x1d \x01(\v2\x1d.traffic.v1.SchedulerSnapshotR\tscheduler\"\xff\x02\n" +
+	"\tscheduler\x18\x1d \x01(\v2\x1d.traffic.v1.SchedulerSnapshotR\tscheduler\x12#\n" +
+	"\rdemand_source\x18\x1e \x01(\tR\fdemandSource\x12+\n" +
+	"\x05cells\x18\x1f \x03(\v2\x15.traffic.v1.CellStockR\x05cells\x12H\n" +
+	"\x0fboundary_demand\x18  \x03(\v2\x1f.traffic.v1.BoundaryDemandStateR\x0eboundaryDemand\"\xff\x02\n" +
 	"\bForecast\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1f\n" +
@@ -3233,7 +3388,7 @@ const file_twin_proto_rawDesc = "" +
 	"\x11emergency_updated\x18\x10 \x01(\v2\x1a.traffic.v1.EmergencyEventH\x00R\x10emergencyUpdated\x12@\n" +
 	"\x0ehealth_updated\x18\x11 \x01(\v2\x17.traffic.v1.HealthStateH\x00R\rhealthUpdated\x12?\n" +
 	"\x0eaudit_appended\x18\x12 \x01(\v2\x16.traffic.v1.AuditEventH\x00R\rauditAppendedB\a\n" +
-	"\x05event\"\xf4\x01\n" +
+	"\x05event\"\x99\x02\n" +
 	"\n" +
 	"RunCommand\x12%\n" +
 	"\x0eschema_version\x18\x01 \x01(\tR\rschemaVersion\x12#\n" +
@@ -3242,7 +3397,8 @@ const file_twin_proto_rawDesc = "" +
 	"\x04mode\x18\x04 \x01(\tR\x04mode\x12\x15\n" +
 	"\x06run_id\x18\x05 \x01(\tR\x05runId\x12#\n" +
 	"\rincident_kind\x18\x06 \x01(\tR\fincidentKind\x126\n" +
-	"\x17incident_capacity_ratio\x18\a \x01(\x01R\x15incidentCapacityRatio\"#\n" +
+	"\x17incident_capacity_ratio\x18\a \x01(\x01R\x15incidentCapacityRatio\x12#\n" +
+	"\rdemand_source\x18\b \x01(\tR\fdemandSource\"#\n" +
 	"\n" +
 	"RunRequest\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\"@\n" +
@@ -3299,98 +3455,102 @@ func file_twin_proto_rawDescGZIP() []byte {
 	return file_twin_proto_rawDescData
 }
 
-var file_twin_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
+var file_twin_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
 var file_twin_proto_goTypes = []any{
-	(*Node)(nil),              // 0: traffic.v1.Node
-	(*Link)(nil),              // 1: traffic.v1.Link
-	(*Movement)(nil),          // 2: traffic.v1.Movement
-	(*SignalPhase)(nil),       // 3: traffic.v1.SignalPhase
-	(*MovementState)(nil),     // 4: traffic.v1.MovementState
-	(*LinkAggregate)(nil),     // 5: traffic.v1.LinkAggregate
-	(*SchedulerService)(nil),  // 6: traffic.v1.SchedulerService
-	(*SchedulerPriority)(nil), // 7: traffic.v1.SchedulerPriority
-	(*SchedulerSnapshot)(nil), // 8: traffic.v1.SchedulerSnapshot
-	(*TrafficState)(nil),      // 9: traffic.v1.TrafficState
-	(*Forecast)(nil),          // 10: traffic.v1.Forecast
-	(*TimingChange)(nil),      // 11: traffic.v1.TimingChange
-	(*Recommendation)(nil),    // 12: traffic.v1.Recommendation
-	(*OperatorAction)(nil),    // 13: traffic.v1.OperatorAction
-	(*Incident)(nil),          // 14: traffic.v1.Incident
-	(*EmergencyEvent)(nil),    // 15: traffic.v1.EmergencyEvent
-	(*ComponentHealth)(nil),   // 16: traffic.v1.ComponentHealth
-	(*HealthState)(nil),       // 17: traffic.v1.HealthState
-	(*AuditEvent)(nil),        // 18: traffic.v1.AuditEvent
-	(*Alert)(nil),             // 19: traffic.v1.Alert
-	(*SignalState)(nil),       // 20: traffic.v1.SignalState
-	(*ComparisonResult)(nil),  // 21: traffic.v1.ComparisonResult
-	(*EventEnvelope)(nil),     // 22: traffic.v1.EventEnvelope
-	(*RunCommand)(nil),        // 23: traffic.v1.RunCommand
-	(*RunRequest)(nil),        // 24: traffic.v1.RunRequest
-	(*ValidationResult)(nil),  // 25: traffic.v1.ValidationResult
-	(*PlanCommand)(nil),       // 26: traffic.v1.PlanCommand
-	(*PlanOutcome)(nil),       // 27: traffic.v1.PlanOutcome
-	(*Analysis)(nil),          // 28: traffic.v1.Analysis
-	(*CompareCommand)(nil),    // 29: traffic.v1.CompareCommand
+	(*Node)(nil),                // 0: traffic.v1.Node
+	(*Link)(nil),                // 1: traffic.v1.Link
+	(*Movement)(nil),            // 2: traffic.v1.Movement
+	(*SignalPhase)(nil),         // 3: traffic.v1.SignalPhase
+	(*MovementState)(nil),       // 4: traffic.v1.MovementState
+	(*LinkAggregate)(nil),       // 5: traffic.v1.LinkAggregate
+	(*SchedulerService)(nil),    // 6: traffic.v1.SchedulerService
+	(*SchedulerPriority)(nil),   // 7: traffic.v1.SchedulerPriority
+	(*SchedulerSnapshot)(nil),   // 8: traffic.v1.SchedulerSnapshot
+	(*CellStock)(nil),           // 9: traffic.v1.CellStock
+	(*BoundaryDemandState)(nil), // 10: traffic.v1.BoundaryDemandState
+	(*TrafficState)(nil),        // 11: traffic.v1.TrafficState
+	(*Forecast)(nil),            // 12: traffic.v1.Forecast
+	(*TimingChange)(nil),        // 13: traffic.v1.TimingChange
+	(*Recommendation)(nil),      // 14: traffic.v1.Recommendation
+	(*OperatorAction)(nil),      // 15: traffic.v1.OperatorAction
+	(*Incident)(nil),            // 16: traffic.v1.Incident
+	(*EmergencyEvent)(nil),      // 17: traffic.v1.EmergencyEvent
+	(*ComponentHealth)(nil),     // 18: traffic.v1.ComponentHealth
+	(*HealthState)(nil),         // 19: traffic.v1.HealthState
+	(*AuditEvent)(nil),          // 20: traffic.v1.AuditEvent
+	(*Alert)(nil),               // 21: traffic.v1.Alert
+	(*SignalState)(nil),         // 22: traffic.v1.SignalState
+	(*ComparisonResult)(nil),    // 23: traffic.v1.ComparisonResult
+	(*EventEnvelope)(nil),       // 24: traffic.v1.EventEnvelope
+	(*RunCommand)(nil),          // 25: traffic.v1.RunCommand
+	(*RunRequest)(nil),          // 26: traffic.v1.RunRequest
+	(*ValidationResult)(nil),    // 27: traffic.v1.ValidationResult
+	(*PlanCommand)(nil),         // 28: traffic.v1.PlanCommand
+	(*PlanOutcome)(nil),         // 29: traffic.v1.PlanOutcome
+	(*Analysis)(nil),            // 30: traffic.v1.Analysis
+	(*CompareCommand)(nil),      // 31: traffic.v1.CompareCommand
 }
 var file_twin_proto_depIdxs = []int32{
-	11, // 0: traffic.v1.SchedulerSnapshot.pending_plan:type_name -> traffic.v1.TimingChange
+	13, // 0: traffic.v1.SchedulerSnapshot.pending_plan:type_name -> traffic.v1.TimingChange
 	6,  // 1: traffic.v1.SchedulerSnapshot.service_history:type_name -> traffic.v1.SchedulerService
 	7,  // 2: traffic.v1.SchedulerSnapshot.priority:type_name -> traffic.v1.SchedulerPriority
 	4,  // 3: traffic.v1.TrafficState.movements:type_name -> traffic.v1.MovementState
-	20, // 4: traffic.v1.TrafficState.signals:type_name -> traffic.v1.SignalState
-	14, // 5: traffic.v1.TrafficState.incident:type_name -> traffic.v1.Incident
-	15, // 6: traffic.v1.TrafficState.emergency:type_name -> traffic.v1.EmergencyEvent
-	11, // 7: traffic.v1.TrafficState.active_plan:type_name -> traffic.v1.TimingChange
+	22, // 4: traffic.v1.TrafficState.signals:type_name -> traffic.v1.SignalState
+	16, // 5: traffic.v1.TrafficState.incident:type_name -> traffic.v1.Incident
+	17, // 6: traffic.v1.TrafficState.emergency:type_name -> traffic.v1.EmergencyEvent
+	13, // 7: traffic.v1.TrafficState.active_plan:type_name -> traffic.v1.TimingChange
 	5,  // 8: traffic.v1.TrafficState.links:type_name -> traffic.v1.LinkAggregate
 	8,  // 9: traffic.v1.TrafficState.scheduler:type_name -> traffic.v1.SchedulerSnapshot
-	11, // 10: traffic.v1.Recommendation.changes:type_name -> traffic.v1.TimingChange
-	11, // 11: traffic.v1.OperatorAction.modifications:type_name -> traffic.v1.TimingChange
-	16, // 12: traffic.v1.HealthState.components:type_name -> traffic.v1.ComponentHealth
-	11, // 13: traffic.v1.AuditEvent.before:type_name -> traffic.v1.TimingChange
-	11, // 14: traffic.v1.AuditEvent.after:type_name -> traffic.v1.TimingChange
-	9,  // 15: traffic.v1.EventEnvelope.network_state:type_name -> traffic.v1.TrafficState
-	20, // 16: traffic.v1.EventEnvelope.junction_state:type_name -> traffic.v1.SignalState
-	10, // 17: traffic.v1.EventEnvelope.forecast_updated:type_name -> traffic.v1.Forecast
-	12, // 18: traffic.v1.EventEnvelope.recommendation_created:type_name -> traffic.v1.Recommendation
-	12, // 19: traffic.v1.EventEnvelope.recommendation_updated:type_name -> traffic.v1.Recommendation
-	14, // 20: traffic.v1.EventEnvelope.incident_updated:type_name -> traffic.v1.Incident
-	15, // 21: traffic.v1.EventEnvelope.emergency_updated:type_name -> traffic.v1.EmergencyEvent
-	17, // 22: traffic.v1.EventEnvelope.health_updated:type_name -> traffic.v1.HealthState
-	18, // 23: traffic.v1.EventEnvelope.audit_appended:type_name -> traffic.v1.AuditEvent
-	11, // 24: traffic.v1.PlanCommand.changes:type_name -> traffic.v1.TimingChange
-	10, // 25: traffic.v1.Analysis.forecasts:type_name -> traffic.v1.Forecast
-	12, // 26: traffic.v1.Analysis.recommendation:type_name -> traffic.v1.Recommendation
-	21, // 27: traffic.v1.Analysis.comparison:type_name -> traffic.v1.ComparisonResult
-	12, // 28: traffic.v1.Analysis.alternatives:type_name -> traffic.v1.Recommendation
-	9,  // 29: traffic.v1.CompareCommand.state:type_name -> traffic.v1.TrafficState
-	11, // 30: traffic.v1.CompareCommand.changes:type_name -> traffic.v1.TimingChange
-	26, // 31: traffic.v1.Simulation.GetPlanOutcome:input_type -> traffic.v1.PlanCommand
-	26, // 32: traffic.v1.Simulation.ApplyPlan:input_type -> traffic.v1.PlanCommand
-	9,  // 33: traffic.v1.Simulation.ValidateState:input_type -> traffic.v1.TrafficState
-	23, // 34: traffic.v1.Simulation.Reset:input_type -> traffic.v1.RunCommand
-	24, // 35: traffic.v1.Simulation.GetState:input_type -> traffic.v1.RunRequest
-	24, // 36: traffic.v1.Simulation.StreamState:input_type -> traffic.v1.RunRequest
-	24, // 37: traffic.v1.Simulation.Stop:input_type -> traffic.v1.RunRequest
-	9,  // 38: traffic.v1.Intelligence.ValidateState:input_type -> traffic.v1.TrafficState
-	9,  // 39: traffic.v1.Intelligence.Predict:input_type -> traffic.v1.TrafficState
-	9,  // 40: traffic.v1.Intelligence.Analyze:input_type -> traffic.v1.TrafficState
-	29, // 41: traffic.v1.Intelligence.Compare:input_type -> traffic.v1.CompareCommand
-	27, // 42: traffic.v1.Simulation.GetPlanOutcome:output_type -> traffic.v1.PlanOutcome
-	25, // 43: traffic.v1.Simulation.ApplyPlan:output_type -> traffic.v1.ValidationResult
-	25, // 44: traffic.v1.Simulation.ValidateState:output_type -> traffic.v1.ValidationResult
-	9,  // 45: traffic.v1.Simulation.Reset:output_type -> traffic.v1.TrafficState
-	9,  // 46: traffic.v1.Simulation.GetState:output_type -> traffic.v1.TrafficState
-	9,  // 47: traffic.v1.Simulation.StreamState:output_type -> traffic.v1.TrafficState
-	25, // 48: traffic.v1.Simulation.Stop:output_type -> traffic.v1.ValidationResult
-	25, // 49: traffic.v1.Intelligence.ValidateState:output_type -> traffic.v1.ValidationResult
-	10, // 50: traffic.v1.Intelligence.Predict:output_type -> traffic.v1.Forecast
-	28, // 51: traffic.v1.Intelligence.Analyze:output_type -> traffic.v1.Analysis
-	21, // 52: traffic.v1.Intelligence.Compare:output_type -> traffic.v1.ComparisonResult
-	42, // [42:53] is the sub-list for method output_type
-	31, // [31:42] is the sub-list for method input_type
-	31, // [31:31] is the sub-list for extension type_name
-	31, // [31:31] is the sub-list for extension extendee
-	0,  // [0:31] is the sub-list for field type_name
+	9,  // 10: traffic.v1.TrafficState.cells:type_name -> traffic.v1.CellStock
+	10, // 11: traffic.v1.TrafficState.boundary_demand:type_name -> traffic.v1.BoundaryDemandState
+	13, // 12: traffic.v1.Recommendation.changes:type_name -> traffic.v1.TimingChange
+	13, // 13: traffic.v1.OperatorAction.modifications:type_name -> traffic.v1.TimingChange
+	18, // 14: traffic.v1.HealthState.components:type_name -> traffic.v1.ComponentHealth
+	13, // 15: traffic.v1.AuditEvent.before:type_name -> traffic.v1.TimingChange
+	13, // 16: traffic.v1.AuditEvent.after:type_name -> traffic.v1.TimingChange
+	11, // 17: traffic.v1.EventEnvelope.network_state:type_name -> traffic.v1.TrafficState
+	22, // 18: traffic.v1.EventEnvelope.junction_state:type_name -> traffic.v1.SignalState
+	12, // 19: traffic.v1.EventEnvelope.forecast_updated:type_name -> traffic.v1.Forecast
+	14, // 20: traffic.v1.EventEnvelope.recommendation_created:type_name -> traffic.v1.Recommendation
+	14, // 21: traffic.v1.EventEnvelope.recommendation_updated:type_name -> traffic.v1.Recommendation
+	16, // 22: traffic.v1.EventEnvelope.incident_updated:type_name -> traffic.v1.Incident
+	17, // 23: traffic.v1.EventEnvelope.emergency_updated:type_name -> traffic.v1.EmergencyEvent
+	19, // 24: traffic.v1.EventEnvelope.health_updated:type_name -> traffic.v1.HealthState
+	20, // 25: traffic.v1.EventEnvelope.audit_appended:type_name -> traffic.v1.AuditEvent
+	13, // 26: traffic.v1.PlanCommand.changes:type_name -> traffic.v1.TimingChange
+	12, // 27: traffic.v1.Analysis.forecasts:type_name -> traffic.v1.Forecast
+	14, // 28: traffic.v1.Analysis.recommendation:type_name -> traffic.v1.Recommendation
+	23, // 29: traffic.v1.Analysis.comparison:type_name -> traffic.v1.ComparisonResult
+	14, // 30: traffic.v1.Analysis.alternatives:type_name -> traffic.v1.Recommendation
+	11, // 31: traffic.v1.CompareCommand.state:type_name -> traffic.v1.TrafficState
+	13, // 32: traffic.v1.CompareCommand.changes:type_name -> traffic.v1.TimingChange
+	28, // 33: traffic.v1.Simulation.GetPlanOutcome:input_type -> traffic.v1.PlanCommand
+	28, // 34: traffic.v1.Simulation.ApplyPlan:input_type -> traffic.v1.PlanCommand
+	11, // 35: traffic.v1.Simulation.ValidateState:input_type -> traffic.v1.TrafficState
+	25, // 36: traffic.v1.Simulation.Reset:input_type -> traffic.v1.RunCommand
+	26, // 37: traffic.v1.Simulation.GetState:input_type -> traffic.v1.RunRequest
+	26, // 38: traffic.v1.Simulation.StreamState:input_type -> traffic.v1.RunRequest
+	26, // 39: traffic.v1.Simulation.Stop:input_type -> traffic.v1.RunRequest
+	11, // 40: traffic.v1.Intelligence.ValidateState:input_type -> traffic.v1.TrafficState
+	11, // 41: traffic.v1.Intelligence.Predict:input_type -> traffic.v1.TrafficState
+	11, // 42: traffic.v1.Intelligence.Analyze:input_type -> traffic.v1.TrafficState
+	31, // 43: traffic.v1.Intelligence.Compare:input_type -> traffic.v1.CompareCommand
+	29, // 44: traffic.v1.Simulation.GetPlanOutcome:output_type -> traffic.v1.PlanOutcome
+	27, // 45: traffic.v1.Simulation.ApplyPlan:output_type -> traffic.v1.ValidationResult
+	27, // 46: traffic.v1.Simulation.ValidateState:output_type -> traffic.v1.ValidationResult
+	11, // 47: traffic.v1.Simulation.Reset:output_type -> traffic.v1.TrafficState
+	11, // 48: traffic.v1.Simulation.GetState:output_type -> traffic.v1.TrafficState
+	11, // 49: traffic.v1.Simulation.StreamState:output_type -> traffic.v1.TrafficState
+	27, // 50: traffic.v1.Simulation.Stop:output_type -> traffic.v1.ValidationResult
+	27, // 51: traffic.v1.Intelligence.ValidateState:output_type -> traffic.v1.ValidationResult
+	12, // 52: traffic.v1.Intelligence.Predict:output_type -> traffic.v1.Forecast
+	30, // 53: traffic.v1.Intelligence.Analyze:output_type -> traffic.v1.Analysis
+	23, // 54: traffic.v1.Intelligence.Compare:output_type -> traffic.v1.ComparisonResult
+	44, // [44:55] is the sub-list for method output_type
+	33, // [33:44] is the sub-list for method input_type
+	33, // [33:33] is the sub-list for extension type_name
+	33, // [33:33] is the sub-list for extension extendee
+	0,  // [0:33] is the sub-list for field type_name
 }
 
 func init() { file_twin_proto_init() }
@@ -3399,8 +3559,8 @@ func file_twin_proto_init() {
 		return
 	}
 	file_twin_proto_msgTypes[5].OneofWrappers = []any{}
-	file_twin_proto_msgTypes[10].OneofWrappers = []any{}
-	file_twin_proto_msgTypes[22].OneofWrappers = []any{
+	file_twin_proto_msgTypes[12].OneofWrappers = []any{}
+	file_twin_proto_msgTypes[24].OneofWrappers = []any{
 		(*EventEnvelope_NetworkState)(nil),
 		(*EventEnvelope_JunctionState)(nil),
 		(*EventEnvelope_ForecastUpdated)(nil),
@@ -3417,7 +3577,7 @@ func file_twin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_twin_proto_rawDesc), len(file_twin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   30,
+			NumMessages:   32,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

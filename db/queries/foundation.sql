@@ -3,7 +3,7 @@ INSERT INTO network_configs (id, schema_version, config) VALUES ($1,$2,$3) ON CO
 -- name: GetConfig :one
 SELECT * FROM network_configs WHERE id=$1;
 -- name: CreateRun :one
-INSERT INTO scenario_runs (id,config_id,scenario_type,seed,mode,status) VALUES ($1,$2,$3,$4,$5,'prepared') RETURNING *;
+INSERT INTO scenario_runs (id,config_id,scenario_type,seed,mode,status,demand_source) VALUES ($1,$2,$3,$4,$5,'prepared',$6) RETURNING *;
 -- name: GetRun :one
 SELECT * FROM scenario_runs WHERE id=$1;
 -- name: ListRuns :many

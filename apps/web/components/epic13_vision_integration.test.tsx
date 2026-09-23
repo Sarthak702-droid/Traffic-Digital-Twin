@@ -64,23 +64,14 @@ describe("T13: Vision & Network UI Integration (PRD §19.3)", () => {
     expect(screen.getByText(/CAM-12 Stream Dashboard/i)).toBeInTheDocument();
   });
 
-  it("renders dual processing modes and toggles between cached and online inference", () => {
+  it("labels cached playback and does not claim that online inference is active", () => {
     render(<VisionAnalyticsPanel />);
 
     const cachedBtn = screen.getByRole("button", { name: /Cached Observations \(ITD v1\.2\)/i });
-    const onlineBtn = screen.getByRole("button", { name: /Online Inference Stream/i });
-
     expect(cachedBtn).toBeInTheDocument();
-    expect(onlineBtn).toBeInTheDocument();
-
-    // Default mode is cached observations
     expect(cachedBtn).toHaveAttribute("aria-pressed", "true");
-    expect(onlineBtn).toHaveAttribute("aria-pressed", "false");
-
-    // Switch to online stream mode
-    fireEvent.click(onlineBtn);
-    expect(onlineBtn).toHaveAttribute("aria-pressed", "true");
-    expect(cachedBtn).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText(/Online inference requires a running vision job/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Online Inference Stream/i })).toBeNull();
   });
 
   it("renders PRD §19.3 authority classification labels clearly differentiating observation from modeled state", () => {
@@ -110,7 +101,7 @@ describe("T13: Vision & Network UI Integration (PRD §19.3)", () => {
   it("shows useful selected-camera live frame insights", () => {
     render(<VisionAnalyticsPanel />);
 
-    expect(screen.getByText(/Live Frame Insights/i)).toBeInTheDocument();
+    expect(screen.getByText(/Recorded Frame Insights/i)).toBeInTheDocument();
     expect(screen.getByText(/Queue pressure/i)).toBeInTheDocument();
     expect(screen.getByText(/Dominant type/i)).toBeInTheDocument();
     expect(screen.getByText(/Detected classes/i)).toBeInTheDocument();

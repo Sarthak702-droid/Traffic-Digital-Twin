@@ -4553,3 +4553,38 @@ input, textarea, select { max-width: 100%; font-size: 1rem; }
 .network-tab-btn:active {
   transform: scale(0.98);
 }
+.vision-camera-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.vision-camera-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 12px;
+  color: #dbe8ee;
+  background: #101820;
+  border: 1px solid #29404c;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+.vision-camera-card.active,
+.vision-camera-card:focus-visible {
+  border-color: #50bb94;
+  outline: 2px solid #50bb94;
+}
+.vision-camera-card span,
+.vision-camera-card small { color: #9cb3bf; }
+.network-flow-motion { animation: network-flow 1.4s linear infinite; }
+@keyframes network-flow { to { stroke-dashoffset: -20; } }
+@media (prefers-reduced-motion: reduce) { .network-flow-motion { animation: none; } }
+.network-flow-table-wrap { padding: 16px; overflow-x: auto; border-top: 1px solid #2c3943; }
+.network-flow-table-wrap h3 { font-size: 14px; font-weight: 700; margin: 0 0 5px; }
+.network-flow-table-wrap p { color: #9cb3bf; font-size: 11px; margin: 0 0 10px; }
+.network-flow-table-wrap table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.network-flow-table-wrap th, .network-flow-table-wrap td { padding: 7px 9px; text-align: left; border-bottom: 1px solid #26343e; white-space: nowrap; }
+.network-flow-table-wrap thead th { color: #9cb3bf; }

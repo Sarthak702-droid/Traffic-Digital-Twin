@@ -29,6 +29,9 @@ Honest technical boundaries, hardware constraints, and domain disclosures. PRD Â
    - Because no human-annotated ground-truth bounding boxes exist for these 12 clips, independent crossing accuracy (WAPE / signed bias) is truthfully marked:
      `BLOCKED_WITHOUT_INDEPENDENT_GROUND_TRUTH`.
    - Agent self-agreement (comparing ByteTrack against model detections) is used for pipeline verification, but is never misrepresented as third-party certified accuracy.
+3. **Recorded input coverage**:
+   - All 12 MP4 files and 10-second ITD frame-telemetry segments are selectable. CAM-01 through CAM-06 have vision-worker 5-second observation files. CAM-07 through CAM-12 have 5-second windows derived from their cached ITD frame telemetry by `scripts/export_telemetry_observations.py`; class-specific crossing counts are unavailable for those derived windows. Four boundary cameras (CAM-01, CAM-02, CAM-03, CAM-06) supply the virtual demand profile.
+   - The videos are independent recordings, not synchronized physical CCTV feeds. The configured C1-C6 graph has 10 directed links with two modeled lanes each; 12 is the number of video assets, not the number of physical network lanes.
 
 ---
 

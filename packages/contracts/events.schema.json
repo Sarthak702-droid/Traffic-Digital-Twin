@@ -632,6 +632,47 @@
         "recovering"
       ]
     },
+    "CellStock": {
+      "type": "object",
+      "properties": {
+        "link_id": {
+          "type": "string"
+        },
+        "stock_veh": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "link_id",
+        "stock_veh"
+      ]
+    },
+    "BoundaryDemandState": {
+      "type": "object",
+      "properties": {
+        "link_id": {
+          "type": "string"
+        },
+        "backlog_veh": {
+          "type": "number",
+          "minimum": 0
+        },
+        "offered_rate_vpm": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "link_id",
+        "backlog_veh",
+        "offered_rate_vpm"
+      ]
+    },
     "TrafficState": {
       "type": "object",
       "properties": {
@@ -764,6 +805,21 @@
               "type": "null"
             }
           ]
+        },
+        "demand_source": {
+          "type": "string"
+        },
+        "cells": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CellStock"
+          }
+        },
+        "boundary_demand": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BoundaryDemandState"
+          }
         }
       },
       "additionalProperties": false,
@@ -1426,6 +1482,9 @@
         },
         "incident_capacity_ratio": {
           "type": "number"
+        },
+        "demand_source": {
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -1436,7 +1495,8 @@
         "mode",
         "run_id",
         "incident_kind",
-        "incident_capacity_ratio"
+        "incident_capacity_ratio",
+        "demand_source"
       ]
     },
     "RunRequest": {

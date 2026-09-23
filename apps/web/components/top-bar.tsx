@@ -59,10 +59,11 @@ export function TopBar({
   const components = health?.components ?? [];
   const coreComponents = new Set(["api", "database", "simulation", "intelligence"]);
   const hasFailure = components.some(
-    (c) => coreComponents.has(c.component) && c.status !== "normal",
+    (c) => coreComponents.has(c.component) && c.status !== "normal" && !c.message.startsWith("No scenario has been started") && !c.message.startsWith("Waiting for an active scenario"),
   );
   const healthKnown=!!health?.timestamp && Date.now()-Date.parse(health.timestamp)<20000 && components.length>0;
-  const healthStatusText = !healthKnown ? "Unknown" : hasFailure ? "Degraded" : "Normal";
+  const hasActiveRun = components.find((c) => c.component === "simulation")?.status === "normal";
+  const healthStatusText = !healthKnown ? "Unknown" : hasFailure ? "Degraded" : !hasActiveRun ? "Ready to start" : "Normal";
 
   return (
     <header className="product-topbar" aria-label="Command center top bar">
@@ -82,7 +83,7 @@ export function TopBar({
             DEMONSTRATION MODE
           </span>
           <span className="chip chip-data" title="Traffic data source">
-            SYNTHETIC DATA
+            RECORDED VIDEO + VIRTUAL TRAFFIC
           </span>
           <span className="chip chip-control" title="Signal actuation authority">
             NO LIVE SIGNAL CONTROL
@@ -127,7 +128,7 @@ export function TopBar({
                       className={`status-dot ${c.status === "normal" ? "normal" : c.status === "simulated" ? "simulated" : "unknown"}`}
                     />
                     <div>
-                      <strong>{c.component.replaceAll("_", " ")}</strong>
+                      <strong>{({ simulation: "network model", intelligence: "flow prediction", cctv: "ITD video analytics", signal_controller: "physical signal controller" } as Record<string, string>)[c.component] || c.component.replaceAll("_", " ")}</strong>
                       <p>{c.message}</p>
                     </div>
                   </li>

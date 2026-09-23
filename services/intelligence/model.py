@@ -27,6 +27,9 @@ class Model:
             scheduler.apply(plan)
         return scheduler
     def _initial_cells(self,state):
+        exact={item.link_id:list(item.stock_veh) for item in state.cells}
+        if exact and set(exact)==set(self.links):
+            return exact
         cell_length=float(self.config.get('flow_model',{}).get('cell_length_m',40)); public={x.link_id:x for x in state.links}; cells={}
         movement={x.movement_id:x for x in state.movements}
         for edge,link in self.links.items():
@@ -38,7 +41,7 @@ class Model:
             cells[edge]=values
         return cells
     def rollout(self,state,plan,horizon=300):
-        validate_plan(self.config,plan); cells=self._initial_cells(state); scheduler=self._scheduler(state,plan); rates=boundary_rates(state,self.index); backlogs={e:0.0 for e in self.index.boundary_inputs}
+        validate_plan(self.config,plan); cells=self._initial_cells(state); scheduler=self._scheduler(state,plan); rates=boundary_rates(state,self.index); saved_backlogs={item.link_id:item.backlog_veh for item in state.boundary_demand}; backlogs={e:saved_backlogs.get(e,0.0) for e in self.index.boundary_inputs}
         snapshots={}; arrivals={m:0.0 for m in self.moves}; eta={m:None for m in self.moves}; peak=queue_delay=congested=throughput=0.0
         capacity={m:1.0 for m in self.moves}
         if state.HasField('incident') and state.incident.status=='active':

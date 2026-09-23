@@ -88,6 +88,17 @@ export interface SchedulerSnapshot {
   recovering: boolean;
 }
 
+export interface CellStock {
+  link_id: string;
+  stock_veh: number[];
+}
+
+export interface BoundaryDemandState {
+  link_id: string;
+  backlog_veh: number;
+  offered_rate_vpm: number;
+}
+
 export interface TrafficState {
   schema_version: "1.0" | "1.1";
   run_id: string;
@@ -118,6 +129,9 @@ export interface TrafficState {
   cumulative_boundary_exits_veh?: number;
   control_target?: string;
   scheduler?: SchedulerSnapshot | null;
+  demand_source?: string;
+  cells?: CellStock[];
+  boundary_demand?: BoundaryDemandState[];
 }
 
 export interface Forecast {
@@ -272,6 +286,7 @@ export interface RunCommand {
   run_id: string;
   incident_kind: string;
   incident_capacity_ratio: number;
+  demand_source: string;
 }
 
 export interface RunRequest {

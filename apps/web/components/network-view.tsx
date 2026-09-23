@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { NetworkCanvas } from "@/components/network-canvas";
 import { Activity, Clock, ShieldCheck, Sparkles } from "lucide-react";
 import type { Network } from "../../../packages/contracts/typescript/network";
@@ -156,148 +156,7 @@ export function NetworkView({
         result.recommendation_id.startsWith("alt-"))
   );
 
-  // Candidate frame with proposed timing overlay for visual split comparison
-  const candidateFrame = useMemo(() => {
-    if (!frame || !analysis?.recommendation?.changes) return frame;
-    const changesMap = new Map(
-      analysis.recommendation.changes.map((c) => [c.phase_id, c.green_s])
-    );
-    const updatedPlan = frame.active_plan.map((p) => ({
-      ...p,
-      green_s: changesMap.get(p.phase_id) ?? p.green_s,
-    }));
-
-    // Map movement_id → serving phase_id
-    const movementToPhase = new Map<string, string>();
-    for (const phase of network.phases) {
-      for (const mid of phase.movement_ids) {
-        movementToPhase.set(mid, phase.id);
-      }
-    }
-
-    // Build baseline plan map
-    const baselinePlan = new Map(
-      frame.active_plan.map((p) => [p.phase_id, p.green_s])
-    );
-
-    // Adjust signal countdown to reflect proposed timing
-    const updatedSignals = frame.signals.map((s) => {
-      const candidateGreen = changesMap.get(s.phase_id);
-      const baselineGreen = baselinePlan.get(s.phase_id);
-      if (candidateGreen == null || baselineGreen == null || candidateGreen === baselineGreen) return s;
-      const ratio = candidateGreen / Math.max(1, baselineGreen);
-      return {
-        ...s,
-        remaining_s: Math.max(1, Math.round(s.remaining_s * ratio)),
-      };
-    });
-
-    // Adjust movement speeds to hint at improved/worsened throughput
-    const updatedMovements = frame.movements.map((m) => {
-      const phaseId = movementToPhase.get(m.movement_id);
-      if (!phaseId) return m;
-      const baselineGreen = baselinePlan.get(phaseId);
-      const candidateGreen = changesMap.get(phaseId);
-      if (baselineGreen == null || candidateGreen == null || baselineGreen === candidateGreen) return m;
-      const greenRatio = candidateGreen / Math.max(1, baselineGreen);
-      // Slightly adjust speed and queue to hint at the change
-      const speedFactor = 1 + (greenRatio - 1) * 0.15;
-      const queueFactor = Math.max(0, 2 - greenRatio);
-      return {
-        ...m,
-        avg_speed_kph: Math.round(m.avg_speed_kph * speedFactor * 10) / 10,
-        queue_veh: Math.max(0, Math.round(m.queue_veh * queueFactor)),
-      };
-    });
-
-    return {
-      ...frame,
-      active_plan: updatedPlan,
-      signals: updatedSignals,
-      movements: updatedMovements,
-    };
-  }, [frame, analysis?.recommendation?.changes, network]);
-
-  // Candidate forecasts: project queue differences from timing changes
-  // Movements with more green time → lower queues (higher discharge rate)
-  // Movements with less green time → higher queues (lower discharge rate)
-  const candidateForecasts = useMemo(() => {
-    const forecasts = analysis?.forecasts;
-    if (!forecasts || !frame || !analysis?.recommendation?.changes || !network)
-      return forecasts;
-
-    const changesMap = new Map(
-      analysis.recommendation.changes.map((c) => [c.phase_id, c.green_s])
-    );
-
-    // Build baseline plan map from frame's active plan
-    const baselinePlan = new Map(
-      frame.active_plan.map((p) => [p.phase_id, p.green_s])
-    );
-
-    // Map movement_id → serving phase_id (the phase whose movement_ids includes it)
-    const movementToPhase = new Map<string, string>();
-    for (const phase of network.phases) {
-      for (const mid of phase.movement_ids) {
-        movementToPhase.set(mid, phase.id);
-      }
-    }
-
-    return forecasts.map((f) => {
-      const phaseId = movementToPhase.get(f.movement_id);
-      if (!phaseId) return f;
-
-      const baselineGreen = baselinePlan.get(phaseId);
-      const candidateGreen = changesMap.get(phaseId);
-
-      // Only adjust if both values exist and are different
-      if (baselineGreen == null || candidateGreen == null || baselineGreen === candidateGreen)
-        return f;
-
-      // Discharge ratio: more green → proportionally more vehicles cleared
-      // Queue reduction factor based on green time ratio change
-      const greenRatio = candidateGreen / Math.max(1, baselineGreen);
-      // If greenRatio > 1 (more green), discharge improves → queue shrinks
-      // If greenRatio < 1 (less green), discharge worsens → queue grows
-      // Scale effect increases with horizon (compound effect over time)
-      const horizonScale = 1 + (f.horizon_s / 300) * 0.5; // 1.05 at 30s, 1.2 at 120s, 1.5 at 300s
-      const dischargeMultiplier = Math.pow(greenRatio, horizonScale);
-      // Queue scales inversely to discharge: more discharge → less queue
-      const queueMultiplier = Math.max(0, 2 - dischargeMultiplier);
-      const adjustedQueue = Math.max(0, Math.round(f.queue_veh * queueMultiplier * 10) / 10);
-
-      const adjustedOccupancy = Math.min(1, Math.max(0, f.occupancy_ratio * queueMultiplier));
-
-      // Adjust spillback ETA: improved discharge pushes spillback further out
-      let adjustedSpillbackEta = f.spillback_eta_s;
-      if (f.spillback_eta_s != null && dischargeMultiplier > 1) {
-        adjustedSpillbackEta = Math.round(f.spillback_eta_s * dischargeMultiplier);
-        // If queue reduced enough, remove spillback risk
-        if (adjustedQueue < f.queue_veh * 0.5) {
-          adjustedSpillbackEta = undefined;
-        }
-      }
-
-      // Adjust risk level based on new occupancy
-      let adjustedRisk = f.risk;
-      if (adjustedOccupancy < 0.75 && f.risk !== "normal") {
-        adjustedRisk = "normal";
-      } else if (adjustedOccupancy >= 0.75 && adjustedOccupancy < 0.9) {
-        adjustedRisk = "warning";
-      } else if (adjustedOccupancy >= 0.9) {
-        adjustedRisk = "critical";
-      }
-
-      return {
-        ...f,
-        id: `${f.id}-candidate`,
-        queue_veh: adjustedQueue,
-        occupancy_ratio: adjustedOccupancy,
-        spillback_eta_s: adjustedSpillbackEta,
-        risk: adjustedRisk,
-      };
-    });
-  }, [analysis?.forecasts, analysis?.recommendation?.changes, frame, network]);
+  // Candidate outcomes are read from the server comparison result below.
 
   return (
     <div className="network-screen-container" data-testid="network-view">
@@ -378,18 +237,19 @@ export function NetworkView({
                   <div className="split-column-title">
                     <span className="text-xs font-semibold text-emerald-300 flex items-center gap-2">
                       <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                      PREDICTIVE RECOMMENDATION (AGDA PLAN)
+                      CANDIDATE PLAN · SAME INITIAL STATE
                     </span>
                     <span className="column-pill candidate-pill">CANDIDATE</span>
                   </div>
                   <NetworkCanvas
                     network={network}
-                    frame={candidateFrame}
+                    frame={frame}
                     onSelect={onSelectNode}
                     route={route}
-                    forecasts={candidateForecasts}
-                    horizon={horizon}
+                    forecasts={[]}
+                    horizon={0}
                   />
+                  <p className="disclaimer-note">Per-link candidate forecasts are unavailable. The table below contains the model&apos;s evaluated network-wide candidate outcomes.</p>
                 </div>
               </div>
 
@@ -400,7 +260,7 @@ export function NetworkView({
             <div className="p-6 rounded-xl border border-slate-800 bg-slate-900/40 text-center flex flex-col items-center gap-3">
               <p role="status" className="text-sm text-slate-400 max-w-md">
                 {!frame
-                  ? "No aggregate scenario is running. Start the seeded peak-surge demo, then the causal intelligence service will produce a recommendation and comparison."
+                  ? "No aggregate scenario is running. Start a scenario with the selected demand source; the intelligence service will then produce a recommendation and comparison."
                   : !analysis
                     ? "Aggregate state is running; waiting for a fresh causal intelligence result before a comparison can be requested."
                     : "No matching comparison available. Request a fresh simulation. No outcome is assumed."}
@@ -456,6 +316,17 @@ export function NetworkView({
             forecasts={analysis?.forecasts}
             horizon={horizon}
           />
+          <div className="network-flow-table-wrap" role="region" aria-label="Turning movement detection and prediction">
+            <h3>{network.movements.length} configured turning movements</h3>
+            <p>Current queues and departures come from the virtual network. Future queues use the causal forecast for the selected horizon.</p>
+            <table><thead><tr><th>Movement</th><th>Signal</th><th>Current queue</th><th>Departure flow</th><th>Predicted queue</th></tr></thead>
+              <tbody>{network.movements.map((movement) => {
+                const current = frame?.movements.find((item) => item.movement_id === movement.id);
+                const future = analysis?.forecasts.find((item) => item.movement_id === movement.id && item.horizon_s === (horizon || 30));
+                return <tr key={movement.id}><th scope="row">{movement.incoming_link_id} → {movement.outgoing_link_id}</th><td>{current?.permission ?? "—"}</td><td>{current ? `${current.queue_veh.toFixed(1)} veh` : "—"}</td><td>{current ? `${current.departure_rate_vpm.toFixed(1)} veh/min` : "—"}</td><td>{future ? `${future.queue_veh.toFixed(1)} veh (+${future.horizon_s}s)` : "—"}</td></tr>;
+              })}</tbody>
+            </table>
+          </div>
         </section>
       )}
     </div>

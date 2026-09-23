@@ -30,7 +30,7 @@ describe("Epic 12: Vision Analytics & Presentation Polish (S36, S37, S38)", () =
 
     // Title and overline
     expect(screen.getByText(/Sample Video Feed & Traffic State Extraction/i)).toBeInTheDocument();
-    expect(screen.getByText(/JUNCTION C3/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/C2 → C1 Approach/i).length).toBeGreaterThan(0);
 
     // Mandatory Disclaimers (PRD §8.5, §15.2, S36)
     expect(screen.getAllByText(/NON-ODISHA SAMPLE VIDEO FEED/i).length).toBeGreaterThan(0);
@@ -53,26 +53,24 @@ describe("Epic 12: Vision Analytics & Presentation Polish (S36, S37, S38)", () =
   it("renders the 3 lane ROIs and queue metrics in the flow table", () => {
     render(<VisionAnalyticsPanel />);
 
-    expect(screen.getByText(/Lane 1 \(Left \/ Turning\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/Lane 2 \(Through \/ Main\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/Lane 3 \(Through \/ Curb\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Left ROI band/i)).toBeInTheDocument();
+    expect(screen.getByText(/Centre ROI band/i)).toBeInTheDocument();
+    expect(screen.getByText(/Right ROI band/i)).toBeInTheDocument();
   });
 
   it("marks uncalibrated metric speed unavailable (S36)", () => {
     render(<VisionAnalyticsPanel />);
 
-    expect(screen.getByText(/No calibrated speed measurement/i)).toBeInTheDocument();
+    expect(screen.getByText(/UNCALIBRATED SPEED: UNAVAILABLE/i)).toBeInTheDocument();
     expect(screen.getByText(/not an authoritative km\/h source/i)).toBeInTheDocument();
   });
 
-  it("displays downstream impact on Corridor Junction C1 with 3 horizons and ETA (S37, PRD §8.5)", () => {
+  it("shows the per-camera ITD flow section without claiming a forecast from the clip", () => {
     render(<VisionAnalyticsPanel />);
 
-    expect(screen.getByText(/Upstream Impact on Corridor Junction C1/i)).toBeInTheDocument();
-    expect(screen.getByText(/\+30s Expected Inflow/i)).toBeInTheDocument();
-    expect(screen.getByText(/\+60s Expected Inflow/i)).toBeInTheDocument();
-    expect(screen.getByText(/\+120s Expected Inflow/i)).toBeInTheDocument();
-    expect(screen.getByText(/Estimated ETA to C1/i)).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /ITD flow detection by recorded camera/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /CAM-01 finalized ITD observation/i })).toBeInTheDocument();
+    expect(screen.queryByText(/Estimated ETA to C1/i)).toBeNull();
   });
 
   it("keeps aggregate zone overlays without exposing boxes or track IDs (S37)", () => {

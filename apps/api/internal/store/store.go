@@ -49,13 +49,16 @@ func (s *Store) SaveConfig(ctx context.Context, n config.Network) error {
 	return nil
 }
 func (s *Store) CreateRun(ctx context.Context, configID, scenario, mode string, seed int64) (queries.ScenarioRun, error) {
+	return s.CreateRunWithDemand(ctx, configID, scenario, mode, seed, "seeded")
+}
+func (s *Store) CreateRunWithDemand(ctx context.Context, configID, scenario, mode string, seed int64, demandSource string) (queries.ScenarioRun, error) {
 	tx, e := s.Pool.Begin(ctx)
 	if e != nil {
 		return queries.ScenarioRun{}, e
 	}
 	defer tx.Rollback(ctx)
 	q := s.Q.WithTx(tx)
-	run, e := q.CreateRun(ctx, queries.CreateRunParams{ID: UUID(), ConfigID: configID, ScenarioType: scenario, Seed: seed, Mode: mode})
+	run, e := q.CreateRun(ctx, queries.CreateRunParams{ID: UUID(), ConfigID: configID, ScenarioType: scenario, Seed: seed, Mode: mode, DemandSource: demandSource})
 	if e != nil {
 		return run, e
 	}

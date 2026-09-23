@@ -85,11 +85,19 @@ class VideoProfileDemandProvider:
 
             obs_list.sort(key=lambda x: x.get("window_start_s", 0.0))
 
+            seen_windows = set()
             for obs in obs_list:
+                if obs.get("observation_status") != "valid":
+                    continue
                 w_start = float(obs.get("window_start_s", 0.0))
                 w_end = float(obs.get("window_end_s", w_start + 5.0))
-                duration = max(1e-3, w_end - w_start)
+                if not (w_end > w_start) or (w_start, w_end) in seen_windows:
+                    continue
+                seen_windows.add((w_start, w_end))
+                duration = w_end - w_start
                 crossings = float(obs.get("crossings_veh", 0)) * self.scale
+                if not (0 <= crossings < float("inf")):
+                    continue
 
                 avail_at = float(obs.get("available_at_source_s", w_end))
                 # Causal release: supplies mass over [avail_at, avail_at + duration)

@@ -18,11 +18,6 @@ import {
   Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  c3VisionFallbackData,
-  type VisionAggregatePayload,
-  type VisionFrame,
-} from "@/lib/vision-data";
 
 interface VisionAnalyticsPanelProps {
   onReturn?: () => void;
@@ -65,8 +60,8 @@ type StreamLaneMetric = {
 const STREAM_ROLE_DETAILS: Record<CameraSlot["role"], { label: string; description: string; networkUse: string }> = {
   external_boundary_input: {
     label: "Boundary approach",
-    description: "This sample observes an incoming boundary approach. It remains an isolated video observation until an approved estimator is enabled.",
-    networkUse: "Boundary observation only",
+    description: "This recorded sample supplies a virtual boundary demand profile when video-derived demand is selected for a run.",
+    networkUse: "Video-derived virtual boundary input",
   },
   internal_link_observation: {
     label: "Internal corridor link",
@@ -159,7 +154,6 @@ function safePauseVideo(video: HTMLVideoElement | null) {
 }
 
 export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: VisionAnalyticsPanelProps) {
-  const [data, setData] = useState<VisionAggregatePayload>(c3VisionFallbackData);
   const [isOffline, setIsOffline] = useState(initialOffline);
   const [isPlaying, setIsPlaying] = useState(true);
   const [currentFrameIdx, setCurrentFrameIdx] = useState(0);
@@ -171,9 +165,13 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
 
   // 12 Videos & Camera selection
   const [selectedCamera, setSelectedCamera] = useState<string>("CAM-01");
-  const [processingMode, setProcessingMode] = useState<"cached_observations" | "online_inference">("cached_observations");
+  const processingMode = "cached_observations";
   const [liveObservations, setLiveObservations] = useState<any[]>([]);
   const [telemetryMap, setTelemetryMap] = useState<Record<string, any>>({});
+  const [cameraSlots, setCameraSlots] = useState<CameraSlot[]>(ALL_CAMERA_SLOTS);
+  const [cameraRegistryReady, setCameraRegistryReady] = useState(typeof process !== "undefined" && process.env?.NODE_ENV === "test");
+  const [cameraRegistryError, setCameraRegistryError] = useState(false);
+  const [mediaError, setMediaError] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -200,6 +198,23 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof process !== "undefined" && process.env?.NODE_ENV === "test") return;
+    fetch("/api/v1/cameras").then((response) => response.ok ? response.json() : null).then((payload) => {
+      if (!payload?.cameras || !Array.isArray(payload.assets)) { setCameraRegistryError(true); return; }
+      const assets = new Map<string, any>(payload.assets.map((asset: any) => [asset.assigned_slot, asset]));
+      const slots = Object.entries(payload.cameras).map(([id, raw]) => {
+        const camera = raw as any;
+        const asset = assets.get(id);
+        if (!asset || !camera.assigned_video || asset.filename !== camera.assigned_video) return null;
+        return { id, label: id, approach: camera.virtual_direction || id, videoFile: camera.assigned_video, role: camera.network_role === "internal_link_sample_analytics" ? "internal_link_observation" : camera.network_role, resolution: asset.resolution || "unknown", fps: Number(asset.fps || 0) } as CameraSlot;
+      }).filter((slot): slot is CameraSlot => slot !== null).sort((a, b) => a.id.localeCompare(b.id));
+      if (slots.length !== 12) { setCameraRegistryError(true); return; }
+      setCameraSlots(slots);
+      setCameraRegistryReady(true);
+    }).catch(() => setCameraRegistryError(true));
+  }, []);
+
   // Fetch live vision state or real observations from Go API gateway
   useEffect(() => {
     if (isOffline) return;
@@ -218,18 +233,6 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
       })
       .catch(() => {});
 
-    fetch("/api/v1/vision/c3")
-      .then((res) => {
-        if (!res.ok) throw new Error("Vision endpoint unavailable");
-        return res.json();
-      })
-      .then((payload) => {
-        if (isMounted && payload && payload.available) {
-          setData(payload);
-        }
-      })
-      .catch(() => {});
-
     return () => {
       isMounted = false;
     };
@@ -240,6 +243,8 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
     const video = videoRef.current;
     if (!video) return;
     video.src = `/api/v1/clips/${selectedCamera}/media`;
+    setMediaError(false);
+    setLiveObservations([]);
     video.currentTime = 0;
     setCurrentFrameIdx(0);
     if (isPlaying) {
@@ -247,10 +252,10 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
     }
   }, [selectedCamera]);
 
-  const totalFrames = 100; // 10.0s at 10 fps
+  const totalFrames = telemetryMap[selectedCamera]?.frames?.length || 100;
   const activeTelemetry = telemetryMap[selectedCamera];
   const activeFrameData = activeTelemetry?.frames?.[currentFrameIdx];
-  const activeCamInfo = ALL_CAMERA_SLOTS.find((c) => c.id === selectedCamera) || ALL_CAMERA_SLOTS[0];
+  const activeCamInfo = cameraSlots.find((c) => c.id === selectedCamera) || cameraSlots[0];
 
   // Continuous animation and 10s video loop
   useEffect(() => {
@@ -272,20 +277,17 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
     playIntervalRef.current = setInterval(() => {
       const video = videoRef.current;
       if (video && video.duration) {
-        if (video.currentTime >= 10.0) {
-          video.currentTime = 0;
-        }
-        const calculatedIdx = Math.min(99, Math.floor((video.currentTime / 10.0) * 100));
+        const coverage = Number(telemetryMap[selectedCamera]?.duration_s || 10);
+        if (video.currentTime >= coverage) video.currentTime = 0;
+        const calculatedIdx = Math.min(totalFrames - 1, Math.floor((video.currentTime / coverage) * totalFrames));
         setCurrentFrameIdx(calculatedIdx);
-      } else {
-        setCurrentFrameIdx((prev) => (prev + 1) % totalFrames);
       }
     }, intervalMs);
 
     return () => {
       if (playIntervalRef.current) clearInterval(playIntervalRef.current);
     };
-  }, [isPlaying, isOffline, playbackSpeed, totalFrames]);
+  }, [isPlaying, isOffline, playbackSpeed, totalFrames, selectedCamera, telemetryMap]);
 
   // Single-pulse line crossing detection
   useEffect(() => {
@@ -474,7 +476,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
     ctx.textAlign = "left";
     const secCur = (currentFrameIdx / 10).toFixed(1);
     ctx.fillText(
-      `● LIVE CCTV · ${selectedCamera} · ${activeCamInfo.videoFile} · ${secCur}s / 10.0s (30 FPS)`,
+      `● RECORDED VIDEO · ${selectedCamera} · ${activeCamInfo.videoFile} · ${secCur}s / ${activeTelemetry?.duration_s ?? 10}s`,
       26,
       16
     );
@@ -561,19 +563,22 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
     );
   }
 
-  const summary = data.summary_metrics;
+  if (!cameraRegistryReady) return <div className="vision-container" role={cameraRegistryError ? "alert" : "status"}>{cameraRegistryError ? "Camera registry unavailable; recorded feeds cannot be verified." : "Loading registered cameras…"}</div>;
+
   const streamRole = STREAM_ROLE_DETAILS[activeCamInfo.role];
   const streamFrames = activeTelemetry?.frames as any[] | undefined;
 
   // Each selected video owns the numbers in its dashboard. The C3 fallback is
   // used only until the selected clip's telemetry has loaded.
-  const displayTotalVehicles = activeTelemetry?.summary?.total_unique_vehicles ?? summary?.total_vehicles_observed ?? 28;
-  const displayCrossed = activeFrameData?.cumulative_crossed ?? activeTelemetry?.summary?.total_crossed ?? summary?.total_crossed_line ?? 0;
+  const displayTotalVehicles = activeTelemetry?.summary?.total_unique_vehicles ?? 0;
+  const displayCrossed = activeFrameData?.cumulative_crossed ?? activeTelemetry?.summary?.total_crossed ?? 0;
   const displayActiveVehicles = activeFrameData?.active_count ?? 0;
   const displayQueueVehicles = activeFrameData?.queue_count ?? 0;
-  const classBreakdown = activeTelemetry?.summary?.class_breakdown || summary?.class_breakdown || {};
+  const classBreakdown = activeTelemetry?.summary?.class_breakdown || {};
   const laneMetrics = getStreamLaneMetrics(activeFrameData, activeTelemetry);
-  const observedFlowVpm = getObservedFlowVpm(streamFrames, currentFrameIdx);
+  const replayTimeS = Number(activeFrameData?.time_s ?? currentFrameIdx / 10);
+  const currentObservation = liveObservations.filter((item) => Number(item.window_end_s) <= replayTimeS).at(-1);
+  const observedFlowVpm = currentObservation?.observation_status === "valid" ? Number(currentObservation.flow_vpm) : null;
   const coverageLabel = activeTelemetry ? `${activeTelemetry.duration_s ?? "10"}s clip · ${activeCamInfo.resolution}` : "Loading stream telemetry…";
   const activeClassCounts = activeFrameData?.class_counts || {};
   const [dominantClass, dominantClassCount] = Object.entries(activeClassCounts)
@@ -588,7 +593,6 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
     ? "Queue building"
     : "Free-moving frame";
   const clipDurationS = Number(activeTelemetry?.duration_s ?? 10);
-  const replayTimeS = Number(activeFrameData?.time_s ?? currentFrameIdx / 10);
   const replayProgress = clipDurationS > 0 ? Math.min(100, (replayTimeS / clipDurationS) * 100) : 0;
   const peakActiveVehicles = streamFrames?.length
     ? Math.max(...streamFrames.map((frame) => Number(frame?.active_count ?? 0)))
@@ -645,6 +649,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
           <span className="vision-badge vision-badge-primary">
             <Compass size={12} /> CORE SCENARIOS OPERATE INDEPENDENTLY
           </span>
+          <span className="vision-badge vision-badge-warning">UNCALIBRATED SPEED: UNAVAILABLE · recorded footage is not an authoritative km/h source</span>
         </div>
 
         {/* 12-VIDEO STREAM DROPDOWN SELECTOR */}
@@ -673,11 +678,11 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
               whiteSpace: "nowrap",
             }}
           >
-            Select 10s Video Feed (12 Cameras):
+            Select analyzed video segment (12 recorded cameras):
           </label>
           <select
             id="video-feed-select"
-            aria-label="Select 10s Video Feed (12 Cameras)"
+            aria-label="Select analyzed video segment (12 recorded cameras)"
             value={selectedCamera}
             onChange={(e) => setSelectedCamera(e.target.value)}
             style={{
@@ -695,7 +700,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
               boxShadow: "0 0 10px rgba(59, 130, 246, 0.15)",
             }}
           >
-            {ALL_CAMERA_SLOTS.map((cam, idx) => (
+            {cameraSlots.map((cam, idx) => (
               <option key={cam.id} value={cam.id}>
                 {`Video ${String(idx + 1).padStart(2, "0")}: ${cam.id} — ${cam.approach} (${cam.videoFile} · ${cam.resolution})`}
               </option>
@@ -710,7 +715,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
               Active Camera:
             </span>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }} role="group" aria-label="Camera Selector">
-              {ALL_CAMERA_SLOTS.map((cam) => (
+              {cameraSlots.map((cam) => (
                 <button
                   key={cam.id}
                   type="button"
@@ -732,22 +737,13 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
             <div style={{ display: "flex", gap: "4px" }} role="group" aria-label="Processing Mode Selector">
               <button
                 type="button"
-                onClick={() => setProcessingMode("cached_observations")}
                 aria-pressed={processingMode === "cached_observations"}
                 className={`vision-toggle-btn ${processingMode === "cached_observations" ? "active" : ""}`}
                 style={{ minHeight: "28px", padding: "2px 8px", fontSize: "11px" }}
               >
                 Cached Observations (ITD v1.2)
               </button>
-              <button
-                type="button"
-                onClick={() => setProcessingMode("online_inference")}
-                aria-pressed={processingMode === "online_inference"}
-                className={`vision-toggle-btn ${processingMode === "online_inference" ? "active" : ""}`}
-                style={{ minHeight: "28px", padding: "2px 8px", fontSize: "11px" }}
-              >
-                Online Inference Stream
-              </button>
+              <span style={{ fontSize: "11px", color: "#94a3b8" }}>Online inference requires a running vision job; CPU benchmark is below real-time.</span>
             </div>
           </div>
         </div>
@@ -783,7 +779,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
                 className={`vision-badge ${isPlaying ? "vision-badge-success" : "vision-badge-neutral"}`}
                 style={{ fontSize: "10px" }}
               >
-                {isPlaying ? "LIVE TRACKING" : "PAUSED"}
+                {isPlaying ? "RECORDED PLAYBACK" : "PAUSED"}
               </span>
               <span style={{ fontSize: "11px", color: "#8ea3b3", fontVariantNumeric: "tabular-nums" }}>
                 Frame {currentFrameIdx + 1} / {totalFrames}
@@ -800,6 +796,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
               playsInline
               autoPlay
               loop
+              onError={() => setMediaError(true)}
               style={{ display: "none" }}
             />
             <canvas
@@ -809,6 +806,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
               className="vision-canvas"
               aria-label="Computer vision video stream showing lane polygons, queue detection zone, and counting line."
             />
+            {mediaError && <p role="alert">Registered MP4 could not be loaded for {selectedCamera}.</p>}
           </div>
 
           {/* Video Toolbar: Layer Toggles & Transport Controls */}
@@ -975,7 +973,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
             <div className="vision-card-header">
               <h3>
                 <Activity size={16} color="#64b5f6" aria-hidden="true" />
-                Live Frame Insights
+                Recorded Frame Insights
               </h3>
               <span style={{ fontSize: "11px", color: "#8da5b8" }}>{(activeFrameData?.time_s ?? currentFrameIdx / 10).toFixed(1)}s</span>
             </div>
@@ -984,6 +982,16 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
               <div><span>Dominant type</span><strong>{displayVehicleClass(String(dominantClass))}</strong><small>{Number(dominantClassCount)} active tracked</small></div>
               <div><span>Detected classes</span><strong>{detectedClassCount}</strong><small>in this camera frame</small></div>
             </div>
+          </div>
+
+          <div className="vision-card" role="region" aria-label={`${selectedCamera} finalized ITD observation`}>
+            <div className="vision-card-header"><h3>ITD 5-second flow detection</h3></div>
+            {currentObservation ? <div className="vision-stream-kpis">
+              <div><span>Window</span><strong>{currentObservation.window_start_s}–{currentObservation.window_end_s}s</strong><small>{currentObservation.observation_status}</small></div>
+              <div><span>Directional crossings</span><strong>{currentObservation.crossings_veh ?? "—"}</strong><small>{currentObservation.direction_id ?? "unknown direction"}</small></div>
+              <div><span>Flow</span><strong>{currentObservation.observation_status === "valid" ? Number(currentObservation.flow_vpm).toFixed(1) : "—"}</strong><small>veh/min · finalized</small></div>
+            </div> : <p className="vision-roi-note">No completed observation window at this media time. Frame boxes are available only for the analyzed segment.</p>}
+            {currentObservation?.derivation && <p className="vision-roi-note">Provenance: derived from cached ITD frame telemetry; per-class crossing counts unavailable.</p>}
           </div>
 
           {/* Vehicle Class Breakdown (PRD §15.2) */}
@@ -1066,6 +1074,24 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
         </div>
       </div>
 
+      <section className="vision-upstream-card" aria-label="ITD flow detection by recorded camera">
+        <div className="vision-card-header"><h2>ITD v1.2 flow detection · all recorded cameras</h2></div>
+        <p className="vision-roi-note">Each row uses its own ITD-processed recorded segment. All 12 have finalized 5-second windows; CAM-07–12 windows are derived from cached frame telemetry and lack class-specific crossing counts. The clips are independent samples mapped to virtual directions.</p>
+        <div className="vision-camera-grid">
+          {cameraSlots.map((camera) => {
+            const item = telemetryMap[camera.id];
+            const frames = item?.frames as any[] | undefined;
+            const flow = frames?.length ? getObservedFlowVpm(frames, frames.length - 1) : null;
+            return <button key={camera.id} type="button" className={`vision-camera-card ${selectedCamera === camera.id ? "active" : ""}`} onClick={() => setSelectedCamera(camera.id)}>
+              <strong>{camera.id} · {camera.approach}</strong>
+              <span>{item ? `${item.summary?.total_unique_vehicles ?? 0} detected · ${item.summary?.total_crossed ?? 0} crossings` : "Telemetry unavailable"}</span>
+              <span>{flow == null ? "Flow unavailable" : `${flow.toFixed(1)} veh/min over analyzed segment`}</span>
+              <small>{camera.role === "external_boundary_input" ? "Video-derived boundary input" : camera.role === "internal_link_observation" ? "Internal observation" : "Independent sample"} · View recorded feed</small>
+            </button>;
+          })}
+        </div>
+      </section>
+
       {/* Selected clip summary. All values below are derived from the active
           stream, so CAM-01 through CAM-12 never inherit another feed's data. */}
       <section className="vision-upstream-card" aria-labelledby="upstream-heading">
@@ -1073,7 +1099,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
           <h2 id="upstream-heading" style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "#e5edf5" }}>
             {selectedCamera} Clip Summary
           </h2>
-          <span className="vision-badge vision-badge-success">LIVE REPLAY</span>
+          <span className="vision-badge vision-badge-success">RECORDED REPLAY</span>
         </div>
         <p style={{ fontSize: "12px", color: "#8da5b8", margin: "0 0 12px 0" }}>
           {selectedCamera} · {activeCamInfo.approach} · Values update from the selected video stream as playback moves.

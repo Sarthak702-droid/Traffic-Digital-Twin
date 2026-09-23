@@ -314,8 +314,15 @@ func (s *Server) health(ctx context.Context) *pb.HealthState {
 		}
 	}
 	simStatus, simMessage := s.simulationHealth()
+	visionStatus, visionMessage := "unavailable", "Recorded clips or ITD observation windows are missing"
+	if videoProfileReady() {
+		visionStatus, visionMessage = "normal", "Recorded-video ITD observations ready for four boundary inputs"
+	}
 	s.mu.RLock()
 	intStatus, intMessage := "unavailable", "No fresh intelligence"
+	if s.intelligence != nil && s.state == nil {
+		intMessage = "Waiting for an active scenario before forecasting"
+	}
 	if s.analysis != nil && s.analysisFault == "" && s.state != nil && s.analysis.RunId == s.state.RunId && s.state.SimulationTimeS-s.analysis.SimulationTimeS <= 10 {
 		intStatus = "normal"
 		intMessage = "Conservation forecasts and bounded network candidates"
@@ -327,7 +334,7 @@ func (s *Server) health(ctx context.Context) *pb.HealthState {
 		{Component: "simulation", Status: simStatus, Message: simMessage},
 		{Component: "intelligence", Status: intStatus, Message: intMessage},
 		{Component: "signal_controller", Status: "unavailable", Message: "NOT CONNECTED · synthetic signal plans only"},
-		{Component: "cctv", Status: "unavailable", Message: "DEMO/SAMPLE · no camera feed or CV pipeline configured"},
+		{Component: "cctv", Status: visionStatus, Message: visionMessage},
 		{Component: "emergency_api", Status: "simulated", Message: "SIMULATED · no live emergency dispatch integration"},
 	}}
 }

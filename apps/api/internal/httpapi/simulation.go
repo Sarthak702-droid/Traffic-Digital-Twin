@@ -48,7 +48,7 @@ func (s *Server) ConnectSimulation(ctx context.Context, address string) error {
 				if r.Status == "running" {
 					s.manual = r.Mode == "manual"
 					id, _ := r.ID.Value()
-					s.sim.command = &pb.RunCommand{SchemaVersion: "1.0", RunId: id.(string), ScenarioType: r.ScenarioType, Seed: uint32(r.Seed), Mode: r.Mode}
+					s.sim.command = &pb.RunCommand{SchemaVersion: "1.0", RunId: id.(string), ScenarioType: r.ScenarioType, Seed: uint32(r.Seed), Mode: r.Mode, DemandSource: r.DemandSource}
 					break
 				}
 			}
@@ -243,10 +243,11 @@ func (s *Server) startScenario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Version  string `json:"schema_version"`
-		Seed     uint32 `json:"seed"`
-		Mode     string `json:"mode"`
-		Incident *struct {
+		Version      string `json:"schema_version"`
+		Seed         uint32 `json:"seed"`
+		Mode         string `json:"mode"`
+		DemandSource string `json:"demand_source"`
+		Incident     *struct {
 			Kind          string  `json:"kind"`
 			CapacityRatio float64 `json:"capacity_ratio"`
 		} `json:"incident,omitempty"`
@@ -270,6 +271,17 @@ func (s *Server) startScenario(w http.ResponseWriter, r *http.Request) {
 	}
 	if !valid || body.Version != "1.0" || body.Seed == 0 || (body.Mode != "recommend" && body.Mode != "observe" && body.Mode != "manual") {
 		problem(w, 400, "Valid scenario, schema_version, seed and mode (recommend/observe/manual) required")
+		return
+	}
+	if body.DemandSource == "" {
+		body.DemandSource = "seeded"
+	}
+	if body.DemandSource != "seeded" && body.DemandSource != "video_profile" {
+		problem(w, 400, "demand_source must be seeded or video_profile")
+		return
+	}
+	if body.DemandSource == "video_profile" && !videoProfileReady() {
+		problem(w, 409, "Video profile is unavailable; four boundary observation files are required")
 		return
 	}
 	// Emergency priority is a virtual schedule, never an override of the
@@ -303,8 +315,8 @@ func (s *Server) startScenario(w http.ResponseWriter, r *http.Request) {
 		problem(w, 400, "Incident controls are only available for incident_c3")
 		return
 	}
-	command := &pb.RunCommand{SchemaVersion: "1.0", ScenarioType: scenario, Seed: body.Seed, Mode: body.Mode}
-	reason := "Started a seeded aggregate-flow scenario"
+	command := &pb.RunCommand{SchemaVersion: "1.0", ScenarioType: scenario, Seed: body.Seed, Mode: body.Mode, DemandSource: body.DemandSource}
+	reason := "Started an aggregate-flow scenario with " + body.DemandSource + " demand"
 	if body.Incident != nil {
 		if body.Incident.Kind != "capacity_reduction" || body.Incident.CapacityRatio < 0.1 || body.Incident.CapacityRatio > 0.9 {
 			problem(w, 400, "incident.kind must be capacity_reduction and capacity_ratio must be between 0.10 and 0.90")
@@ -344,7 +356,7 @@ func (s *Server) launch(w http.ResponseWriter, r *http.Request, command *pb.RunC
 	ctx, cancel := context.WithTimeout(r.Context(), 4500*time.Millisecond)
 	defer cancel()
 	dbMode := command.Mode
-	run, e := s.Store.CreateRun(ctx, s.Network.ID, command.ScenarioType, dbMode, int64(command.Seed))
+	run, e := s.Store.CreateRunWithDemand(ctx, s.Network.ID, command.ScenarioType, dbMode, int64(command.Seed), command.DemandSource)
 	if e != nil {
 		problem(w, 503, "Could not prepare run; simulation unchanged")
 		return
