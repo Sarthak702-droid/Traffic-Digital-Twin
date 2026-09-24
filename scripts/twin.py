@@ -26,8 +26,17 @@ import time
 from pathlib import Path
 
 
+def resolve_repo_path(filename: str) -> Path:
+    rep = Path("reports") / filename
+    if rep.exists():
+        return rep
+    return Path(filename)
+
+
 def load_agent_config(config_path: str) -> dict:
     p = Path(config_path)
+    if not p.exists():
+        p = resolve_repo_path(config_path)
     if not p.exists():
         print(f"[ERROR] Config file not found: {config_path}", file=sys.stderr)
         sys.exit(1)
@@ -76,7 +85,7 @@ def cmd_doctor(args):
 
 def cmd_assets(args):
     print("=== Validating Media Assets ===")
-    manifest_p = Path("asset-manifest.json")
+    manifest_p = resolve_repo_path("asset-manifest.json")
     if not manifest_p.exists():
         print("[ERROR] asset-manifest.json not found.", file=sys.stderr)
         sys.exit(1)
@@ -183,7 +192,8 @@ def cmd_profile(args):
     from services.simulation.video_demand import VideoProfileDemandProvider
     provider = VideoProfileDemandProvider(observations_dir=".runtime/vision/observations", scale=1.0)
     manifest = provider.export_manifest()
-    out_path = Path("demand-profile-manifest.json")
+    out_dir = Path("reports") if Path("reports").is_dir() else Path(".")
+    out_path = out_dir / "demand-profile-manifest.json"
     with open(out_path, "w") as f:
         json.dump(manifest, f, indent=2)
     print(f"Exported demand profile manifest to {out_path}")
@@ -245,7 +255,7 @@ def cmd_verify(args):
 
 def cmd_package(args):
     print("=== Packaging & Readiness Verification ===")
-    readiness_p = Path("readiness.json")
+    readiness_p = resolve_repo_path("readiness.json")
     if not readiness_p.exists():
         print("[ERROR] readiness.json not found", file=sys.stderr)
         sys.exit(1)
@@ -260,7 +270,8 @@ def main():
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     def add_cfg_arg(sub):
-        sub.add_argument("--config", default="agent-config.json", help="Path to agent configuration")
+        default_cfg = "reports/agent-config.json" if Path("reports/agent-config.json").exists() else "agent-config.json"
+        sub.add_argument("--config", default=default_cfg, help="Path to agent configuration")
 
     p_doc = subparsers.add_parser("doctor", help="Run system diagnostics and dependency checks")
     add_cfg_arg(p_doc)

@@ -156,6 +156,13 @@ func (s *Server) getObservations(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func readFileWithReportFallback(filename string) ([]byte, error) {
+	if data, err := os.ReadFile(filepath.Join("reports", filename)); err == nil {
+		return data, nil
+	}
+	return os.ReadFile(filename)
+}
+
 func (s *Server) getCameras(w http.ResponseWriter, r *http.Request) {
 	camCfgPath := "packages/camera-config/cameras.json"
 	data, err := os.ReadFile(camCfgPath)
@@ -171,7 +178,7 @@ func (s *Server) getCameras(w http.ResponseWriter, r *http.Request) {
 		problem(w, 500, "Corrupt camera configuration")
 		return
 	}
-	if manifest, err := os.ReadFile("asset-manifest.json"); err == nil {
+	if manifest, err := readFileWithReportFallback("asset-manifest.json"); err == nil {
 		var assets struct {
 			Assets []map[string]any `json:"assets"`
 		}
@@ -184,7 +191,7 @@ func (s *Server) getCameras(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) getDemandProfiles(w http.ResponseWriter, r *http.Request) {
 	manifestPath := "demand-profile-manifest.json"
-	data, err := os.ReadFile(manifestPath)
+	data, err := readFileWithReportFallback(manifestPath)
 	if err != nil {
 		send(w, 200, map[string]any{
 			"schema_version": "demand-profile-manifest-v1",
@@ -209,7 +216,7 @@ func (s *Server) getClipMedia(w http.ResponseWriter, r *http.Request) {
 
 	targetFilename := ""
 	// Check if clipID matches an assigned slot or filename
-	manifestData, err := os.ReadFile("asset-manifest.json")
+	manifestData, err := readFileWithReportFallback("asset-manifest.json")
 	if err == nil {
 		var manifest struct {
 			Assets []struct {

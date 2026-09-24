@@ -64,6 +64,33 @@ The PostgreSQL integration test uses a uniquely named schema and removes only it
 
 Browser acceptance: install Chromium once with `npx playwright install chromium`; with production UI and Go running, `node scripts/verify-browser.mjs`. It saves screenshots under `test-results/`, checks desktop/mobile layout, keyboard inspection, all three run types, persistence on reload and audit visibility. It creates real local demo run records.
 
+## Repository Structure
+
+```text
+├── apps/                    # Frontend and backend application code
+│   ├── api/                 # Go API gateway, orchestrator, and PostgreSQL store
+│   └── web/                 # Next.js/React operator dashboard, network canvas, and UI panels
+├── dashboard/               # Delivery tracking dashboard server and client (npm run dashboard)
+├── db/                      # PostgreSQL migrations and sqlc query definitions
+├── docs/                    # Architecture guides, PRDs, and delivery plans
+│   ├── epics/               # Verification reports and status for Epics 1 through 14
+│   ├── prd_pack/            # Versioned PRD package with Word, PDF, and companion files
+│   └── screenshots/         # Test evidence and layout verification captures
+├── packages/                # Shared contracts, scenarios, and test fixtures
+│   ├── camera-config/       # Camera metadata and junction geometry configurations
+│   ├── contracts/           # Protobuf, OpenAPI, JSON schemas, and TypeScript definitions
+│   ├── replay/              # Seeded scenarios and recorded observation replays
+│   └── scenario-config/     # C1–C6 network topology configurations
+├── reports/                 # 29 verification audits, benchmarks, test reports, and manifests
+├── scripts/                 # Development, verification, testing, and lifecycle automation
+├── services/                # Private Python gRPC compute services
+│   ├── intelligence/        # Demand forecasting and signal alternative optimization
+│   ├── shared/              # Common contracts, gRPC server runner, and validation logic
+│   ├── simulation/          # Aggregate finite-capacity cell-flow engine
+│   └── vision/              # ITD v1.2 video inference, tracking, and observation extraction
+└── tests/                   # End-to-end integration test suites
+```
+
 ## Design and scope
 
-See [architecture](docs/architecture.md), [API and architecture alignment](docs/API-ARCHITECTURE-SPEC-ALIGNMENT.md), [contracts](packages/contracts/README.md), [PRD](docs/PRD.md) and [Epic 1 acceptance evidence](docs/epic1-acceptance.md).
+See [architecture](docs/architecture.md), [API and architecture alignment](docs/API-ARCHITECTURE-SPEC-ALIGNMENT.md), [contracts](packages/contracts/README.md), [PRD](docs/PRD.md), [contracts plan](docs/contracts-plan.md), and [Epic 1 acceptance evidence](docs/epics/epic1-acceptance.md).

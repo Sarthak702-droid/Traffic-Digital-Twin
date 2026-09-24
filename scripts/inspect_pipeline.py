@@ -31,8 +31,9 @@ import twin_pb2 as pb
 
 def get_slot_for_clip(video_name: str) -> str:
     base = os.path.basename(video_name)
-    if os.path.exists("asset-manifest.json"):
-        with open("asset-manifest.json", "r") as f:
+    manifest_path = "reports/asset-manifest.json" if os.path.exists("reports/asset-manifest.json") else "asset-manifest.json"
+    if os.path.exists(manifest_path):
+        with open(manifest_path, "r") as f:
             manifest = json.load(f)
         for a in manifest.get("assets", []):
             if a.get("filename") == base or a.get("assigned_slot") == video_name:

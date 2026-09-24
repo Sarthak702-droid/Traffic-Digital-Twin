@@ -52,14 +52,14 @@ def main():
             assert sid in delivery_status["tasks"], f"Story {sid} missing from delivery-status.json"
             assert delivery_status["tasks"][sid]["status"] == "completed", f"Story {sid} not marked completed"
 
-    assert total_stories == 45, f"Expected 45 stories, found {total_stories}"
-    assert len(delivery_status["tasks"]) == 45, f"Expected 45 tasks, found {len(delivery_status['tasks'])}"
+    assert total_stories == len(delivery_status["tasks"]), f"Mismatch between backlog stories ({total_stories}) and delivery tasks ({len(delivery_status['tasks'])})"
+    assert total_stories >= 45, f"Expected at least 45 stories, found {total_stories}"
     assert len(endpoints) >= 30, f"Expected >= 30 endpoints, found {len(endpoints)}"
 
     # 4. Check network nodes
     assert len(network_cfg.get("nodes", [])) == 6, "Expected 6 junction nodes C1-C6"
 
-    print(f"✓ All contracts verified: 45/45 stories aligned, {len(endpoints)} endpoints validated, 6 junctions active.")
+    print(f"✓ All contracts verified: {total_stories}/{total_stories} stories aligned, {len(endpoints)} endpoints validated, 6 junctions active.")
 
 if __name__ == "__main__":
     main()

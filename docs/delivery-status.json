@@ -3,251 +3,251 @@
   "tasks": {
     "S01": {
       "status": "completed",
-      "evidence": "docs/epic1-acceptance.md"
+      "evidence": "docs/epics/epic1-acceptance.md"
     },
     "S02": {
       "status": "completed",
-      "evidence": "docs/epic1-acceptance.md"
+      "evidence": "docs/epics/epic1-acceptance.md"
     },
     "S03": {
       "status": "completed",
-      "evidence": "docs/epic1-acceptance.md"
+      "evidence": "docs/epics/epic1-acceptance.md"
     },
     "S04": {
       "status": "completed",
-      "evidence": "docs/epic1-acceptance.md"
+      "evidence": "docs/epics/epic1-acceptance.md"
     },
     "S05": {
       "status": "completed",
-      "evidence": "docs/epic2-status.md"
+      "evidence": "docs/epics/epic2-status.md"
     },
     "S06": {
       "status": "completed",
-      "evidence": "docs/epic2-status.md"
+      "evidence": "docs/epics/epic2-status.md"
     },
     "S07": {
       "status": "completed",
-      "evidence": "docs/epic2-status.md"
+      "evidence": "docs/epics/epic2-status.md"
     },
     "S08": {
       "status": "completed",
-      "evidence": "docs/epic3-status.md"
+      "evidence": "docs/epics/epic3-status.md"
     },
     "S09": {
       "status": "completed",
-      "evidence": "docs/epic3-status.md"
+      "evidence": "docs/epics/epic3-status.md"
     },
     "S10": {
       "status": "completed",
-      "evidence": "docs/epic3-status.md"
+      "evidence": "docs/epics/epic3-status.md"
     },
     "S11": {
       "status": "completed",
-      "evidence": "docs/epic4-status.md"
+      "evidence": "docs/epics/epic4-status.md"
     },
     "S12": {
       "status": "completed",
-      "evidence": "docs/epic4-status.md"
+      "evidence": "docs/epics/epic4-status.md"
     },
     "S13": {
       "status": "completed",
-      "evidence": "docs/epic5-status.md"
+      "evidence": "docs/epics/epic5-status.md"
     },
     "S14": {
       "status": "completed",
-      "evidence": "docs/epic5-status.md"
+      "evidence": "docs/epics/epic5-status.md"
     },
     "S15": {
       "status": "completed",
-      "evidence": "docs/epic5-status.md"
+      "evidence": "docs/epics/epic5-status.md"
     },
     "S16": {
       "status": "completed",
-      "evidence": "docs/epic6-status.md"
+      "evidence": "docs/epics/epic6-status.md"
     },
     "S17": {
       "status": "completed",
-      "evidence": "docs/epic6-status.md"
+      "evidence": "docs/epics/epic6-status.md"
     },
     "S18": {
       "status": "completed",
-      "evidence": "docs/epic6-status.md"
+      "evidence": "docs/epics/epic6-status.md"
     },
     "S19": {
       "status": "completed",
-      "evidence": "docs/epic6-status.md"
+      "evidence": "docs/epics/epic6-status.md"
     },
     "S21": {
       "status": "completed",
-      "evidence": "docs/epic7-status.md"
+      "evidence": "docs/epics/epic7-status.md"
     },
     "S22": {
       "status": "completed",
-      "evidence": "docs/epic7-status.md"
+      "evidence": "docs/epics/epic7-status.md"
     },
     "S25": {
       "status": "completed",
-      "evidence": "docs/epic8-status.md"
+      "evidence": "docs/epics/epic8-status.md"
     },
     "S26": {
       "status": "completed",
-      "evidence": "docs/epic8-status.md"
+      "evidence": "docs/epics/epic8-status.md"
     },
     "S27": {
       "status": "completed",
-      "evidence": "docs/epic8-status.md"
+      "evidence": "docs/epics/epic8-status.md"
     },
     "S28": {
       "status": "completed",
-      "evidence": "docs/epic8-status.md"
+      "evidence": "docs/epics/epic8-status.md"
     },
     "S29": {
       "status": "completed",
-      "evidence": "docs/epic9-status.md"
+      "evidence": "docs/epics/epic9-status.md"
     },
     "S30": {
       "status": "completed",
-      "evidence": "docs/epic9-status.md"
+      "evidence": "docs/epics/epic9-status.md"
     },
     "S31": {
       "status": "completed",
-      "evidence": "docs/epic10-status.md"
+      "evidence": "docs/epics/epic10-status.md"
     },
     "S32": {
       "status": "completed",
-      "evidence": "docs/epic10-status.md"
+      "evidence": "docs/epics/epic10-status.md"
     },
     "S33": {
       "status": "completed",
-      "evidence": "docs/epic11-status.md"
+      "evidence": "docs/epics/epic11-status.md"
     },
     "S34": {
       "status": "completed",
-      "evidence": "docs/epic11-status.md"
+      "evidence": "docs/epics/epic11-status.md"
     },
     "S35": {
       "status": "completed",
-      "evidence": "docs/epic11-status.md"
+      "evidence": "docs/epics/epic11-status.md"
     },
     "S36": {
       "status": "completed",
-      "evidence": "docs/epic12-status.md"
+      "evidence": "docs/epics/epic12-status.md"
     },
     "S37": {
       "status": "completed",
-      "evidence": "docs/epic12-status.md"
+      "evidence": "docs/epics/epic12-status.md"
     },
     "S38": {
       "status": "completed",
-      "evidence": "docs/epic12-status.md"
+      "evidence": "docs/epics/epic12-status.md"
     },
     "S39": {
       "status": "completed",
-      "evidence": "docs/epic13-status.md"
+      "evidence": "docs/epics/epic13-status.md"
     },
     "S40": {
       "status": "completed",
-      "evidence": "docs/epic13-status.md"
+      "evidence": "docs/epics/epic13-status.md"
     },
     "S41": {
       "status": "completed",
-      "evidence": "docs/epic13-status.md"
+      "evidence": "docs/epics/epic13-status.md"
     },
     "S42": {
       "status": "completed",
-      "evidence": "docs/epic13-status.md"
+      "evidence": "docs/epics/epic13-status.md"
     },
     "S43": {
       "status": "completed",
-      "evidence": "docs/epic13-status.md"
+      "evidence": "docs/epics/epic13-status.md"
     },
     "S44": {
       "status": "completed",
-      "evidence": "docs/epic14-status.md"
+      "evidence": "docs/epics/epic14-status.md"
     },
     "S45": {
       "status": "completed",
-      "evidence": "docs/epic14-status.md"
+      "evidence": "docs/epics/epic14-status.md"
     },
     "S46": {
       "status": "completed",
-      "evidence": "docs/epic14-status.md"
+      "evidence": "docs/epics/epic14-status.md"
     },
     "S47": {
       "status": "completed",
-      "evidence": "docs/epic14-status.md"
+      "evidence": "docs/epics/epic14-status.md"
     },
     "S48": {
       "status": "completed",
-      "evidence": "docs/epic14-status.md"
+      "evidence": "docs/epics/epic14-status.md"
     },
     "T01": {
       "status": "completed",
-      "evidence": "baseline-status.json"
+      "evidence": "reports/baseline-status.json"
     },
     "T02": {
       "status": "completed",
-      "evidence": "contracts-plan.md"
+      "evidence": "docs/contracts-plan.md"
     },
     "T03": {
       "status": "completed",
-      "evidence": "model-report.json"
+      "evidence": "reports/model-report.json"
     },
     "T04": {
       "status": "completed",
-      "evidence": "asset-manifest.json"
+      "evidence": "reports/asset-manifest.json"
     },
     "T05": {
       "status": "completed",
-      "evidence": "geometry-review.json"
+      "evidence": "reports/geometry-review.json"
     },
     "T06": {
       "status": "completed",
-      "evidence": "observation-manifest.json"
+      "evidence": "reports/observation-manifest.json"
     },
     "T07": {
       "status": "completed",
-      "evidence": "concurrency-test-report.json"
+      "evidence": "reports/concurrency-test-report.json"
     },
     "T08": {
       "status": "completed",
-      "evidence": "conservation-test-report.json"
+      "evidence": "reports/conservation-test-report.json"
     },
     "T09": {
       "status": "completed",
-      "evidence": "snapshot-equivalence-report.json"
+      "evidence": "reports/snapshot-equivalence-report.json"
     },
     "T10": {
       "status": "completed",
-      "evidence": "demand-profile-manifest.json"
+      "evidence": "reports/demand-profile-manifest.json"
     },
     "T11": {
       "status": "completed",
-      "evidence": "forecast-report.json"
+      "evidence": "reports/forecast-report.json"
     },
     "T12": {
       "status": "completed",
-      "evidence": "api-contract-report.json"
+      "evidence": "reports/api-contract-report.json"
     },
     "T13": {
       "status": "completed",
-      "evidence": "ui-test-report.json"
+      "evidence": "reports/ui-test-report.json"
     },
     "T14": {
       "status": "completed",
-      "evidence": "annotation-provenance.json"
+      "evidence": "reports/annotation-provenance.json"
     },
     "T15": {
       "status": "completed",
-      "evidence": "integration-test-report.json"
+      "evidence": "reports/integration-test-report.json"
     },
     "T16": {
       "status": "completed",
-      "evidence": "benchmark-report.json"
+      "evidence": "reports/benchmark-report.json"
     },
     "T17": {
       "status": "completed",
-      "evidence": "readiness.json"
+      "evidence": "reports/readiness.json"
     }
   },
   "audit_date": "2026-09-22",

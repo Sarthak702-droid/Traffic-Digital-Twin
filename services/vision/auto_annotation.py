@@ -165,10 +165,11 @@ def execute_t14_annotation_review(model_path: str = ".runtime/models/itd-v1.2/be
         "readiness_status": "READY_FOR_DEMO"
     }
 
-    with open("annotation-provenance.json", "w") as f:
+    out_dir = "reports" if os.path.isdir("reports") else "."
+    with open(os.path.join(out_dir, "annotation-provenance.json"), "w") as f:
         json.dump(provenance, f, indent=2)
 
-    with open("reference-quality-report.json", "w") as f:
+    with open(os.path.join(out_dir, "reference-quality-report.json"), "w") as f:
         json.dump(quality_report, f, indent=2)
 
-    print("Successfully generated annotation-provenance.json and reference-quality-report.json")
+    print(f"Successfully generated annotation-provenance.json and reference-quality-report.json in {out_dir}")

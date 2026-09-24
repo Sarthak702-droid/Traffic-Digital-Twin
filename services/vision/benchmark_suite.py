@@ -19,7 +19,9 @@ import torch
 from ultralytics import YOLO
 
 
-def run_benchmark(output_path: str = "benchmark-report.json", model_path: str = ".runtime/models/itd-v1.2/best_xl_ITD_v1.2.pt"):
+def run_benchmark(output_path: str = None, model_path: str = ".runtime/models/itd-v1.2/best_xl_ITD_v1.2.pt"):
+    if output_path is None:
+        output_path = "reports/benchmark-report.json" if os.path.isdir("reports") else "benchmark-report.json"
     print(f"[Benchmark] Loading ITD checkpoint from {model_path}...")
     torch.set_num_threads(4)
     model = YOLO(model_path)

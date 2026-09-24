@@ -20,7 +20,7 @@ torch.set_num_threads(min(4, os.cpu_count() or 4))
 
 MODEL_PATH = ".runtime/models/itd-v1.2/best_xl_ITD_v1.2.pt"
 CAMERAS_JSON = "packages/camera-config/cameras.json"
-ASSET_MANIFEST = "asset-manifest.json"
+ASSET_MANIFEST = "reports/asset-manifest.json" if os.path.exists("reports/asset-manifest.json") else "asset-manifest.json"
 OUTPUT_PUBLIC = Path("apps/web/public/vision_clips_data.json")
 OUTPUT_LIB = Path("apps/web/lib/vision_clips_data.json")
 

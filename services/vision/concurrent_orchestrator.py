@@ -379,7 +379,8 @@ class ConcurrentVideoOrchestrator:
             "concurrency_policy": "bounded_queue_backpressure_with_batched_inference"
         }
 
-        with open("concurrency-test-report.json", "w") as f:
+        out_dir = "reports" if os.path.isdir("reports") else "."
+        with open(os.path.join(out_dir, "concurrency-test-report.json"), "w") as f:
             json.dump(report, f, indent=2)
 
         return report

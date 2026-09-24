@@ -76,19 +76,19 @@ This document records the definitive remediation and verified closure of all Cri
 
 All 45 stories across all 14 epics are complete, verified, and mapped to auditable evidence documents:
 
-- **E01 (S01–S04):** Foundation, typed contracts, network data, Go persistence -> `docs/epic1-acceptance.md`
-- **E02 (S05–S07):** Deterministic simulation, Go state streaming, signal timing -> `docs/epic2-status.md`
-- **E03 (S08–S10):** Product shell, animated SVG twin, junction inspection -> `docs/epic3-status.md`
-- **E04 (S11–S12):** Conservation forecasting, platoon propagation, spillback -> `docs/epic4-status.md`
-- **E05 (S13–S15):** Safety envelope, operating modes, decision audit -> `docs/epic5-status.md`
-- **E06 (S16–S19):** AGDA phase allocation, candidate generation, PN-MPC, explanations -> `docs/epic6-status.md`
-- **E07 (S21–S22):** Isolated simulation branches, synchronized comparison -> `docs/epic7-status.md`
-- **E08 (S25–S28):** Immutable audit events, health states, golden replay, audit inspection -> `docs/epic8-status.md`
-- **E09 (S29–S30):** C3 incident injection, gated release, recovery estimation -> `docs/epic9-status.md`
-- **E10 (S31–S32):** Emergency corridor route, pre-clearance, cross-traffic compensation -> `docs/epic10-status.md`
-- **E11 (S33–S35):** Automated 3-scenario runner, guided 8-step presentation, SLA benchmarks -> `docs/epic11-status.md`
-- **E12 (S36–S38):** Vision pipeline, synchronized video overlays, presentation polish -> `docs/epic12-status.md`
-- **E13 (S39–S43):** Go public gateway, endpoint inventory, persistence, lease fencing, failover -> `docs/epic13-status.md`
-- **E14 (S44–S48):** Truthful loading states, recoverable journeys, session recovery, WCAG accessibility, full acceptance -> `docs/epic14-status.md`
+- **E01 (S01–S04):** Foundation, typed contracts, network data, Go persistence -> `docs/epics/epic1-acceptance.md`
+- **E02 (S05–S07):** Deterministic simulation, Go state streaming, signal timing -> `docs/epics/epic2-status.md`
+- **E03 (S08–S10):** Product shell, animated SVG twin, junction inspection -> `docs/epics/epic3-status.md`
+- **E04 (S11–S12):** Conservation forecasting, platoon propagation, spillback -> `docs/epics/epic4-status.md`
+- **E05 (S13–S15):** Safety envelope, operating modes, decision audit -> `docs/epics/epic5-status.md`
+- **E06 (S16–S19):** AGDA phase allocation, candidate generation, PN-MPC, explanations -> `docs/epics/epic6-status.md`
+- **E07 (S21–S22):** Isolated simulation branches, synchronized comparison -> `docs/epics/epic7-status.md`
+- **E08 (S25–S28):** Immutable audit events, health states, golden replay, audit inspection -> `docs/epics/epic8-status.md`
+- **E09 (S29–S30):** C3 incident injection, gated release, recovery estimation -> `docs/epics/epic9-status.md`
+- **E10 (S31–S32):** Emergency corridor route, pre-clearance, cross-traffic compensation -> `docs/epics/epic10-status.md`
+- **E11 (S33–S35):** Automated 3-scenario runner, guided 8-step presentation, SLA benchmarks -> `docs/epics/epic11-status.md`
+- **E12 (S36–S38):** Vision pipeline, synchronized video overlays, presentation polish -> `docs/epics/epic12-status.md`
+- **E13 (S39–S43):** Go public gateway, endpoint inventory, persistence, lease fencing, failover -> `docs/epics/epic13-status.md`
+- **E14 (S44–S48):** Truthful loading states, recoverable journeys, session recovery, WCAG accessibility, full acceptance -> `docs/epics/epic14-status.md`
 
 All 45 tasks are marked `"completed"` in [`docs/delivery-status.json`](delivery-status.json) with `"release_status": "production_ready"`.

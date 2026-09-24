@@ -28,30 +28,33 @@ const server = http.createServer(async (req,res) => {
     if(path.startsWith('/evidence/')) {
       const target = decodeURIComponent(path.slice(10));
       const epicMap = {
-        'epic1': 'docs/epic1-acceptance.md', 'e01': 'docs/epic1-acceptance.md',
-        'epic2': 'docs/epic2-status.md', 'e02': 'docs/epic2-status.md',
-        'epic3': 'docs/epic3-status.md', 'e03': 'docs/epic3-status.md',
-        'epic4': 'docs/epic4-status.md', 'e04': 'docs/epic4-status.md',
-        'epic5': 'docs/epic5-status.md', 'e05': 'docs/epic5-status.md',
-        'epic6': 'docs/epic6-status.md', 'e06': 'docs/epic6-status.md',
-        'epic7': 'docs/epic7-status.md', 'e07': 'docs/epic7-status.md',
-        'epic8': 'docs/epic8-status.md', 'e08': 'docs/epic8-status.md',
-        'epic9': 'docs/epic9-status.md', 'e09': 'docs/epic9-status.md',
-        'epic10': 'docs/epic10-status.md', 'e10': 'docs/epic10-status.md',
-        'epic11': 'docs/epic11-status.md', 'e11': 'docs/epic11-status.md',
-        'epic12': 'docs/epic12-status.md', 'e12': 'docs/epic12-status.md',
-        'epic13': 'docs/epic13-status.md', 'e13': 'docs/epic13-status.md',
-        'epic14': 'docs/epic14-status.md', 'e14': 'docs/epic14-status.md',
-        'epic15': 'docs/epic15-status.md', 'e15': 'docs/epic15-status.md',
-        'epic16': 'docs/epic16-status.md', 'e16': 'docs/epic16-status.md',
-        'epic17': 'docs/epic17-status.md', 'e17': 'docs/epic17-status.md',
-        'epic18': 'docs/epic18-status.md', 'e18': 'docs/epic18-status.md',
-        'epic19': 'docs/epic19-status.md', 'e19': 'docs/epic19-status.md'
+        'epic1': 'docs/epics/epic1-acceptance.md', 'e01': 'docs/epics/epic1-acceptance.md',
+        'epic2': 'docs/epics/epic2-status.md', 'e02': 'docs/epics/epic2-status.md',
+        'epic3': 'docs/epics/epic3-status.md', 'e03': 'docs/epics/epic3-status.md',
+        'epic4': 'docs/epics/epic4-status.md', 'e04': 'docs/epics/epic4-status.md',
+        'epic5': 'docs/epics/epic5-status.md', 'e05': 'docs/epics/epic5-status.md',
+        'epic6': 'docs/epics/epic6-status.md', 'e06': 'docs/epics/epic6-status.md',
+        'epic7': 'docs/epics/epic7-status.md', 'e07': 'docs/epics/epic7-status.md',
+        'epic8': 'docs/epics/epic8-status.md', 'e08': 'docs/epics/epic8-status.md',
+        'epic9': 'docs/epics/epic9-status.md', 'e09': 'docs/epics/epic9-status.md',
+        'epic10': 'docs/epics/epic10-status.md', 'e10': 'docs/epics/epic10-status.md',
+        'epic11': 'docs/epics/epic11-status.md', 'e11': 'docs/epics/epic11-status.md',
+        'epic12': 'docs/epics/epic12-status.md', 'e12': 'docs/epics/epic12-status.md',
+        'epic13': 'docs/epics/epic13-status.md', 'e13': 'docs/epics/epic13-status.md',
+        'epic14': 'docs/epics/epic14-status.md', 'e14': 'docs/epics/epic14-status.md',
+        'epic15': 'docs/epics/epic15-status.md', 'e15': 'docs/epics/epic15-status.md',
+        'epic16': 'docs/epics/epic16-status.md', 'e16': 'docs/epics/epic16-status.md',
+        'epic17': 'docs/epics/epic17-status.md', 'e17': 'docs/epics/epic17-status.md',
+        'epic18': 'docs/epics/epic18-status.md', 'e18': 'docs/epics/epic18-status.md',
+        'epic19': 'docs/epics/epic19-status.md', 'e19': 'docs/epics/epic19-status.md'
       };
       const candidatePaths = [
         epicMap[target.toLowerCase()],
         target,
+        target.replace(/^docs\/epic/, 'docs/epics/epic'),
+        `reports/${target}`,
         `docs/${target}`,
+        `docs/epics/${target}`,
         `.runtime/evidence/${target}`
       ].filter(Boolean);
 
