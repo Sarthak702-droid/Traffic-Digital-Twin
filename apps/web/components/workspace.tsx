@@ -100,8 +100,10 @@ export function Workspace() {
     selectedHorizon,
   } = useWorkspace();
 
-  const activeRole = session.isSuccess && !session.isError && session.data?.role ? session.data.role : role;
-  const canWrite = activeRole !== "viewer";
+  const activeRole = session.isSuccess && session.data?.role ? session.data.role : role;
+  const canWrite = session.isSuccess && !!session.data && activeRole !== "viewer";
+  const draftActor = useRef<string | undefined>(undefined);
+  if (session.isSuccess && session.data?.actor) draftActor.current = session.data.actor;
 
   const client = useQueryClient();
   const network = useQuery({ queryKey: ["network"], queryFn: getNetwork });
@@ -477,7 +479,7 @@ export function Workspace() {
           {!analysis&&live.frame&&<p role="status">Fresh intelligence unavailable. Forecasts and decisions are disabled until recovery.</p>}
 
           {/* Role-Specific Executive / Supervisor Banner */}
-          {role === "viewer" && (
+          {activeRole === "viewer" && session.isSuccess && (
             <div className="role-banner viewer-banner" role="status">
               <div>
                 <strong>EXECUTIVE BRIEFING MODE (DGP / SENIOR LEADERSHIP)</strong>
@@ -495,7 +497,7 @@ export function Workspace() {
             </div>
           )}
 
-          {role === "supervisor" && (
+          {activeRole === "supervisor" && session.isSuccess && (
             <div className="role-banner supervisor-banner" role="status">
               <div>
                 <strong>SUPERVISOR OVERSIGHT MODE</strong>
@@ -703,8 +705,8 @@ export function Workspace() {
 
                       {/* 4-column Action Rail (Story S09 / PRD §8.1) */}
                       <ActionRail
-                        key={`${session.data?.actor}:${live.frame?.run_id || "none"}`}
-                        draftOwner={session.data?.actor}
+                        key={`${draftActor.current || "unauthenticated"}:${live.frame?.run_id || "none"}`}
+                        draftOwner={draftActor.current || "unauthenticated"}
                         canAct={decisionReady}
                         onDirty={setDirty}
                         network={data}

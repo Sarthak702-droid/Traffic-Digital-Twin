@@ -4,7 +4,7 @@ import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/re
 import { TopBar } from "./top-bar";
 import { SessionPanel } from "./session-panel";
 import { ActionRail } from "./action-rail";
-import { ApiError, isEmergencyProtectionError, isStaleUncertainCommandError } from "@/lib/api";
+import { ApiError, isEmergencyProtectionError, isStaleUncertainCommandError, request } from "@/lib/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import fallbackNetworkConfig from "../../../packages/scenario-config/c1-c6.json";
 import type { HealthState, TrafficState } from "../../../packages/contracts/typescript/events";
@@ -244,18 +244,24 @@ describe("Epic 14: Production UX, Access & Acceptance (S44–S48)", () => {
       expect(isEmergencyProtectionError(new ApiError("Protected", 409, undefined, false, "EMERGENCY_PROTECTION_ACTIVE"))).toBe(true);
     });
 
-    it("does not request credentials when the automatic local session is unavailable", async () => {
-      vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(new Error("offline"));
+    it("asks for credentials when no verified session exists", async () => {
+      vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({ok:false,status:401,json:async()=>({message:"Sign in required"}),headers:new Headers()} as Response);
       render(<SessionPanel />, { wrapper });
 
-      expect(await screen.findByText(/Local demonstration session unavailable/i)).toBeInTheDocument();
-      expect(screen.getByText(/No username or password is required/i)).toBeInTheDocument();
-      expect(screen.queryByLabelText(/Username/i)).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/Password/i)).not.toBeInTheDocument();
+      expect(await screen.findByLabelText(/Username/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Password/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Sign in/i })).toBeEnabled();
       vi.restoreAllMocks();
     });
 
-    it("displays the automatically provisioned local demonstration identity", async () => {
+    it("reports session service loss without presenting it as a bad password", async () => {
+      vi.spyOn(globalThis,"fetch").mockResolvedValueOnce({ok:false,status:503,json:async()=>({message:"Session store unavailable"}),headers:new Headers()} as Response);
+      render(<SessionPanel />, {wrapper});
+      expect(await screen.findByText(/Session service unavailable/i)).toBeInTheDocument();
+      vi.restoreAllMocks();
+    });
+
+    it("displays the verified identity and a sign-out action", async () => {
       // Mock successful session response
       vi.spyOn(globalThis, "fetch").mockImplementationOnce(() =>
         Promise.resolve({
@@ -270,9 +276,57 @@ describe("Epic 14: Production UX, Access & Acceptance (S44–S48)", () => {
       await waitFor(() => {
         expect(screen.getByText("supervisor-ramesh")).toBeInTheDocument();
       });
-      expect(screen.getByText(/Local demonstration session/i)).toHaveTextContent("supervisor");
-      expect(screen.queryByRole("button", { name: /Sign out/i })).not.toBeInTheDocument();
+      expect(screen.getByText(/Authenticated session/i)).toHaveTextContent("supervisor");
+      expect(screen.getByRole("button", { name: /Sign out/i })).toBeInTheDocument();
 
+      vi.restoreAllMocks();
+    });
+
+    it("retains an uncertain command through session expiry and re-login without replaying it", async () => {
+      localStorage.setItem("twin-uncertain-command", "cmd-expired-1001");
+      queryClient.setQueryData(["runs"],[{id:"prior-session-run"}]);
+      let signedIn = true;
+      let commandAttempts = 0;
+      const calls: string[] = [];
+      vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+        const url = String(input); calls.push(`${init?.method || "GET"} ${url}`);
+        if (url.endsWith("/session/login")) { signedIn = true; return {ok:true,status:200,json:async()=>({actor:"alice",role:"operator"}),headers:new Headers()} as Response; }
+        if (url.endsWith("/session/logout")) { signedIn = false; return {ok:true,status:200,json:async()=>({success:true}),headers:new Headers()} as Response; }
+        if (url.endsWith("/session")) return signedIn
+          ? {ok:true,status:200,json:async()=>({actor:"alice",role:"operator"}),headers:new Headers()} as Response
+          : {ok:false,status:401,json:async()=>({message:"Sign in required"}),headers:new Headers()} as Response;
+        if (url.endsWith("/commands/cmd-expired-1001")) {
+          if (commandAttempts++===0) { signedIn=false; return {ok:false,status:401,json:async()=>({message:"Session expired"}),headers:new Headers()} as Response; }
+          return {ok:true,status:200,json:async()=>({status:"completed",response:{applied:true}}),headers:new Headers()} as Response;
+        }
+        throw Error(`Unexpected request ${url}`);
+      });
+      render(<SessionPanel />, { wrapper });
+      expect(await screen.findByText("alice")).toBeInTheDocument();
+      expect(await screen.findByLabelText(/Username/i)).toBeInTheDocument();
+      expect(queryClient.getQueryData(["runs"])).toBeUndefined();
+      expect(screen.getByText(/Previous command needs review/i)).toBeInTheDocument();
+      fireEvent.change(screen.getByLabelText(/Username/i), {target:{value:"alice"}});
+      fireEvent.change(screen.getByLabelText(/Password/i), {target:{value:"correct-test-password"}});
+      fireEvent.click(screen.getByRole("button", {name:/Sign in/i}));
+      expect(await screen.findByText("alice")).toBeInTheDocument();
+      await waitFor(()=>expect(screen.getByText((_,element)=>element?.tagName==="P"&&!!element.textContent?.includes("cmd-expired-1001 · completed"))).toBeInTheDocument());
+      expect(localStorage.getItem("twin-uncertain-command")).toBe("cmd-expired-1001");
+      expect(calls.filter(call=>call.startsWith("POST "))).toEqual(["POST /api/v1/session/login"]);
+      fireEvent.click(screen.getByRole("button", {name:/Sign out/i}));
+      expect(await screen.findByLabelText(/Username/i)).toBeInTheDocument();
+      expect(localStorage.getItem("twin-uncertain-command")).toBe("cmd-expired-1001");
+      expect(calls.filter(call=>call.startsWith("POST "))).toEqual(["POST /api/v1/session/login","POST /api/v1/session/logout"]);
+      vi.restoreAllMocks();
+    });
+
+    it("uses cookies and never sends browser role or actor headers", async () => {
+      const fetchMock=vi.spyOn(globalThis,"fetch").mockResolvedValueOnce({ok:false,status:401,json:async()=>({message:"Sign in required"}),headers:new Headers()} as Response);
+      await expect(request("/mode/manual",{method:"POST",headers:{"X-Role":"supervisor","X-Actor":"forged"}})).rejects.toMatchObject({status:401});
+      const init=fetchMock.mock.calls[0][1] as RequestInit;
+      expect(init.credentials).toBe("same-origin");
+      expect(new Headers(init.headers).has("X-Role")).toBe(false);
+      expect(new Headers(init.headers).has("X-Actor")).toBe(false);
       vi.restoreAllMocks();
     });
 

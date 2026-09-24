@@ -20,7 +20,7 @@ export interface WorkspaceState {
 export const useWorkspace = create<WorkspaceState>((set) => ({
   selectedNode: null,
   selectNode: (id) => set({ selectedNode: id }),
-  role: "operator",
+  role: "viewer",
   setRole: (role) => set({ role }),
   dgpModalOpen: false,
   setDgpModalOpen: (open) => set({ dgpModalOpen: open }),
