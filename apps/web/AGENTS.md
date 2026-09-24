@@ -1,9 +1,5 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# Web workspace guidance
 
-# This is NOT the Next.js you know
+This app is React/TypeScript on Vite. Use `apps/web/package.json` and the root `AGENTS.MD` for current stack, milestone and acceptance rules; older Next.js instructions do not apply.
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+Keep operator commands on the authenticated Go API path. Display source observations, modeled state and forecasts with their distinct times and quality labels. Clear stale analyses after authoritative input changes, and preserve decision drafts plus command identity through session expiry. Use the existing component and schema patterns; add focused Vitest coverage for changed behavior and run `npm run typecheck -w apps/web` and `npm run build -w apps/web` when touching the UI.
