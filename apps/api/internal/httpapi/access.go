@@ -2,37 +2,85 @@ package httpapi
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"net/url"
 	"time"
+
 	"traffic.local/twin/apps/api/internal/store"
 )
 
-// This local demonstration uses an explicit demo role header. Production auth
-// remains a replaceable Go boundary; browser traffic never passes through a
-// Python gateway.
+func (s *Server) validOrigin(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return false
+	}
+	u, err := url.Parse(origin)
+	if err != nil || u.User != nil || u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
+		return false
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return false
+	}
+	if origin == s.AllowedOrigin {
+		return true
+	}
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	return origin == scheme+"://"+r.Host
+}
+
 func (s *Server) access(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		role, actor := r.Header.Get("X-Role"), r.Header.Get("X-Actor")
-		if actor == "" {
-			actor = "demo-operator"
-		}
-		if role == "" {
-			role = "operator"
-		}
-		if role != "operator" && role != "supervisor" && role != "viewer" && role != "observer" {
-			problem(w, 401, "A valid demonstration role is required")
+		path := r.URL.Path
+		if r.Method != http.MethodGet && r.Method != http.MethodHead && !s.validOrigin(r) {
+			problem(w, http.StatusForbidden, "A matching request origin is required")
 			return
 		}
-		if r.Method != "GET" && r.Method != "HEAD" && (role == "viewer" || role == "observer") {
-			problem(w, 403, "Viewer cannot change the digital twin")
+		if path == "/health/live" || path == "/health/ready" || path == "/api/v1/session/login" {
+			next.ServeHTTP(w, r)
 			return
 		}
-		r = r.WithContext(store.WithRole(store.WithCommand(store.WithActor(r.Context(), actor), r.Header.Get("Idempotency-Key")), role))
-		if r.URL.Path != "/ws/v1/live" {
-			ctx, cancel := context.WithTimeout(r.Context(), 8*time.Second)
+		if s.Sessions == nil || s.AccountsPath == "" {
+			problem(w, http.StatusServiceUnavailable, "Authentication unavailable")
+			return
+		}
+		cookie, err := r.Cookie(sessionCookieName)
+		if err != nil || cookie.Value == "" {
+			problem(w, http.StatusUnauthorized, "Sign in required")
+			return
+		}
+		session, err := s.Sessions.LookupSession(r.Context(), digestToken(cookie.Value))
+		if err != nil && !errors.Is(err, store.ErrSessionMissing) {
+			problem(w, http.StatusServiceUnavailable, "Session store unavailable")
+			return
+		}
+		if err != nil || session.Revoked || session.Username == "" || !time.Now().Before(session.ExpiresAt) {
+			problem(w, http.StatusUnauthorized, "Session expired or revoked")
+			return
+		}
+		account, err := readAccount(s.AccountsPath, session.Username)
+		if err != nil || account.Version != session.AccountVersion || !validRole(account.Role) {
+			problem(w, http.StatusUnauthorized, "Account changed or unavailable")
+			return
+		}
+		if r.Method != http.MethodGet && r.Method != http.MethodHead && account.Role == "viewer" && path != "/api/v1/session/logout" {
+			problem(w, http.StatusForbidden, "Viewer cannot change the digital twin")
+			return
+		}
+		ctx := store.WithRole(store.WithCommand(store.WithActor(r.Context(), session.Username), r.Header.Get("Idempotency-Key")), account.Role)
+		if path != "/ws/v1/live" {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, 8*time.Second)
 			defer cancel()
-			r = r.WithContext(ctx)
 		}
-		next.ServeHTTP(w, r)
+		// Client X-Actor and X-Role headers have no authority.
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func validRole(role string) bool {
+	return role == "operator" || role == "supervisor" || role == "viewer"
 }

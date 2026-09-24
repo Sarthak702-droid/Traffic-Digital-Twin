@@ -71,14 +71,14 @@ func TestStartScenarioInputValidation(t *testing.T) {
 	s := app(t)
 	// Without store or sim configured
 	w := httptest.NewRecorder()
-	s.Handler().ServeHTTP(w, httptest.NewRequest("POST", "/api/v1/scenarios/peak_surge/start", strings.NewReader(`{"schema_version":"1.0","seed":1101,"mode":"recommend"}`)))
+	s.Handler().ServeHTTP(w, testRequest("POST", "/api/v1/scenarios/peak_surge/start", strings.NewReader(`{"schema_version":"1.0","seed":1101,"mode":"recommend"}`)))
 	if w.Code != 503 {
 		t.Fatalf("expected 503 for unconfigured sim, got %d", w.Code)
 	}
 
 	s.sim = &simulationLink{subscribers: map[chan *pb.TrafficState]struct{}{}}
 	w = httptest.NewRecorder()
-	s.Handler().ServeHTTP(w, httptest.NewRequest("POST", "/api/v1/scenarios/peak_surge/start", strings.NewReader(`{"schema_version":"1.0","seed":1101,"mode":"recommend"}`)))
+	s.Handler().ServeHTTP(w, testRequest("POST", "/api/v1/scenarios/peak_surge/start", strings.NewReader(`{"schema_version":"1.0","seed":1101,"mode":"recommend"}`)))
 	if w.Code != 503 {
 		t.Fatalf("expected 503 for unconfigured store, got %d", w.Code)
 	}
@@ -88,7 +88,7 @@ func TestResetScenarioPreconditions(t *testing.T) {
 	s := app(t)
 	// 1. Sim unconfigured
 	w := httptest.NewRecorder()
-	s.Handler().ServeHTTP(w, httptest.NewRequest("POST", "/api/v1/scenarios/reset", strings.NewReader(`{}`)))
+	s.Handler().ServeHTTP(w, testRequest("POST", "/api/v1/scenarios/reset", strings.NewReader(`{}`)))
 	if w.Code != 503 {
 		t.Fatalf("expected 503 when sim unconfigured, got %d", w.Code)
 	}
@@ -96,7 +96,7 @@ func TestResetScenarioPreconditions(t *testing.T) {
 	// 2. Sim configured but no active command
 	s.sim = &simulationLink{subscribers: map[chan *pb.TrafficState]struct{}{}}
 	w = httptest.NewRecorder()
-	s.Handler().ServeHTTP(w, httptest.NewRequest("POST", "/api/v1/scenarios/reset", strings.NewReader(`{}`)))
+	s.Handler().ServeHTTP(w, testRequest("POST", "/api/v1/scenarios/reset", strings.NewReader(`{}`)))
 	if w.Code != 503 {
 		t.Fatalf("expected 503 when store is nil, got %d", w.Code)
 	}
@@ -217,11 +217,11 @@ func TestAcceptFrameFilteringAndSubscriberBuffer(t *testing.T) {
 
 type configurableMockSimulation struct {
 	pb.UnimplementedSimulationServer
-	returnErr      error
-	mismatchRunID  bool
-	mismatchSeed   bool
+	returnErr        error
+	mismatchRunID    bool
+	mismatchSeed     bool
 	mismatchScenario bool
-	invalidState   bool
+	invalidState     bool
 }
 
 func (m *configurableMockSimulation) Reset(_ context.Context, c *pb.RunCommand) (*pb.TrafficState, error) {
@@ -368,7 +368,7 @@ func TestLaunchFailureModes(t *testing.T) {
 			}
 
 			w := httptest.NewRecorder()
-			r := httptest.NewRequest("POST", "/api/v1/scenarios/peak_surge/start", strings.NewReader(`{"schema_version":"1.0","seed":1101,"mode":"recommend"}`))
+			r := testRequest("POST", "/api/v1/scenarios/peak_surge/start", strings.NewReader(`{"schema_version":"1.0","seed":1101,"mode":"recommend"}`))
 			s.Handler().ServeHTTP(w, r)
 			if w.Code != tc.expectedCode {
 				t.Fatalf("expected code %d, got %d: %s", tc.expectedCode, w.Code, w.Body.String())

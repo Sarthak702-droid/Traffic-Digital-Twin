@@ -20,9 +20,12 @@ Start the local Go-control-plane stack:
 
 ```sh
 python3 scripts/bootstrap-local.py
+python3 scripts/create-gateway-user.py .runtime/gateway-users.json operator --role operator
 npm run build
 npm start
 ```
+
+The account command prompts for a password and stores its verifier in the ignored `.runtime` directory. The Go API requires this file; signing in and changing virtual controls use a server session.
 
 Bootstrap preserves an existing environment and keeps generated compute credentials in ignored `.runtime` files. Open **http://127.0.0.1:3100**. Public Go API: **8081** (or the next available loopback port); private Python simulation and intelligence gRPC services: **50051** and **50052**; PostgreSQL: **5433**. Go performs migrations and durable writes through its persistence modules. These are development startup instructions; full-stack acceptance and production deployment remain pending.
 

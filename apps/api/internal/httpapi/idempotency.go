@@ -37,7 +37,7 @@ func (r *responseCapture) Write(b []byte) (int, error) {
 // idempotency handles state-changing mutations with Idempotency-Key enforcement (S41).
 func (s *Server) idempotency(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" && r.Method != "PUT" && r.Method != "PATCH" && r.Method != "DELETE" {
+		if (r.Method != "POST" && r.Method != "PUT" && r.Method != "PATCH" && r.Method != "DELETE") || r.URL.Path == "/api/v1/session/login" || r.URL.Path == "/api/v1/session/logout" {
 			next.ServeHTTP(w, r)
 			return
 		}

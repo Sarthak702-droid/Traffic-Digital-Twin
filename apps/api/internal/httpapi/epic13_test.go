@@ -80,7 +80,7 @@ func TestRouteFailureAndReadContractsDoNotCreateRuns(t *testing.T) {
 		{http.MethodGet, "/health/live", http.StatusOK},
 	} {
 		w := httptest.NewRecorder()
-		s.Handler().ServeHTTP(w, httptest.NewRequest(test.method, test.path, nil))
+		s.Handler().ServeHTTP(w, testRequest(test.method, test.path, nil))
 		if w.Code != test.want {
 			t.Fatalf("%s %s: got %d, want %d", test.method, test.path, w.Code, test.want)
 		}
@@ -98,10 +98,13 @@ func TestIdempotentRunPreparationReplaysAndRejectsConflicts(t *testing.T) {
 	h := s.Handler()
 	body := `{"schema_version":"1.0","scenario_type":"peak_surge","seed":1101,"mode":"recommend"}`
 	request := func(body, actor string) *httptest.ResponseRecorder {
-		r := httptest.NewRequest(http.MethodPost, "/api/v1/runs", strings.NewReader(body))
+		r := testRequest(http.MethodPost, "/api/v1/runs", strings.NewReader(body))
 		r.Header.Set("Idempotency-Key", "epic13-run-0001")
 		if actor != "" {
 			r.Header.Set("X-Actor", actor)
+		}
+		if actor == "operator-b" {
+			r.Header.Set("Cookie", sessionCookieName+"=bob-token")
 		}
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, r)
@@ -127,6 +130,10 @@ func TestIdempotentRunPreparationReplaysAndRejectsConflicts(t *testing.T) {
 	var count int
 	if err := st.Pool.QueryRow(context.Background(), "SELECT count(*) FROM scenario_runs").Scan(&count); err != nil || count != 1 {
 		t.Fatalf("idempotency created duplicate runs: %d %v", count, err)
+	}
+	var auditedActor string
+	if err := st.Pool.QueryRow(context.Background(), "SELECT actor FROM audit_events WHERE event_type='run.prepared' LIMIT 1").Scan(&auditedActor); err != nil || auditedActor != "alice" {
+		t.Fatalf("audit actor came from headers or was lost: %q %v", auditedActor, err)
 	}
 }
 
@@ -163,7 +170,8 @@ func TestRoleBasedAccessControlAndRequestTracking(t *testing.T) {
 	h := s.Handler()
 
 	// 1. Mutation by viewer is forbidden (403)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/runs", strings.NewReader(`{}`))
+	req := testRequest(http.MethodPost, "/api/v1/runs", strings.NewReader(`{}`))
+	req.Header.Set("Cookie", sessionCookieName+"=viewer-token")
 	req.Header.Set("X-Role", "viewer")
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
@@ -171,26 +179,27 @@ func TestRoleBasedAccessControlAndRequestTracking(t *testing.T) {
 		t.Fatalf("viewer mutation got %d, want 403", w.Code)
 	}
 
-	// 2. Mutation by observer is forbidden (403)
-	req = httptest.NewRequest(http.MethodPost, "/api/v1/runs", strings.NewReader(`{}`))
-	req.Header.Set("X-Role", "observer")
+	// 2. Forged operator header cannot promote a viewer.
+	req = testRequest(http.MethodPost, "/api/v1/runs", strings.NewReader(`{}`))
+	req.Header.Set("Cookie", sessionCookieName+"=viewer-token")
+	req.Header.Set("X-Role", "operator")
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusForbidden {
-		t.Fatalf("observer mutation got %d, want 403", w.Code)
+		t.Fatalf("forged operator header promoted viewer: %d, want 403", w.Code)
 	}
 
-	// 3. Invalid role is rejected (401)
-	req = httptest.NewRequest(http.MethodGet, "/api/v1/network", nil)
+	// 3. A forged role does not invalidate or elevate a verified session.
+	req = testRequest(http.MethodGet, "/api/v1/network", nil)
 	req.Header.Set("X-Role", "unauthorized_role")
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
-	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("invalid role got %d, want 401", w.Code)
+	if w.Code != http.StatusOK {
+		t.Fatalf("forged role altered session: %d", w.Code)
 	}
 
 	// 4. Request ID is present on all responses
-	req = httptest.NewRequest(http.MethodGet, "/health/live", nil)
+	req = testRequest(http.MethodGet, "/health/live", nil)
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Header().Get("X-Request-ID") == "" {
@@ -198,7 +207,7 @@ func TestRoleBasedAccessControlAndRequestTracking(t *testing.T) {
 	}
 
 	// 5. Explicit incoming X-Request-ID is preserved
-	req = httptest.NewRequest(http.MethodGet, "/health/live", nil)
+	req = testRequest(http.MethodGet, "/health/live", nil)
 	req.Header.Set("X-Request-ID", "req-test-trace-1234")
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
@@ -212,7 +221,7 @@ func TestSessionLifecycleAndRoleAssignment(t *testing.T) {
 	h := s.Handler()
 
 	// 1. GET /api/v1/session returns current actor & role
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/session", nil)
+	req := testRequest(http.MethodGet, "/api/v1/session", nil)
 	req.Header.Set("X-Actor", "demo-operator")
 	req.Header.Set("X-Role", "operator")
 	w := httptest.NewRecorder()
@@ -224,12 +233,12 @@ func TestSessionLifecycleAndRoleAssignment(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &sessionInfo); err != nil {
 		t.Fatal(err)
 	}
-	if sessionInfo["actor"] != "demo-operator" || sessionInfo["role"] != "operator" {
+	if sessionInfo["actor"] != "alice" || sessionInfo["role"] != "operator" {
 		t.Fatalf("unexpected session info: %+v", sessionInfo)
 	}
 
-	// 2. POST /api/v1/session/login with supervisor
-	req = httptest.NewRequest(http.MethodPost, "/api/v1/session/login", strings.NewReader(`{"username":"supervisor_patel","password":"demo"}`))
+	// 2. Login uses the provisioned role rather than a username pattern.
+	req = testRequest(http.MethodPost, "/api/v1/session/login", strings.NewReader(`{"username":"supervisor","password":"correct-test-password"}`))
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
@@ -242,7 +251,7 @@ func TestSessionLifecycleAndRoleAssignment(t *testing.T) {
 	}
 
 	// 3. POST /api/v1/session/login with viewer
-	req = httptest.NewRequest(http.MethodPost, "/api/v1/session/login", strings.NewReader(`{"username":"viewer_guest","password":"demo"}`))
+	req = testRequest(http.MethodPost, "/api/v1/session/login", strings.NewReader(`{"username":"viewer","password":"correct-test-password"}`))
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
@@ -254,7 +263,7 @@ func TestSessionLifecycleAndRoleAssignment(t *testing.T) {
 	}
 
 	// 4. Invalid login request
-	req = httptest.NewRequest(http.MethodPost, "/api/v1/session/login", strings.NewReader(`{"username":""}`))
+	req = testRequest(http.MethodPost, "/api/v1/session/login", strings.NewReader(`{"username":""}`))
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusBadRequest {
@@ -262,7 +271,7 @@ func TestSessionLifecycleAndRoleAssignment(t *testing.T) {
 	}
 
 	// 5. POST /api/v1/session/logout
-	req = httptest.NewRequest(http.MethodPost, "/api/v1/session/logout", nil)
+	req = testRequest(http.MethodPost, "/api/v1/session/logout", nil)
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
@@ -281,7 +290,7 @@ func TestCommandStatusEndpointContract(t *testing.T) {
 	h := s.Handler()
 
 	// 1. Invalid command ID (less than 8 chars)
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/commands/short", nil)
+	req := testRequest(http.MethodGet, "/api/v1/commands/short", nil)
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusBadRequest {
@@ -289,7 +298,7 @@ func TestCommandStatusEndpointContract(t *testing.T) {
 	}
 
 	// 2. Non-existent command
-	req = httptest.NewRequest(http.MethodGet, "/api/v1/commands/nonexistent-command-9999", nil)
+	req = testRequest(http.MethodGet, "/api/v1/commands/nonexistent-command-9999", nil)
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusNotFound {
@@ -298,7 +307,7 @@ func TestCommandStatusEndpointContract(t *testing.T) {
 
 	// 3. Issue a real command via POST /api/v1/runs
 	body := `{"schema_version":"1.0","scenario_type":"peak_surge","seed":2201,"mode":"recommend"}`
-	req = httptest.NewRequest(http.MethodPost, "/api/v1/runs", strings.NewReader(body))
+	req = testRequest(http.MethodPost, "/api/v1/runs", strings.NewReader(body))
 	req.Header.Set("Idempotency-Key", "epic13-cmd-status-001")
 	req.Header.Set("X-Actor", "operator-cmd-test")
 	w = httptest.NewRecorder()
@@ -308,7 +317,7 @@ func TestCommandStatusEndpointContract(t *testing.T) {
 	}
 
 	// 4. Retrieve the recorded command outcome via GET /api/v1/commands/{id}
-	req = httptest.NewRequest(http.MethodGet, "/api/v1/commands/epic13-cmd-status-001", nil)
+	req = testRequest(http.MethodGet, "/api/v1/commands/epic13-cmd-status-001", nil)
 	req.Header.Set("X-Actor", "operator-cmd-test")
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
@@ -324,8 +333,9 @@ func TestCommandStatusEndpointContract(t *testing.T) {
 	}
 
 	// 5. Actor mismatch on command status returns 409
-	req = httptest.NewRequest(http.MethodGet, "/api/v1/commands/epic13-cmd-status-001", nil)
+	req = testRequest(http.MethodGet, "/api/v1/commands/epic13-cmd-status-001", nil)
 	req.Header.Set("X-Actor", "wrong-operator")
+	req.Header.Set("Cookie", sessionCookieName+"=bob-token")
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusConflict {
@@ -347,7 +357,7 @@ func TestNonAuthoritativeReplicaFencingAndStatelessBalancing(t *testing.T) {
 
 	// 1. Stateful mutating command rejected with 503
 	body := `{"schema_version":"1.0","scenario_type":"peak_surge","seed":3301,"mode":"recommend"}`
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/runs", strings.NewReader(body))
+	req := testRequest(http.MethodPost, "/api/v1/runs", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusServiceUnavailable {
@@ -358,7 +368,7 @@ func TestNonAuthoritativeReplicaFencingAndStatelessBalancing(t *testing.T) {
 	}
 
 	// 2. Stateful start rejected with 503
-	req = httptest.NewRequest(http.MethodPost, "/api/v1/scenarios/peak_surge/start", strings.NewReader(`{}`))
+	req = testRequest(http.MethodPost, "/api/v1/scenarios/peak_surge/start", strings.NewReader(`{}`))
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusServiceUnavailable {
@@ -367,7 +377,7 @@ func TestNonAuthoritativeReplicaFencingAndStatelessBalancing(t *testing.T) {
 
 	// 3. Stateless read queries balance freely across healthy replicas
 	for _, path := range []string{"/health/live", "/health/ready", "/api/v1/network", "/api/v1/junctions/C1", "/api/v1/health"} {
-		req = httptest.NewRequest(http.MethodGet, path, nil)
+		req = testRequest(http.MethodGet, path, nil)
 		w = httptest.NewRecorder()
 		h.ServeHTTP(w, req)
 		if w.Code != http.StatusOK {

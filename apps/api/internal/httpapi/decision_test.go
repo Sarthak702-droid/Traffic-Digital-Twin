@@ -311,7 +311,7 @@ func TestNoPhysicalActuationEndpoint(t *testing.T) {
 	}
 	for _, ep := range forbiddenEndpoints {
 		w := httptest.NewRecorder()
-		h.ServeHTTP(w, httptest.NewRequest("POST", ep, nil))
+		h.ServeHTTP(w, testRequest("POST", ep, nil))
 		if w.Code != http.StatusNotFound {
 			t.Fatalf("endpoint %s should not exist (expected 404, got %d)", ep, w.Code)
 		}
@@ -324,7 +324,7 @@ func TestModesAndLockEndpoints(t *testing.T) {
 
 	// Default mode check
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, httptest.NewRequest("GET", "/api/v1/mode", nil))
+	h.ServeHTTP(w, testRequest("GET", "/api/v1/mode", nil))
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200 from GET /api/v1/mode, got %d", w.Code)
 	}
@@ -334,14 +334,14 @@ func TestModesAndLockEndpoints(t *testing.T) {
 
 	// Reject invalid mode
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, httptest.NewRequest("POST", "/api/v1/mode/autonomous_flywheel", nil))
+	h.ServeHTTP(w, testRequest("POST", "/api/v1/mode/autonomous_flywheel", nil))
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400 for unknown mode, got %d", w.Code)
 	}
 
 	// Locks endpoints: empty list
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, httptest.NewRequest("GET", "/api/v1/locks", nil))
+	h.ServeHTTP(w, testRequest("GET", "/api/v1/locks", nil))
 	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"locks":[]`) {
 		t.Fatalf("expected empty locks, got %s", w.Body.String())
 	}
@@ -355,7 +355,7 @@ func TestModesAndLockEndpoints(t *testing.T) {
 	s.mu.Unlock()
 
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, httptest.NewRequest("GET", "/api/v1/locks", nil))
+	h.ServeHTTP(w, testRequest("GET", "/api/v1/locks", nil))
 	if !strings.Contains(w.Body.String(), "C6-C3-C1") {
 		t.Fatalf("expected locked movement in list, got %s", w.Body.String())
 	}
@@ -366,7 +366,7 @@ func TestModesAndLockEndpoints(t *testing.T) {
 	s.mu.Unlock()
 
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, httptest.NewRequest("GET", "/api/v1/locks", nil))
+	h.ServeHTTP(w, testRequest("GET", "/api/v1/locks", nil))
 	if strings.Contains(w.Body.String(), "C6-C3-C1") {
 		t.Fatalf("expected lock to be removed, got %s", w.Body.String())
 	}
@@ -389,8 +389,9 @@ func TestViewerRoleMutationForbidden(t *testing.T) {
 	}
 
 	for _, m := range mutations {
-		for _, role := range []string{"viewer", "observer"} {
-			req := httptest.NewRequest(m.method, m.path, strings.NewReader(m.body))
+		for _, role := range []string{"viewer"} {
+			req := testRequest(m.method, m.path, strings.NewReader(m.body))
+			req.Header.Set("Cookie", sessionCookieName+"=viewer-token")
 			req.Header.Set("X-Role", role)
 			req.Header.Set("X-Actor", "test-user")
 			w := httptest.NewRecorder()
@@ -407,7 +408,8 @@ func TestResolveDecisionValidation(t *testing.T) {
 	h := s.Handler()
 
 	// Without store (DB nil), returns 503
-	req := httptest.NewRequest("POST", "/api/v1/decisions/resolve", strings.NewReader(`{"command_id":"cmd-1","resolution":"fail"}`))
+	req := testRequest("POST", "/api/v1/decisions/resolve", strings.NewReader(`{"command_id":"cmd-1","resolution":"fail"}`))
+	req.Header.Set("Cookie", sessionCookieName+"=supervisor-token")
 	req.Header.Set("X-Role", "supervisor")
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
@@ -416,7 +418,7 @@ func TestResolveDecisionValidation(t *testing.T) {
 	}
 
 	// Unresolved query without store returns 503
-	req = httptest.NewRequest("GET", "/api/v1/decisions/unresolved", nil)
+	req = testRequest("GET", "/api/v1/decisions/unresolved", nil)
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusServiceUnavailable {

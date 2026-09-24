@@ -98,6 +98,7 @@ def ensure_local_env() -> dict:
         }
         env_data.update(
             DATABASE_URL="postgres://traffic:traffic_demo@127.0.0.1:5433/traffic?sslmode=disable",
+            GATEWAY_USERS_FILE=str(RUNTIME_DIR / "gateway-users.json"),
             API_ORIGIN="http://127.0.0.1:8081",
             UI_ORIGIN="http://127.0.0.1:3100",
         )
@@ -117,6 +118,9 @@ def ensure_local_env() -> dict:
         env_data["DATABASE_URL"] = env_data.get(
             "WRITE_DATABASE_URL", "postgres://traffic:traffic_demo@127.0.0.1:5433/traffic?sslmode=disable"
         )
+        changed = True
+    if not env_data.get("GATEWAY_USERS_FILE"):
+        env_data["GATEWAY_USERS_FILE"] = str(RUNTIME_DIR / "gateway-users.json")
         changed = True
     if env_data.get("API_ORIGIN") == "http://127.0.0.1:8080":
         env_data["API_ORIGIN"] = "http://127.0.0.1:8081"

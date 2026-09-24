@@ -35,6 +35,8 @@ type Server struct {
 	replaying          bool
 	replayCancel       context.CancelFunc
 	AllowedOrigin      string
+	AccountsPath       string
+	Sessions           sessionRepository
 	Network            config.Network
 	Store              *store.Store
 	mu                 sync.RWMutex

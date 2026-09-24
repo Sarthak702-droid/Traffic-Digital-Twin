@@ -21,6 +21,7 @@ func TestPostgresDurabilityAndAtomicAudit(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+	ctx = WithActor(ctx, "store-test-operator")
 	admin, e := pgxpool.New(ctx, dsn)
 	if e != nil {
 		t.Skip("PostgreSQL not available:", e)

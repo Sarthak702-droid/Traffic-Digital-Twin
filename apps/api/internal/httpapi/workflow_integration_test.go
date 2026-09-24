@@ -66,7 +66,7 @@ func TestStartResetFailureAndAuditedLifecycle(t *testing.T) {
 	s.ConnectSimulation(simCtx, listener.Addr().String())
 	post := func(path, body string) *httptest.ResponseRecorder {
 		w := httptest.NewRecorder()
-		s.Handler().ServeHTTP(w, httptest.NewRequest("POST", path, strings.NewReader(body)))
+		s.Handler().ServeHTTP(w, testRequest("POST", path, strings.NewReader(body)))
 		return w
 	}
 	if w := post("/api/v1/scenarios/reset", "{}"); w.Code != 409 {

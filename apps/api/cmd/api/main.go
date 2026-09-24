@@ -105,12 +105,17 @@ func run() error {
 			return e
 		}
 		app.Store = store.New(pool)
+		app.Sessions = app.Store
 		if e = app.Store.SaveConfig(ctx, network); e != nil {
 			return e
 		}
 	}
 	if app.Store == nil {
 		return fmt.Errorf("DATABASE_URL required; Go owns durable persistence")
+	}
+	app.AccountsPath = os.Getenv("GATEWAY_USERS_FILE")
+	if app.AccountsPath == "" {
+		return fmt.Errorf("GATEWAY_USERS_FILE required; provision accounts with scripts/create-gateway-user.py")
 	}
 	// PostgreSQL is the durable authority for the single active-run lease. Start
 	// it before subscribing to private compute so a standby gateway never owns

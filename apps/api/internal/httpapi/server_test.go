@@ -4,8 +4,11 @@ import (
 	"context"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -20,7 +23,25 @@ func app(t *testing.T) *Server {
 	if e != nil {
 		t.Fatal(e)
 	}
-	return &Server{Network: n}
+	path := filepath.Join(t.TempDir(), "accounts.json")
+	if err := os.WriteFile(path, []byte(testAccountJSON), 0600); err != nil {
+		t.Fatal(err)
+	}
+	return &Server{Network: n, AccountsPath: path, AllowedOrigin: "http://example.com", Sessions: &testSessionStore{entries: map[string]store.AuthSession{
+		digestToken("test-token"):       {Username: "alice", AccountVersion: 1, ExpiresAt: time.Now().Add(time.Hour)},
+		digestToken("viewer-token"):     {Username: "viewer", AccountVersion: 1, ExpiresAt: time.Now().Add(time.Hour)},
+		digestToken("bob-token"):        {Username: "bob", AccountVersion: 1, ExpiresAt: time.Now().Add(time.Hour)},
+		digestToken("supervisor-token"): {Username: "supervisor", AccountVersion: 1, ExpiresAt: time.Now().Add(time.Hour)},
+	}}}
+}
+
+func testRequest(method, target string, body io.Reader) *http.Request {
+	r := httptest.NewRequest(method, target, body)
+	r.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "test-token"})
+	if method != http.MethodGet && method != http.MethodHead {
+		r.Header.Set("Origin", "http://example.com")
+	}
+	return r
 }
 
 func TestNonAuthoritativeLeaseRejectsStateAndLiveStream(t *testing.T) {
@@ -29,7 +50,7 @@ func TestNonAuthoritativeLeaseRejectsStateAndLiveStream(t *testing.T) {
 	s.Lease = &LeaseManager{server: s, instanceID: "standby", isOwner: false}
 	for _, path := range []string{"/api/v1/state", "/ws/v1/live"} {
 		w := httptest.NewRecorder()
-		s.Handler().ServeHTTP(w, httptest.NewRequest("GET", path, nil))
+		s.Handler().ServeHTTP(w, testRequest("GET", path, nil))
 		if w.Code != http.StatusServiceUnavailable || !strings.Contains(w.Body.String(), "authoritative run owner") {
 			t.Fatalf("%s accepted by standby: %d %s", path, w.Code, w.Body.String())
 		}
@@ -39,7 +60,7 @@ func TestReadAndUnavailable(t *testing.T) {
 	h := app(t).Handler()
 	for path, code := range map[string]int{"/api/v1/network": 200, "/api/v1/junctions/C1": 200, "/api/v1/junctions/unknown": 404, "/api/v1/state": 503, "/api/v1/health": 200, "/api/v1/runs": 503, "/api/v1/recommendations/active": 503} {
 		w := httptest.NewRecorder()
-		h.ServeHTTP(w, httptest.NewRequest("GET", path, nil))
+		h.ServeHTTP(w, testRequest("GET", path, nil))
 		if w.Code != code {
 			t.Errorf("%s: %d", path, w.Code)
 		}
@@ -69,7 +90,7 @@ func TestRejectInvalidCommands(t *testing.T) {
 	h := app(t).Handler()
 	for _, body := range []string{`{}`, `null`, `{"schema_version":"1.0","scenario_type":"unknown","mode":"recommend","seed":1}`, `{"schema_version":"1.0","scenario_type":"peak_surge","mode":"live","seed":1}`, `{"schema_version":"1.0","scenario_type":"peak_surge","mode":"recommend","seed":-1}`, `{"schema_version":"1.0","scenario_type":"peak_surge","mode":"recommend","seed":1,"unsafe":true}`, `{} {}`, strings.Repeat(" ", 5000) + `{}`} {
 		w := httptest.NewRecorder()
-		h.ServeHTTP(w, httptest.NewRequest("POST", "/api/v1/runs", strings.NewReader(body)))
+		h.ServeHTTP(w, testRequest("POST", "/api/v1/runs", strings.NewReader(body)))
 		if w.Code != 400 {
 			t.Errorf("invalid command got %d", w.Code)
 		}
@@ -77,7 +98,7 @@ func TestRejectInvalidCommands(t *testing.T) {
 }
 func TestCrossOriginAndUnavailableActions(t *testing.T) {
 	h := app(t).Handler()
-	r := httptest.NewRequest("POST", "http://localhost/api/v1/runs", strings.NewReader(`{}`))
+	r := testRequest("POST", "http://localhost/api/v1/runs", strings.NewReader(`{}`))
 	r.Header.Set("Origin", "https://other.example")
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, r)
@@ -85,7 +106,7 @@ func TestCrossOriginAndUnavailableActions(t *testing.T) {
 		t.Fatal(w.Code)
 	}
 	w = httptest.NewRecorder()
-	h.ServeHTTP(w, httptest.NewRequest("POST", "/api/v1/recommendations/example/approve", nil))
+	h.ServeHTTP(w, testRequest("POST", "/api/v1/recommendations/example/approve", nil))
 	if w.Code != 503 {
 		t.Fatal(w.Code)
 	}
@@ -94,7 +115,7 @@ func TestCrossOriginAndUnavailableActions(t *testing.T) {
 func TestConfiguredFrontendOrigin(t *testing.T) {
 	s := app(t)
 	s.AllowedOrigin = "http://127.0.0.1:3100"
-	r := httptest.NewRequest("POST", "http://127.0.0.1:8081/api/v1/runs", strings.NewReader(`{}`))
+	r := testRequest("POST", "http://127.0.0.1:8081/api/v1/runs", strings.NewReader(`{}`))
 	r.Header.Set("Origin", s.AllowedOrigin)
 	w := httptest.NewRecorder()
 	s.Handler().ServeHTTP(w, r)
@@ -111,7 +132,7 @@ func TestStateCacheIsolation(t *testing.T) {
 	}
 	state.Movements[0].QueueVeh = 999
 	w := httptest.NewRecorder()
-	s.Handler().ServeHTTP(w, httptest.NewRequest("GET", "/api/v1/state", nil))
+	s.Handler().ServeHTTP(w, testRequest("GET", "/api/v1/state", nil))
 	if w.Code != 200 || strings.Contains(w.Body.String(), "999") {
 		t.Fatal("state cache aliased producer payload")
 	}
@@ -128,7 +149,7 @@ func TestWebSocketConfiguredOrigin(t *testing.T) {
 	defer server.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	c, _, e := websocket.Dial(ctx, "ws"+strings.TrimPrefix(server.URL, "http")+"/ws/v1/live", &websocket.DialOptions{HTTPHeader: http.Header{"Origin": []string{s.AllowedOrigin}}})
+	c, _, e := websocket.Dial(ctx, "ws"+strings.TrimPrefix(server.URL, "http")+"/ws/v1/live", &websocket.DialOptions{HTTPHeader: http.Header{"Origin": []string{s.AllowedOrigin}, "Cookie": []string{sessionCookieName + "=test-token"}}})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -151,14 +172,14 @@ func TestVisionEndpoint(t *testing.T) {
 
 	// 1. Unknown junction returns 404
 	w1 := httptest.NewRecorder()
-	h.ServeHTTP(w1, httptest.NewRequest("GET", "/api/v1/vision/C1", nil))
+	h.ServeHTTP(w1, testRequest("GET", "/api/v1/vision/C1", nil))
 	if w1.Code != 404 {
 		t.Fatalf("expected 404 for C1 vision, got %d", w1.Code)
 	}
 
 	// 2. C3 offline query returns 200 with available: false
 	w2 := httptest.NewRecorder()
-	h.ServeHTTP(w2, httptest.NewRequest("GET", "/api/v1/vision/c3?status=offline", nil))
+	h.ServeHTTP(w2, testRequest("GET", "/api/v1/vision/c3?status=offline", nil))
 	if w2.Code != 200 {
 		t.Fatalf("expected 200 for C3 offline vision, got %d", w2.Code)
 	}
@@ -168,7 +189,7 @@ func TestVisionEndpoint(t *testing.T) {
 
 	// 3. C3 active endpoint returns 200
 	w3 := httptest.NewRecorder()
-	h.ServeHTTP(w3, httptest.NewRequest("GET", "/api/v1/vision/C3", nil))
+	h.ServeHTTP(w3, testRequest("GET", "/api/v1/vision/C3", nil))
 	if w3.Code != 200 {
 		t.Fatalf("expected 200 for C3 vision, got %d", w3.Code)
 	}

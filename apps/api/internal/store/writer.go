@@ -24,7 +24,7 @@ func Actor(ctx context.Context) string {
 	if s, ok := ctx.Value(contextKey("actor")).(string); ok && s != "" {
 		return s
 	}
-	return "demo-operator"
+	return ""
 }
 
 func WithCommand(ctx context.Context, id string) context.Context {
@@ -42,7 +42,7 @@ func Role(ctx context.Context) string {
 	if s, ok := ctx.Value(contextKey("role")).(string); ok && s != "" {
 		return s
 	}
-	return "operator"
+	return ""
 }
 
 // Write is the persistence-module command boundary. It keeps domain handlers

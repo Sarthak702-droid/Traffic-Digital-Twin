@@ -9,6 +9,8 @@ if not env.get('COMPUTE_TOKEN'):
     env['COMPUTE_TOKEN']=secrets.token_hex(32);changed=True
 if not env.get('DATABASE_URL'):
     env['DATABASE_URL']=env.get('WRITE_DATABASE_URL','postgres://traffic:traffic_demo@127.0.0.1:5433/traffic?sslmode=disable');changed=True
+if not env.get('GATEWAY_USERS_FILE'):
+    env['GATEWAY_USERS_FILE']=str(root/'.runtime/gateway-users.json');changed=True
 if env.get('API_ORIGIN') == 'http://127.0.0.1:8080':
     env['API_ORIGIN']='http://127.0.0.1:8081';changed=True
 if not env.get('API_ADDR'):
