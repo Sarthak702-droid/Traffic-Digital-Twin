@@ -99,6 +99,33 @@ export interface BoundaryDemandState {
   offered_rate_vpm: number;
 }
 
+export interface SourceIdentity {
+  clip_sha256: string;
+  geometry_sha256: string;
+  detector_version: string;
+  tracker_version: string;
+  observation_schema_version: string;
+  source_session_id: string;
+  config_hash: string;
+  processing_mode: "online_inference" | "cached_observations" | "synthetic_replay";
+}
+
+export interface FinalizedObservation {
+  observation_id: string;
+  camera_id: string;
+  boundary_link_id: string;
+  window_start_s: number;
+  window_end_s: number;
+  available_at_source_s: number;
+  processed_at_utc: string;
+  crossings_veh: number;
+  observation_status: "valid" | "degraded" | "invalid";
+  source_identity?: SourceIdentity | null;
+  queue_visible_veh_estimate?: number;
+  queue_status: string;
+  release_start_simulation_s?: number;
+}
+
 export interface TrafficState {
   schema_version: "1.0" | "1.1";
   run_id: string;
@@ -132,6 +159,10 @@ export interface TrafficState {
   demand_source?: string;
   cells?: CellStock[];
   boundary_demand?: BoundaryDemandState[];
+  input_session_id?: string;
+  latest_finalized_window_end_source_s?: number;
+  observation_history?: FinalizedObservation[];
+  input_quality?: "" | "fresh" | "cached_valid" | "synthetic" | "missing" | "stale" | "degraded" | "out_of_order" | "duplicate" | "replay";
 }
 
 export interface Forecast {
@@ -146,12 +177,27 @@ export interface Forecast {
   spillback_eta_s?: number;
   model_version: string;
   explanation_facts: string[];
+  method?: "" | "persistence" | "ewma";
+  origin_source_s?: number;
+  input_age_s?: number;
+  input_quality?: "" | "fresh" | "cached_valid" | "synthetic" | "missing" | "stale" | "degraded" | "out_of_order" | "duplicate" | "replay";
+  horizon_status?: "" | "available" | "insufficient_history" | "missing_input" | "stale_input";
+  uncertainty_lower_veh?: number;
+  uncertainty_upper_veh?: number;
+  uncertainty_status?: "" | "calibrated" | "unavailable";
+}
+
+export interface HorizonAvailability {
+  horizon_s: number;
+  status: "available" | "insufficient_history" | "missing_input" | "stale_input";
+  reason: string;
 }
 
 export interface TimingChange {
   node_id: string;
   phase_id: string;
   green_s: number;
+  offset_s?: number;
 }
 
 export interface Recommendation {
@@ -164,6 +210,13 @@ export interface Recommendation {
   safety_status: string;
   status: string;
   explanation_facts: string[];
+  activate_not_before_simulation_s?: number;
+  input_session_id?: string;
+  snapshot_sequence?: string;
+  config_hash?: string;
+  model_version?: string;
+  metrics_version?: string;
+  forecast_origin_source_s?: number;
 }
 
 export interface OperatorAction {
@@ -261,6 +314,18 @@ export interface ComparisonResult {
   baseline_boundary_backlog_veh?: number;
   candidate_boundary_backlog_veh?: number;
   metrics_version?: string;
+  baseline_worst_service_debt_s?: number;
+  candidate_worst_service_debt_s?: number;
+  baseline_boundary_wait_veh_s?: number;
+  candidate_boundary_wait_veh_s?: number;
+  input_session_id?: string;
+  snapshot_sequence?: string;
+  config_hash?: string;
+  forecast_origin_source_s?: number;
+  demand_assumptions_hash?: string;
+  window_start_simulation_s?: number;
+  window_end_simulation_s?: number;
+  scoring_version?: string;
 }
 
 export interface EventEnvelope {
@@ -302,12 +367,16 @@ export interface PlanCommand {
   run_id: string;
   changes: TimingChange[];
   command_id: string;
+  activate_not_before_simulation_s?: number;
 }
 
 export interface PlanOutcome {
   command_id: string;
   status: string;
   message: string;
+  applied_at_simulation_s?: number;
+  input_session_id?: string;
+  snapshot_sequence?: string;
 }
 
 export interface Analysis {
@@ -317,12 +386,24 @@ export interface Analysis {
   recommendation?: Recommendation | null;
   comparison?: ComparisonResult | null;
   alternatives: Recommendation[];
+  input_session_id?: string;
+  snapshot_sequence?: string;
+  config_hash?: string;
+  model_version?: string;
+  metrics_version?: string;
+  forecast_origin_source_s?: number;
+  input_quality?: "" | "fresh" | "cached_valid" | "synthetic" | "missing" | "stale" | "degraded" | "out_of_order" | "duplicate" | "replay";
+  outcome?: "" | "recommend" | "no_action" | "cannot_evaluate";
+  outcome_reason?: string;
+  horizon_availability?: HorizonAvailability[];
 }
 
 export interface CompareCommand {
   state?: TrafficState | null;
   changes: TimingChange[];
   recommendation_id: string;
+  horizon_s?: number;
+  demand_assumptions_hash?: string;
 }
 
 export type LiveEvent =

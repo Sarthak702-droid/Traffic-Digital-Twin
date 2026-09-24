@@ -673,6 +673,123 @@
         "offered_rate_vpm"
       ]
     },
+    "SourceIdentity": {
+      "type": "object",
+      "properties": {
+        "clip_sha256": {
+          "type": "string"
+        },
+        "geometry_sha256": {
+          "type": "string"
+        },
+        "detector_version": {
+          "type": "string"
+        },
+        "tracker_version": {
+          "type": "string"
+        },
+        "observation_schema_version": {
+          "type": "string"
+        },
+        "source_session_id": {
+          "type": "string"
+        },
+        "config_hash": {
+          "type": "string"
+        },
+        "processing_mode": {
+          "enum": [
+            "online_inference",
+            "cached_observations",
+            "synthetic_replay"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "clip_sha256",
+        "geometry_sha256",
+        "detector_version",
+        "tracker_version",
+        "observation_schema_version",
+        "source_session_id",
+        "config_hash",
+        "processing_mode"
+      ]
+    },
+    "FinalizedObservation": {
+      "type": "object",
+      "properties": {
+        "observation_id": {
+          "type": "string"
+        },
+        "camera_id": {
+          "type": "string"
+        },
+        "boundary_link_id": {
+          "type": "string"
+        },
+        "window_start_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "window_end_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "available_at_source_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "processed_at_utc": {
+          "type": "string"
+        },
+        "crossings_veh": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observation_status": {
+          "enum": [
+            "valid",
+            "degraded",
+            "invalid"
+          ]
+        },
+        "source_identity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceIdentity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "queue_visible_veh_estimate": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "queue_status": {
+          "type": "string"
+        },
+        "release_start_simulation_s": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "observation_id",
+        "camera_id",
+        "boundary_link_id",
+        "window_start_s",
+        "window_end_s",
+        "available_at_source_s",
+        "processed_at_utc",
+        "crossings_veh",
+        "observation_status",
+        "queue_status"
+      ]
+    },
     "TrafficState": {
       "type": "object",
       "properties": {
@@ -820,6 +937,32 @@
           "items": {
             "$ref": "#/$defs/BoundaryDemandState"
           }
+        },
+        "input_session_id": {
+          "type": "string"
+        },
+        "latest_finalized_window_end_source_s": {
+          "type": "number"
+        },
+        "observation_history": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FinalizedObservation"
+          }
+        },
+        "input_quality": {
+          "enum": [
+            "",
+            "fresh",
+            "cached_valid",
+            "synthetic",
+            "missing",
+            "stale",
+            "degraded",
+            "out_of_order",
+            "duplicate",
+            "replay"
+          ]
         }
       },
       "additionalProperties": false,
@@ -884,6 +1027,55 @@
           "items": {
             "type": "string"
           }
+        },
+        "method": {
+          "enum": [
+            "",
+            "persistence",
+            "ewma"
+          ]
+        },
+        "origin_source_s": {
+          "type": "number"
+        },
+        "input_age_s": {
+          "type": "number"
+        },
+        "input_quality": {
+          "enum": [
+            "",
+            "fresh",
+            "cached_valid",
+            "synthetic",
+            "missing",
+            "stale",
+            "degraded",
+            "out_of_order",
+            "duplicate",
+            "replay"
+          ]
+        },
+        "horizon_status": {
+          "enum": [
+            "",
+            "available",
+            "insufficient_history",
+            "missing_input",
+            "stale_input"
+          ]
+        },
+        "uncertainty_lower_veh": {
+          "type": "number"
+        },
+        "uncertainty_upper_veh": {
+          "type": "number"
+        },
+        "uncertainty_status": {
+          "enum": [
+            "",
+            "calibrated",
+            "unavailable"
+          ]
         }
       },
       "additionalProperties": false,
@@ -900,6 +1092,32 @@
         "explanation_facts"
       ]
     },
+    "HorizonAvailability": {
+      "type": "object",
+      "properties": {
+        "horizon_s": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "enum": [
+            "available",
+            "insufficient_history",
+            "missing_input",
+            "stale_input"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "horizon_s",
+        "status",
+        "reason"
+      ]
+    },
     "TimingChange": {
       "type": "object",
       "properties": {
@@ -912,6 +1130,9 @@
         "green_s": {
           "type": "number",
           "minimum": 0
+        },
+        "offset_s": {
+          "type": "number"
         }
       },
       "additionalProperties": false,
@@ -956,6 +1177,28 @@
           "items": {
             "type": "string"
           }
+        },
+        "activate_not_before_simulation_s": {
+          "type": "number"
+        },
+        "input_session_id": {
+          "type": "string"
+        },
+        "snapshot_sequence": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "config_hash": {
+          "type": "string"
+        },
+        "model_version": {
+          "type": "string"
+        },
+        "metrics_version": {
+          "type": "string"
+        },
+        "forecast_origin_source_s": {
+          "type": "number"
         }
       },
       "additionalProperties": false,
@@ -1327,6 +1570,43 @@
         },
         "metrics_version": {
           "type": "string"
+        },
+        "baseline_worst_service_debt_s": {
+          "type": "number"
+        },
+        "candidate_worst_service_debt_s": {
+          "type": "number"
+        },
+        "baseline_boundary_wait_veh_s": {
+          "type": "number"
+        },
+        "candidate_boundary_wait_veh_s": {
+          "type": "number"
+        },
+        "input_session_id": {
+          "type": "string"
+        },
+        "snapshot_sequence": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "config_hash": {
+          "type": "string"
+        },
+        "forecast_origin_source_s": {
+          "type": "number"
+        },
+        "demand_assumptions_hash": {
+          "type": "string"
+        },
+        "window_start_simulation_s": {
+          "type": "number"
+        },
+        "window_end_simulation_s": {
+          "type": "number"
+        },
+        "scoring_version": {
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -1544,6 +1824,9 @@
         },
         "command_id": {
           "type": "string"
+        },
+        "activate_not_before_simulation_s": {
+          "type": "number"
         }
       },
       "additionalProperties": false,
@@ -1564,6 +1847,16 @@
         },
         "message": {
           "type": "string"
+        },
+        "applied_at_simulation_s": {
+          "type": "number"
+        },
+        "input_session_id": {
+          "type": "string"
+        },
+        "snapshot_sequence": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
         }
       },
       "additionalProperties": false,
@@ -1614,6 +1907,56 @@
           "items": {
             "$ref": "#/$defs/Recommendation"
           }
+        },
+        "input_session_id": {
+          "type": "string"
+        },
+        "snapshot_sequence": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "config_hash": {
+          "type": "string"
+        },
+        "model_version": {
+          "type": "string"
+        },
+        "metrics_version": {
+          "type": "string"
+        },
+        "forecast_origin_source_s": {
+          "type": "number"
+        },
+        "input_quality": {
+          "enum": [
+            "",
+            "fresh",
+            "cached_valid",
+            "synthetic",
+            "missing",
+            "stale",
+            "degraded",
+            "out_of_order",
+            "duplicate",
+            "replay"
+          ]
+        },
+        "outcome": {
+          "enum": [
+            "",
+            "recommend",
+            "no_action",
+            "cannot_evaluate"
+          ]
+        },
+        "outcome_reason": {
+          "type": "string"
+        },
+        "horizon_availability": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HorizonAvailability"
+          }
         }
       },
       "additionalProperties": false,
@@ -1644,6 +1987,13 @@
           }
         },
         "recommendation_id": {
+          "type": "string"
+        },
+        "horizon_s": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "demand_assumptions_hash": {
           "type": "string"
         }
       },

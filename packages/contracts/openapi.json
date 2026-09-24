@@ -1064,28 +1064,86 @@
       "LinkAggregate": {
         "type": "object",
         "properties": {
-          "link_id": { "type": "string" },
-          "stock_veh": { "type": "number", "minimum": 0 },
-          "queued_veh_estimate": { "type": "number", "minimum": 0 },
-          "density_veh_per_km_lane": { "type": "number", "minimum": 0 },
-          "storage_utilization_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
-          "receiving_storage_veh": { "type": "number", "minimum": 0 },
-          "inflow_vpm": { "type": "number", "minimum": 0 },
-          "outflow_vpm": { "type": "number", "minimum": 0 },
-          "flow_window_s": { "type": "number", "minimum": 0 },
-          "mean_speed_kph": { "type": "number", "minimum": 0 },
-          "speed_method": { "type": "string" },
-          "speed_status": { "type": "string" },
-          "queue_length_m_estimate": { "type": "number", "minimum": 0 },
-          "receiving_blocked": { "type": "boolean" }
+          "link_id": {
+            "type": "string"
+          },
+          "stock_veh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "queued_veh_estimate": {
+            "type": "number",
+            "minimum": 0
+          },
+          "density_veh_per_km_lane": {
+            "type": "number",
+            "minimum": 0
+          },
+          "storage_utilization_ratio": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "receiving_storage_veh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "inflow_vpm": {
+            "type": "number",
+            "minimum": 0
+          },
+          "outflow_vpm": {
+            "type": "number",
+            "minimum": 0
+          },
+          "flow_window_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "mean_speed_kph": {
+            "type": "number",
+            "minimum": 0
+          },
+          "speed_method": {
+            "type": "string"
+          },
+          "speed_status": {
+            "type": "string"
+          },
+          "queue_length_m_estimate": {
+            "type": "number",
+            "minimum": 0
+          },
+          "receiving_blocked": {
+            "type": "boolean"
+          }
         },
         "additionalProperties": false,
-        "required": ["link_id", "stock_veh", "queued_veh_estimate", "density_veh_per_km_lane", "storage_utilization_ratio", "receiving_storage_veh", "inflow_vpm", "outflow_vpm", "flow_window_s", "speed_method", "speed_status", "queue_length_m_estimate", "receiving_blocked"]
+        "required": [
+          "link_id",
+          "stock_veh",
+          "queued_veh_estimate",
+          "density_veh_per_km_lane",
+          "storage_utilization_ratio",
+          "receiving_storage_veh",
+          "inflow_vpm",
+          "outflow_vpm",
+          "flow_window_s",
+          "speed_method",
+          "speed_status",
+          "queue_length_m_estimate",
+          "receiving_blocked"
+        ]
       },
       "TrafficState": {
         "type": "object",
         "properties": {
-          "schema_version": { "enum": ["1.0", "1.1"] },
+          "schema_version": {
+            "enum": [
+              "1.0",
+              "1.1"
+            ]
+          },
           "run_id": {
             "type": "string"
           },
@@ -1165,18 +1223,92 @@
           },
           "links": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/LinkAggregate" }
+            "items": {
+              "$ref": "#/components/schemas/LinkAggregate"
+            }
           },
-          "engine_kind": { "type": "string" },
-          "model_version": { "type": "string" },
-          "metrics_version": { "type": "string" },
-          "config_hash": { "type": "string" },
-          "snapshot_sequence": { "type": "string", "pattern": "^[0-9]+$" },
-          "boundary_backlog_veh": { "type": "number", "minimum": 0 },
-          "cumulative_demand_veh": { "type": "number", "minimum": 0 },
-          "cumulative_admitted_veh": { "type": "number", "minimum": 0 },
-          "cumulative_boundary_exits_veh": { "type": "number", "minimum": 0 },
-          "control_target": { "type": "string" }
+          "engine_kind": {
+            "type": "string"
+          },
+          "model_version": {
+            "type": "string"
+          },
+          "metrics_version": {
+            "type": "string"
+          },
+          "config_hash": {
+            "type": "string"
+          },
+          "snapshot_sequence": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "boundary_backlog_veh": {
+            "type": "number"
+          },
+          "cumulative_demand_veh": {
+            "type": "number"
+          },
+          "cumulative_admitted_veh": {
+            "type": "number"
+          },
+          "cumulative_boundary_exits_veh": {
+            "type": "number"
+          },
+          "control_target": {
+            "type": "string"
+          },
+          "scheduler": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchedulerSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "demand_source": {
+            "type": "string"
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CellStock"
+            }
+          },
+          "boundary_demand": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoundaryDemandState"
+            }
+          },
+          "input_session_id": {
+            "type": "string"
+          },
+          "latest_finalized_window_end_source_s": {
+            "type": "number"
+          },
+          "observation_history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinalizedObservation"
+            }
+          },
+          "input_quality": {
+            "enum": [
+              "",
+              "fresh",
+              "cached_valid",
+              "synthetic",
+              "missing",
+              "stale",
+              "degraded",
+              "out_of_order",
+              "duplicate",
+              "replay"
+            ]
+          }
         },
         "additionalProperties": false,
         "required": [
@@ -1240,6 +1372,55 @@
             "items": {
               "type": "string"
             }
+          },
+          "method": {
+            "enum": [
+              "",
+              "persistence",
+              "ewma"
+            ]
+          },
+          "origin_source_s": {
+            "type": "number"
+          },
+          "input_age_s": {
+            "type": "number"
+          },
+          "input_quality": {
+            "enum": [
+              "",
+              "fresh",
+              "cached_valid",
+              "synthetic",
+              "missing",
+              "stale",
+              "degraded",
+              "out_of_order",
+              "duplicate",
+              "replay"
+            ]
+          },
+          "horizon_status": {
+            "enum": [
+              "",
+              "available",
+              "insufficient_history",
+              "missing_input",
+              "stale_input"
+            ]
+          },
+          "uncertainty_lower_veh": {
+            "type": "number"
+          },
+          "uncertainty_upper_veh": {
+            "type": "number"
+          },
+          "uncertainty_status": {
+            "enum": [
+              "",
+              "calibrated",
+              "unavailable"
+            ]
           }
         },
         "additionalProperties": false,
@@ -1268,6 +1449,9 @@
           "green_s": {
             "type": "number",
             "minimum": 0
+          },
+          "offset_s": {
+            "type": "number"
           }
         },
         "additionalProperties": false,
@@ -1312,6 +1496,28 @@
             "items": {
               "type": "string"
             }
+          },
+          "activate_not_before_simulation_s": {
+            "type": "number"
+          },
+          "input_session_id": {
+            "type": "string"
+          },
+          "snapshot_sequence": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "config_hash": {
+            "type": "string"
+          },
+          "model_version": {
+            "type": "string"
+          },
+          "metrics_version": {
+            "type": "string"
+          },
+          "forecast_origin_source_s": {
+            "type": "number"
           }
         },
         "additionalProperties": false,
@@ -1657,15 +1863,70 @@
             "type": "integer",
             "minimum": 0
           },
-          "baseline_queue_delay_veh_s": { "type": "number", "minimum": 0 },
-          "candidate_queue_delay_veh_s": { "type": "number", "minimum": 0 },
-          "baseline_boundary_throughput_veh": { "type": "number", "minimum": 0 },
-          "candidate_boundary_throughput_veh": { "type": "number", "minimum": 0 },
-          "baseline_congested_link_s": { "type": "number", "minimum": 0 },
-          "candidate_congested_link_s": { "type": "number", "minimum": 0 },
-          "baseline_boundary_backlog_veh": { "type": "number", "minimum": 0 },
-          "candidate_boundary_backlog_veh": { "type": "number", "minimum": 0 },
-          "metrics_version": { "type": "string" }
+          "baseline_queue_delay_veh_s": {
+            "type": "number"
+          },
+          "candidate_queue_delay_veh_s": {
+            "type": "number"
+          },
+          "baseline_boundary_throughput_veh": {
+            "type": "number"
+          },
+          "candidate_boundary_throughput_veh": {
+            "type": "number"
+          },
+          "baseline_congested_link_s": {
+            "type": "number"
+          },
+          "candidate_congested_link_s": {
+            "type": "number"
+          },
+          "baseline_boundary_backlog_veh": {
+            "type": "number"
+          },
+          "candidate_boundary_backlog_veh": {
+            "type": "number"
+          },
+          "metrics_version": {
+            "type": "string"
+          },
+          "baseline_worst_service_debt_s": {
+            "type": "number"
+          },
+          "candidate_worst_service_debt_s": {
+            "type": "number"
+          },
+          "baseline_boundary_wait_veh_s": {
+            "type": "number"
+          },
+          "candidate_boundary_wait_veh_s": {
+            "type": "number"
+          },
+          "input_session_id": {
+            "type": "string"
+          },
+          "snapshot_sequence": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "config_hash": {
+            "type": "string"
+          },
+          "forecast_origin_source_s": {
+            "type": "number"
+          },
+          "demand_assumptions_hash": {
+            "type": "string"
+          },
+          "window_start_simulation_s": {
+            "type": "number"
+          },
+          "window_end_simulation_s": {
+            "type": "number"
+          },
+          "scoring_version": {
+            "type": "string"
+          }
         },
         "additionalProperties": false,
         "required": [
@@ -2089,6 +2350,9 @@
           },
           "command_id": {
             "type": "string"
+          },
+          "activate_not_before_simulation_s": {
+            "type": "number"
           }
         },
         "additionalProperties": false,
@@ -2139,6 +2403,56 @@
             "items": {
               "$ref": "#/components/schemas/Recommendation"
             }
+          },
+          "input_session_id": {
+            "type": "string"
+          },
+          "snapshot_sequence": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "config_hash": {
+            "type": "string"
+          },
+          "model_version": {
+            "type": "string"
+          },
+          "metrics_version": {
+            "type": "string"
+          },
+          "forecast_origin_source_s": {
+            "type": "number"
+          },
+          "input_quality": {
+            "enum": [
+              "",
+              "fresh",
+              "cached_valid",
+              "synthetic",
+              "missing",
+              "stale",
+              "degraded",
+              "out_of_order",
+              "duplicate",
+              "replay"
+            ]
+          },
+          "outcome": {
+            "enum": [
+              "",
+              "recommend",
+              "no_action",
+              "cannot_evaluate"
+            ]
+          },
+          "outcome_reason": {
+            "type": "string"
+          },
+          "horizon_availability": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HorizonAvailability"
+            }
           }
         },
         "additionalProperties": false,
@@ -2170,12 +2484,192 @@
           },
           "recommendation_id": {
             "type": "string"
+          },
+          "horizon_s": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "demand_assumptions_hash": {
+            "type": "string"
           }
         },
         "additionalProperties": false,
         "required": [
           "changes",
           "recommendation_id"
+        ]
+      },
+      "SourceIdentity": {
+        "type": "object",
+        "properties": {
+          "clip_sha256": {
+            "type": "string"
+          },
+          "geometry_sha256": {
+            "type": "string"
+          },
+          "detector_version": {
+            "type": "string"
+          },
+          "tracker_version": {
+            "type": "string"
+          },
+          "observation_schema_version": {
+            "type": "string"
+          },
+          "source_session_id": {
+            "type": "string"
+          },
+          "config_hash": {
+            "type": "string"
+          },
+          "processing_mode": {
+            "enum": [
+              "online_inference",
+              "cached_observations",
+              "synthetic_replay"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "clip_sha256",
+          "geometry_sha256",
+          "detector_version",
+          "tracker_version",
+          "observation_schema_version",
+          "source_session_id",
+          "config_hash",
+          "processing_mode"
+        ]
+      },
+      "FinalizedObservation": {
+        "type": "object",
+        "properties": {
+          "observation_id": {
+            "type": "string"
+          },
+          "camera_id": {
+            "type": "string"
+          },
+          "boundary_link_id": {
+            "type": "string"
+          },
+          "window_start_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "window_end_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "available_at_source_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "processed_at_utc": {
+            "type": "string"
+          },
+          "crossings_veh": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "observation_status": {
+            "enum": [
+              "valid",
+              "degraded",
+              "invalid"
+            ]
+          },
+          "source_identity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceIdentity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "queue_visible_veh_estimate": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "queue_status": {
+            "type": "string"
+          },
+          "release_start_simulation_s": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "observation_id",
+          "camera_id",
+          "boundary_link_id",
+          "window_start_s",
+          "window_end_s",
+          "available_at_source_s",
+          "processed_at_utc",
+          "crossings_veh",
+          "observation_status",
+          "queue_status"
+        ]
+      },
+      "HorizonAvailability": {
+        "type": "object",
+        "properties": {
+          "horizon_s": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status": {
+            "enum": [
+              "available",
+              "insufficient_history",
+              "missing_input",
+              "stale_input"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "horizon_s",
+          "status",
+          "reason"
+        ]
+      },
+      "PlanOutcome": {
+        "type": "object",
+        "properties": {
+          "command_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "applied_at_simulation_s": {
+            "type": "number"
+          },
+          "input_session_id": {
+            "type": "string"
+          },
+          "snapshot_sequence": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "command_id",
+          "status",
+          "message"
         ]
       }
     }

@@ -45,6 +45,12 @@
     "cumulative_demand_veh": 0.0,
     "cumulative_admitted_veh": 0.0,
     "cumulative_boundary_exits_veh": 0.0,
-    "control_target": ""
+    "control_target": "",
+    "demand_source": "",
+    "cells": [],
+    "boundary_demand": [],
+    "input_session_id": "",
+    "observation_history": [],
+    "input_quality": ""
   }
 }
