@@ -1,0 +1,15 @@
+{
+  "schema_version": "prototype-contract-rejections-v1",
+  "cases": [
+    {"id": "valid-zero", "input": "valid finalized window with crossings_veh=0", "result": "accept as measured zero"},
+    {"id": "absent-window", "input": "no finalized record for expected source interval", "result": "missing; no zero substitution"},
+    {"id": "early-window", "input": "available_at_source_s < window_end_s", "result": "reject before history or demand"},
+    {"id": "unfinished-window", "input": "processed_at_utc absent", "result": "reject before history or demand"},
+    {"id": "overlap", "input": "same run/epoch/boundary with overlapping finalized intervals", "result": "quarantine overlap; no double count"},
+    {"id": "duplicate-conflict", "input": "same identity with changed count", "result": "reject conflict"},
+    {"id": "stale-approval", "input": "recommendation epoch or snapshot differs from current Go state", "result": "409; current plan retained and audit reason recorded"},
+    {"id": "recovered-input", "input": "new valid observation after epoch invalidation", "result": "new analysis required; old recommendation stays invalid"},
+    {"id": "no-benefit", "input": "current safe plan best or gain below threshold", "result": "no_action; no actionable recommendation"},
+    {"id": "unsuitable-input", "input": "stale/degraded input or compute timeout", "result": "cannot_evaluate; current plan retained"}
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "schema_version": "prototype-run-report-v1",
+  "report_id": "report-run-7",
+  "run_id": "run-7",
+  "created_at_utc": "2026-09-24T05:31:00Z",
+  "input_session_id": "input-epoch-7",
+  "inputs": [
+    {
+      "camera_id": "CAM-01",
+      "clip_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "geometry_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "detector_version": "itd-v1.2",
+      "tracker_version": "bytetrack-v1",
+      "observation_schema_version": "camera-observation-v1",
+      "source_session_id": "cam-01-attempt-7",
+      "last_finalized_window_end_source_s": 15.0,
+      "processing_mode": "online_inference",
+      "validation_level": "provisional_unreviewed"
+    }
+  ],
+  "versions": {
+    "config_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "model_version": "aggregate-cell-v1",
+    "metrics_version": "aggregate-metrics-v1",
+    "scoring_version": "bounded-score-v1"
+  },
+  "forecast": {
+    "origin_source_s": 15.0,
+    "method": "persistence",
+    "input_quality": "fresh",
+    "horizons": [
+      {"horizon_s": 30, "status": "available", "recorded_score_status": "available"},
+      {"horizon_s": 60, "status": "available", "recorded_score_status": "unsupported_reference"},
+      {"horizon_s": 120, "status": "available", "recorded_score_status": "unsupported_reference"},
+      {"horizon_s": 300, "status": "available", "recorded_score_status": "unsupported_reference"}
+    ],
+    "uncertainty": {"value": null, "availability": "unavailable_no_calibration"}
+  },
+  "analysis_outcome": "no_action",
+  "alternatives": [],
+  "comparisons": [],
+  "operator_decisions": [],
+  "applied_outcome": null,
+  "failures": [],
+  "resources": {
+    "fresh_inference_fps": {"value": null, "availability": "not_measured"},
+    "recommendation_latency_s": {"value": null, "availability": "not_measured"},
+    "peak_cpu_percent": {"value": null, "availability": "not_measured"},
+    "peak_ram_bytes": {"value": null, "availability": "not_measured"}
+  }
+}

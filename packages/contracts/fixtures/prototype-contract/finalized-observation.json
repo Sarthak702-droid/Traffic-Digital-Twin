@@ -1,0 +1,32 @@
+{
+  "schema_version": "camera-observation-v1",
+  "observation_id": "obs-session-7-cam-01-10-15",
+  "camera_id": "CAM-01",
+  "boundary_link_id": "C2-C1",
+  "direction_id": "approaching",
+  "window_start_s": 10.0,
+  "window_end_s": 15.0,
+  "available_at_source_s": 15.0,
+  "processed_at_utc": "2026-09-24T05:30:02Z",
+  "crossings_veh": 0,
+  "counts_by_class": {"car": 0, "pedestrain": 0},
+  "flow_vpm": 0.0,
+  "queue_visible_veh_estimate": null,
+  "queue_status": "unavailable",
+  "speed_kph": null,
+  "speed_status": "uncalibrated",
+  "observation_status": "valid",
+  "validation_level": "provisional_unreviewed",
+  "media_source": "recorded_video",
+  "processing_mode": "online_inference",
+  "source_identity": {
+    "clip_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "geometry_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "detector_version": "itd-v1.2",
+    "tracker_version": "bytetrack-v1",
+    "observation_schema_version": "camera-observation-v1",
+    "source_session_id": "cam-01-attempt-7",
+    "config_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "processing_mode": "online_inference"
+  }
+}

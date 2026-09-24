@@ -1,0 +1,66 @@
+{
+  "run_id": "run-7",
+  "simulation_time_s": 24.0,
+  "input_session_id": "input-epoch-7",
+  "snapshot_sequence": "24",
+  "config_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "model_version": "aggregate-cell-v1",
+  "metrics_version": "aggregate-metrics-v1",
+  "forecast_origin_source_s": 15.0,
+  "input_quality": "fresh",
+  "outcome": "no_action",
+  "outcome_reason": "safe_current_plan_best",
+  "forecasts": [
+    {
+      "id": "forecast-7-30",
+      "run_id": "run-7",
+      "movement_id": "C2-C1",
+      "horizon_s": 30,
+      "queue_veh": 2.0,
+      "occupancy_ratio": 0.2,
+      "arrivals_veh": 3.0,
+      "risk": "low",
+      "model_version": "aggregate-cell-v1",
+      "explanation_facts": [],
+      "method": "persistence",
+      "origin_source_s": 15.0,
+      "input_age_s": 0.5,
+      "input_quality": "fresh",
+      "horizon_status": "available",
+      "uncertainty_status": "unavailable"
+    },
+    {
+      "id": "forecast-7-60", "run_id": "run-7", "movement_id": "C2-C1",
+      "horizon_s": 60, "queue_veh": 2.0, "occupancy_ratio": 0.2,
+      "arrivals_veh": 6.0, "risk": "low", "model_version": "aggregate-cell-v1",
+      "explanation_facts": [], "method": "persistence", "origin_source_s": 15.0,
+      "input_age_s": 0.5, "input_quality": "fresh", "horizon_status": "available",
+      "uncertainty_status": "unavailable"
+    },
+    {
+      "id": "forecast-7-120", "run_id": "run-7", "movement_id": "C2-C1",
+      "horizon_s": 120, "queue_veh": 2.0, "occupancy_ratio": 0.2,
+      "arrivals_veh": 12.0, "risk": "low", "model_version": "aggregate-cell-v1",
+      "explanation_facts": [], "method": "persistence", "origin_source_s": 15.0,
+      "input_age_s": 0.5, "input_quality": "fresh", "horizon_status": "available",
+      "uncertainty_status": "unavailable"
+    },
+    {
+      "id": "forecast-7-300", "run_id": "run-7", "movement_id": "C2-C1",
+      "horizon_s": 300, "queue_veh": 2.0, "occupancy_ratio": 0.2,
+      "arrivals_veh": 30.0, "risk": "low", "model_version": "aggregate-cell-v1",
+      "explanation_facts": [], "method": "persistence", "origin_source_s": 15.0,
+      "input_age_s": 0.5, "input_quality": "fresh", "horizon_status": "available",
+      "uncertainty_status": "unavailable"
+    }
+  ],
+  "horizon_availability": [
+    {"horizon_s": 30, "status": "available", "reason": ""},
+    {"horizon_s": 60, "status": "available", "reason": ""},
+    {"horizon_s": 120, "status": "available", "reason": ""},
+    {"horizon_s": 300, "status": "available", "reason": ""}
+  ],
+  "recommendation": null,
+  "alternatives": [],
+  "comparison": null
+}
