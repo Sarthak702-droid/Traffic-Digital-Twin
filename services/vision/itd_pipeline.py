@@ -62,7 +62,7 @@ class CameraObservationRecord:
     speed_kph: Optional[float] = None
     speed_status: str = "uncalibrated"
     observation_status: str = "valid"
-    validation_level: str = "agent_reviewed"
+    validation_level: str = "provisional_unreviewed"
     media_source: str = "recorded_video"
     processing_mode: str = "online_inference"
     geometry_hash: str = ""
@@ -133,7 +133,7 @@ class ITDVideoAnalyticsSession:
         self.geometry = geometry or {}
         
         self.model_hash = self._compute_file_hash(self.model_path) if self.model_path.exists() else "unknown"
-        self.geometry_hash = hashlib.sha256(json.dumps(self.geometry, sort_keys=True).encode()).hexdigest()[:16]
+        self.geometry_hash = hashlib.sha256(json.dumps(self.geometry, sort_keys=True).encode()).hexdigest()
 
     @staticmethod
     def _compute_file_hash(p: Path) -> str:
@@ -141,7 +141,7 @@ class ITDVideoAnalyticsSession:
         with open(p, "rb") as f:
             while chunk := f.read(4096 * 1024):
                 h.update(chunk)
-        return h.hexdigest()[:16]
+        return h.hexdigest()
 
     def process_stream(
         self,
@@ -203,6 +203,41 @@ class ITDVideoAnalyticsSession:
             if max_duration_s and source_time_s >= max_duration_s:
                 break
 
+            while source_time_s >= current_bin_start + self.bin_duration_s:
+                window_end = current_bin_start + self.bin_duration_s
+                avg_q = int(round(sum(queue_samples) / max(1, len(queue_samples)))) if queue_samples else 0
+                flow_vpm = (current_bin_crossings * 60.0) / self.bin_duration_s
+
+                obs = CameraObservationRecord(
+                    observation_id=f"{self.camera_id}-win-{int(current_bin_start):04d}",
+                    camera_id=self.camera_id,
+                    clip_id=clip_id,
+                    session_id=self.session_id,
+                    direction_id=self.geometry.get("primary_direction", "approaching"),
+                    window_start_s=round(current_bin_start, 2),
+                    window_end_s=round(window_end, 2),
+                    available_at_source_s=round(source_time_s, 2),
+                    crossings_veh=current_bin_crossings,
+                    counts_by_class=dict(current_bin_classes),
+                    flow_vpm=round(flow_vpm, 2),
+                    queue_visible_veh_estimate=avg_q,
+                    queue_status="estimated_visible_region" if queue_pts is not None else "unavailable",
+                    speed_kph=None,
+                    speed_status="uncalibrated",
+                    observation_status="valid",
+                    validation_level="provisional_unreviewed",
+                    media_source="recorded_video",
+                    processing_mode="online_inference",
+                    geometry_hash=self.geometry_hash,
+                    model_hash=self.model_hash
+                )
+                yield obs
+
+                current_bin_start = window_end
+                current_bin_crossings = 0
+                current_bin_classes = {v: 0 for v in ITD_CANONICAL_CLASSES.values()}
+                queue_samples = []
+
             if frame_idx % frame_step == 0:
                 small_frame = cv2.resize(frame, (infer_w, infer_h))
                 results = model.track(
@@ -259,41 +294,6 @@ class ITDVideoAnalyticsSession:
 
                 queue_samples.append(active_queued)
 
-            if source_time_s >= current_bin_start + self.bin_duration_s:
-                window_end = current_bin_start + self.bin_duration_s
-                avg_q = int(round(sum(queue_samples) / max(1, len(queue_samples)))) if queue_samples else 0
-                flow_vpm = (current_bin_crossings * 60.0) / self.bin_duration_s
-
-                obs = CameraObservationRecord(
-                    observation_id=f"{self.camera_id}-win-{int(current_bin_start):04d}",
-                    camera_id=self.camera_id,
-                    clip_id=clip_id,
-                    session_id=self.session_id,
-                    direction_id=self.geometry.get("primary_direction", "approaching"),
-                    window_start_s=round(current_bin_start, 2),
-                    window_end_s=round(window_end, 2),
-                    available_at_source_s=round(window_end, 2),
-                    crossings_veh=current_bin_crossings,
-                    counts_by_class=dict(current_bin_classes),
-                    flow_vpm=round(flow_vpm, 2),
-                    queue_visible_veh_estimate=avg_q,
-                    queue_status="estimated_visible_region" if queue_pts is not None else "unavailable",
-                    speed_kph=None,
-                    speed_status="uncalibrated",
-                    observation_status="valid",
-                    validation_level="agent_reviewed",
-                    media_source="recorded_video",
-                    processing_mode="online_inference",
-                    geometry_hash=self.geometry_hash,
-                    model_hash=self.model_hash
-                )
-                yield obs
-
-                current_bin_start = window_end
-                current_bin_crossings = 0
-                current_bin_classes = {v: 0 for v in ITD_CANONICAL_CLASSES.values()}
-                queue_samples = []
-
             frame_idx += 1
 
         cap.release()
@@ -311,7 +311,7 @@ class ITDVideoAnalyticsSession:
                 direction_id=self.geometry.get("primary_direction", "approaching"),
                 window_start_s=round(current_bin_start, 2),
                 window_end_s=round(window_end, 2),
-                available_at_source_s=round(window_end, 2),
+                available_at_source_s=round(frame_idx / fps, 2),
                 crossings_veh=current_bin_crossings,
                 counts_by_class=dict(current_bin_classes),
                 flow_vpm=round(flow_vpm, 2),
@@ -320,7 +320,7 @@ class ITDVideoAnalyticsSession:
                 speed_kph=None,
                 speed_status="uncalibrated",
                 observation_status="valid",
-                validation_level="agent_reviewed",
+                validation_level="provisional_unreviewed",
                 media_source="recorded_video",
                 processing_mode="online_inference",
                 geometry_hash=self.geometry_hash,

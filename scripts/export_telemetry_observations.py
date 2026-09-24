@@ -51,7 +51,7 @@ def build_windows(camera_id: str, clip: dict) -> list[dict]:
             "speed_kph": None,
             "speed_status": "uncalibrated",
             "observation_status": "valid",
-            "validation_level": "agent_reviewed",
+            "validation_level": "provisional_unreviewed",
             "media_source": "recorded_video",
             "processing_mode": "cached_observations",
             "derivation": "itd_v1.2_cached_frame_telemetry",
