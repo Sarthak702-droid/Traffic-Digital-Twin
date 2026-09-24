@@ -44,6 +44,7 @@ type Phase struct {
 	AllRed     float64  `json:"all_red_s"`
 }
 type Scenario struct {
+	IncidentNode    string   `json:"incident_node_id"`
 	Duration        float64  `json:"demand_duration_s"`
 	BaseRate        float64  `json:"base_rate_vps"`
 	FeederRate      float64  `json:"feeder_rate_vps"`
@@ -70,17 +71,18 @@ type FlowModel struct {
 	MetricsVersion       string  `json:"metrics_version"`
 }
 type Network struct {
-	Version   string            `json:"schema_version"`
-	ID        string            `json:"id"`
-	Name      string            `json:"name"`
-	Units     map[string]string `json:"units"`
-	FlowModel FlowModel         `json:"flow_model"`
-	Nodes     []Node            `json:"nodes"`
-	Links     []Link            `json:"links"`
-	Movements []Movement        `json:"movements"`
-	Phases    []Phase           `json:"phases"`
-	Conflicts [][2]string       `json:"conflicts"`
-	Scenarios []Scenario        `json:"scenarios"`
+	CameraBoundaryLinks map[string]string `json:"camera_boundary_links"`
+	Version             string            `json:"schema_version"`
+	ID                  string            `json:"id"`
+	Name                string            `json:"name"`
+	Units               map[string]string `json:"units"`
+	FlowModel           FlowModel         `json:"flow_model"`
+	Nodes               []Node            `json:"nodes"`
+	Links               []Link            `json:"links"`
+	Movements           []Movement        `json:"movements"`
+	Phases              []Phase           `json:"phases"`
+	Conflicts           [][2]string       `json:"conflicts"`
+	Scenarios           []Scenario        `json:"scenarios"`
 }
 
 func Load(path string) (Network, error) {
@@ -131,6 +133,22 @@ func (n Network) Validate() error {
 			return fail("unstable aggregate flow step")
 		}
 		edges[edge] = true
+	}
+	boundaryInputs := map[string]bool{}
+	for _, link := range n.Links {
+		if nodes[link.From].Kind == "boundary" {
+			boundaryInputs[link.ID] = true
+		}
+	}
+	assigned := map[string]bool{}
+	for camera, link := range n.CameraBoundaryLinks {
+		if camera == "" || !boundaryInputs[link] || assigned[link] {
+			return fail("camera boundary assignment")
+		}
+		assigned[link] = true
+	}
+	if len(assigned) != len(boundaryInputs) {
+		return fail("each boundary input requires one camera")
 	}
 	moves := map[string]Movement{}
 	ratios := map[string]float64{}
@@ -192,6 +210,9 @@ func (n Network) Validate() error {
 	expected := map[string]bool{"peak_surge": false, "incident_c3": false, "ambulance_corridor": false}
 	seeds := map[int64]bool{}
 	for _, s := range n.Scenarios {
+		if s.ID == "incident_c3" && nodes[s.IncidentNode].Kind != "controlled" {
+			return fail("incident node")
+		}
 		seen, ok := expected[s.ID]
 		if !ok || seen || s.Seed <= 0 || s.Seed > 4294967295 || seeds[s.Seed] || len(s.Route) < 2 || !finite(s.Capacity) || s.Capacity < 0 || s.Capacity > 1 {
 			return fail("scenario id/seed/route/capacity")

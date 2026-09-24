@@ -1,10 +1,23 @@
 """Configuration and plan invariants shared by simulation and intelligence."""
 import math
+import json
+from pathlib import Path
 
 
 def validate_config(config):
     nodes = {n['id']: n for n in config['nodes']}
     links = {l['id']: l for l in config['links']}
+    cameras = json.loads((Path(__file__).resolve().parents[2] / 'packages/camera-config/cameras.json').read_text())['cameras']
+    mapping = config.get('camera_boundary_links')
+    boundary_inputs = {link_id for link_id, link in links.items() if nodes[link['from_node']]['kind'] == 'boundary'}
+    if not isinstance(mapping, dict) or set(mapping.values()) != boundary_inputs or len(set(mapping.values())) != len(mapping):
+        raise ValueError('Every external boundary input requires exactly one camera assignment')
+    for camera_id, link_id in mapping.items():
+        camera = cameras.get(camera_id)
+        if not camera or camera['network_role'] != 'external_boundary_input' or not camera['injects_boundary_mass']:
+            raise ValueError('Internal or unknown camera cannot inject boundary mass')
+        if camera.get('boundary_link_id') != link_id:
+            raise ValueError('Camera and network boundary assignments disagree')
     moves = {m['id']: m for m in config['movements']}
     phases = {p['id']: p for p in config['phases']}
     if len(nodes) != len(config['nodes']) or len(moves) != len(config['movements']) or len(phases) != len(config['phases']):
@@ -55,6 +68,11 @@ def validate_config(config):
     if covered != moves.keys():
         raise ValueError('Unserved movement')
     for scenario in config['scenarios']:
+        if scenario['id'] == 'incident_c3' and (scenario.get('incident_node_id') not in nodes or nodes[scenario['incident_node_id']]['kind'] != 'controlled'):
+            raise ValueError('Incident must name a controlled node')
+        route = scenario['route_node_ids']
+        if len(route) < 2 or any(not any(link['from_node'] == a and link['to_node'] == b for link in links.values()) for a, b in zip(route, route[1:])):
+            raise ValueError('Disconnected scenario route')
         for key in ('demand_duration_s','base_rate_vps','feeder_rate_vps','surge_rate_vps','surge_start_s','surge_end_s','incident_start_s','incident_end_s','emergency_depart_s','recovery_cycles'):
             if not math.isfinite(scenario[key]) or scenario[key]<0:
                 raise ValueError('Invalid scenario timing or demand')

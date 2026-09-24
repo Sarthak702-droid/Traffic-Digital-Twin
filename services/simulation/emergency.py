@@ -3,7 +3,7 @@
 def route_free_flow_eta(route, links):
     elapsed, values = 0.0, [0.0]
     for start, end in zip(route, route[1:]):
-        link = links[f"{start}-{end}"]
+        link = next(link for link in links.values() if link['from_node'] == start and link['to_node'] == end)
         elapsed += link["length_m"] / (link["free_flow_speed_kph"] / 3.6)
         values.append(elapsed)
     return values

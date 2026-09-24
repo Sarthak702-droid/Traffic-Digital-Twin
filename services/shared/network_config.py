@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -12,7 +13,7 @@ DEFAULT_CONFIG = ROOT / "packages/scenario-config/c1-c6.json"
 
 
 def load_config(path=None):
-    config = json.loads(Path(path or DEFAULT_CONFIG).read_text())
+    config = json.loads(Path(path or os.environ.get('NETWORK_CONFIG') or DEFAULT_CONFIG).read_text())
     from services.simulation.safety import validate_config
     validate_config(config)
     return config

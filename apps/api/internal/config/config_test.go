@@ -44,3 +44,35 @@ func TestNetworkValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestThreeJunctionConfigurationAndAssignments(t *testing.T) {
+	n, err := Load("../../../../packages/scenario-config/three-controlled-junctions.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	controlled := 0
+	for _, node := range n.Nodes {
+		if node.Kind == "controlled" {
+			controlled++
+		}
+	}
+	if controlled != 3 || len(n.CameraBoundaryLinks) != 4 {
+		t.Fatalf("unexpected topology or mapping: %d controlled, %d cameras", controlled, len(n.CameraBoundaryLinks))
+	}
+	n.CameraBoundaryLinks["CAM-02"] = n.CameraBoundaryLinks["CAM-01"]
+	if n.Validate() == nil {
+		t.Fatal("duplicate boundary injection accepted")
+	}
+	n, err = Load("../../../../packages/scenario-config/three-controlled-junctions.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range n.Scenarios {
+		if n.Scenarios[i].ID == "incident_c3" {
+			n.Scenarios[i].IncidentNode = "C6"
+		}
+	}
+	if n.Validate() == nil {
+		t.Fatal("boundary incident node accepted")
+	}
+}

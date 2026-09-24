@@ -12,14 +12,10 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+from services.shared.network_config import load_config
 
 
-CAMERA_TO_BOUNDARY_LINK = {
-    "CAM-01": "C2-C1",
-    "CAM-02": "C4-C1",
-    "CAM-03": "C5-C1",
-    "CAM-06": "C6-C3"
-}
+CAMERA_TO_BOUNDARY_LINK = load_config()["camera_boundary_links"]
 
 BOUNDARY_LINK_TO_CAMERA = {v: k for k, v in CAMERA_TO_BOUNDARY_LINK.items()}
 
@@ -46,11 +42,13 @@ class VideoProfileDemandProvider:
         self,
         observations_dir: str = ".runtime/vision/observations",
         scale: float = 1.0,
-        eof_policy: str = "drain_with_warning"  # "drain_with_warning" or "pause_at_watermark"
+        eof_policy: str = "drain_with_warning",  # "drain_with_warning" or "pause_at_watermark"
+        camera_boundary_links: Dict[str, str] | None = None,
     ):
         self.observations_dir = Path(observations_dir)
         self.scale = scale
         self.eof_policy = eof_policy
+        self.camera_boundary_links = dict(camera_boundary_links if camera_boundary_links is not None else load_config()["camera_boundary_links"])
         self.commitments_by_link: Dict[str, List[DemandBinCommitment]] = {}
         self.cumulative_profile_mass: Dict[str, float] = {}
         self.cumulative_offered_mass: Dict[str, float] = {}
@@ -58,13 +56,13 @@ class VideoProfileDemandProvider:
         self._load_observations()
 
     def _load_observations(self):
-        for link in CAMERA_TO_BOUNDARY_LINK.values():
+        for link in self.camera_boundary_links.values():
             self.commitments_by_link[link] = []
             self.cumulative_profile_mass[link] = 0.0
             self.cumulative_offered_mass[link] = 0.0
             self.last_committed_watermark_s[link] = 0.0
 
-        for cam_id, link in CAMERA_TO_BOUNDARY_LINK.items():
+        for cam_id, link in self.camera_boundary_links.items():
             pattern = str(self.observations_dir / f"{cam_id}*.jsonl")
             matched_files = glob.glob(pattern)
             if not matched_files:
@@ -158,13 +156,13 @@ class VideoProfileDemandProvider:
             "eof_policy": self.eof_policy,
             "boundary_links": {
                 link: {
-                    "assigned_camera": BOUNDARY_LINK_TO_CAMERA[link],
+                    "assigned_camera": {v: k for k, v in self.camera_boundary_links.items()}[link],
                     "total_profile_mass_veh": round(self.cumulative_profile_mass.get(link, 0.0), 3),
                     "total_offered_mass_veh": round(self.cumulative_offered_mass.get(link, 0.0), 3),
                     "pending_unreleased_mass_veh": round(self.get_pending_unreleased_mass(link), 3),
                     "last_committed_watermark_s": self.last_committed_watermark_s.get(link, 0.0),
                     "bins_count": len(self.commitments_by_link.get(link, []))
                 }
-                for link in CAMERA_TO_BOUNDARY_LINK.values()
+                for link in self.camera_boundary_links.values()
             }
         }

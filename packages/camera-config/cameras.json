@@ -3,6 +3,7 @@
   "cameras": {
     "CAM-01": {
       "camera_id": "CAM-01",
+      "boundary_link_id": "C2-C1",
       "assigned_video": "12937197_3840_2160_30fps.mp4",
       "virtual_direction": "C2 -> C1",
       "network_role": "external_boundary_input",
@@ -127,6 +128,7 @@
     },
     "CAM-02": {
       "camera_id": "CAM-02",
+      "boundary_link_id": "C4-C1",
       "assigned_video": "12954360_3840_2160_30fps.mp4",
       "virtual_direction": "C4 -> C1",
       "network_role": "external_boundary_input",
@@ -189,6 +191,7 @@
     },
     "CAM-03": {
       "camera_id": "CAM-03",
+      "boundary_link_id": "C5-C1",
       "assigned_video": "12960820_3840_2160_30fps.mp4",
       "virtual_direction": "C5 -> C1",
       "network_role": "external_boundary_input",
@@ -313,6 +316,7 @@
     },
     "CAM-06": {
       "camera_id": "CAM-06",
+      "boundary_link_id": "C6-C3",
       "assigned_video": "13105470_3840_2160_30fps.mp4",
       "virtual_direction": "C6 -> C3",
       "network_role": "external_boundary_input",

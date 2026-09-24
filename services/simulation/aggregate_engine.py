@@ -37,7 +37,7 @@ class AggregateEngine:
             self.cells={e:[0.0]*max(1,math.ceil(l['length_m']/length)) for e,l in self.links.items()}; self.backlogs={e:0.0 for e in self.index.boundary_inputs}
             self.demand_source=command.demand_source or 'seeded'
             if self.demand_source == 'video_profile':
-                self.demand=VideoProfileDemandProvider(observations_dir=os.environ.get('VIDEO_OBSERVATIONS_DIR', '.runtime/vision/observations'))
+                self.demand=VideoProfileDemandProvider(observations_dir=os.environ.get('VIDEO_OBSERVATIONS_DIR', '.runtime/vision/observations'), camera_boundary_links=self.config['camera_boundary_links'])
                 if any(not self.demand.commitments_by_link[edge] for edge in self.index.boundary_inputs):
                     raise ValueError('Video profile requires valid observations for every boundary camera')
             else:
@@ -52,14 +52,15 @@ class AggregateEngine:
         if self.command.scenario_type=='incident_c3':
             s,e=self.scenario['incident_start_s'],self.scenario['incident_end_s']; active=s<=self.tick<e; configured=self.command.incident_capacity_ratio or self.scenario['capacity_ratio']; applied=configured if active else 1.0
             cycle=max(sum(self.scheduler.plan[p['id']]+p['amber_s']+p['all_red_s'] for p in ps) for ps in self.phases.values()); remaining=max(0,self.scenario['recovery_cycles']-int(max(0,self.tick-e)//cycle)) if self.tick>=e else self.scenario['recovery_cycles']; status='scheduled' if self.tick<s else 'active' if active else 'recovering' if remaining else 'resolved'
+            incident_node=self.scenario['incident_node_id']
             for mid,m in self.moves.items():
-                if m['node_id']=='C3': ratios[mid]=applied
-            self.incident=pb.Incident(id=self.command.run_id+'-incident',run_id=self.command.run_id,node_id='C3',kind=self.command.incident_kind or 'capacity_reduction',capacity_ratio=applied,status=status,recovery_cycles=remaining)
+                if m['node_id']==incident_node: ratios[mid]=applied
+            self.incident=pb.Incident(id=self.command.run_id+'-incident',run_id=self.command.run_id,node_id=incident_node,kind=self.command.incident_kind or 'capacity_reduction',capacity_ratio=applied,status=status,recovery_cycles=remaining)
         if self.command.scenario_type=='ambulance_corridor':
             status,eta,remaining=lifecycle(self.tick,self.scenario,self.links); route=self.scenario['route_node_ids']; self.scheduler.priority={}
             if status in ('pre_clearance','priority'):
                 for a,node,b in zip(route,route[1:],route[2:]):
-                    mid=next((m['id'] for m in self.moves.values() if m['incoming_link_id']==f'{a}-{node}' and m['outgoing_link_id']==f'{node}-{b}'),None)
+                    mid=next((m['id'] for m in self.moves.values() if self.links[m['incoming_link_id']]['from_node']==a and self.links[m['incoming_link_id']]['to_node']==node and self.links[m['outgoing_link_id']]['from_node']==node and self.links[m['outgoing_link_id']]['to_node']==b),None)
                     if mid and node in self.phases: self.scheduler.priority[node]=next(p['id'] for p in self.phases[node] if mid in p['movement_ids'])
             self.scheduler.recovering=status=='recovery'; self.emergency=pb.EmergencyEvent(id=self.command.run_id+'-emergency',run_id=self.command.run_id,route_node_ids=route,status=status,eta_s=eta,recovery_cycles_remaining=remaining)
         return ratios

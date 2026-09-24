@@ -1,8 +1,13 @@
 {
   "schema_version": "1.0",
-  "id": "c1-c6-v4",
-  "camera_boundary_links": {"CAM-01": "C2-C1", "CAM-02": "C4-C1", "CAM-03": "C5-C1", "CAM-06": "C6-C3"},
-  "name": "C1\u2013C6 demonstration network",
+  "id": "three-controlled-junctions-v1",
+  "camera_boundary_links": {
+    "CAM-01": "C2-C1",
+    "CAM-02": "C4-C1",
+    "CAM-03": "C5-C1",
+    "CAM-06": "C6-C3"
+  },
+  "name": "Synthetic three-controlled-junction aggregate network",
   "units": {
     "coordinates": "canvas units",
     "length": "m",
@@ -64,6 +69,13 @@
       "kind": "boundary",
       "x": 450,
       "y": 630
+    },
+    {
+      "id": "C7",
+      "label": "Middle junction (synthetic)",
+      "kind": "controlled",
+      "x": 450,
+      "y": 345
     }
   ],
   "links": [
@@ -86,21 +98,21 @@
       "free_flow_speed_kph": 40
     },
     {
-      "id": "C1-C3",
+      "id": "C1-C7",
       "from_node": "C1",
-      "to_node": "C3",
-      "length_m": 420,
+      "to_node": "C7",
+      "length_m": 210,
       "lanes": 2,
-      "storage_capacity_veh": 112,
+      "storage_capacity_veh": 56,
       "free_flow_speed_kph": 40
     },
     {
-      "id": "C3-C1",
+      "id": "C3-C7",
       "from_node": "C3",
-      "to_node": "C1",
-      "length_m": 420,
+      "to_node": "C7",
+      "length_m": 210,
       "lanes": 2,
-      "storage_capacity_veh": 112,
+      "storage_capacity_veh": 56,
       "free_flow_speed_kph": 40
     },
     {
@@ -156,14 +168,32 @@
       "lanes": 2,
       "storage_capacity_veh": 106,
       "free_flow_speed_kph": 40
+    },
+    {
+      "id": "C7-C3",
+      "from_node": "C7",
+      "to_node": "C3",
+      "length_m": 210,
+      "lanes": 2,
+      "storage_capacity_veh": 56,
+      "free_flow_speed_kph": 40
+    },
+    {
+      "id": "C7-C1",
+      "from_node": "C7",
+      "to_node": "C1",
+      "length_m": 210,
+      "lanes": 2,
+      "storage_capacity_veh": 56,
+      "free_flow_speed_kph": 40
     }
   ],
   "movements": [
     {
-      "id": "C2-C1-C3",
+      "id": "C2-C1-C7",
       "node_id": "C1",
       "incoming_link_id": "C2-C1",
-      "outgoing_link_id": "C1-C3",
+      "outgoing_link_id": "C1-C7",
       "turning_ratio": 0.3333333333333333
     },
     {
@@ -181,23 +211,23 @@
       "turning_ratio": 0.3333333333333333
     },
     {
-      "id": "C3-C1-C2",
+      "id": "C7-C1-C2",
       "node_id": "C1",
-      "incoming_link_id": "C3-C1",
+      "incoming_link_id": "C7-C1",
       "outgoing_link_id": "C1-C2",
       "turning_ratio": 0.3333333333333333
     },
     {
-      "id": "C3-C1-C4",
+      "id": "C7-C1-C4",
       "node_id": "C1",
-      "incoming_link_id": "C3-C1",
+      "incoming_link_id": "C7-C1",
       "outgoing_link_id": "C1-C4",
       "turning_ratio": 0.3333333333333333
     },
     {
-      "id": "C3-C1-C5",
+      "id": "C7-C1-C5",
       "node_id": "C1",
-      "incoming_link_id": "C3-C1",
+      "incoming_link_id": "C7-C1",
       "outgoing_link_id": "C1-C5",
       "turning_ratio": 0.3333333333333333
     },
@@ -209,10 +239,10 @@
       "turning_ratio": 0.3333333333333333
     },
     {
-      "id": "C4-C1-C3",
+      "id": "C4-C1-C7",
       "node_id": "C1",
       "incoming_link_id": "C4-C1",
-      "outgoing_link_id": "C1-C3",
+      "outgoing_link_id": "C1-C7",
       "turning_ratio": 0.3333333333333333
     },
     {
@@ -230,10 +260,10 @@
       "turning_ratio": 0.3333333333333333
     },
     {
-      "id": "C5-C1-C3",
+      "id": "C5-C1-C7",
       "node_id": "C1",
       "incoming_link_id": "C5-C1",
-      "outgoing_link_id": "C1-C3",
+      "outgoing_link_id": "C1-C7",
       "turning_ratio": 0.3333333333333333
     },
     {
@@ -244,18 +274,32 @@
       "turning_ratio": 0.3333333333333333
     },
     {
-      "id": "C1-C3-C6",
+      "id": "C7-C3-C6",
       "node_id": "C3",
-      "incoming_link_id": "C1-C3",
+      "incoming_link_id": "C7-C3",
       "outgoing_link_id": "C3-C6",
       "turning_ratio": 1.0
     },
     {
-      "id": "C6-C3-C1",
+      "id": "C6-C3-C7",
       "node_id": "C3",
       "incoming_link_id": "C6-C3",
-      "outgoing_link_id": "C3-C1",
+      "outgoing_link_id": "C3-C7",
       "turning_ratio": 1.0
+    },
+    {
+      "id": "C3-C7-C1",
+      "node_id": "C7",
+      "incoming_link_id": "C3-C7",
+      "outgoing_link_id": "C7-C1",
+      "turning_ratio": 1
+    },
+    {
+      "id": "C1-C7-C3",
+      "node_id": "C7",
+      "incoming_link_id": "C1-C7",
+      "outgoing_link_id": "C7-C3",
+      "turning_ratio": 1
     }
   ],
   "phases": [
@@ -263,7 +307,7 @@
       "id": "C1-FROM-C2",
       "node_id": "C1",
       "movement_ids": [
-        "C2-C1-C3",
+        "C2-C1-C7",
         "C2-C1-C4",
         "C2-C1-C5"
       ],
@@ -278,9 +322,9 @@
       "id": "C1-FROM-C3",
       "node_id": "C1",
       "movement_ids": [
-        "C3-C1-C2",
-        "C3-C1-C4",
-        "C3-C1-C5"
+        "C7-C1-C2",
+        "C7-C1-C4",
+        "C7-C1-C5"
       ],
       "min_green_s": 10,
       "max_green_s": 55,
@@ -294,7 +338,7 @@
       "node_id": "C1",
       "movement_ids": [
         "C4-C1-C2",
-        "C4-C1-C3",
+        "C4-C1-C7",
         "C4-C1-C5"
       ],
       "min_green_s": 10,
@@ -309,7 +353,7 @@
       "node_id": "C1",
       "movement_ids": [
         "C5-C1-C2",
-        "C5-C1-C3",
+        "C5-C1-C7",
         "C5-C1-C4"
       ],
       "min_green_s": 10,
@@ -323,7 +367,7 @@
       "id": "C3-FROM-C1",
       "node_id": "C3",
       "movement_ids": [
-        "C1-C3-C6"
+        "C7-C3-C6"
       ],
       "min_green_s": 10,
       "max_green_s": 55,
@@ -336,7 +380,7 @@
       "id": "C3-FROM-C6",
       "node_id": "C3",
       "movement_ids": [
-        "C6-C3-C1"
+        "C6-C3-C7"
       ],
       "min_green_s": 10,
       "max_green_s": 55,
@@ -344,56 +388,82 @@
       "all_red_s": 2,
       "pedestrian_clearance_s": 2,
       "max_red_s": 200
+    },
+    {
+      "id": "C7-FROM-C3",
+      "node_id": "C7",
+      "movement_ids": [
+        "C3-C7-C1"
+      ],
+      "min_green_s": 10,
+      "max_green_s": 45,
+      "amber_s": 3,
+      "all_red_s": 2,
+      "pedestrian_clearance_s": 2,
+      "max_red_s": 120
+    },
+    {
+      "id": "C7-FROM-C1",
+      "node_id": "C7",
+      "movement_ids": [
+        "C1-C7-C3"
+      ],
+      "min_green_s": 10,
+      "max_green_s": 45,
+      "amber_s": 3,
+      "all_red_s": 2,
+      "pedestrian_clearance_s": 2,
+      "max_red_s": 120
     }
   ],
   "conflicts": [
     [
-      "C2-C1-C3",
-      "C3-C1-C2"
+      "C2-C1-C7",
+      "C7-C1-C2"
     ],
     [
-      "C2-C1-C3",
-      "C3-C1-C4"
+      "C2-C1-C7",
+      "C7-C1-C4"
     ],
     [
-      "C2-C1-C3",
-      "C3-C1-C5"
+      "C2-C1-C7",
+      "C7-C1-C5"
     ],
     [
-      "C2-C1-C3",
+      "C2-C1-C7",
       "C4-C1-C2"
     ],
     [
-      "C2-C1-C3",
-      "C4-C1-C3"
+      "C2-C1-C7",
+      "C4-C1-C7"
     ],
     [
-      "C2-C1-C3",
+      "C2-C1-C7",
       "C4-C1-C5"
     ],
     [
-      "C2-C1-C3",
+      "C2-C1-C7",
       "C5-C1-C2"
     ],
     [
-      "C2-C1-C3",
-      "C5-C1-C3"
+      "C2-C1-C7",
+      "C5-C1-C7"
     ],
     [
-      "C2-C1-C3",
+      "C2-C1-C7",
       "C5-C1-C4"
     ],
     [
       "C2-C1-C4",
-      "C3-C1-C2"
+      "C7-C1-C2"
     ],
     [
       "C2-C1-C4",
-      "C3-C1-C4"
+      "C7-C1-C4"
     ],
     [
       "C2-C1-C4",
-      "C3-C1-C5"
+      "C7-C1-C5"
     ],
     [
       "C2-C1-C4",
@@ -401,7 +471,7 @@
     ],
     [
       "C2-C1-C4",
-      "C4-C1-C3"
+      "C4-C1-C7"
     ],
     [
       "C2-C1-C4",
@@ -413,7 +483,7 @@
     ],
     [
       "C2-C1-C4",
-      "C5-C1-C3"
+      "C5-C1-C7"
     ],
     [
       "C2-C1-C4",
@@ -421,15 +491,15 @@
     ],
     [
       "C2-C1-C5",
-      "C3-C1-C2"
+      "C7-C1-C2"
     ],
     [
       "C2-C1-C5",
-      "C3-C1-C4"
+      "C7-C1-C4"
     ],
     [
       "C2-C1-C5",
-      "C3-C1-C5"
+      "C7-C1-C5"
     ],
     [
       "C2-C1-C5",
@@ -437,7 +507,7 @@
     ],
     [
       "C2-C1-C5",
-      "C4-C1-C3"
+      "C4-C1-C7"
     ],
     [
       "C2-C1-C5",
@@ -449,82 +519,82 @@
     ],
     [
       "C2-C1-C5",
-      "C5-C1-C3"
+      "C5-C1-C7"
     ],
     [
       "C2-C1-C5",
       "C5-C1-C4"
     ],
     [
-      "C3-C1-C2",
+      "C7-C1-C2",
       "C4-C1-C2"
     ],
     [
-      "C3-C1-C2",
-      "C4-C1-C3"
+      "C7-C1-C2",
+      "C4-C1-C7"
     ],
     [
-      "C3-C1-C2",
+      "C7-C1-C2",
       "C4-C1-C5"
     ],
     [
-      "C3-C1-C2",
+      "C7-C1-C2",
       "C5-C1-C2"
     ],
     [
-      "C3-C1-C2",
-      "C5-C1-C3"
+      "C7-C1-C2",
+      "C5-C1-C7"
     ],
     [
-      "C3-C1-C2",
+      "C7-C1-C2",
       "C5-C1-C4"
     ],
     [
-      "C3-C1-C4",
+      "C7-C1-C4",
       "C4-C1-C2"
     ],
     [
-      "C3-C1-C4",
-      "C4-C1-C3"
+      "C7-C1-C4",
+      "C4-C1-C7"
     ],
     [
-      "C3-C1-C4",
+      "C7-C1-C4",
       "C4-C1-C5"
     ],
     [
-      "C3-C1-C4",
+      "C7-C1-C4",
       "C5-C1-C2"
     ],
     [
-      "C3-C1-C4",
-      "C5-C1-C3"
+      "C7-C1-C4",
+      "C5-C1-C7"
     ],
     [
-      "C3-C1-C4",
+      "C7-C1-C4",
       "C5-C1-C4"
     ],
     [
-      "C3-C1-C5",
+      "C7-C1-C5",
       "C4-C1-C2"
     ],
     [
-      "C3-C1-C5",
-      "C4-C1-C3"
+      "C7-C1-C5",
+      "C4-C1-C7"
     ],
     [
-      "C3-C1-C5",
+      "C7-C1-C5",
       "C4-C1-C5"
     ],
     [
-      "C3-C1-C5",
+      "C7-C1-C5",
       "C5-C1-C2"
     ],
     [
-      "C3-C1-C5",
-      "C5-C1-C3"
+      "C7-C1-C5",
+      "C5-C1-C7"
     ],
     [
-      "C3-C1-C5",
+      "C7-C1-C5",
       "C5-C1-C4"
     ],
     [
@@ -533,22 +603,22 @@
     ],
     [
       "C4-C1-C2",
-      "C5-C1-C3"
+      "C5-C1-C7"
     ],
     [
       "C4-C1-C2",
       "C5-C1-C4"
     ],
     [
-      "C4-C1-C3",
+      "C4-C1-C7",
       "C5-C1-C2"
     ],
     [
-      "C4-C1-C3",
-      "C5-C1-C3"
+      "C4-C1-C7",
+      "C5-C1-C7"
     ],
     [
-      "C4-C1-C3",
+      "C4-C1-C7",
       "C5-C1-C4"
     ],
     [
@@ -557,15 +627,19 @@
     ],
     [
       "C4-C1-C5",
-      "C5-C1-C3"
+      "C5-C1-C7"
     ],
     [
       "C4-C1-C5",
       "C5-C1-C4"
     ],
     [
-      "C1-C3-C6",
-      "C6-C3-C1"
+      "C7-C3-C6",
+      "C6-C3-C7"
+    ],
+    [
+      "C3-C7-C1",
+      "C1-C7-C3"
     ]
   ],
   "scenarios": [
@@ -575,6 +649,7 @@
       "route_node_ids": [
         "C6",
         "C3",
+        "C7",
         "C1"
       ],
       "capacity_ratio": 1,
@@ -591,11 +666,12 @@
     },
     {
       "id": "incident_c3",
-      "incident_node_id": "C3",
+      "incident_node_id": "C7",
       "seed": 2202,
       "route_node_ids": [
         "C6",
         "C3",
+        "C7",
         "C1"
       ],
       "capacity_ratio": 0.35,
@@ -616,6 +692,7 @@
       "route_node_ids": [
         "C6",
         "C3",
+        "C7",
         "C1",
         "C2"
       ],
