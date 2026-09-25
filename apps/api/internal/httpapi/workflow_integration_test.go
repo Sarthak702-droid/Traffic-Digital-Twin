@@ -163,6 +163,9 @@ func TestStartResetFailureAndAuditedLifecycle(t *testing.T) {
 	if s.state == nil || s.state.InputSessionId != saved {
 		t.Fatalf("served state did not carry bound input epoch: %+v", s.state)
 	}
+	if fake.last.InputSessionId != saved || len(fake.last.SourceBindings) != len(selected) {
+		t.Fatalf("private simulation did not receive selected source identities: %+v", fake.last)
+	}
 	obs := httptest.NewRecorder()
 	s.Handler().ServeHTTP(obs, testRequest("GET", "/api/v1/observations?camera_id=CAM-01&run_id="+videoRun.RunID, nil))
 	if obs.Code != 200 || !strings.Contains(obs.Body.String(), `"input_session_id":"`+saved+`"`) || !strings.Contains(obs.Body.String(), `"source_session_id":"source-CAM-01"`) {

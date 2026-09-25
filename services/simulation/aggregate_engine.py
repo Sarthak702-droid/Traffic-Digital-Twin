@@ -26,22 +26,29 @@ class AggregateEngine:
     def _validate_command(self,c):
         if c.schema_version!='1.0' or not c.run_id or c.mode not in ('observe','recommend','manual') or c.seed<1 or c.scenario_type not in {s['id'] for s in self.config['scenarios']}: raise ValueError('Invalid version, scenario, seed, mode or run ID')
         if c.demand_source not in ('', 'seeded', 'video_profile'): raise ValueError('Unsupported demand source')
+        if c.demand_source == 'video_profile' and (not c.input_session_id or len(c.source_bindings) != len(self.config['camera_boundary_links'])):
+            raise ValueError('Video profile requires a bound input session and selected boundary sources')
+        if c.demand_source == 'video_profile' and any(source.config_hash != self.config_digest for source in c.source_bindings):
+            raise ValueError('Bound source configuration differs from active network')
         if c.scenario_type!='incident_c3' and (c.incident_kind or c.incident_capacity_ratio): raise ValueError('Incident controls are only valid for incident_c3')
         if c.incident_kind and c.incident_kind!='capacity_reduction': raise ValueError('Unsupported incident kind')
         if c.incident_capacity_ratio and not .1<=c.incident_capacity_ratio<=.9: raise ValueError('Incident capacity must be between 10% and 90%')
     def reset(self,command):
         self._validate_command(command)
         with self.lock:
-            self.command=pb.RunCommand(); self.command.CopyFrom(command); self.scenario=next(s for s in self.config['scenarios'] if s['id']==command.scenario_type)
-            length=float(self.config.get('flow_model',{}).get('cell_length_m',40))
-            self.cells={e:[0.0]*max(1,math.ceil(l['length_m']/length)) for e,l in self.links.items()}; self.backlogs={e:0.0 for e in self.index.boundary_inputs}
-            self.demand_source=command.demand_source or 'seeded'
-            if self.demand_source == 'video_profile':
-                self.demand=VideoProfileDemandProvider(observations_dir=os.environ.get('VIDEO_OBSERVATIONS_DIR', '.runtime/vision/observations'), camera_boundary_links=self.config['camera_boundary_links'])
-                if any(not self.demand.commitments_by_link[edge] for edge in self.index.boundary_inputs):
+            demand_source=command.demand_source or 'seeded'
+            scenario=next(s for s in self.config['scenarios'] if s['id']==command.scenario_type)
+            if demand_source == 'video_profile':
+                demand=VideoProfileDemandProvider(processed_dir=os.environ.get('VIDEO_PROCESSED_DIR', '.runtime/vision/processed'), source_bindings=command.source_bindings, camera_boundary_links=self.config['camera_boundary_links'])
+                if any(not demand.commitments_by_link[edge] for edge in self.index.boundary_inputs):
                     raise ValueError('Video profile requires valid observations for every boundary camera')
             else:
-                self.demand=BoundaryDemand(self.config,self.index,self.scenario,command.seed)
+                demand=BoundaryDemand(self.config,self.index,scenario,command.seed)
+            self.command=pb.RunCommand(); self.command.CopyFrom(command); self.scenario=scenario
+            length=float(self.config.get('flow_model',{}).get('cell_length_m',40))
+            self.cells={e:[0.0]*max(1,math.ceil(l['length_m']/length)) for e,l in self.links.items()}; self.backlogs={e:0.0 for e in self.index.boundary_inputs}
+            self.demand_source=demand_source
+            self.demand=demand
             self.scheduler=Signals(self.config); self.tick=0
             self.cumulative_demand=self.cumulative_admitted=self.cumulative_exits=0.0
             self.offered_history={e:deque(maxlen=5) for e in self.index.boundary_inputs}
@@ -84,6 +91,21 @@ class AggregateEngine:
             self.scheduler.advance(); self.signal_states=self._signal_states(); self.latest=self._snapshot(); self.version+=1; self.changed.notify_all(); return self.copy_state()
     def _snapshot(self):
         r=pb.TrafficState(schema_version='1.1',run_id=self.command.run_id,timestamp=datetime.now(timezone.utc).isoformat(),simulation_time_s=self.tick,source='synthetic',signals=self.signal_states,vehicles_in_network=round(sum(map(sum,self.cells.values()))),inserted_total=round(self.cumulative_admitted),arrived_total=round(self.cumulative_exits),teleported_total=0,scenario_type=self.command.scenario_type,seed=self.command.seed,active_plan=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=self.scheduler.plan[p['id']]) for p in self.config['phases']],engine_kind=self.engine_kind,model_version=self.model_version,metrics_version=METRICS_VERSION,config_hash=self.config_digest,snapshot_sequence=self.version+1,boundary_backlog_veh=sum(self.backlogs.values()),cumulative_demand_veh=self.cumulative_demand,cumulative_admitted_veh=self.cumulative_admitted,cumulative_boundary_exits_veh=self.cumulative_exits,control_target='virtual_only',demand_source=self.demand_source)
+        if self.demand_source == 'video_profile':
+            r.input_session_id=self.command.input_session_id
+            history=self.demand.finalized_history(self.tick)
+            r.observation_history.extend(history)
+            if history:
+                r.latest_finalized_window_end_source_s=max(row.window_end_s for row in history)
+                latest_by_link={}
+                for row in history:latest_by_link[row.boundary_link_id]=row
+                if len(latest_by_link)<len(self.index.boundary_inputs):r.input_quality='missing'
+                elif any(self.tick-row.window_end_s>2*(row.window_end_s-row.window_start_s) for row in latest_by_link.values()):r.input_quality='stale'
+                else:r.input_quality='cached_valid'
+            else:
+                r.input_quality='missing'
+        else:
+            r.input_quality='synthetic'
         r.scheduler.tick=self.scheduler.tick; r.scheduler.recovering=self.scheduler.recovering
         for edge, stocks in self.cells.items():r.cells.add(link_id=edge, stock_veh=stocks)
         for edge, backlog in self.backlogs.items():

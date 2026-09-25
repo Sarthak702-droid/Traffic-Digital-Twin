@@ -13,6 +13,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 	"traffic.local/twin/apps/api/internal/contracts"
@@ -47,9 +48,11 @@ func (s *Server) ConnectSimulation(ctx context.Context, address string) error {
 		if e == nil {
 			for _, r := range runs {
 				if r.Status == "running" {
+					var binding store.RunInputBinding
 					if r.DemandSource == "video_profile" {
 						bindingCtx, stop := context.WithTimeout(ctx, 2*time.Second)
-						binding, bindingErr := s.Store.GetRunInput(bindingCtx, r.ID)
+						var bindingErr error
+						binding, bindingErr = s.Store.GetRunInput(bindingCtx, r.ID)
 						stop()
 						if bindingErr != nil {
 							conn.Close()
@@ -60,6 +63,9 @@ func (s *Server) ConnectSimulation(ctx context.Context, address string) error {
 					s.manual = r.Mode == "manual"
 					id, _ := r.ID.Value()
 					s.sim.command = &pb.RunCommand{SchemaVersion: "1.0", RunId: id.(string), ScenarioType: r.ScenarioType, Seed: uint32(r.Seed), Mode: r.Mode, DemandSource: r.DemandSource}
+					if r.DemandSource == "video_profile" {
+						applyInputBinding(s.sim.command, binding)
+					}
 					break
 				}
 			}
@@ -424,6 +430,7 @@ func (s *Server) launch(w http.ResponseWriter, r *http.Request, command *pb.RunC
 	}
 	id, _ := run.ID.Value()
 	command.RunId = id.(string)
+	applyInputBinding(command, input)
 	frame, e := s.sim.client.Reset(ctx, command)
 	if e != nil {
 		slog.Error("Simulator reset failed", "error", e)
@@ -477,4 +484,25 @@ func (s *Server) launch(w http.ResponseWriter, r *http.Request, command *pb.RunC
 		Seed           uint32 `json:"seed"`
 		Status         string `json:"status"`
 	}{command.RunId, input.InputSessionID, command.ScenarioType, command.Seed, "running"})
+}
+
+func applyInputBinding(command *pb.RunCommand, input store.RunInputBinding) {
+	command.InputSessionId = input.InputSessionID
+	command.SourceBindings = nil
+	cameras := make([]string, 0, len(input.SourceSessions))
+	for camera := range input.SourceSessions {
+		cameras = append(cameras, camera)
+	}
+	sort.Strings(cameras)
+	for _, camera := range cameras {
+		identity := input.SourceIdentities[camera]
+		command.SourceBindings = append(command.SourceBindings, &pb.BoundSource{
+			CameraId: camera, SourceSessionId: input.SourceSessions[camera],
+			ClipSha256: identity.ClipSHA256, GeometrySha256: identity.GeometrySHA256,
+			ModelSha256: identity.ModelSHA256, ConfigHash: identity.ConfigHash,
+			ObservationsSha256: identity.ObservationsSHA256,
+			DetectorVersion:    identity.DetectorVersion, TrackerVersion: identity.TrackerVersion,
+			ObservationSchemaVersion: identity.ObservationSchemaVersion,
+		})
+	}
 }

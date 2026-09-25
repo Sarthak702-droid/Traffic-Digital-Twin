@@ -6,7 +6,7 @@ from services.shared.network_config import NetworkIndex, load_config
 from services.simulation.flow_kernel import step_cells
 from services.simulation.metrics import METRICS_VERSION, link_metrics
 from services.simulation.safety import Signals, default_plan, validate_plan
-from services.intelligence.forecast_demand import FORECAST_VERSION, boundary_rates
+from services.intelligence.forecast_demand import FORECAST_VERSION, boundary_forecast_rates
 
 MODEL='aggregate-predictor-v1'
 
@@ -41,7 +41,7 @@ class Model:
             cells[edge]=values
         return cells
     def rollout(self,state,plan,horizon=300):
-        validate_plan(self.config,plan); cells=self._initial_cells(state); scheduler=self._scheduler(state,plan); rates=boundary_rates(state,self.index); saved_backlogs={item.link_id:item.backlog_veh for item in state.boundary_demand}; backlogs={e:saved_backlogs.get(e,0.0) for e in self.index.boundary_inputs}
+        validate_plan(self.config,plan); cells=self._initial_cells(state); scheduler=self._scheduler(state,plan); rates,_=boundary_forecast_rates(state,self.index); saved_backlogs={item.link_id:item.backlog_veh for item in state.boundary_demand}; backlogs={e:saved_backlogs.get(e,0.0) for e in self.index.boundary_inputs}
         snapshots={}; arrivals={m:0.0 for m in self.moves}; eta={m:None for m in self.moves}; peak=queue_delay=congested=throughput=0.0
         capacity={m:1.0 for m in self.moves}
         if state.HasField('incident') and state.incident.status=='active':

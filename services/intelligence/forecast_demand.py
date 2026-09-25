@@ -8,12 +8,80 @@ Zero future bin leakage.
 
 from __future__ import annotations
 import math
+from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
 
 FORECAST_VERSION = "recent-flow-v1"
 HORIZONS_S = [30, 60, 120, 300]
+
+
+def boundary_forecast_rates(state, index, max_bins: int = 60):
+    """Return causal boundary rates in veh/s from the run's finalized source epoch.
+
+    The forecaster is rebuilt from each immutable state snapshot so another run
+    or source session cannot carry smoothing state into this analysis.
+    """
+    if state.demand_source != 'video_profile':
+        return boundary_rates(state, index), {link: 'current_offered' for link in index.boundary_inputs}
+    if not state.run_id or not state.input_session_id or state.input_quality not in ('fresh', 'cached_valid'):
+        raise ValueError('Video demand input is missing or unsuitable')
+    if not state.HasField('latest_finalized_window_end_source_s'):
+        raise ValueError('Finalized source watermark is missing')
+    watermark = state.latest_finalized_window_end_source_s
+    if not math.isfinite(watermark) or watermark < 0:
+        raise ValueError('Finalized source watermark is invalid')
+    grouped = {link: [] for link in index.boundary_inputs}
+    sessions = {}
+    previous = {}
+    ids = set()
+    try:
+        snapshot_wall = datetime.fromisoformat(state.timestamp.replace('Z', '+00:00'))
+    except ValueError as exc:
+        raise ValueError('Snapshot timestamp is invalid') from exc
+    for row in state.observation_history:
+        link = row.boundary_link_id
+        if link not in grouped:
+            raise ValueError('Observation is not a configured boundary input')
+        source = row.source_identity
+        if not source.source_session_id or source.config_hash != state.config_hash:
+            raise ValueError('Observation source session or configuration is invalid')
+        if link in sessions and sessions[link] != source.source_session_id:
+            raise ValueError('Mixed source session history is invalid')
+        sessions[link] = source.source_session_id
+        if (row.observation_id in ids or row.window_start_s < previous.get(link, -1) or
+            row.window_end_s <= row.window_start_s or row.available_at_source_s < row.window_end_s or
+            not all(math.isfinite(v) and v >= 0 for v in (row.window_start_s,row.window_end_s,row.available_at_source_s))):
+            raise ValueError('Duplicate or out-of-order finalized history')
+        ids.add(row.observation_id)
+        previous[link] = row.window_end_s
+        if row.available_at_source_s > watermark:
+            continue
+        try:
+            completed = datetime.fromisoformat(row.processed_at_utc.replace('Z', '+00:00'))
+        except ValueError as exc:
+            raise ValueError('Processing completion is invalid') from exc
+        if completed.tzinfo is None or completed > snapshot_wall:
+            raise ValueError('Processing completion is after analysis origin')
+        if row.observation_status != 'valid':
+            raise ValueError('Degraded or invalid finalized history')
+        grouped[link].append(row)
+    forecaster = CausalForecaster()
+    rates, methods = {}, {}
+    for link, rows in grouped.items():
+        if not rows:
+            raise ValueError(f'Finalized history missing for boundary {link}')
+        last = rows[-1]
+        current_source_s = max(watermark, state.simulation_time_s)
+        if current_source_s - last.window_end_s > 2*(last.window_end_s-last.window_start_s):
+            raise ValueError(f'Finalized history stale for boundary {link}')
+        for row in rows[-max_bins:]:
+            forecaster.update(link, 60.0*row.crossings_veh/(row.window_end_s-row.window_start_s))
+        result = forecaster.forecast_link(link)
+        rates[link] = result.active_forecast[30]/60.0
+        methods[link] = result.active_method
+    return rates, methods
 
 
 def boundary_rates(state, index):
