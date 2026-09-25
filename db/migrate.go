@@ -28,6 +28,9 @@ var demandSource string
 //go:embed migrations/007_auth_sessions.sql
 var authSessions string
 
+//go:embed migrations/008_run_input_binding.sql
+var runInputBinding string
+
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	tx, e := pool.Begin(ctx)
 	if e != nil {
@@ -103,6 +106,14 @@ func applyControl(ctx context.Context, tx pgx.Tx) error {
 	}
 	if !done {
 		if _, err := tx.Exec(ctx, authSessions); err != nil {
+			return err
+		}
+	}
+	if err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=8)").Scan(&done); err != nil {
+		return err
+	}
+	if !done {
+		if _, err := tx.Exec(ctx, runInputBinding); err != nil {
 			return err
 		}
 	}

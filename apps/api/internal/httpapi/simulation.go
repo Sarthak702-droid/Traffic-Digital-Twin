@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 	"traffic.local/twin/apps/api/internal/contracts"
+	"traffic.local/twin/apps/api/internal/store"
 	pb "traffic.local/twin/packages/contracts/gen/go"
 )
 
@@ -46,6 +47,16 @@ func (s *Server) ConnectSimulation(ctx context.Context, address string) error {
 		if e == nil {
 			for _, r := range runs {
 				if r.Status == "running" {
+					if r.DemandSource == "video_profile" {
+						bindingCtx, stop := context.WithTimeout(ctx, 2*time.Second)
+						binding, bindingErr := s.Store.GetRunInput(bindingCtx, r.ID)
+						stop()
+						if bindingErr != nil {
+							conn.Close()
+							return bindingErr
+						}
+						s.activeInputSessionID = binding.InputSessionID
+					}
 					s.manual = r.Mode == "manual"
 					id, _ := r.ID.Value()
 					s.sim.command = &pb.RunCommand{SchemaVersion: "1.0", RunId: id.(string), ScenarioType: r.ScenarioType, Seed: uint32(r.Seed), Mode: r.Mode, DemandSource: r.DemandSource}
@@ -96,6 +107,7 @@ func (s *Server) ConnectSimulation(ctx context.Context, address string) error {
 					// authoritative or fan it out. Standby gateways keep their gRPC
 					// connection but discard frames until they acquire the lease.
 					if accept && s.requireLeaseSilent() {
+						frame = s.withBoundInputSession(frame)
 						if err := contracts.ValidateState(frame); err != nil {
 							e = err
 							break
@@ -172,6 +184,7 @@ func (s *Server) reconcileRecoveredSimulation(ctx context.Context) error {
 		s.sim.command = nil
 		s.state = nil
 		s.analysis = nil
+		s.activeInputSessionID = ""
 		s.manual = false
 		s.sim.fault = "No simulator state received"
 	}
@@ -191,11 +204,15 @@ func (s *Server) acceptFrame(frame *pb.TrafficState) error {
 	if s.state != nil && s.state.RunId == frame.RunId && s.state.SimulationTimeS > frame.SimulationTimeS {
 		return nil
 	}
+	if frame.InputSessionId != "" && frame.InputSessionId != s.activeInputSessionID {
+		return fmt.Errorf("simulator state carries a different input epoch")
+	}
 	s.state = proto.Clone(frame).(*pb.TrafficState)
+	s.state.InputSessionId = s.activeInputSessionID
 	s.sim.received = time.Now()
 	s.sim.fault = ""
 	for channel := range s.sim.subscribers {
-		copy := proto.Clone(frame).(*pb.TrafficState)
+		copy := proto.Clone(s.state).(*pb.TrafficState)
 		select {
 		case channel <- copy:
 		default:
@@ -210,6 +227,17 @@ func (s *Server) acceptFrame(frame *pb.TrafficState) error {
 		}
 	}
 	return nil
+}
+
+func (s *Server) withBoundInputSession(frame *pb.TrafficState) *pb.TrafficState {
+	s.mu.RLock()
+	epoch := s.activeInputSessionID
+	s.mu.RUnlock()
+	copy := proto.Clone(frame).(*pb.TrafficState)
+	if copy.InputSessionId == "" {
+		copy.InputSessionId = epoch
+	}
+	return copy
 }
 func (s *Server) simulationHealth() (string, string) {
 	s.mu.RLock()
@@ -243,11 +271,12 @@ func (s *Server) startScenario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Version      string `json:"schema_version"`
-		Seed         uint32 `json:"seed"`
-		Mode         string `json:"mode"`
-		DemandSource string `json:"demand_source"`
-		Incident     *struct {
+		Version        string            `json:"schema_version"`
+		Seed           uint32            `json:"seed"`
+		Mode           string            `json:"mode"`
+		DemandSource   string            `json:"demand_source"`
+		SourceSessions map[string]string `json:"source_sessions,omitempty"`
+		Incident       *struct {
 			Kind          string  `json:"kind"`
 			CapacityRatio float64 `json:"capacity_ratio"`
 		} `json:"incident,omitempty"`
@@ -280,8 +309,16 @@ func (s *Server) startScenario(w http.ResponseWriter, r *http.Request) {
 		problem(w, 400, "demand_source must be seeded or video_profile")
 		return
 	}
-	if body.DemandSource == "video_profile" && !videoProfileReady() {
-		problem(w, 409, "Video profile is unavailable; four boundary observation files are required")
+	input := store.RunInputBinding{}
+	if body.DemandSource == "video_profile" {
+		var err error
+		input, err = s.resolveInputBinding(body.SourceSessions)
+		if err != nil {
+			problem(w, 409, err.Error())
+			return
+		}
+	} else if len(body.SourceSessions) > 0 {
+		problem(w, 400, "Source sessions require video_profile demand")
 		return
 	}
 	// Emergency priority is a virtual schedule, never an override of the
@@ -328,7 +365,7 @@ func (s *Server) startScenario(w http.ResponseWriter, r *http.Request) {
 	}
 	s.sim.commands.Lock()
 	defer s.sim.commands.Unlock()
-	s.launch(w, r, command, reason)
+	s.launch(w, r, command, reason, input)
 }
 func (s *Server) resetScenario(w http.ResponseWriter, r *http.Request) {
 	if s.sim == nil {
@@ -350,13 +387,37 @@ func (s *Server) resetScenario(w http.ResponseWriter, r *http.Request) {
 		problem(w, 409, "Start a scenario before resetting")
 		return
 	}
-	s.launch(w, r, command, "Reset to identical seed and initial aggregate-flow conditions")
+	input := store.RunInputBinding{}
+	if command.DemandSource == "video_profile" {
+		var id pgtype.UUID
+		if err := id.Scan(command.RunId); err != nil {
+			problem(w, 409, "Active run identity is invalid")
+			return
+		}
+		bound, err := s.Store.GetRunInput(r.Context(), id)
+		if err != nil {
+			problem(w, 409, "Active source binding is unavailable")
+			return
+		}
+		input, err = s.resolveInputBinding(bound.SourceSessions)
+		if err != nil {
+			problem(w, 409, err.Error())
+			return
+		}
+		for camera, identity := range bound.SourceIdentities {
+			if input.SourceIdentities[camera] != identity {
+				problem(w, 409, "Source identity changed; start a new run with explicit source selection")
+				return
+			}
+		}
+	}
+	s.launch(w, r, command, "Reset to identical seed and initial aggregate-flow conditions", input)
 }
-func (s *Server) launch(w http.ResponseWriter, r *http.Request, command *pb.RunCommand, reason string) {
+func (s *Server) launch(w http.ResponseWriter, r *http.Request, command *pb.RunCommand, reason string, input store.RunInputBinding) {
 	ctx, cancel := context.WithTimeout(r.Context(), 4500*time.Millisecond)
 	defer cancel()
 	dbMode := command.Mode
-	run, e := s.Store.CreateRunWithDemand(ctx, s.Network.ID, command.ScenarioType, dbMode, int64(command.Seed), command.DemandSource)
+	run, e := s.Store.CreateRunWithInput(ctx, s.Network.ID, command.ScenarioType, dbMode, int64(command.Seed), command.DemandSource, input)
 	if e != nil {
 		problem(w, 503, "Could not prepare run; simulation unchanged")
 		return
@@ -398,6 +459,7 @@ func (s *Server) launch(w http.ResponseWriter, r *http.Request, command *pb.RunC
 		s.replayCancel = nil
 	}
 	s.replaying = false
+	s.activeInputSessionID = input.InputSessionID
 	s.manual = command.Mode == "manual"
 	s.analysis = nil
 	s.analysisFault = ""
@@ -409,9 +471,10 @@ func (s *Server) launch(w http.ResponseWriter, r *http.Request, command *pb.RunC
 		return
 	}
 	send(w, 200, struct {
-		RunID    string `json:"run_id"`
-		Scenario string `json:"scenario_type"`
-		Seed     uint32 `json:"seed"`
-		Status   string `json:"status"`
-	}{command.RunId, command.ScenarioType, command.Seed, "running"})
+		RunID          string `json:"run_id"`
+		InputSessionID string `json:"input_session_id,omitempty"`
+		Scenario       string `json:"scenario_type"`
+		Seed           uint32 `json:"seed"`
+		Status         string `json:"status"`
+	}{command.RunId, input.InputSessionID, command.ScenarioType, command.Seed, "running"})
 }

@@ -25,24 +25,26 @@ import (
 )
 
 type Server struct {
-	ComputeToken       string
-	intelligence       pb.IntelligenceClient
-	analysis           *pb.Analysis
-	analysisFault      string
-	recommendationTime float64
-	manual             bool
-	locks              map[string]bool
-	replaying          bool
-	replayCancel       context.CancelFunc
-	AllowedOrigin      string
-	AccountsPath       string
-	Sessions           sessionRepository
-	Network            config.Network
-	Store              *store.Store
-	mu                 sync.RWMutex
-	state              *pb.TrafficState
-	sim                *simulationLink
-	Lease              *LeaseManager
+	ComputeToken         string
+	intelligence         pb.IntelligenceClient
+	analysis             *pb.Analysis
+	analysisFault        string
+	recommendationTime   float64
+	manual               bool
+	locks                map[string]bool
+	replaying            bool
+	replayCancel         context.CancelFunc
+	AllowedOrigin        string
+	AccountsPath         string
+	VisionProcessedDir   string
+	activeInputSessionID string
+	Sessions             sessionRepository
+	Network              config.Network
+	Store                *store.Store
+	mu                   sync.RWMutex
+	state                *pb.TrafficState
+	sim                  *simulationLink
+	Lease                *LeaseManager
 }
 type apiError struct {
 	Code    string `json:"code"`
@@ -224,6 +226,7 @@ func (s *Server) Handler() http.Handler {
 	r.Post("/api/v1/locks/{id}", s.setLock)
 	r.Delete("/api/v1/locks/{id}", s.deleteLock)
 	r.Get("/api/v1/observations", s.getObservations)
+	r.Get("/api/v1/vision/clips", s.getProcessedClips)
 	r.Get("/api/v1/cameras", s.getCameras)
 	r.Get("/api/v1/demand-profiles", s.getDemandProfiles)
 	r.Get("/api/v1/clips/{id}/media", s.getClipMedia)
@@ -317,8 +320,8 @@ func (s *Server) health(ctx context.Context) *pb.HealthState {
 	}
 	simStatus, simMessage := s.simulationHealth()
 	visionStatus, visionMessage := "unavailable", "Recorded clips or ITD observation windows are missing"
-	if videoProfileReady() {
-		visionStatus, visionMessage = "normal", "Recorded-video ITD observations ready for four boundary inputs"
+	if s.videoProfileReady() {
+		visionStatus, visionMessage = "normal", "Validated recorded-video observations are available for configured boundary inputs"
 	}
 	s.mu.RLock()
 	intStatus, intMessage := "unavailable", "No fresh intelligence"

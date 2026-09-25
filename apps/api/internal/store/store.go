@@ -52,6 +52,13 @@ func (s *Store) CreateRun(ctx context.Context, configID, scenario, mode string, 
 	return s.CreateRunWithDemand(ctx, configID, scenario, mode, seed, "seeded")
 }
 func (s *Store) CreateRunWithDemand(ctx context.Context, configID, scenario, mode string, seed int64, demandSource string) (queries.ScenarioRun, error) {
+	return s.CreateRunWithInput(ctx, configID, scenario, mode, seed, demandSource, RunInputBinding{})
+}
+
+func (s *Store) CreateRunWithInput(ctx context.Context, configID, scenario, mode string, seed int64, demandSource string, input RunInputBinding) (queries.ScenarioRun, error) {
+	if err := input.validate(demandSource); err != nil {
+		return queries.ScenarioRun{}, err
+	}
 	tx, e := s.Pool.Begin(ctx)
 	if e != nil {
 		return queries.ScenarioRun{}, e
@@ -61,6 +68,19 @@ func (s *Store) CreateRunWithDemand(ctx context.Context, configID, scenario, mod
 	run, e := q.CreateRun(ctx, queries.CreateRunParams{ID: UUID(), ConfigID: configID, ScenarioType: scenario, Seed: seed, Mode: mode, DemandSource: demandSource})
 	if e != nil {
 		return run, e
+	}
+	if input.InputSessionID != "" {
+		sources, err := json.Marshal(input.SourceSessions)
+		if err != nil {
+			return run, err
+		}
+		identities, err := json.Marshal(input.SourceIdentities)
+		if err != nil {
+			return run, err
+		}
+		if _, err = tx.Exec(ctx, "INSERT INTO run_input_bindings(run_id,input_session_id,config_hash,source_sessions,source_identities) VALUES($1,$2,$3,$4,$5)", run.ID, input.InputSessionID, input.ConfigHash, sources, identities); err != nil {
+			return run, err
+		}
 	}
 	after, e := json.Marshal(run)
 	if e != nil {
