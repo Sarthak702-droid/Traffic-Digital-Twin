@@ -1,0 +1,24 @@
+# V02 reference-label preparation
+
+`packages/reference-samples/candidate-windows-v1.json` lists three **candidate** five-second source windows. The SHA-256 hashes were checked against the local clips and `reports/asset-manifest.json`. Single-frame previews suggested ordinary, crowded, and difficult traffic; those tags are provisional. No file here is a reviewed count, accuracy result, or authorization to redistribute media. Do not load this candidate manifest as ground truth.
+
+## Before annotation
+
+1. Record the rights holder or authorization reference for each selected clip and confirm the allowed internal review use. Keep raw media in its authorized local root, outside git and reports.
+2. Freeze the clip hash, camera geometry hash, exact half-open source window `[start_s, end_s)`, source-time method, class vocabulary and review split. A different geometry or source session requires a new label identity.
+3. Assign separate tuning and reserved clips or time periods before evaluating detector or forecast accuracy. The selection previews are not tuning labels. E01 must freeze the final split and metrics before held-out execution.
+
+## Independent label method
+
+- Give the annotator only the original clip, camera geometry and these window IDs. Hide detector overlays, predicted counts, track IDs, cached observations, and benchmark scores.
+- For each physical object whose bottom-center anchor crosses the configured counting-line segment in the declared primary direction during the half-open window, record one crossing event with source time and class. Count each object once. Record an ambiguity reason instead of guessing when occlusion, perspective or class prevents a reliable label. Keep the versioned `pedestrain` class key until C00/C01 explicitly migrates it.
+- Count visible queue only when the configured queue ROI and motion cues support it. Record the observation time, visible stopped-vehicle count and method; otherwise mark queue `unavailable` with a reason. Do not infer physical speed or total corridor queue from one camera.
+- Have a second person review the original clip independently, without detector predictions or the first count. Record both reviewer identities, timestamps, disagreements and adjudication. A label becomes `independently_reviewed` only after resolution. Detector output, including `agent_reviewed` legacy flags, never supplies reference truth.
+
+## Review record required for each window
+
+Store the clip and geometry hashes, window ID, rights reference, annotation method/version, annotator and second reviewer, count by class and total, ambiguous/excluded events, queue label or unavailability reason, review timestamps, adjudication notes and split (`tuning` or `reserved`). Keep the review record separate from detector observations and retain only aggregate labels in git after rights and privacy review. Do not add raw frames, tracking identities or media paths.
+
+## Current status
+
+All three candidate windows await rights confirmation, independent annotation and second review. The historic `reports/reference-quality-report.json` declares `agent_accepted_demo` and is not an independent reference set. The V02 card and any measurement-quality gate remain open.
