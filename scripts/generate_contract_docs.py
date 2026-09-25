@@ -17,6 +17,7 @@ additive_from={
     'PlanOutcome':4,
     'Analysis':7,
     'CompareCommand':4,
+    'RunCommand':9,
 }
 quality=('fresh','cached_valid','synthetic','missing','stale','degraded',
          'out_of_order','duplicate','replay')

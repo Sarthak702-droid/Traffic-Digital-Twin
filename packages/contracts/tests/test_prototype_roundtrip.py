@@ -39,6 +39,24 @@ def test_old_timing_change_fields_remain_compatible():
     assert pb.TimingChange.FromString(message.SerializeToString()).green_s == 25
 
 
+def test_run_command_selected_source_bindings_round_trip():
+    source = {
+        "schema_version": "1.0", "run_id": "run-7", "scenario_type": "peak_surge",
+        "seed": 7, "mode": "recommend", "demand_source": "video_profile",
+        "input_session_id": "epoch-7", "source_bindings": [{
+            "camera_id": "CAM-01", "source_session_id": "camera-attempt-1",
+            "clip_sha256": "a" * 64, "geometry_sha256": "b" * 64,
+            "model_sha256": "d" * 64, "config_hash": "c" * 64,
+            "observations_sha256": "e" * 64, "detector_version": "itd-v1.2",
+            "tracker_version": "bytetrack-v1", "observation_schema_version": "camera-observation-v1",
+        }],
+    }
+    command = json_format.ParseDict(source, pb.RunCommand())
+    restored = pb.RunCommand.FromString(command.SerializeToString())
+    assert restored.input_session_id == "epoch-7"
+    assert restored.source_bindings[0].observations_sha256 == "e" * 64
+
+
 def test_public_schema_accepts_old_network_and_new_analysis_examples():
     contracts = Path(__file__).resolve().parents[1]
     schema = json.loads((contracts / "events.schema.json").read_text())

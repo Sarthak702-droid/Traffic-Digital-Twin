@@ -343,6 +343,19 @@ export interface EventEnvelope {
   audit_appended?: AuditEvent | null;
 }
 
+export interface BoundSource {
+  camera_id: string;
+  source_session_id: string;
+  clip_sha256: string;
+  geometry_sha256: string;
+  model_sha256: string;
+  config_hash: string;
+  observations_sha256: string;
+  detector_version: string;
+  tracker_version: string;
+  observation_schema_version: string;
+}
+
 export interface RunCommand {
   schema_version: "1.0";
   scenario_type: string;
@@ -352,6 +365,8 @@ export interface RunCommand {
   incident_kind: string;
   incident_capacity_ratio: number;
   demand_source: string;
+  input_session_id?: string;
+  source_bindings?: BoundSource[];
 }
 
 export interface RunRequest {

@@ -55,6 +55,14 @@ func TestFinalizedZeroWindowPreservesSourceIdentity(t *testing.T) {
 	}
 }
 
+func TestRunCommandSelectedSourceBindingsRoundTrip(t *testing.T) {
+	command := &RunCommand{}
+	got := roundTripJSON(t, `{"schema_version":"1.0","run_id":"run-7","scenario_type":"peak_surge","seed":7,"mode":"recommend","demand_source":"video_profile","input_session_id":"epoch-7","source_bindings":[{"camera_id":"CAM-01","source_session_id":"camera-attempt-1","clip_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","geometry_sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","model_sha256":"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd","config_hash":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","observations_sha256":"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee","detector_version":"itd-v1.2","tracker_version":"bytetrack-v1","observation_schema_version":"camera-observation-v1"}]}`, command)
+	if got["input_session_id"] != "epoch-7" || len(command.SourceBindings) != 1 || command.SourceBindings[0].SourceSessionId != "camera-attempt-1" {
+		t.Fatalf("run source binding lost: %+v", got)
+	}
+}
+
 func TestAnalysisOutcomeAndHorizonAvailabilityRoundTrip(t *testing.T) {
 	got := roundTripJSON(t, `{"run_id":"run-7","input_session_id":"epoch-7","snapshot_sequence":"24","forecast_origin_source_s":15,"input_quality":"fresh","outcome":"no_action","outcome_reason":"safe_current_plan_best","horizon_availability":[{"horizon_s":30,"status":"available"},{"horizon_s":300,"status":"insufficient_history","reason":"window history too short"}]}`, &Analysis{})
 	if got["outcome"] != "no_action" || got["snapshot_sequence"] != "24" {

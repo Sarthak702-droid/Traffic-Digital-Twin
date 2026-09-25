@@ -1738,6 +1738,54 @@
         "timestamp"
       ]
     },
+    "BoundSource": {
+      "type": "object",
+      "properties": {
+        "camera_id": {
+          "type": "string"
+        },
+        "source_session_id": {
+          "type": "string"
+        },
+        "clip_sha256": {
+          "type": "string"
+        },
+        "geometry_sha256": {
+          "type": "string"
+        },
+        "model_sha256": {
+          "type": "string"
+        },
+        "config_hash": {
+          "type": "string"
+        },
+        "observations_sha256": {
+          "type": "string"
+        },
+        "detector_version": {
+          "type": "string"
+        },
+        "tracker_version": {
+          "type": "string"
+        },
+        "observation_schema_version": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "camera_id",
+        "source_session_id",
+        "clip_sha256",
+        "geometry_sha256",
+        "model_sha256",
+        "config_hash",
+        "observations_sha256",
+        "detector_version",
+        "tracker_version",
+        "observation_schema_version"
+      ]
+    },
     "RunCommand": {
       "type": "object",
       "properties": {
@@ -1765,6 +1813,15 @@
         },
         "demand_source": {
           "type": "string"
+        },
+        "input_session_id": {
+          "type": "string"
+        },
+        "source_bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BoundSource"
+          }
         }
       },
       "additionalProperties": false,
