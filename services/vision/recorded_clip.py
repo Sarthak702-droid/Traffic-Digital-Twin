@@ -77,6 +77,8 @@ class RecordedClipProcessor:
             raise ValueError('Clip is outside an authorized root')
         if not path.is_file():
             raise FileNotFoundError(f'Recorded clip is missing: {path}')
+        if self.model_path.is_dir():
+            raise ValueError('Detector checkpoint must be a regular .pt file, not an extracted directory')
         if not self.model_path.is_file():
             raise FileNotFoundError(f'Detector checkpoint is missing: {self.model_path}')
         config = json.loads(self.camera_config_path.read_text())

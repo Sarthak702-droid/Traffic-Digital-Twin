@@ -60,6 +60,16 @@ def test_unverified_checkpoint_is_rejected(tmp_path):
         real_policy.register('CAM-01', clip, 'operator rights record')
 
 
+def test_extracted_checkpoint_directory_is_rejected_clearly(tmp_path):
+    processor, clip, _, config = setup_processor(tmp_path, lambda **_: None)
+    extracted = tmp_path / 'best_xl_ITD_v1.2.pt'
+    extracted.mkdir()
+    (extracted / 'data.pkl').write_bytes(b'extracted archive member')
+    folder_policy = RecordedClipProcessor(tmp_path / 'out', config, extracted, [clip.parent])
+    with pytest.raises(ValueError, match='regular .pt file'):
+        folder_policy.register('CAM-01', clip, 'operator rights record')
+
+
 def test_processing_finalizes_identity_and_reuses_only_exact_cache(tmp_path):
     calls = []
     def factory(**kwargs):
