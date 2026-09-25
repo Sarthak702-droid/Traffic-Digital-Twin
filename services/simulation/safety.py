@@ -103,6 +103,22 @@ class SafetyViolation(ValueError):
     pass
 
 
+def activation_rejection(scheduler, cells, links, moves):
+    """Return the virtual boundary reason shared by execution and projection."""
+    if scheduler.priority or scheduler.recovering:
+        return 'Emergency protection active at activation boundary'
+    for node, phases in scheduler.nodes.items():
+        offset=scheduler.offsets[node]
+        for phase in phases:
+            if scheduler.tick-scheduler.last_served[phase['id']]+offset > phase['max_red_s']:
+                return 'Maximum red service debt would be exceeded by activation offset'
+    for move in moves.values():
+        edge=move['outgoing_link_id']
+        if links[edge]['storage_capacity_veh']-sum(cells[edge]) <= 1e-9:
+            return 'Downstream storage unavailable at activation boundary'
+    return None
+
+
 def validate_runtime_safety(config, signal_states, active_plan=None):
     """Runtime invariant validator for signal phase progression and permissions."""
     conflicts = {frozenset(pair) for pair in config.get('conflicts', [])}

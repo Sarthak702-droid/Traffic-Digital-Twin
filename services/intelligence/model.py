@@ -1,11 +1,11 @@
 """Causal aggregate forecasts and bounded signal-plan evaluation."""
-import math, uuid
+import hashlib, json, math, uuid
 from datetime import datetime, timezone
 import twin_pb2 as pb
-from services.shared.network_config import NetworkIndex, load_config
+from services.shared.network_config import NetworkIndex, ROOT, config_hash, load_config
 from services.simulation.flow_kernel import step_cells
 from services.simulation.metrics import METRICS_VERSION, link_metrics
-from services.simulation.safety import Signals, default_plan, validate_plan
+from services.simulation.safety import Signals, activation_rejection, default_plan, validate_plan
 from services.intelligence.forecast_demand import FORECAST_VERSION, boundary_forecast_rates
 
 MODEL='aggregate-predictor-v1'
@@ -15,7 +15,33 @@ class Model:
         self.config=config or load_config(); self.index=NetworkIndex.build(self.config)
         self.moves,self.links,self.phases,self.nodes=self.index.movements,self.index.links,self.index.phases,self.index.nodes
         self.serving={mid:p['id'] for p in self.phases.values() for mid in p['movement_ids']}
+        self.scoring=json.loads((ROOT/'packages/scenario-config/comparison-scoring-v1.json').read_text())
     def plan(self,state): return {c.phase_id:c.green_s for c in state.active_plan} or default_plan(self.config)
+    def _evaluation_input(self,state):
+        frozen=pb.TrafficState();frozen.CopyFrom(state)
+        if frozen.schema_version=='1.1':
+            cell_ids=[item.link_id for item in frozen.cells]
+            if len(cell_ids)!=len(set(cell_ids)) or set(cell_ids)!=set(self.links):
+                raise ValueError('Operating comparison requires a complete cell snapshot')
+            if frozen.config_hash!=config_hash(self.config):
+                raise ValueError('Operating comparison configuration differs from snapshot')
+            if {item.node_id for item in frozen.signals}!=set(self.index.phases_by_node):
+                raise ValueError('Operating comparison requires every controlled signal')
+            pending={item.phase_id:item.green_s for item in frozen.scheduler.pending_plan}
+            if pending and pending!=self.plan(frozen):
+                raise ValueError('Operating comparison has a pending virtual plan')
+        rates,methods=boundary_forecast_rates(frozen,self.index)
+        assumptions={'run_id':frozen.run_id,'input_session_id':frozen.input_session_id,'demand_source':frozen.demand_source,'input_quality':frozen.input_quality,'config_hash':frozen.config_hash,'forecast_origin_source_s':frozen.latest_finalized_window_end_source_s,'rates_vps':rates,'forecast_methods':methods}
+        digest=hashlib.sha256(json.dumps(assumptions,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+        return {'state':frozen,'cells':self._initial_cells(frozen),'backlogs':{item.link_id:item.backlog_veh for item in frozen.boundary_demand},'rates':rates,'demand_hash':digest}
+    def _score_mode(self,state):
+        if state.HasField('emergency'):
+            if state.emergency.status in ('pre_clearance','priority'):return 'emergency_priority'
+            if state.emergency.status=='recovery':return 'emergency_recovery'
+        return 'normal'
+    def score_metrics(self,metrics,mode='normal'):
+        weights=self.scoring['weights'][mode]
+        return sum(weights[key]*metrics[key] for key in weights)
     def _scheduler(self,state,plan):
         scheduler=Signals(self.config); scheduler.plan=dict(self.plan(state)); scheduler.pending=dict(scheduler.plan)
         for signal in state.signals:
@@ -41,9 +67,11 @@ class Model:
                 add=min(remaining,max(0.0,cap-values[i])); values[i]+=add;remaining-=add
             cells[edge]=values
         return cells
-    def rollout(self,state,plan,horizon=300):
-        validate_plan(self.config,plan); cells=self._initial_cells(state); scheduler=self._scheduler(state,plan); rates,_=boundary_forecast_rates(state,self.index); saved_backlogs={item.link_id:item.backlog_veh for item in state.boundary_demand}; backlogs={e:saved_backlogs.get(e,0.0) for e in self.index.boundary_inputs}
-        snapshots={}; arrivals={m:0.0 for m in self.moves}; eta={m:None for m in self.moves}; peak=queue_delay=congested=throughput=0.0
+    def rollout(self,state,plan,horizon=300,evaluation=None):
+        validate_plan(self.config,plan)
+        evaluation=evaluation or self._evaluation_input(state)
+        frozen=evaluation['state']; cells={edge:list(values) for edge,values in evaluation['cells'].items()}; scheduler=self._scheduler(frozen,plan); rates=evaluation['rates']; saved_backlogs=evaluation['backlogs']; backlogs={e:saved_backlogs.get(e,0.0) for e in self.index.boundary_inputs}
+        snapshots={}; arrivals={m:0.0 for m in self.moves}; eta={m:None for m in self.moves}; peak=queue_delay=congested=throughput=boundary_wait=worst_service_debt=0.0
         capacity={m:1.0 for m in self.moves}
         if state.HasField('incident') and state.incident.status=='active':
             for mid,m in self.moves.items():
@@ -62,11 +90,16 @@ class Model:
                 for m in self.index.movements_by_incoming.get(edge,[]):
                     queues[m['id']]=metric['queued']*m['turning_ratio']
                     if metric['utilization']>=.85 and eta[m['id']] is None:eta[m['id']]=tick
-            peak=max(peak,max(queues.values(),default=0)); queue_delay+=sum(queues.values()); congested+=congested_links; scheduler.advance()
+            peak=max(peak,max(queues.values(),default=0)); queue_delay+=sum(queues.values()); congested+=congested_links;boundary_wait+=sum(backlogs.values());scheduler.advance(lambda: activation_rejection(scheduler,cells,self.links,self.moves))
+            if scheduler.rejected_reason:
+                raise ValueError(scheduler.rejected_reason)
+            active_green={scheduler.nodes[node][entry[0]]['id'] for node,entry in scheduler.state.items() if entry[1]=='green'}
+            worst_service_debt=max(worst_service_debt,max((scheduler.tick-scheduler.last_served[pid] for pid in self.phases if pid not in active_green),default=0))
             if tick in (30,60,120,300) and tick<=horizon:snapshots[tick]=(dict(queues),dict(arrivals),dict(eta))
-        backlog=sum(backlogs.values()); change=sum(abs(plan[p]-self.plan(state)[p]) for p in plan)
-        cost=queue_delay/max(1,100*horizon)+3*congested/max(1,horizon)+2*backlog/50+.25*change/30
-        return {'snapshots':snapshots,'peak':peak,'queue_delay':queue_delay,'throughput':throughput,'congested':congested,'backlog':backlog,'delay':queue_delay/max(1,sum(arrivals.values())),'spill':congested,'stops':0.0,'cost':cost,'demand_version':FORECAST_VERSION}
+        backlog=sum(backlogs.values()); change=sum(abs(plan[p]-self.plan(frozen)[p]) for p in plan)
+        metrics={'queue_delay':queue_delay,'boundary_wait':boundary_wait,'congested':congested,'throughput':throughput,'worst_service_debt':worst_service_debt,'timing_change':change}
+        cost=self.score_metrics(metrics,self._score_mode(frozen))
+        return {'snapshots':snapshots,'peak':peak,'queue_delay':queue_delay,'throughput':throughput,'congested':congested,'backlog':backlog,'boundary_wait':boundary_wait,'worst_service_debt':worst_service_debt,'delay':queue_delay/max(1,sum(arrivals.values())),'spill':congested,'stops':0.0,'cost':cost,'demand_version':FORECAST_VERSION}
     def allocate(self,state):
         values={m.movement_id:m for m in state.movements}; current=self.plan(state); plan={}
         for node in sorted({p['node_id'] for p in self.phases.values()}):
@@ -104,13 +137,17 @@ class Model:
             try:validate_plan(self.config,candidate);candidates.append(candidate)
             except ValueError:pass
         seen=set();return [p for p in candidates if not (tuple(sorted(p.items())) in seen or seen.add(tuple(sorted(p.items()))))]
-    def comparison(self,state,changes,rec_id='',recommendation_id=None):
+    def comparison(self,state,changes,rec_id='',recommendation_id=None,evaluation=None,horizon_s=0,demand_assumptions_hash=''):
         rec_id=recommendation_id if recommendation_id is not None else rec_id; plan={c.phase_id:c.green_s for c in changes}
         if len(plan)!=len(changes) or any(c.phase_id not in self.phases or self.phases[c.phase_id]['node_id']!=c.node_id for c in changes):raise ValueError('Duplicate or unknown phase/node')
-        base=self.rollout(state,self.plan(state),120);candidate=self.rollout(state,plan,120)
-        return pb.ComparisonResult(run_id=state.run_id,recommendation_id=rec_id,baseline_max_queue_veh=base['peak'],candidate_max_queue_veh=candidate['peak'],baseline_avg_delay_s=base['delay'],candidate_avg_delay_s=candidate['delay'],initial_time_s=state.simulation_time_s,model_version=MODEL,baseline_spillback_s=base['congested'],candidate_spillback_s=candidate['congested'],horizon_s=120,seed=state.seed,baseline_queue_delay_veh_s=base['queue_delay'],candidate_queue_delay_veh_s=candidate['queue_delay'],baseline_boundary_throughput_veh=base['throughput'],candidate_boundary_throughput_veh=candidate['throughput'],baseline_congested_link_s=base['congested'],candidate_congested_link_s=candidate['congested'],baseline_boundary_backlog_veh=base['backlog'],candidate_boundary_backlog_veh=candidate['backlog'],metrics_version=METRICS_VERSION)
+        evaluation=evaluation or self._evaluation_input(state);frozen=evaluation['state'];horizon=self.scoring['window_s']
+        if horizon_s not in (0,horizon):raise ValueError('Comparison horizon differs from configured matched window')
+        if demand_assumptions_hash and demand_assumptions_hash!=evaluation['demand_hash']:
+            raise ValueError('Comparison demand assumptions differ from the captured snapshot')
+        base=self.rollout(frozen,self.plan(frozen),horizon,evaluation);candidate=self.rollout(frozen,plan,horizon,evaluation)
+        return pb.ComparisonResult(run_id=frozen.run_id,recommendation_id=rec_id,baseline_max_queue_veh=base['peak'],candidate_max_queue_veh=candidate['peak'],initial_time_s=frozen.simulation_time_s,model_version=MODEL,baseline_spillback_s=base['congested'],candidate_spillback_s=candidate['congested'],horizon_s=horizon,seed=frozen.seed,baseline_queue_delay_veh_s=base['queue_delay'],candidate_queue_delay_veh_s=candidate['queue_delay'],baseline_boundary_throughput_veh=base['throughput'],candidate_boundary_throughput_veh=candidate['throughput'],baseline_congested_link_s=base['congested'],candidate_congested_link_s=candidate['congested'],baseline_boundary_backlog_veh=base['backlog'],candidate_boundary_backlog_veh=candidate['backlog'],baseline_worst_service_debt_s=base['worst_service_debt'],candidate_worst_service_debt_s=candidate['worst_service_debt'],baseline_boundary_wait_veh_s=base['boundary_wait'],candidate_boundary_wait_veh_s=candidate['boundary_wait'],input_session_id=frozen.input_session_id,snapshot_sequence=frozen.snapshot_sequence,config_hash=frozen.config_hash,forecast_origin_source_s=frozen.latest_finalized_window_end_source_s,demand_assumptions_hash=evaluation['demand_hash'],window_start_simulation_s=frozen.simulation_time_s,window_end_simulation_s=frozen.simulation_time_s+horizon,scoring_version=self.scoring['version'],metrics_version=METRICS_VERSION)
     def analyze(self,state):
-        baseline=self.plan(state); forecast=self.rollout(state,baseline); forecasts=[]; critical=warning=False
+        evaluation=self._evaluation_input(state);state=evaluation['state'];baseline=self.plan(state); forecast=self.rollout(state,baseline,evaluation=evaluation); forecasts=[]; critical=warning=False
         for horizon,(queues,arrivals,etas) in forecast['snapshots'].items():
             for mid,q in queues.items():
                 move=self.moves[mid];edge=self.links[move['incoming_link_id']];link_q=sum(queues[x['id']] for x in self.index.movements_by_incoming.get(move['incoming_link_id'],[]));occ=min(1,link_q/edge['storage_capacity_veh']);is_critical=occ>=.9 or etas[mid] is not None;is_warning=occ>=.75;critical|=is_critical;warning|=is_warning
@@ -118,7 +155,11 @@ class Model:
                 item=pb.Forecast(id=f'{state.run_id}-{int(state.simulation_time_s)}-{mid}-{horizon}',run_id=state.run_id,movement_id=mid,horizon_s=horizon,queue_veh=q,occupancy_ratio=occ,arrivals_veh=arrivals[mid],risk='critical' if is_critical else 'warning' if is_warning else 'normal',model_version=MODEL,explanation_facts=facts)
                 if etas[mid] is not None:item.spillback_eta_s=etas[mid]
                 forecasts.append(item)
-        agda=self.allocate(state);candidates=self._generate_candidates(state,baseline,agda);scored=sorted((self.rollout(state,p,120)['cost'],i,p) for i,p in enumerate(candidates));priority='critical' if critical else 'warning' if warning else 'normal';trigger='spillback_risk' if critical else 'corridor_coordination' if warning else 'demand_balancing'; recommendations=[]
+        agda=self.allocate(state);candidates=self._generate_candidates(state,baseline,agda);scored=[]
+        for i,plan in enumerate(candidates):
+            try:scored.append((self.rollout(state,plan,self.scoring['window_s'],evaluation)['cost'],i,plan))
+            except ValueError:continue
+        scored.sort();priority='critical' if critical else 'warning' if warning else 'normal';trigger='spillback_risk' if critical else 'corridor_coordination' if warning else 'demand_balancing'; recommendations=[]
         route=next(s['route_node_ids'] for s in self.config['scenarios'] if s['id']==state.scenario_type)
         controlled=[node for node in route if self.nodes[node]['kind']=='controlled']
         if len(controlled)<2: raise ValueError('Configured route has no controlled corridor')
@@ -126,5 +167,5 @@ class Model:
         eta=corridor['length_m']/(corridor['free_flow_speed_kph']/3.6)
         for rank,(score,_,plan) in enumerate(scored[:3]):
             rid=str(uuid.uuid5(uuid.NAMESPACE_URL,f'{state.run_id}:{state.simulation_time_s}:{sorted(plan.items())}'));changes=[pb.TimingChange(node_id=self.phases[p]['node_id'],phase_id=p,green_s=g) for p,g in plan.items()];summary=' · '.join(f'{c.phase_id}: {int(c.green_s)}s' for c in changes)
-            recommendations.append(pb.Recommendation(id=rid,run_id=state.run_id,timestamp=datetime.now(timezone.utc).isoformat(),priority=priority if rank==0 else 'normal',reason=f'Best among {len(candidates)} evaluated feasible aggregate plans' if rank==0 else f'Feasible alternative #{rank}',changes=changes,safety_status='requires_fresh_validation',status='pending',explanation_facts=[f'Trigger: {trigger} ({priority.upper()} priority)',f'Upstream corridor: {corridor["id"]} modeled free-flow ETA {eta:.1f}s',f'Coordinated timing: {summary}',f'120-second PN-MPC normalized cost: {score:.3f}',f'Candidate rank #{rank+1}; not a global optimum','Human approval required; virtual signals only; aggregate-predictor-v1']))
-        result=pb.Analysis(run_id=state.run_id,simulation_time_s=state.simulation_time_s,forecasts=forecasts,recommendation=recommendations[0],alternatives=recommendations[1:]);result.comparison.CopyFrom(self.comparison(state,result.recommendation.changes,result.recommendation.id));return result
+            recommendations.append(pb.Recommendation(id=rid,run_id=state.run_id,timestamp=datetime.now(timezone.utc).isoformat(),priority=priority if rank==0 else 'normal',reason=f'Best among {len(candidates)} evaluated feasible aggregate plans' if rank==0 else f'Feasible alternative #{rank}',changes=changes,safety_status='requires_fresh_validation',status='pending',explanation_facts=[f'Trigger: {trigger} ({priority.upper()} priority)',f'Upstream corridor: {corridor["id"]} modeled free-flow ETA {eta:.1f}s',f'Coordinated timing: {summary}',f'{self.scoring["window_s"]}-second {self.scoring["version"]} weighted model points: {score:.3f}',f'Candidate rank #{rank+1}; not a global optimum','Human approval required; virtual signals only; aggregate-predictor-v1']))
+        result=pb.Analysis(run_id=state.run_id,simulation_time_s=state.simulation_time_s,forecasts=forecasts,recommendation=recommendations[0],alternatives=recommendations[1:]);result.comparison.CopyFrom(self.comparison(state,result.recommendation.changes,result.recommendation.id,evaluation=evaluation));return result

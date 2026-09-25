@@ -1,0 +1,38 @@
+{
+  "version": "comparison-scoring-v1",
+  "window_s": 120,
+  "metric_units": {
+    "queue_delay": "veh_s",
+    "boundary_wait": "veh_s",
+    "congested": "link_s",
+    "throughput": "veh",
+    "worst_service_debt": "s",
+    "timing_change": "s"
+  },
+  "weights": {
+    "normal": {
+      "queue_delay": 1.0,
+      "boundary_wait": 1.5,
+      "congested": 10.0,
+      "throughput": -5.0,
+      "worst_service_debt": 0.25,
+      "timing_change": 0.1
+    },
+    "emergency_priority": {
+      "queue_delay": 0.5,
+      "boundary_wait": 1.0,
+      "congested": 10.0,
+      "throughput": -5.0,
+      "worst_service_debt": 2.0,
+      "timing_change": 0.1
+    },
+    "emergency_recovery": {
+      "queue_delay": 1.0,
+      "boundary_wait": 1.5,
+      "congested": 10.0,
+      "throughput": -5.0,
+      "worst_service_debt": 1.0,
+      "timing_change": 0.1
+    }
+  }
+}

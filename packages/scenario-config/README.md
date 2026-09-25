@@ -5,3 +5,5 @@
 Set `NETWORK_CONFIG` to the selected JSON path for **Go, simulation, and intelligence together**. The API and both Python services validate the topology at startup. The mapping in `camera_boundary_links` must cover every external boundary link once and agree with `packages/camera-config/cameras.json`. Internal-link cameras cannot inject external mass.
 
 Lengths, capacities, turning ratios, and vehicle-space assumptions in both files are synthetic. Independent recorded clips do not constitute measured corridor flow.
+
+`comparison-scoring-v1.json` declares the 120-second virtual comparison window, metric units, and points per unit for normal, emergency-priority, and emergency-recovery scoring. Queue delay and boundary wait are vehicle-seconds; congested exposure is link-seconds; exits are vehicles; worst service debt and total timing adjustment are seconds. Exit weight is negative because more exits reduce cost. These initial weights are declared engineering assumptions, not calibrated field benefit. S03 owns candidate count, concurrency, and minimum-benefit thresholds; E01/E02 must freeze and evaluate the weights before any measured benefit claim.

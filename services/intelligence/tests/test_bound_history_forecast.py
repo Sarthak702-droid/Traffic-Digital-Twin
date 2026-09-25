@@ -1,10 +1,12 @@
 from datetime import datetime, timezone
+import math
 
 import pytest
 import twin_pb2 as pb
 
 from services.intelligence.forecast_demand import boundary_forecast_rates
 from services.intelligence.model import Model
+from services.shared.network_config import config_hash
 from services.simulation.safety import default_plan
 
 
@@ -12,7 +14,12 @@ def video_state(model, counts, session="source-one", run="run-one"):
     state = pb.TrafficState(schema_version="1.1", run_id=run, source="synthetic",
                             timestamp=datetime.now(timezone.utc).isoformat(),
                             scenario_type="peak_surge", seed=11, demand_source="video_profile",
-                            input_session_id="epoch-one", input_quality="cached_valid", config_hash="c"*64)
+                            input_session_id="epoch-one", input_quality="cached_valid", config_hash=config_hash(model.config))
+    for node, phases in model.index.phases_by_node.items():
+        state.signals.add(node_id=node,phase_id=phases[0]['id'],indication='green',remaining_s=30)
+    cell_length=model.config['flow_model']['cell_length_m']
+    for link in model.links:
+        state.cells.add(link_id=link,stock_veh=[0.0]*max(1,math.ceil(model.links[link]['length_m']/cell_length)))
     for mid in model.moves:
         state.movements.add(movement_id=mid, current_phase_id=model.serving[mid])
     for link in model.index.boundary_inputs:
@@ -25,7 +32,7 @@ def video_state(model, counts, session="source-one", run="run-one"):
                 source_identity=pb.SourceIdentity(clip_sha256="a"*64, geometry_sha256="b"*64,
                     detector_version="itd-v1.2", tracker_version="bytetrack-v1",
                     observation_schema_version="camera-observation-v1", source_session_id=session,
-                    config_hash="c"*64, processing_mode="online_inference"))
+                    config_hash=state.config_hash, processing_mode="online_inference"))
     state.latest_finalized_window_end_source_s=len(counts)*5
     return state
 

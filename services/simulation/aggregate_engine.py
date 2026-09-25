@@ -11,7 +11,7 @@ from services.simulation.emergency import lifecycle
 from services.simulation.flow_kernel import step_cells
 from services.simulation.metrics import METRICS_VERSION, link_metrics
 from services.simulation.receipts import Receipts
-from services.simulation.safety import Signals, validate_plan, validate_runtime_safety
+from services.simulation.safety import Signals, activation_rejection, validate_plan, validate_runtime_safety
 
 class AggregateEngine:
     engine_kind, model_version = "aggregate_ctm", "aggregate-v1"
@@ -101,18 +101,7 @@ class AggregateEngine:
                     self.pending_command=None
             self.signal_states=self._signal_states(); self.latest=self._snapshot(); self.version+=1; self.changed.notify_all(); return self.copy_state()
     def _activation_guard(self):
-        if self.scheduler.priority or self.scheduler.recovering:
-            return 'Emergency protection active at activation boundary'
-        for node, phases in self.scheduler.nodes.items():
-            offset=self.scheduler.offsets[node]
-            for phase in phases:
-                if self.scheduler.tick-self.scheduler.last_served[phase['id']]+offset > phase['max_red_s']:
-                    return 'Maximum red service debt would be exceeded by activation offset'
-        for move in self.moves.values():
-            edge=move['outgoing_link_id']
-            if self.links[edge]['storage_capacity_veh']-sum(self.cells[edge]) <= 1e-9:
-                return 'Downstream storage unavailable at activation boundary'
-        return None
+        return activation_rejection(self.scheduler,self.cells,self.links,self.moves)
     def _snapshot(self):
         r=pb.TrafficState(schema_version='1.1',run_id=self.command.run_id,timestamp=datetime.now(timezone.utc).isoformat(),simulation_time_s=self.tick,source='synthetic',signals=self.signal_states,vehicles_in_network=round(sum(map(sum,self.cells.values()))),inserted_total=round(self.cumulative_admitted),arrived_total=round(self.cumulative_exits),teleported_total=0,scenario_type=self.command.scenario_type,seed=self.command.seed,active_plan=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=self.scheduler.plan[p['id']]) for p in self.config['phases']],engine_kind=self.engine_kind,model_version=self.model_version,metrics_version=METRICS_VERSION,config_hash=self.config_digest,snapshot_sequence=self.version+1,boundary_backlog_veh=sum(self.backlogs.values()),cumulative_demand_veh=self.cumulative_demand,cumulative_admitted_veh=self.cumulative_admitted,cumulative_boundary_exits_veh=self.cumulative_exits,control_target='virtual_only',demand_source=self.demand_source)
         if self.demand_source == 'video_profile':
