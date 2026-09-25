@@ -44,6 +44,9 @@ class AggregateEngine:
                     raise ValueError('Video profile requires valid observations for every boundary camera')
             else:
                 demand=BoundaryDemand(self.config,self.index,scenario,command.seed)
+            if getattr(self,'pending_command',None) is not None:
+                self.receipts.finish(self.pending_command,'rejected',message='Run reset before safe activation')
+                self.pending_command=None
             self.command=pb.RunCommand(); self.command.CopyFrom(command); self.scenario=scenario
             length=float(self.config.get('flow_model',{}).get('cell_length_m',40))
             self.cells={e:[0.0]*max(1,math.ceil(l['length_m']/length)) for e,l in self.links.items()}; self.backlogs={e:0.0 for e in self.index.boundary_inputs}
@@ -88,7 +91,28 @@ class AggregateEngine:
             for mid,m in self.moves.items():
                 stock=sum(self.cells[m['incoming_link_id']])*m['turning_ratio']; departed=out.junction_flows.get(mid,0.0); self.movement_departures[mid]+=departed
                 added=(out.admitted.get(m['incoming_link_id'],0.0)+sum(v for source,v in out.junction_flows.items() if self.moves[source]['outgoing_link_id']==m['incoming_link_id']))*m['turning_ratio']; self.movement_arrivals[mid]+=added; self.waiting_age[mid]=self.waiting_age[mid]+1 if stock>.1 and departed<.01 else 0.0
-            self.scheduler.advance(); self.signal_states=self._signal_states(); self.latest=self._snapshot(); self.version+=1; self.changed.notify_all(); return self.copy_state()
+            self.scheduler.advance(self._activation_guard)
+            if getattr(self,'pending_command',None) is not None:
+                if self.scheduler.applied_at is not None:
+                    self.receipts.finish(self.pending_command,'applied',self.scheduler.applied_at)
+                    self.pending_command=None
+                elif self.scheduler.rejected_reason:
+                    self.receipts.finish(self.pending_command,'rejected',message=self.scheduler.rejected_reason)
+                    self.pending_command=None
+            self.signal_states=self._signal_states(); self.latest=self._snapshot(); self.version+=1; self.changed.notify_all(); return self.copy_state()
+    def _activation_guard(self):
+        if self.scheduler.priority or self.scheduler.recovering:
+            return 'Emergency protection active at activation boundary'
+        for node, phases in self.scheduler.nodes.items():
+            offset=self.scheduler.offsets[node]
+            for phase in phases:
+                if self.scheduler.tick-self.scheduler.last_served[phase['id']]+offset > phase['max_red_s']:
+                    return 'Maximum red service debt would be exceeded by activation offset'
+        for move in self.moves.values():
+            edge=move['outgoing_link_id']
+            if self.links[edge]['storage_capacity_veh']-sum(self.cells[edge]) <= 1e-9:
+                return 'Downstream storage unavailable at activation boundary'
+        return None
     def _snapshot(self):
         r=pb.TrafficState(schema_version='1.1',run_id=self.command.run_id,timestamp=datetime.now(timezone.utc).isoformat(),simulation_time_s=self.tick,source='synthetic',signals=self.signal_states,vehicles_in_network=round(sum(map(sum,self.cells.values()))),inserted_total=round(self.cumulative_admitted),arrived_total=round(self.cumulative_exits),teleported_total=0,scenario_type=self.command.scenario_type,seed=self.command.seed,active_plan=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=self.scheduler.plan[p['id']]) for p in self.config['phases']],engine_kind=self.engine_kind,model_version=self.model_version,metrics_version=METRICS_VERSION,config_hash=self.config_digest,snapshot_sequence=self.version+1,boundary_backlog_veh=sum(self.backlogs.values()),cumulative_demand_veh=self.cumulative_demand,cumulative_admitted_veh=self.cumulative_admitted,cumulative_boundary_exits_veh=self.cumulative_exits,control_target='virtual_only',demand_source=self.demand_source)
         if self.demand_source == 'video_profile':
@@ -138,7 +162,21 @@ class AggregateEngine:
             if len(plan)!=len(c.changes):raise ValueError('Duplicate phase changes')
             validate_plan(self.config,plan)
             if any(v.phase_id not in self.index.phases or self.index.phases[v.phase_id]['node_id']!=v.node_id for v in c.changes):raise ValueError('Phase/node mismatch')
-            self.receipts.prepare(c);self.scheduler.apply(plan);self.receipts.accept(c)
+            if self.scheduler.priority or self.scheduler.recovering:raise ValueError('Emergency protection active')
+            offsets={}
+            for change in c.changes:
+                value=change.offset_s if change.HasField('offset_s') else 0
+                if change.node_id in offsets and offsets[change.node_id]!=value:
+                    raise ValueError('Conflicting offsets for one node')
+                offsets[change.node_id]=value
+            previous=self.scheduler.snapshot()
+            self.scheduler.apply(plan,c.activate_not_before_simulation_s,offsets)
+            try:
+                self.receipts.prepare(c);self.receipts.accept(c)
+            except Exception:
+                self.scheduler.restore(previous)
+                raise
+            self.pending_command=pb.PlanCommand();self.pending_command.CopyFrom(c)
     def copy_state(self):v=pb.TrafficState();v.CopyFrom(self.latest);return v
     def start_clock(self):
         def run():
@@ -151,7 +189,11 @@ class AggregateEngine:
                         except Exception as error:self.running=False;self.failure=str(error);self.changed.notify_all()
         self.thread=threading.Thread(target=run,daemon=True);self.thread.start()
     def stop(self):
-        with self.lock:self.running=False;self.latest=None;self.changed.notify_all()
+        with self.lock:
+            if getattr(self,'pending_command',None) is not None:
+                self.receipts.finish(self.pending_command,'rejected',message='Run stopped before safe activation')
+                self.pending_command=None
+            self.running=False;self.latest=None;self.changed.notify_all()
     def close(self):
         self.closed=True
         with self.lock:self.running=False;self.changed.notify_all()

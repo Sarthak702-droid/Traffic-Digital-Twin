@@ -125,3 +125,34 @@ def test_all_controlled_junction_exact_stage_durations(config):
             assert scheduler.state[node_id][2] == all_red_len
             for _ in range(all_red_len):
                 scheduler.advance()
+
+
+def test_corridor_plan_waits_for_all_clearances_and_requested_time(config):
+    scheduler = Signals(config)
+    for _ in range(7):
+        scheduler.advance()
+    plan = {phase: 15 for phase in scheduler.plan}
+    scheduler.apply(plan, activate_not_before=45)
+    for _ in range(44 - scheduler.tick):
+        scheduler.advance()
+        assert scheduler.plan != plan
+    while scheduler.plan != plan and scheduler.tick < 90:
+        before = {node: list(state) for node, state in scheduler.state.items()}
+        scheduler.advance()
+        if scheduler.plan == plan:
+            assert scheduler.tick >= 45
+            assert all(stage == 'all_red' for _, stage, _ in before.values())
+    assert scheduler.plan == plan
+    assert scheduler.applied_at == scheduler.tick
+
+
+def test_invalid_activation_and_offset_leave_current_plan(config):
+    scheduler = Signals(config)
+    plan = {phase: 15 for phase in scheduler.plan}
+    with pytest.raises(ValueError):
+        scheduler.apply(plan, activate_not_before=float('nan'))
+    with pytest.raises(ValueError):
+        scheduler.apply(plan, activate_not_before=scheduler.tick+301)
+    with pytest.raises(ValueError):
+        scheduler.apply(plan, offsets={node: -1 for node in scheduler.nodes})
+    assert scheduler.pending == scheduler.plan

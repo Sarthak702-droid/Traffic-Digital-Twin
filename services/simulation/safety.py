@@ -144,7 +144,7 @@ def validate_runtime_safety(config, signal_states, active_plan=None):
 
 
 class Signals:
-    """Plans take effect at all-red boundaries; never truncate an active green."""
+    """Activate a complete corridor plan after every node reaches clearance."""
     def __init__(self, config):
         self.config = config
         self.plan = default_plan(config)
@@ -157,10 +157,34 @@ class Signals:
         self.recovering = False
         self.last_served = {p['id']: 0 for p in config['phases']}
         self.tick = 0
+        self.activate_not_before = 0
+        self.offsets = {node: 0 for node in self.nodes}
+        self.release_at = {}
+        self.waiting = set()
+        self.requested_at = None
+        self.applied_at = None
+        self.rejected_reason = None
 
-    def apply(self, plan):
+    def apply(self, plan, activate_not_before=0, offsets=None):
         validate_plan(self.config, plan)
+        if not math.isfinite(activate_not_before) or not 0 <= activate_not_before <= self.tick + 300:
+            raise ValueError('Activation must be within the next 300 simulation seconds')
+        offsets = offsets or {}
+        if set(offsets) - set(self.nodes):
+            raise ValueError('Unknown offset node')
+        for node, value in offsets.items():
+            if not math.isfinite(value) or value < 0 or value != int(value):
+                raise ValueError('Offsets must be nonnegative whole seconds')
+            if value > min(p['max_red_s'] for p in self.nodes[node]):
+                raise ValueError('Offset exceeds configured maximum red')
+        if self.requested_at is not None:
+            raise ValueError('A corridor plan is already pending')
         self.pending = dict(plan)
+        self.activate_not_before = int(math.ceil(activate_not_before))
+        self.offsets = {node: int(offsets.get(node, 0)) for node in self.nodes}
+        self.requested_at = self.tick
+        self.applied_at = None
+        self.rejected_reason = None
 
     def snapshot(self):
         """Return every scheduler field needed for deterministic continuation."""
@@ -172,6 +196,13 @@ class Signals:
             'recovering': bool(self.recovering),
             'last_served': dict(self.last_served),
             'tick': int(self.tick),
+            'activate_not_before': self.activate_not_before,
+            'offsets': dict(self.offsets),
+            'release_at': dict(self.release_at),
+            'waiting': sorted(self.waiting),
+            'requested_at': self.requested_at,
+            'applied_at': self.applied_at,
+            'rejected_reason': self.rejected_reason,
         }
 
     def restore(self, snapshot):
@@ -182,10 +213,44 @@ class Signals:
         self.recovering = bool(snapshot['recovering'])
         self.last_served = dict(snapshot['last_served'])
         self.tick = int(snapshot['tick'])
+        self.activate_not_before = snapshot.get('activate_not_before', 0)
+        self.offsets = dict(snapshot.get('offsets', {}))
+        self.release_at = dict(snapshot.get('release_at', {}))
+        self.waiting = set(snapshot.get('waiting', []))
+        self.requested_at = snapshot.get('requested_at')
+        self.applied_at = snapshot.get('applied_at')
+        self.rejected_reason = snapshot.get('rejected_reason')
 
-    def advance(self):
+    def _next_green(self, node, state):
+        index = state[0]
+        phases = self.nodes[node]
+        p = phases[index]
+        index = (index + 1) % len(phases)
+        target = self.priority.get(node)
+        overdue = max(phases, key=lambda q: self.tick-self.last_served[q['id']])
+        if self.recovering or self.tick-self.last_served[overdue['id']] >= overdue['max_red_s']-overdue['max_green_s']:
+            index = phases.index(overdue)
+        elif target and target != p['id']:
+            index = next(i for i, q in enumerate(phases) if q['id'] == target)
+        state[:] = [index, 'green', self.plan[phases[index]['id']]]
+
+    def advance(self, activation_guard=None):
         self.tick += 1
+        if self.requested_at is not None and self.tick >= self.activate_not_before:
+            longest = max(sum(self.plan[p['id']] + p['amber_s'] + p['all_red_s'] for p in ps) for ps in self.nodes.values())
+            if self.tick - max(self.requested_at, self.activate_not_before) > longest + max(self.offsets.values()):
+                self.pending = dict(self.plan)
+                self.requested_at = None
+                self.rejected_reason = 'No corridor-wide safe boundary within one cycle'
+                self.waiting.clear()
         for node, state in self.state.items():
+            if node in self.release_at:
+                if self.tick < self.release_at[node]:
+                    state[2] = 1
+                    continue
+                del self.release_at[node]
+                self._next_green(node, state)
+                continue
             state[2] -= 1
             if state[2] > 0:
                 continue
@@ -198,13 +263,28 @@ class Signals:
             elif stage == 'amber':
                 state[:] = [index, 'all_red', p['all_red_s']]
             else:
-                for q in phases:
-                    self.plan[q['id']] = self.pending[q['id']]
-                index = (index + 1) % len(phases)
-                target = self.priority.get(node)
-                overdue = max(phases, key=lambda q: self.tick-self.last_served[q['id']])
-                if self.recovering or self.tick-self.last_served[overdue['id']] >= overdue['max_red_s']-overdue['max_green_s']:
-                    index = phases.index(overdue)
-                elif target and target != p['id']:
-                    index = next(i for i, q in enumerate(phases) if q['id'] == target)
-                state[:] = [index, 'green', self.plan[phases[index]['id']]]
+                if self.requested_at is not None and self.tick >= self.activate_not_before:
+                    self.waiting.add(node)
+                    state[2] = 1
+                else:
+                    self.waiting.discard(node)
+                    self._next_green(node, state)
+        if self.requested_at is not None and len(self.waiting) == len(self.nodes):
+            rejection = activation_guard() if activation_guard else None
+            if rejection:
+                self.pending = dict(self.plan)
+                self.requested_at = None
+                self.waiting.clear()
+                self.rejected_reason = rejection
+            else:
+                self.plan = dict(self.pending)
+                self.applied_at = self.tick
+                self.requested_at = None
+                self.waiting.clear()
+                for node, state in self.state.items():
+                    offset = self.offsets[node]
+                    if offset:
+                        self.release_at[node] = self.tick + offset
+                        state[2] = 1
+                    else:
+                        self._next_green(node, state)

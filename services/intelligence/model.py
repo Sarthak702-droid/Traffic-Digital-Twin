@@ -17,13 +17,14 @@ class Model:
         self.serving={mid:p['id'] for p in self.phases.values() for mid in p['movement_ids']}
     def plan(self,state): return {c.phase_id:c.green_s for c in state.active_plan} or default_plan(self.config)
     def _scheduler(self,state,plan):
-        scheduler=Signals(self.config); scheduler.plan=dict(self.plan(state)); scheduler.pending=dict(scheduler.plan); scheduler.apply(plan)
+        scheduler=Signals(self.config); scheduler.plan=dict(self.plan(state)); scheduler.pending=dict(scheduler.plan)
         for signal in state.signals:
             if signal.node_id not in scheduler.nodes:continue
             phases=scheduler.nodes[signal.node_id]; index=next(i for i,p in enumerate(phases) if p['id']==signal.phase_id); scheduler.state[signal.node_id]=[index,signal.indication,max(1,int(signal.remaining_s))]
         if state.HasField('scheduler'):
             scheduler.tick=state.scheduler.tick; scheduler.last_served.update({x.phase_id:x.last_served_tick for x in state.scheduler.service_history}); scheduler.priority={x.node_id:x.phase_id for x in state.scheduler.priority}; scheduler.recovering=state.scheduler.recovering
             if state.scheduler.pending_plan:scheduler.pending={x.phase_id:x.green_s for x in state.scheduler.pending_plan}
+        if plan != scheduler.plan:
             scheduler.apply(plan)
         return scheduler
     def _initial_cells(self,state):

@@ -34,7 +34,13 @@ class Simulation(rpc.SimulationServicer):
     def GetPlanOutcome(self,request,context):
         with self.engine.lock:
             state = self.engine.receipts.status(request)
-            return pb.PlanOutcome(command_id=request.command_id,status=state,message='Receipt records scheduling acceptance; no command is replayed')
+            outcome=pb.PlanOutcome(command_id=request.command_id,status=state,message=self.engine.receipts.message(request) or 'Virtual plan receipt; no command is replayed')
+            applied_at=self.engine.receipts.applied_at(request)
+            if applied_at is not None:outcome.applied_at_simulation_s=applied_at
+            if self.engine.latest is not None and request.run_id==self.engine.latest.run_id:
+                outcome.input_session_id=self.engine.latest.input_session_id
+                outcome.snapshot_sequence=self.engine.latest.snapshot_sequence
+            return outcome
     def ApplyPlan(self,request,context):
         try:
             with self.engine.lock:
