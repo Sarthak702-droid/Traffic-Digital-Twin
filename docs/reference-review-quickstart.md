@@ -27,4 +27,4 @@ The coordinator compares the two sets of events and resolves differences against
 
 The current green line and blue region come from `packages/camera-config/cameras.json`. If a reviewer finds the line or region invalid for the scene, record that in the notes and stop that window's label review; select and freeze a corrected geometry or another window before counting. Do not quietly move the line on the review video.
 
-The CAM-12 guide's blue region visibly includes a large non-road area. Treat its queue label as unavailable unless the reviewer can justify a visible stopped-vehicle count within the road portion. This does not prevent reviewing its line crossings.
+The CAM-12 guide's blue region was lowered with the counting line after visual feedback. It now lies over the nearer road area, but stopped vehicles can still be hard to distinguish in crowded traffic. Mark the queue label unavailable unless the reviewer can justify it from motion across frames. This does not prevent reviewing its line crossings.
