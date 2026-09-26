@@ -140,6 +140,7 @@ def ensure_local_env() -> dict:
     merged.update(env_data)
     merged.setdefault("TWIN_ENGINE", "aggregate")
     merged.setdefault("PYTHONPATH", ".:packages/contracts/gen/python")
+    merged.setdefault("VIDEO_ASSET_DIR", str(ROOT / "traffic video"))
     merged["API_ADDR"] = f"127.0.0.1:{api_port}"
     merged["API_ORIGIN"] = f"http://127.0.0.1:{api_port}"
     merged["UI_ORIGIN"] = "http://127.0.0.1:3100"

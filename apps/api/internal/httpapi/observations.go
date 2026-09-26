@@ -258,7 +258,12 @@ func (s *Server) getClipMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	info, err := os.Lstat(cleanPath)
+	mediaRoot := os.Getenv("VIDEO_ASSET_DIR")
+	if mediaRoot == "" {
+		mediaRoot = "traffic video"
+	}
+	mediaPath := filepath.Join(mediaRoot, cleanPath)
+	info, err := os.Lstat(mediaPath)
 	if err != nil || !info.Mode().IsRegular() {
 		problem(w, 404, "Requested media clip not found")
 		return
@@ -266,5 +271,5 @@ func (s *Server) getClipMedia(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "video/mp4")
 	w.Header().Set("Accept-Ranges", "bytes")
-	http.ServeFile(w, r, cleanPath)
+	http.ServeFile(w, r, mediaPath)
 }

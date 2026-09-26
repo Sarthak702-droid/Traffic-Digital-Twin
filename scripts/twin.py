@@ -94,11 +94,12 @@ def cmd_assets(args):
 
     assets = manifest.get("assets", [])
     print(f"Total registered assets: {len(assets)}")
+    media_root = Path(os.environ.get("VIDEO_ASSET_DIR", "traffic video"))
     all_valid = True
     for a in assets:
         fname = a["filename"]
         slot = a.get("assigned_slot", "UNASSIGNED")
-        error = validate_manifest_asset(a, Path.cwd())
+        error = validate_manifest_asset(a, media_root)
         print(f"  [{slot}] {fname} - {'VERIFIED' if error is None else 'FAILED: ' + error}")
         if error is not None:
             all_valid = False

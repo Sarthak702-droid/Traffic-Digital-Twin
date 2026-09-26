@@ -1,12 +1,28 @@
 import hashlib
+import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
-from scripts.twin import validate_manifest_asset
+from scripts.twin import cmd_assets, validate_manifest_asset
 
 
 class AssetVerificationTests(unittest.TestCase):
+    def test_command_reads_registered_clips_from_configured_media_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            media = root / "private media"
+            media.mkdir()
+            (media / "sample.mp4").write_bytes(b"recorded sample")
+            manifest = root / "asset-manifest.json"
+            manifest.write_text(json.dumps({"assets": [{"filename": "sample.mp4", "size_bytes": 15,
+                "sha256": hashlib.sha256(b"recorded sample").hexdigest()}]}))
+            with patch("scripts.twin.resolve_repo_path", return_value=manifest), patch.dict(os.environ, {"VIDEO_ASSET_DIR": str(media)}):
+                cmd_assets(SimpleNamespace())
+
     def test_checks_file_identity_not_only_presence(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
