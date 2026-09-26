@@ -5,6 +5,7 @@ Only aggregate windows leave this boundary. Source media and tracking state stay
 from __future__ import annotations
 
 import hashlib
+import fcntl
 import json
 import math
 import os
@@ -115,6 +116,15 @@ class RecordedClipProcessor:
                            'config_hash', 'camera_config_sha256')
         if any(current[key] != registration[key] for key in identity_fields):
             raise ValueError('Registered clip, model, geometry or configuration changed before processing')
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        with (self.output_dir / '.fresh-inference.lock').open('a+b') as lock:
+            try:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError as error:
+                raise RuntimeError('Fresh inference slot is occupied for this output directory') from error
+            return self._process_locked(current, max_duration_s, identity_fields)
+
+    def _process_locked(self, current: dict, max_duration_s, identity_fields: tuple[str, ...]) -> dict:
         key = _hash_json({name: current[name] for name in identity_fields} | {'max_duration_s': max_duration_s})
         directory = self.output_dir / current['camera_id'] / key
         directory.mkdir(parents=True, exist_ok=True)

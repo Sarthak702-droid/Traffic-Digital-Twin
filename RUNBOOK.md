@@ -23,6 +23,7 @@ Check `packages/camera-config/cameras.json` for the registered camera, counting 
 ```
 
 The output under `.runtime/vision/processed` identifies the clip/config/model/source session and finalized windows. A valid zero crossing remains a zero, and a window is usable only after its end and processing completion. A cached entry may be reused only when its complete identity matches. The original media remains immutable. For a video-derived run, the configured boundary cameras need matching processed inputs; start with one freshly processed camera and already validated cached inputs for the others. Independent clips are declared virtual demand, not a measured physical corridor.
+The processor admits one job at a time for each processed-output directory. If another job owns that directory's inference slot, retry after it finishes; concurrent fresh-video capacity has not been measured or declared.
 
 ## Operate the virtual run
 

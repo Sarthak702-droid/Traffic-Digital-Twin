@@ -109,6 +109,36 @@ def test_processing_finalizes_identity_and_reuses_only_exact_cache(tmp_path):
     assert len(calls) == 3
 
 
+def test_second_fresh_job_is_rejected_while_inference_slot_is_occupied(tmp_path):
+    second = None
+    registration = None
+    calls = []
+
+    def factory(**_):
+        calls.append('entered')
+        with pytest.raises(RuntimeError, match='inference slot'):
+            second.process(registration)
+        class Session:
+            def process_stream(self, **_):
+                yield Window(0, 5, 5, 1)
+        return Session()
+
+    def second_factory(**_):
+        calls.append('second entered')
+        class Session:
+            def process_stream(self, **_):
+                yield Window(0, 5, 5, 1)
+        return Session()
+
+    first, clip, model, config = setup_processor(tmp_path, factory)
+    second = RecordedClipProcessor(tmp_path / 'out', config, model, [clip.parent],
+        session_factory=second_factory, expected_model_sha256=first.expected_model_sha256)
+    registration = first.register('CAM-01', clip, 'operator rights record')
+    assert first.process(registration)['status'] == 'complete'
+    assert calls == ['entered']
+    assert second.process(registration)['processing_mode'] == 'cached_observations'
+
+
 @pytest.mark.parametrize('windows', [[], [Window(0, 5, 4, 1)], [Window(0, 5, 5, 1), Window(4, 9, 9, 2)]])
 def test_failed_or_incomplete_processing_never_publishes_cache(tmp_path, windows):
     class Session:
