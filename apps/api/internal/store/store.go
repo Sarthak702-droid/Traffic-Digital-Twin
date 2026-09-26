@@ -142,7 +142,7 @@ func (s *Store) EndInterruptedRun(ctx context.Context, id pgtype.UUID, reason st
 	_, e = q.AppendAudit(ctx, queries.AppendAuditParams{
 		ID:           UUID(),
 		RunID:        id,
-		Actor:        Actor(ctx),
+		Actor:        "system-recovery",
 		EventType:    "scenario.interrupted",
 		BeforeValues: []byte(`{"status":"running"}`),
 		AfterValues:  after,

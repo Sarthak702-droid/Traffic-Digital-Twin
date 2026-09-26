@@ -146,7 +146,9 @@ func TestPostgresDurabilityAndAtomicAudit(t *testing.T) {
 	if _, e = s.Activate(ctx, run.ID, "test activation"); e != nil {
 		t.Fatal(e)
 	}
-	if e = s.EndInterruptedRun(WithActor(ctx, "system-recovery"), run.ID, "simulator state missing"); e != nil {
+	// Startup reconciliation has no browser actor; the store must assign its
+	// own system identity instead of violating the audit actor constraint.
+	if e = s.EndInterruptedRun(context.Background(), run.ID, "simulator state missing"); e != nil {
 		t.Fatal(e)
 	}
 	saved, e = s.Q.GetRun(ctx, run.ID)
