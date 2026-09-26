@@ -1,6 +1,11 @@
 {
-  "version": "comparison-scoring-v1",
+  "version": "comparison-scoring-v1.1",
   "window_s": 120,
+  "max_candidates": 5,
+  "max_alternatives": 3,
+  "max_concurrent_analyses": 1,
+  "analysis_timeout_s": 1.5,
+  "minimum_benefit_points": 10.0,
   "metric_units": {
     "queue_delay": "veh_s",
     "boundary_wait": "veh_s",

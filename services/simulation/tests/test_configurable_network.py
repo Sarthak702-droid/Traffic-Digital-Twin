@@ -91,7 +91,9 @@ def test_three_junction_analysis_uses_its_route(tmp_path):
     engine = AggregateEngine(config_path=path, directory=tmp_path)
     try:
         state = engine.reset(pb.RunCommand(schema_version='1.0', scenario_type='peak_surge', seed=1101, mode='recommend', run_id='analysis'))
+        state = engine.step()
         result = Model(engine.config).analyze(state)
+        assert result.outcome == 'recommend'
         assert 'C3-C7' in ' '.join(result.recommendation.explanation_facts)
     finally:
         engine.close()

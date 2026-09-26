@@ -18,4 +18,8 @@ class Intelligence(rpc.IntelligenceServicer):
     def Compare(self,request,context):
         try:return self.model.comparison(request.state,request.changes,request.recommendation_id,horizon_s=request.horizon_s,demand_assumptions_hash=request.demand_assumptions_hash)
         except (ValueError,KeyError) as e:context.abort(grpc.StatusCode.INVALID_ARGUMENT,str(e))
-    def Predict(self,request,context):return self.Analyze(request,context).forecasts[0]
+    def Predict(self,request,context):
+        analysis=self.Analyze(request,context)
+        if not analysis.forecasts:
+            context.abort(grpc.StatusCode.FAILED_PRECONDITION,f'Forecast unavailable: {analysis.outcome_reason}')
+        return analysis.forecasts[0]
