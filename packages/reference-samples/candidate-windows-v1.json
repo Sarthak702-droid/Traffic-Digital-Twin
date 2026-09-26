@@ -15,6 +15,7 @@
       "window_start_source_s": 10,
       "window_end_source_s": 15,
       "provisional_condition": "ordinary_mixed_flow",
+      "evaluation_split": "tuning",
       "rights_review": "user_authorized_internal_review",
       "reference_label": null,
       "second_review": null
@@ -29,6 +30,7 @@
       "window_start_source_s": 10,
       "window_end_source_s": 15,
       "provisional_condition": "crowded_multimodal_flow",
+      "evaluation_split": "tuning",
       "rights_review": "user_authorized_internal_review",
       "reference_label": null,
       "second_review": null
@@ -43,6 +45,7 @@
       "window_start_source_s": 5,
       "window_end_source_s": 10,
       "provisional_condition": "portrait_occlusion_and_mixed_traffic",
+      "evaluation_split": "reserved",
       "rights_review": "user_authorized_internal_review",
       "reference_label": null,
       "second_review": null
