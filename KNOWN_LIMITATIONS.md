@@ -9,6 +9,7 @@ The legacy concurrent orchestrator has a four-frame-per-camera input queue and d
 ## Recorded input and reference quality
 
 `reports/asset-manifest.json` lists twelve registered sample clips. The manifest and static telemetry are inventory, not proof that every local file is present or that twelve streams can be processed together. `python3 scripts/twin.py assets --config agent-config.json` verifies staged file size and complete SHA-256 digest in the ignored `traffic video/` directory, or `VIDEO_ASSET_DIR` when set. Source clips and the private detector checkpoint remain outside git. Use only footage with a recorded authorization reference. Independent recordings mapped to virtual boundary directions are not synchronized measurements of a physical corridor.
+The twelve local clips have H.264 video at 30 FPS in 1080×1920, 2160×3840 or 3840×2160 with yuv420p pixels, as reported by `ffprobe`. The fresh processing probe covers only CAM-01 at 3840×2160. Other codecs, frame rates, durations and concurrent fresh streams have no measured support claim.
 
 V02 has selected candidate ordinary, crowded and difficult windows, but independent labels still require a second reviewer. Detector output cannot serve as its own ground truth. Crossing accuracy, visible-queue error and uncertainty calibration remain unavailable until reviewed labels and held-out evaluation exist. Visible camera queue is a region-limited estimate. Video speed in km/h is unavailable without physical calibration; a modeled link speed is a separate synthetic state metric.
 
