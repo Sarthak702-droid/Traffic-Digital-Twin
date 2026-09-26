@@ -28,6 +28,31 @@ afterEach(() => {
   });
 });
 describe("live reconnection", () => {
+  it("accepts current 1.1 state identity and finalized source time", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("WebSocket", FakeSocket);
+    const { result } = renderHook(() => useLive());
+    act(() => vi.advanceTimersByTime(0));
+    act(() => FakeSocket.sockets[0].onopen());
+    act(() => FakeSocket.sockets[0].onmessage({ data: JSON.stringify({
+      schema_version: "1.0",
+      type: "network.state",
+      payload: {
+        schema_version: "1.1", run_id: "run", timestamp: new Date().toISOString(),
+        simulation_time_s: 12, source: "synthetic", movements: [], signals: [],
+        vehicles_in_network: 0, inserted_total: 0, arrived_total: 0, teleported_total: 0,
+        scenario_type: "peak_surge", seed: 1, input_session_id: "session-1",
+        snapshot_sequence: "12", latest_finalized_window_end_source_s: 30,
+        config_hash: "config-1", metrics_version: "metrics-1", model_version: "aggregate-v1",
+        input_quality: "cached_valid", observation_history: [],
+      },
+    }) }));
+    expect(result.current.fresh).toBe(true);
+    expect(result.current.frame?.input_session_id).toBe("session-1");
+    expect(result.current.frame?.latest_finalized_window_end_source_s).toBe(30);
+    expect(result.current.frame?.config_hash).toBe("config-1");
+    expect(result.current.frame?.metrics_version).toBe("metrics-1");
+  });
   it("reconnects after close, hides stale values and stops on unmount", () => {
     vi.useFakeTimers();
     vi.stubGlobal("WebSocket", FakeSocket);

@@ -20,12 +20,26 @@ const movement = z.object({
   permission: z.enum(["green", "amber", "red"]),
 });
 export const liveSchema = z.object({
-  schema_version: z.literal("1.0"),
+  schema_version: z.enum(["1.0", "1.1"]),
   run_id: z.string().min(1),
   timestamp: z.string().datetime({ offset: true }),
   simulation_time_s: nonnegative,
   source: z.literal("synthetic"),
   demand_source: z.enum(["seeded", "video_profile"]).optional(),
+  config_hash: z.string().optional(),
+  metrics_version: z.string().optional(),
+  model_version: z.string().optional(),
+  input_session_id: z.string().optional(),
+  snapshot_sequence: z.string().regex(/^\d+$/).optional(),
+  latest_finalized_window_end_source_s: nonnegative.optional(),
+  input_quality: z.enum(["", "fresh", "cached_valid", "synthetic", "missing", "stale", "degraded", "out_of_order", "duplicate", "replay"]).optional(),
+  observation_history: z.array(z.object({
+    observation_id: z.string(), camera_id: z.string(), boundary_link_id: z.string(),
+    window_start_s: nonnegative, window_end_s: nonnegative,
+    available_at_source_s: nonnegative, processed_at_utc: z.string(),
+    crossings_veh: nonnegative, observation_status: z.enum(["valid", "degraded", "invalid"]),
+    queue_status: z.string(),
+  }).passthrough()).optional(),
   replay: z.boolean().default(false),
   movements: z.array(movement),
   signals: z.array(

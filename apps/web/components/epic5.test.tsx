@@ -368,7 +368,7 @@ describe("Epic 5: Safety Envelope & Human Authority (S13, S14, S15)", () => {
       );
     });
 
-    it("renders all 4 PRD §8.4 outcome metrics in simulated comparison card", () => {
+    it("renders matched prototype metrics without unsupported stop or journey claims", () => {
       const comparisonData: ComparisonResult = {
         run_id: "test-run",
         recommendation_id: "rec-101",
@@ -384,6 +384,16 @@ describe("Epic 5: Safety Envelope & Human Authority (S13, S14, S15)", () => {
         candidate_spillback_s: 0,
         baseline_stops_per_vehicle: 1.85,
         candidate_stops_per_vehicle: 1.20,
+        baseline_queue_delay_veh_s: 300,
+        candidate_queue_delay_veh_s: 330,
+        baseline_boundary_throughput_veh: 40,
+        candidate_boundary_throughput_veh: 38,
+        baseline_boundary_backlog_veh: 4,
+        candidate_boundary_backlog_veh: 8,
+        baseline_worst_service_debt_s: 50,
+        candidate_worst_service_debt_s: 70,
+        window_start_simulation_s: 45,
+        window_end_simulation_s: 165,
       };
 
       const onClear = vi.fn();
@@ -412,25 +422,20 @@ describe("Epic 5: Safety Envelope & Human Authority (S13, S14, S15)", () => {
       );
 
       // Verify comparison region
-      const region = screen.getByRole("region", { name: "Simulated Comparison Outcome" });
+      const region = screen.getByRole("region", { name: "Matched virtual comparison" });
       expect(region).toBeDefined();
-      expect(screen.getByText("SIMULATED ROLLOUT COMPARISON")).toBeDefined();
+      expect(screen.getByText("MODELED VIRTUAL PLAN COMPARISON")).toBeDefined();
 
-      // Verify 4 outcome metrics
-      expect(screen.getByText("Max Queue (veh)")).toBeDefined();
-      expect(screen.getByText("Average Delay (s)")).toBeDefined();
-      expect(screen.getByText("Spillback Duration (s)")).toBeDefined();
-      expect(screen.getByText("Stops per Vehicle")).toBeDefined();
+      expect(screen.getByText("Queue delay (veh·s)")).toBeDefined();
+      expect(screen.getByText("Boundary exits (veh)")).toBeDefined();
+      expect(screen.getByText("Waiting to enter (veh)")).toBeDefined();
+      expect(screen.getByText("Worst service debt (s)")).toBeDefined();
 
-      // Check values
-      expect(screen.getByText("28.4")).toBeDefined();
-      expect(screen.getByText("18.2")).toBeDefined();
-      expect(screen.getByText("34.6")).toBeDefined();
-      expect(screen.getByText("22.1")).toBeDefined();
-      expect(screen.getByText("45")).toBeDefined();
-      expect(screen.getByText("0")).toBeDefined();
-      expect(screen.getByText("1.85")).toBeDefined();
-      expect(screen.getByText("1.20")).toBeDefined();
+      expect(screen.getByText("300.0")).toBeDefined();
+      expect(screen.getByText("330.0")).toBeDefined();
+      expect(screen.getByText("40.0")).toBeDefined();
+      expect(screen.getByText("38.0")).toBeDefined();
+      expect(screen.queryByText("Stops per Vehicle")).toBeNull();
 
       // Check dismissal
       const dismissBtn = screen.getByRole("button", { name: "Dismiss comparison" });

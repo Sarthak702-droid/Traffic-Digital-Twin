@@ -18,10 +18,15 @@ import {
   Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { OperatorTimeStatus } from "@/components/operator-time-status";
+import { latestDisplayObservation } from "@/lib/observations";
+import type { Analysis, TrafficState } from "../../../packages/contracts/typescript/events";
 
 interface VisionAnalyticsPanelProps {
   onReturn?: () => void;
   initialOffline?: boolean;
+  frame?: TrafficState | null;
+  analysis?: Analysis | null;
 }
 
 export interface CameraSlot {
@@ -153,7 +158,7 @@ function safePauseVideo(video: HTMLVideoElement | null) {
   }
 }
 
-export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: VisionAnalyticsPanelProps) {
+export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame = null, analysis = null }: VisionAnalyticsPanelProps) {
   const [isOffline, setIsOffline] = useState(initialOffline);
   const [isPlaying, setIsPlaying] = useState(true);
   const [currentFrameIdx, setCurrentFrameIdx] = useState(0);
@@ -167,6 +172,8 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
   const [selectedCamera, setSelectedCamera] = useState<string>("CAM-01");
   const processingMode = "cached_observations";
   const [liveObservations, setLiveObservations] = useState<any[]>([]);
+  const [observationStatus, setObservationStatus] = useState("missing");
+  const [observationReason, setObservationReason] = useState("");
   const [telemetryMap, setTelemetryMap] = useState<Record<string, any>>({});
   const [cameraSlots, setCameraSlots] = useState<CameraSlot[]>(ALL_CAMERA_SLOTS);
   const [cameraRegistryReady, setCameraRegistryReady] = useState(typeof process !== "undefined" && process.env?.NODE_ENV === "test");
@@ -223,28 +230,32 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
 
     fetch(`/api/v1/observations?camera_id=${selectedCamera}&mode=${processingMode}`)
       .then((res) => {
-        if (!res.ok) return null;
+        if (!res.ok) throw Error(`Observation request failed (${res.status})`);
         return res.json();
       })
       .then((payload) => {
-        if (isMounted && payload && Array.isArray(payload.observations) && payload.observations.length > 0) {
-          setLiveObservations(payload.observations);
+        if (isMounted && payload) {
+          setLiveObservations(Array.isArray(payload.observations) ? payload.observations : []);
+          setObservationStatus(payload.status || "missing");
+          setObservationReason(payload.reason || "");
         }
       })
-      .catch(() => {});
+      .catch((error) => { if (isMounted) { setLiveObservations([]); setObservationStatus("missing"); setObservationReason(error instanceof Error ? error.message : "Observations unavailable"); } });
 
     return () => {
       isMounted = false;
     };
   }, [isOffline, selectedCamera, processingMode]);
 
-  // Video switching: load new clip and loop 0.0s to 10.0s
+  // Display-only clip selection. Playback never changes the run's bound input.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     video.src = `/api/v1/clips/${selectedCamera}/media`;
     setMediaError(false);
     setLiveObservations([]);
+    setObservationStatus("missing");
+    setObservationReason("");
     video.currentTime = 0;
     setCurrentFrameIdx(0);
     if (isPlaying) {
@@ -257,7 +268,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
   const activeFrameData = activeTelemetry?.frames?.[currentFrameIdx];
   const activeCamInfo = cameraSlots.find((c) => c.id === selectedCamera) || cameraSlots[0];
 
-  // Continuous animation and 10s video loop
+  // Follow media time until the recorded clip ends.
   useEffect(() => {
     if (!isPlaying || isOffline) {
       if (playIntervalRef.current) clearInterval(playIntervalRef.current);
@@ -278,7 +289,6 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
       const video = videoRef.current;
       if (video && video.duration) {
         const coverage = Number(telemetryMap[selectedCamera]?.duration_s || 10);
-        if (video.currentTime >= coverage) video.currentTime = 0;
         const calculatedIdx = Math.min(totalFrames - 1, Math.floor((video.currentTime / coverage) * totalFrames));
         setCurrentFrameIdx(calculatedIdx);
       }
@@ -577,7 +587,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
   const classBreakdown = activeTelemetry?.summary?.class_breakdown || {};
   const laneMetrics = getStreamLaneMetrics(activeFrameData, activeTelemetry);
   const replayTimeS = Number(activeFrameData?.time_s ?? currentFrameIdx / 10);
-  const currentObservation = liveObservations.filter((item) => Number(item.window_end_s) <= replayTimeS).at(-1);
+  const currentObservation = latestDisplayObservation(liveObservations, replayTimeS);
   const observedFlowVpm = currentObservation?.observation_status === "valid" ? Number(currentObservation.flow_vpm) : null;
   const coverageLabel = activeTelemetry ? `${activeTelemetry.duration_s ?? "10"}s clip · ${activeCamInfo.resolution}` : "Loading stream telemetry…";
   const activeClassCounts = activeFrameData?.class_counts || {};
@@ -603,6 +613,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
 
   return (
     <div className="vision-container" data-testid="vision-analytics-panel">
+      <OperatorTimeStatus frame={frame} analysis={analysis} displaySourceTimeS={activeFrameData ? replayTimeS : null} />
       {/* Header Banner & PRD Disclaimers */}
       <section className="vision-header" aria-labelledby="vision-title">
         <div className="vision-header-top">
@@ -790,12 +801,12 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
           <div className="vision-canvas-wrapper" style={{ position: "relative" }}>
             <video
               ref={videoRef}
-              aria-label="Authoritative MP4 Video Feed"
+              aria-label="Recorded clip display only"
               src={`/api/v1/clips/${selectedCamera}/media`}
               muted
               playsInline
               autoPlay
-              loop
+              onEnded={() => setIsPlaying(false)}
               onError={() => setMediaError(true)}
               style={{ display: "none" }}
             />
@@ -986,11 +997,13 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false }: Visio
 
           <div className="vision-card" role="region" aria-label={`${selectedCamera} finalized ITD observation`}>
             <div className="vision-card-header"><h3>ITD 5-second flow detection</h3></div>
+            <p className="vision-roi-note">Observation source: {observationStatus.replaceAll("_", " ")} · cached registered clip · {observationReason || "Display seek does not change the run input"}</p>
             {currentObservation ? <div className="vision-stream-kpis">
               <div><span>Window</span><strong>{currentObservation.window_start_s}–{currentObservation.window_end_s}s</strong><small>{currentObservation.observation_status}</small></div>
               <div><span>Directional crossings</span><strong>{currentObservation.crossings_veh ?? "—"}</strong><small>{currentObservation.direction_id ?? "unknown direction"}</small></div>
               <div><span>Flow</span><strong>{currentObservation.observation_status === "valid" ? Number(currentObservation.flow_vpm).toFixed(1) : "—"}</strong><small>veh/min · finalized</small></div>
             </div> : <p className="vision-roi-note">No completed observation window at this media time. Frame boxes are available only for the analyzed segment.</p>}
+            {currentObservation && <p className="vision-roi-note">Available at source {Number(currentObservation.available_at_source_s).toFixed(1)} s · processing completed {currentObservation.processed_at_utc} · {currentObservation.validation_level || "review level unavailable"}</p>}
             {currentObservation?.derivation && <p className="vision-roi-note">Provenance: derived from cached ITD frame telemetry; per-class crossing counts unavailable.</p>}
           </div>
 

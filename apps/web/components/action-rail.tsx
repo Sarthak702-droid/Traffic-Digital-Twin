@@ -22,6 +22,7 @@ import {
   TrafficCone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MatchedComparison } from "@/components/matched-comparison";
 import type {
   Analysis,
   ComparisonResult,
@@ -155,7 +156,7 @@ export function ActionRail({
     }catch{}
   },[draftKey,modifyOpen,rejectOpen,reasonCategory,decisionReason,edits]);
   useEffect(()=>{onDirty?.(modifyOpen||rejectOpen)},[modifyOpen,rejectOpen,onDirty]);
-  const forecasts = analysis?.forecasts ?? [];
+  const forecasts = (analysis?.forecasts ?? []).filter((forecast) => !forecast.horizon_status || forecast.horizon_status === "available");
   const emergencyProtected = isEmergencyProtectionActive(frame);
 
   const getPhaseBounds = (phaseId: string) => {
@@ -171,8 +172,8 @@ export function ActionRail({
 
   // Determine highest-priority alert
   let alertSeverity: "critical" | "warning" | "emergency" | "normal" = "normal";
-  let alertTitle = liveFresh && analysis ? "No modeled alert" : "Traffic status unavailable";
-  let alertDesc = liveFresh && analysis ? "No elevated risk in this fresh analysis." : "Fresh traffic and intelligence are required before assessing risk.";
+  let alertTitle = liveFresh && analysis?.outcome !== "cannot_evaluate" && analysis ? "No modeled alert" : "Traffic status unavailable";
+  let alertDesc = liveFresh && analysis?.outcome !== "cannot_evaluate" && analysis ? "No elevated risk in this fresh analysis." : "Fresh traffic and intelligence are required before assessing risk.";
   let alertIcon = ShieldCheck;
 
   if (frame?.emergency?.id && ["pre_clearance", "priority"].includes(frame.emergency.status)) {
@@ -199,9 +200,9 @@ export function ActionRail({
   const nextIssueForecast = forecasts.find(
     (f) => f.risk === "critical" || f.risk === "warning",
   );
-  let nextIssueTitle = analysis ? "No elevated forecast risk" : "Forecast unavailable";
-  let nextIssueEta = analysis ? "Evaluated horizon" : "Unknown";
-  let nextIssueNote = analysis ? "No warning in the returned forecast. This is a model estimate." : "No stability or safety conclusion is inferred.";
+  let nextIssueTitle = forecasts.length ? "No elevated forecast risk" : "Forecast unavailable";
+  let nextIssueEta = forecasts.length ? "Evaluated horizon" : "Unknown";
+  let nextIssueNote = forecasts.length ? "No warning in the available forecast. This is a model estimate." : "No stability or safety conclusion is inferred.";
 
   if (nextIssueForecast) {
     nextIssueTitle = `Congestion at ${nextIssueForecast.movement_id}`;
@@ -613,7 +614,11 @@ export function ActionRail({
         ) : (
           <div className="rec-idle-state">
             <p>
-              {liveFresh
+              {analysis?.outcome === "no_action"
+                ? `No timing change recommended. ${analysis.outcome_reason || "The current safe plan is best or the gain is below the minimum."}`
+                : analysis?.outcome === "cannot_evaluate"
+                  ? `Cannot evaluate a safe plan. ${analysis.outcome_reason || "Input or compute is unsuitable."}`
+                  : liveFresh
                 ? "No actionable recommendation is available. Check operating mode, freshness and service health."
                 : "Awaiting active simulation. Start a scenario below to generate real-time recommendations."}
             </p>
@@ -621,65 +626,7 @@ export function ActionRail({
         )}
 
         {/* 4 Outcome Metrics Simulated Comparison */}
-        {comparisonResult && (
-          <div className="simulation-comparison-card" role="region" aria-label="Simulated Comparison Outcome">
-            <div className="comparison-header">
-              <div>
-                <strong>SIMULATED ROLLOUT COMPARISON</strong>
-                <p>Horizon: {comparisonResult.horizon_s}s · Seed: {comparisonResult.seed} · Initial: {comparisonResult.initial_time_s}s</p>
-              </div>
-              {onClearComparison && (
-                <button className="icon-button close-button" onClick={onClearComparison} aria-label="Dismiss comparison">
-                  ×
-                </button>
-              )}
-            </div>
-            <table className="comparison-table">
-              <thead>
-                <tr>
-                  <th>Metric</th>
-                  <th>Baseline</th>
-                  <th>Candidate</th>
-                  <th>Outcome</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Max Queue (veh)</td>
-                  <td>{comparisonResult.baseline_max_queue_veh.toFixed(1)}</td>
-                  <td>{comparisonResult.candidate_max_queue_veh.toFixed(1)}</td>
-                  <td className={comparisonResult.candidate_max_queue_veh <= comparisonResult.baseline_max_queue_veh ? "improved" : "worse"}>
-                    {(comparisonResult.candidate_max_queue_veh - comparisonResult.baseline_max_queue_veh).toFixed(1)}
-                  </td>
-                </tr>
-                <tr>
-                  <td>Average Delay (s)</td>
-                  <td>{comparisonResult.baseline_avg_delay_s.toFixed(1)}</td>
-                  <td>{comparisonResult.candidate_avg_delay_s.toFixed(1)}</td>
-                  <td className={comparisonResult.candidate_avg_delay_s <= comparisonResult.baseline_avg_delay_s ? "improved" : "worse"}>
-                    {(comparisonResult.candidate_avg_delay_s - comparisonResult.baseline_avg_delay_s).toFixed(1)}
-                  </td>
-                </tr>
-                <tr>
-                  <td>Spillback Duration (s)</td>
-                  <td>{comparisonResult.baseline_spillback_s.toFixed(0)}</td>
-                  <td>{comparisonResult.candidate_spillback_s.toFixed(0)}</td>
-                  <td className={comparisonResult.candidate_spillback_s <= comparisonResult.baseline_spillback_s ? "improved" : "worse"}>
-                    {(comparisonResult.candidate_spillback_s - comparisonResult.baseline_spillback_s).toFixed(0)}s
-                  </td>
-                </tr>
-                <tr>
-                  <td>Stops per Vehicle</td>
-                  <td>{comparisonResult.baseline_stops_per_vehicle.toFixed(2)}</td>
-                  <td>{comparisonResult.candidate_stops_per_vehicle.toFixed(2)}</td>
-                  <td className={comparisonResult.candidate_stops_per_vehicle <= comparisonResult.baseline_stops_per_vehicle ? "improved" : "worse"}>
-                    {(comparisonResult.candidate_stops_per_vehicle - comparisonResult.baseline_stops_per_vehicle).toFixed(2)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        )}
+        {comparisonResult && <><MatchedComparison result={comparisonResult} />{onClearComparison && <button className="icon-button close-button" onClick={onClearComparison} aria-label="Dismiss comparison">×</button>}</>}
       </section>
 
       {/* 3. NEXT PREDICTED ISSUE */}

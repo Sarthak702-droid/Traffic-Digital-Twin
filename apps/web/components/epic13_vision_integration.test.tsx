@@ -84,10 +84,10 @@ describe("T13: Vision & Network UI Integration (PRD §19.3)", () => {
     expect(screen.getByText(/FORECAST:/i)).toBeInTheDocument();
   });
 
-  it("mounts authoritative MP4 video element linked to media endpoint", () => {
+  it("mounts display-only MP4 video element linked to media endpoint", () => {
     render(<VisionAnalyticsPanel />);
 
-    const videoEl = screen.getByLabelText(/Authoritative MP4 Video Feed/i) as HTMLVideoElement;
+    const videoEl = screen.getByLabelText(/Recorded clip display only/i) as HTMLVideoElement;
     expect(videoEl).toBeInTheDocument();
     expect(videoEl.tagName.toLowerCase()).toBe("video");
     expect(videoEl.src).toContain("/api/v1/clips/CAM-01/media");

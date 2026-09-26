@@ -29,6 +29,7 @@ import { useLive } from "@/lib/live";
 import { LiveSummary } from "@/components/live-panel";
 import { SessionPanel, useSession } from "@/components/session-panel";
 import { comparisonSchema } from "@/lib/response-schemas";
+import { analysisMatchesFrame, comparisonMatchesAnalysis } from "@/lib/decision-identity";
 import { useWorkspace } from "@/lib/state";
 import { TopBar } from "@/components/top-bar";
 import { KpiStrip } from "@/components/kpi-strip";
@@ -40,6 +41,7 @@ import { DgpPresentationModal } from "@/components/dgp-presentation";
 import { IncidentRecoveryPanel } from "@/components/incident-recovery-panel";
 import { EmergencyCorridorPanel } from "@/components/emergency-corridor-panel";
 import { VisionAnalyticsPanel } from "@/components/vision-analytics-panel";
+import { OperatorTimeStatus } from "@/components/operator-time-status";
 import type {
   Network,
   Run,
@@ -126,7 +128,7 @@ export function Workspace() {
 
   // Real-time analysis query (forecasts, recommendations, comparisons)
   const analysisQuery = useQuery({
-    queryKey: ["analysis", live.frame?.run_id],
+    queryKey: ["analysis", live.frame?.run_id, live.frame?.input_session_id],
     queryFn: ({signal}) => request<Analysis>("/analysis", {signal}),
     enabled: live.fresh && session.isSuccess,
     refetchInterval: 2000,
@@ -134,7 +136,7 @@ export function Workspace() {
   });
 
   const analysis: Analysis | null =
-    live.fresh && !analysisQuery.isError && analysisQuery.data && live.frame && analysisQuery.data.run_id === live.frame.run_id && live.frame.simulation_time_s - analysisQuery.data.simulation_time_s <= 10 && live.frame.simulation_time_s >= analysisQuery.data.simulation_time_s
+    live.fresh && !analysisQuery.isError && analysisQuery.data && live.frame && analysisMatchesFrame(analysisQuery.data, live.frame) && live.frame.simulation_time_s - analysisQuery.data.simulation_time_s <= 10 && live.frame.simulation_time_s >= analysisQuery.data.simulation_time_s
       ? analysisQuery.data
       : null;
 
@@ -142,17 +144,21 @@ export function Workspace() {
   // It remains disabled because decisionReady is based only on fresh analysis.
   const draftAnalysis = useRef<Analysis | null>(null);
   if (analysis?.recommendation) draftAnalysis.current = analysis;
-  if (live.frame && draftAnalysis.current?.run_id !== live.frame.run_id) draftAnalysis.current = null;
-  const decisionAnalysis = analysis?.recommendation ? analysis : draftAnalysis.current;
+  else if (analysis) draftAnalysis.current = null;
+  if (live.frame && draftAnalysis.current && !analysisMatchesFrame(draftAnalysis.current, live.frame)) draftAnalysis.current = null;
+  const decisionAnalysis = analysis || draftAnalysis.current;
 
   const [simulationComparison, setSimulationComparison] = useState<ComparisonResult | null>(null);
   const [selectedAlternative, setSelectedAlternative] = useState<Recommendation | null>(null);
+  const currentAlternative = selectedAlternative && analysis?.alternatives.some((item) => item.id === selectedAlternative.id) ? selectedAlternative : null;
+  useEffect(() => {
+    setSimulationComparison(null);
+    setSelectedAlternative(null);
+  }, [live.frame?.run_id, live.frame?.input_session_id]);
   let activeComparison: ComparisonResult | null = null;
-  if (simulationComparison && simulationComparison.run_id === live.frame?.run_id &&
-    (simulationComparison.recommendation_id === analysis?.recommendation?.id || simulationComparison.recommendation_id === selectedAlternative?.id)) {
+  if (comparisonMatchesAnalysis(simulationComparison, analysis, live.frame, currentAlternative?.id || analysis?.recommendation?.id)) {
     activeComparison = simulationComparison;
-  } else if (analysis?.comparison && analysis.comparison.run_id === live.frame?.run_id &&
-    (analysis.comparison.recommendation_id === analysis.recommendation?.id || analysis.comparison.recommendation_id === selectedAlternative?.id)) {
+  } else if (analysis?.comparison && comparisonMatchesAnalysis(analysis.comparison, analysis, live.frame, currentAlternative?.id || analysis?.recommendation?.id)) {
     activeComparison = analysis.comparison;
   }
   const modeQuery=useQuery({queryKey:["mode"],queryFn:()=>request<{mode:"recommend"|"observe"|"manual";locks:string[]}>("/mode"),refetchInterval:3000,enabled:session.isSuccess});
@@ -235,7 +241,7 @@ export function Workspace() {
       reason?: string;
       changes?: TimingChange[];
     }) => {
-      const rec = selectedAlternative || analysis?.recommendation;
+      const rec = currentAlternative || analysis?.recommendation;
       if (!rec || !canWrite || !live.fresh || live.frame?.replay || modeQuery.isError || systemMode!=="recommend") throw Error("Fresh authorized recommendation required");
       if (action !== "reject" && live.frame?.emergency?.id && ["pre_clearance", "priority", "active"].includes(live.frame.emergency.status)) {
         throw Error("Emergency signal protection is active; approval resumes automatically after priority clears.");
@@ -397,7 +403,7 @@ export function Workspace() {
     };
   }, [decision.error,modeMutation.error,changeModeMutation.error,prepare.error,reset.error,startIncident.error,startEmergency.error,replay.error,lock.error,resolveDecisionMutation.error]);
   const anyCommandPending=decision.isPending||modeMutation.isPending||changeModeMutation.isPending||prepare.isPending||reset.isPending||startIncident.isPending||startEmergency.isPending||replay.isPending||lock.isPending||resolveDecisionMutation.isPending;
-  const decisionReady=!!analysis && live.fresh && !live.frame?.replay && !!dbReady && systemMode==="recommend" && canWrite && !anyCommandPending;
+  const decisionReady=!!analysis && analysis.outcome === "recommend" && live.fresh && !live.frame?.replay && !!dbReady && systemMode==="recommend" && canWrite && !anyCommandPending;
   const refresh = () => {
     client.invalidateQueries();
   };
@@ -546,7 +552,7 @@ export function Workspace() {
           </div>
 
           {view === "vision" ? (
-            <VisionAnalyticsPanel onReturn={() => setView("command")} />
+            <VisionAnalyticsPanel onReturn={() => setView("command")} frame={live.fresh ? live.frame : null} analysis={analysis} />
           ) : network.isPending ? (
             <div className="loading-panel" role="status">
               <div className="skeleton" />
@@ -593,6 +599,7 @@ export function Workspace() {
                       </select>
                       <span>{live.frame ? `Active run: ${live.frame.demand_source || "seeded"}` : "Selection applies when a scenario starts"}</span>
                     </div>
+                    <OperatorTimeStatus frame={live.fresh ? live.frame : null} analysis={analysis} />
 
                     {/* Operations Grid: 8-column Canvas + 4-column Action Rail */}
                     <div className="operations-grid">
@@ -705,7 +712,7 @@ export function Workspace() {
 
                       {/* 4-column Action Rail (Story S09 / PRD §8.1) */}
                       <ActionRail
-                        key={`${draftActor.current || "unauthenticated"}:${live.frame?.run_id || "none"}`}
+                        key={`${draftActor.current || "unauthenticated"}:${live.frame?.run_id || "none"}:${live.frame?.input_session_id || "legacy"}`}
                         draftOwner={draftActor.current || "unauthenticated"}
                         canAct={decisionReady}
                         onDirty={setDirty}
