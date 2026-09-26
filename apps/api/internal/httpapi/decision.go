@@ -26,6 +26,49 @@ func jsonProto(v proto.Message) []byte {
 	b, _ := (protojson.MarshalOptions{UseProtoNames: true, EmitUnpopulated: true}).Marshal(v)
 	return b
 }
+
+func analysisInputMatchesState(analysis *pb.Analysis, state *pb.TrafficState) bool {
+	if analysis == nil || state == nil || analysis.RunId != state.RunId {
+		return false
+	}
+	if state.SchemaVersion == "1.0" && analysis.SnapshotSequence == 0 {
+		return true
+	}
+	if analysis.InputSessionId != state.InputSessionId || analysis.ConfigHash != state.ConfigHash || analysis.MetricsVersion != state.MetricsVersion {
+		return false
+	}
+	return state.LatestFinalizedWindowEndSourceS == nil || analysis.ForecastOriginSourceS == *state.LatestFinalizedWindowEndSourceS
+}
+
+func analysisMatchesState(analysis *pb.Analysis, state *pb.TrafficState) bool {
+	return analysisInputMatchesState(analysis, state) && (state.SchemaVersion == "1.0" && analysis.SnapshotSequence == 0 || analysis.SnapshotSequence == state.SnapshotSequence)
+}
+
+func recommendationCurrent(rec *pb.Recommendation, analysis *pb.Analysis, state *pb.TrafficState) bool {
+	if rec == nil || !analysisMatchesState(analysis, state) || rec.Id == "" || rec.Status != "pending" ||
+		rec.RunId != state.RunId || rec.InputSessionId != state.InputSessionId ||
+		rec.SnapshotSequence != state.SnapshotSequence || rec.ConfigHash != state.ConfigHash ||
+		rec.ModelVersion != analysis.ModelVersion || rec.MetricsVersion != analysis.MetricsVersion ||
+		rec.MetricsVersion != state.MetricsVersion ||
+		rec.ForecastOriginSourceS != analysis.ForecastOriginSourceS {
+		return false
+	}
+	if state.LatestFinalizedWindowEndSourceS != nil && rec.ForecastOriginSourceS != *state.LatestFinalizedWindowEndSourceS {
+		return false
+	}
+	if analysis.Outcome != "recommend" && !(state.SchemaVersion == "1.0" && analysis.Outcome == "") {
+		return false
+	}
+	if analysis.Recommendation != nil && analysis.Recommendation.Id == rec.Id {
+		return true
+	}
+	for _, alternative := range analysis.Alternatives {
+		if alternative.Id == rec.Id {
+			return true
+		}
+	}
+	return false
+}
 func (s *Server) ConnectIntelligence(ctx context.Context, address string) error {
 	conn, e := grpc.NewClient(address, s.computeOptions()...)
 	if e != nil {
@@ -59,17 +102,19 @@ func (s *Server) ConnectIntelligence(ctx context.Context, address string) error 
 					s.mu.Unlock()
 					continue
 				}
-				s.analysisFault = ""
-				if s.state == nil || s.state.RunId != analysis.RunId {
+				if !analysisMatchesState(analysis, s.state) {
+					s.analysis = nil
+					s.analysisFault = "Stale intelligence result"
 					s.mu.Unlock()
 					continue
 				}
+				s.analysisFault = ""
 				if s.manual || s.sim.command == nil || s.sim.command.Mode != "recommend" {
 					analysis.Recommendation = nil
 					analysis.Alternatives = nil
 				}
 				// Keep an actionable recommendation stable long enough for operator review.
-				if !s.manual && s.sim.command != nil && s.sim.command.Mode == "recommend" && s.analysis != nil && s.analysis.RunId == analysis.RunId && s.analysis.Recommendation != nil && s.analysis.Recommendation.Status == "pending" && state.SimulationTimeS-s.recommendationTime < 30 {
+				if !s.manual && s.sim.command != nil && s.sim.command.Mode == "recommend" && recommendationCurrent(s.analysis.GetRecommendation(), s.analysis, s.state) && recommendationCurrent(analysis.GetRecommendation(), analysis, s.state) && state.SimulationTimeS-s.recommendationTime < 30 {
 					analysis.Recommendation = proto.Clone(s.analysis.Recommendation).(*pb.Recommendation)
 					if s.analysis.Comparison != nil {
 						analysis.Comparison = proto.Clone(s.analysis.Comparison).(*pb.ComparisonResult)
@@ -97,7 +142,7 @@ func (s *Server) ConnectIntelligence(ctx context.Context, address string) error 
 					}
 				}
 				s.mu.Lock()
-				if s.state != nil && s.state.RunId == persisted.RunId && !s.replaying {
+				if analysisMatchesState(persisted, s.state) && !s.replaying {
 					// Persistence can overlap an operator command; never resurrect its pending state.
 					if s.manual || s.sim.command == nil || s.sim.command.Mode != "recommend" {
 						persisted.Recommendation = nil
@@ -109,6 +154,9 @@ func (s *Server) ConnectIntelligence(ctx context.Context, address string) error 
 						persisted.Alternatives = nil
 					}
 					s.analysis = persisted
+				} else if !s.replaying {
+					s.analysis = nil
+					s.analysisFault = "Stale intelligence result"
 				}
 				s.mu.Unlock()
 			}
@@ -238,17 +286,25 @@ func validateChanges(n config.Network, state *pb.TrafficState, changes []*pb.Tim
 func (s *Server) getAnalysis(w http.ResponseWriter, r *http.Request) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	if s.sim == nil || time.Since(s.sim.received) > 2500*time.Millisecond || s.sim.fault != "" || s.analysis == nil || s.analysisFault != "" || s.state == nil || s.analysis.RunId != s.state.RunId || s.state.SimulationTimeS-s.analysis.SimulationTimeS > 10 {
+	if s.sim == nil || time.Since(s.sim.received) > 2500*time.Millisecond || s.sim.fault != "" || s.analysisFault != "" || !analysisInputMatchesState(s.analysis, s.state) || s.state.SimulationTimeS-s.analysis.SimulationTimeS > 10 {
 		problem(w, 503, "Fresh intelligence unavailable")
 		return
 	}
+	visible := proto.Clone(s.analysis).(*pb.Analysis)
+	if visible.Recommendation != nil && !recommendationCurrent(visible.Recommendation, visible, s.state) {
+		visible.Recommendation = nil
+		visible.Alternatives = nil
+		visible.Comparison = nil
+		visible.Outcome = "cannot_evaluate"
+		visible.OutcomeReason = "Snapshot advanced; request fresh analysis"
+	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonProto(s.analysis))
+	w.Write(jsonProto(visible))
 }
 func (s *Server) activeRecommendation(w http.ResponseWriter, r *http.Request) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	if s.sim == nil || time.Since(s.sim.received) > 2500*time.Millisecond || s.sim.fault != "" || s.manual || s.analysis == nil || s.analysis.Recommendation == nil || s.analysisFault != "" || s.state == nil || s.analysis.RunId != s.state.RunId || s.state.SimulationTimeS-s.recommendationTime > 30 {
+	if s.sim == nil || time.Since(s.sim.received) > 2500*time.Millisecond || s.sim.fault != "" || s.manual || s.analysisFault != "" || !recommendationCurrent(s.analysis.GetRecommendation(), s.analysis, s.state) || s.state.SimulationTimeS-s.recommendationTime > 30 {
 		problem(w, 503, "No active recommendation")
 		return
 	}
@@ -287,8 +343,10 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 	s.mu.RLock()
 	var rec *pb.Recommendation
 	var state *pb.TrafficState
+	var analysisSnapshot *pb.Analysis
 	targetID := chi.URLParam(r, "id")
 	if s.analysis != nil {
+		analysisSnapshot = proto.Clone(s.analysis).(*pb.Analysis)
 		if s.analysis.Recommendation != nil && s.analysis.Recommendation.Id == targetID {
 			rec = proto.Clone(s.analysis.Recommendation).(*pb.Recommendation)
 		} else {
@@ -303,7 +361,8 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 	if s.state != nil {
 		state = proto.Clone(s.state).(*pb.TrafficState)
 	}
-	blocked := s.sim.command == nil || s.sim.command.Mode != "recommend" || s.manual || s.replaying || s.analysisFault != "" || time.Since(s.sim.received) > 2500*time.Millisecond || s.sim.fault != ""
+	current := recommendationCurrent(rec, analysisSnapshot, state)
+	blocked := !current || s.sim.command == nil || s.sim.command.Mode != "recommend" || s.manual || s.replaying || s.analysisFault != "" || time.Since(s.sim.received) > 2500*time.Millisecond || s.sim.fault != ""
 	recTime := s.recommendationTime
 	s.mu.RUnlock()
 	if blocked || rec == nil || state == nil || rec.Id != targetID || rec.RunId != state.RunId || rec.Status != "pending" || state.SimulationTimeS-recTime > 30 {
@@ -388,6 +447,10 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 		}
 		if err = contracts.ValidateState(latest); err != nil {
 			problem(w, 503, "Invalid simulator state; nothing applied")
+			return
+		}
+		if !recommendationCurrent(rec, analysisSnapshot, latest) {
+			problem(w, 409, "Recommendation is stale against the current simulator state; nothing applied")
 			return
 		}
 		if err = validateChanges(s.Network, latest, changes, s.refreshLocks(ctx)); err != nil {

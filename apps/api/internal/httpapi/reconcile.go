@@ -9,6 +9,25 @@ import (
 	pb "traffic.local/twin/packages/contracts/gen/go"
 )
 
+func terminalReceipt(rec *pb.Recommendation, write *store.DecisionWrite, outcome *pb.PlanOutcome) bool {
+	if outcome == nil {
+		return false
+	}
+	switch outcome.Status {
+	case "applied":
+		rec.Status = "approved"
+		rec.SafetyStatus = "virtual_plan_applied"
+	case "rejected":
+		rec.Status = "failed"
+		rec.SafetyStatus = "virtual_plan_rejected"
+	default:
+		return false
+	}
+	write.Result = rec.SafetyStatus
+	write.PlanOutcome = jsonProto(outcome)
+	return true
+}
+
 // Reconcile receipts, never repeat actuation. Survives domain/gateway restart.
 func (s *Server) ReconcileDecisions(ctx context.Context) {
 	ticker := time.NewTicker(time.Second)
@@ -63,8 +82,10 @@ func (s *Server) reconcileDecisions(ctx context.Context) {
 		if e == nil {
 			switch outcome.Status {
 			case "accepted":
-				rec.Status = "approved"
-				rec.SafetyStatus = "accepted_pending_safe_boundary"
+				s.sim.commands.Unlock()
+				continue
+			case "applied", "rejected":
+				terminalReceipt(rec, &v, outcome)
 				rec.Changes = changes
 			case "interrupted":
 				rec.Status = "failed"
@@ -94,6 +115,9 @@ func (s *Server) reconcileDecisions(ctx context.Context) {
 				continue
 			}
 			v.Result = rec.SafetyStatus
+			if len(v.PlanOutcome) == 0 {
+				v.PlanOutcome = jsonProto(outcome)
+			}
 			v.Recommendation = jsonProto(rec)
 			save := store.WithCommand(store.WithActor(call, p.actor), v.CommandID)
 			if s.Store.Write(save, "decision", v, nil) == nil {

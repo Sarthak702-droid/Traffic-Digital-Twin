@@ -161,6 +161,7 @@ type DecisionWrite struct {
 	Action         string          `json:"action"`
 	Reason         string          `json:"reason"`
 	Result         string          `json:"result"`
+	PlanOutcome    json.RawMessage `json:"plan_outcome,omitempty"`
 }
 
 func (s *Store) SaveDecision(ctx context.Context, v DecisionWrite) error {
@@ -213,13 +214,13 @@ func (s *Store) SaveDecision(ctx context.Context, v DecisionWrite) error {
 	}
 	auditAfter := v.After
 	if v.CommandID != "" {
-		auditAfter, _ = json.Marshal(map[string]any{"command_id": v.CommandID, "changes": json.RawMessage(v.After)})
+		auditAfter, _ = json.Marshal(map[string]any{"command_id": v.CommandID, "changes": json.RawMessage(v.After), "plan_outcome": v.PlanOutcome})
 	}
 	_, e = tx.Exec(ctx, "INSERT INTO audit_events(id,run_id,recommendation_id,actor,event_type,before_values,after_values,reason,safety_result) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)", UUID(), rec.RunId, rec.Id, Actor(ctx), "recommendation."+v.Action, v.Before, auditAfter, v.Reason, v.Result)
 	if e != nil {
 		return e
 	}
-	if v.CommandID != "" && (rec.Status == "approved" || rec.Status == "rejected" || rec.Status == "failed") {
+	if v.CommandID != "" && ((rec.Status == "approved" && v.Result == "virtual_plan_applied") || rec.Status == "rejected" || rec.Status == "failed") {
 		if _, e = tx.Exec(ctx, "UPDATE decision_intents SET settled=true WHERE command_id=$1", v.CommandID); e != nil {
 			return e
 		}
