@@ -6,7 +6,7 @@ from services.shared.network_config import NetworkIndex, ROOT, config_hash, load
 from services.simulation.flow_kernel import step_cells
 from services.simulation.metrics import METRICS_VERSION, link_metrics
 from services.simulation.safety import Signals, activation_rejection, default_plan, validate_plan
-from services.intelligence.forecast_demand import FORECAST_VERSION, boundary_forecast_rates
+from services.intelligence.forecast_demand import FORECAST_VERSION, HORIZONS_S, boundary_forecast_rates
 
 MODEL='aggregate-predictor-v1'
 
@@ -33,7 +33,7 @@ class Model:
         rates,methods=boundary_forecast_rates(frozen,self.index)
         assumptions={'run_id':frozen.run_id,'input_session_id':frozen.input_session_id,'demand_source':frozen.demand_source,'input_quality':frozen.input_quality,'config_hash':frozen.config_hash,'forecast_origin_source_s':frozen.latest_finalized_window_end_source_s,'rates_vps':rates,'forecast_methods':methods}
         digest=hashlib.sha256(json.dumps(assumptions,sort_keys=True,separators=(',',':')).encode()).hexdigest()
-        return {'state':frozen,'cells':self._initial_cells(frozen),'backlogs':{item.link_id:item.backlog_veh for item in frozen.boundary_demand},'rates':rates,'demand_hash':digest}
+        return {'state':frozen,'cells':self._initial_cells(frozen),'backlogs':{item.link_id:item.backlog_veh for item in frozen.boundary_demand},'rates':rates,'methods':methods,'demand_hash':digest}
     def _score_mode(self,state):
         if state.HasField('emergency'):
             if state.emergency.status in ('pre_clearance','priority'):return 'emergency_priority'
@@ -147,12 +147,25 @@ class Model:
         base=self.rollout(frozen,self.plan(frozen),horizon,evaluation);candidate=self.rollout(frozen,plan,horizon,evaluation)
         return pb.ComparisonResult(run_id=frozen.run_id,recommendation_id=rec_id,baseline_max_queue_veh=base['peak'],candidate_max_queue_veh=candidate['peak'],initial_time_s=frozen.simulation_time_s,model_version=MODEL,baseline_spillback_s=base['congested'],candidate_spillback_s=candidate['congested'],horizon_s=horizon,seed=frozen.seed,baseline_queue_delay_veh_s=base['queue_delay'],candidate_queue_delay_veh_s=candidate['queue_delay'],baseline_boundary_throughput_veh=base['throughput'],candidate_boundary_throughput_veh=candidate['throughput'],baseline_congested_link_s=base['congested'],candidate_congested_link_s=candidate['congested'],baseline_boundary_backlog_veh=base['backlog'],candidate_boundary_backlog_veh=candidate['backlog'],baseline_worst_service_debt_s=base['worst_service_debt'],candidate_worst_service_debt_s=candidate['worst_service_debt'],baseline_boundary_wait_veh_s=base['boundary_wait'],candidate_boundary_wait_veh_s=candidate['boundary_wait'],input_session_id=frozen.input_session_id,snapshot_sequence=frozen.snapshot_sequence,config_hash=frozen.config_hash,forecast_origin_source_s=frozen.latest_finalized_window_end_source_s,demand_assumptions_hash=evaluation['demand_hash'],window_start_simulation_s=frozen.simulation_time_s,window_end_simulation_s=frozen.simulation_time_s+horizon,scoring_version=self.scoring['version'],metrics_version=METRICS_VERSION)
     def analyze(self,state):
-        evaluation=self._evaluation_input(state);state=evaluation['state'];baseline=self.plan(state); forecast=self.rollout(state,baseline,evaluation=evaluation); forecasts=[]; critical=warning=False
+        try:
+            evaluation=self._evaluation_input(state)
+        except ValueError as exc:
+            if state.demand_source!='video_profile':raise
+            reason=str(exc)
+            status='stale_input' if 'stale' in reason.lower() or state.input_quality=='stale' else 'missing_input'
+            return pb.Analysis(run_id=state.run_id,simulation_time_s=state.simulation_time_s,input_session_id=state.input_session_id,snapshot_sequence=state.snapshot_sequence,config_hash=state.config_hash,model_version=MODEL,metrics_version=METRICS_VERSION,input_quality=state.input_quality,outcome='cannot_evaluate',outcome_reason=reason,horizon_availability=[pb.HorizonAvailability(horizon_s=h,status=status,reason=reason) for h in HORIZONS_S])
+        state=evaluation['state'];baseline=self.plan(state); forecast=self.rollout(state,baseline,evaluation=evaluation); forecasts=[]; critical=warning=False
+        source_origin=state.latest_finalized_window_end_source_s if state.HasField('latest_finalized_window_end_source_s') else 0.0
+        completed=[]
+        if state.demand_source=='video_profile':
+            completed=[datetime.fromisoformat(row.processed_at_utc.replace('Z','+00:00')) for row in state.observation_history if row.available_at_source_s<=source_origin]
+        input_age=max(0.0,(datetime.fromisoformat(state.timestamp.replace('Z','+00:00'))-max(completed)).total_seconds()) if completed else 0.0
+        method='ewma' if evaluation['methods'] and all(value=='ewma' for value in evaluation['methods'].values()) else 'persistence'
         for horizon,(queues,arrivals,etas) in forecast['snapshots'].items():
             for mid,q in queues.items():
                 move=self.moves[mid];edge=self.links[move['incoming_link_id']];link_q=sum(queues[x['id']] for x in self.index.movements_by_incoming.get(move['incoming_link_id'],[]));occ=min(1,link_q/edge['storage_capacity_veh']);is_critical=occ>=.9 or etas[mid] is not None;is_warning=occ>=.75;critical|=is_critical;warning|=is_warning
                 source=edge['from_node'];eta_text=f'{etas[mid]}s' if etas[mid] is not None else 'not predicted';facts=[f'Upstream source: {"external boundary" if self.nodes[source]["kind"]=="boundary" else "junction"} {source} via corridor {move["incoming_link_id"]}',f'Projected causal arrivals: {arrivals[mid]:.1f} veh over {horizon}s',f'Storage utilization: {occ*100:.1f}%',f'Predicted spillback ETA: {eta_text}',f'Demand forecast: {FORECAST_VERSION}; no hidden scenario schedule']
-                item=pb.Forecast(id=f'{state.run_id}-{int(state.simulation_time_s)}-{mid}-{horizon}',run_id=state.run_id,movement_id=mid,horizon_s=horizon,queue_veh=q,occupancy_ratio=occ,arrivals_veh=arrivals[mid],risk='critical' if is_critical else 'warning' if is_warning else 'normal',model_version=MODEL,explanation_facts=facts)
+                item=pb.Forecast(id=f'{state.run_id}-{int(state.simulation_time_s)}-{mid}-{horizon}',run_id=state.run_id,movement_id=mid,horizon_s=horizon,queue_veh=q,occupancy_ratio=occ,arrivals_veh=arrivals[mid],risk='critical' if is_critical else 'warning' if is_warning else 'normal',model_version=MODEL,explanation_facts=facts,method=method,origin_source_s=source_origin,input_age_s=input_age,input_quality=state.input_quality or 'synthetic',horizon_status='available',uncertainty_status='unavailable')
                 if etas[mid] is not None:item.spillback_eta_s=etas[mid]
                 forecasts.append(item)
         agda=self.allocate(state);candidates=self._generate_candidates(state,baseline,agda);scored=[]
@@ -168,4 +181,4 @@ class Model:
         for rank,(score,_,plan) in enumerate(scored[:3]):
             rid=str(uuid.uuid5(uuid.NAMESPACE_URL,f'{state.run_id}:{state.simulation_time_s}:{sorted(plan.items())}'));changes=[pb.TimingChange(node_id=self.phases[p]['node_id'],phase_id=p,green_s=g) for p,g in plan.items()];summary=' · '.join(f'{c.phase_id}: {int(c.green_s)}s' for c in changes)
             recommendations.append(pb.Recommendation(id=rid,run_id=state.run_id,timestamp=datetime.now(timezone.utc).isoformat(),priority=priority if rank==0 else 'normal',reason=f'Best among {len(candidates)} evaluated feasible aggregate plans' if rank==0 else f'Feasible alternative #{rank}',changes=changes,safety_status='requires_fresh_validation',status='pending',explanation_facts=[f'Trigger: {trigger} ({priority.upper()} priority)',f'Upstream corridor: {corridor["id"]} modeled free-flow ETA {eta:.1f}s',f'Coordinated timing: {summary}',f'{self.scoring["window_s"]}-second {self.scoring["version"]} weighted model points: {score:.3f}',f'Candidate rank #{rank+1}; not a global optimum','Human approval required; virtual signals only; aggregate-predictor-v1']))
-        result=pb.Analysis(run_id=state.run_id,simulation_time_s=state.simulation_time_s,forecasts=forecasts,recommendation=recommendations[0],alternatives=recommendations[1:]);result.comparison.CopyFrom(self.comparison(state,result.recommendation.changes,result.recommendation.id,evaluation=evaluation));return result
+        result=pb.Analysis(run_id=state.run_id,simulation_time_s=state.simulation_time_s,forecasts=forecasts,recommendation=recommendations[0],alternatives=recommendations[1:],input_session_id=state.input_session_id,snapshot_sequence=state.snapshot_sequence,config_hash=state.config_hash,model_version=MODEL,metrics_version=METRICS_VERSION,forecast_origin_source_s=source_origin,input_quality=state.input_quality or 'synthetic',horizon_availability=[pb.HorizonAvailability(horizon_s=h,status='available') for h in HORIZONS_S]);result.comparison.CopyFrom(self.comparison(state,result.recommendation.changes,result.recommendation.id,evaluation=evaluation));return result
