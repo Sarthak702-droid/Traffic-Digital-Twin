@@ -1,6 +1,7 @@
 {
   "schema_version": "reference-candidate-windows-v1",
-  "status": "awaiting_rights_and_independent_review",
+  "status": "authorized_for_internal_review_awaiting_independent_labels",
+  "rights_reference": "User authorized use of these clips in this task conversation on 2026-09-26; internal review use only, redistribution unconfirmed",
   "source": "local traffic video assets matched against reports/asset-manifest.json by SHA-256",
   "selection_method": "visual preview at 5 and 15 source seconds only; difficulty tags are provisional",
   "windows": [
@@ -14,7 +15,7 @@
       "window_start_source_s": 10,
       "window_end_source_s": 15,
       "provisional_condition": "ordinary_mixed_flow",
-      "rights_review": "pending",
+      "rights_review": "user_authorized_internal_review",
       "reference_label": null,
       "second_review": null
     },
@@ -28,7 +29,7 @@
       "window_start_source_s": 10,
       "window_end_source_s": 15,
       "provisional_condition": "crowded_multimodal_flow",
-      "rights_review": "pending",
+      "rights_review": "user_authorized_internal_review",
       "reference_label": null,
       "second_review": null
     },
@@ -42,7 +43,7 @@
       "window_start_source_s": 5,
       "window_end_source_s": 10,
       "provisional_condition": "portrait_occlusion_and_mixed_traffic",
-      "rights_review": "pending",
+      "rights_review": "user_authorized_internal_review",
       "reference_label": null,
       "second_review": null
     }
