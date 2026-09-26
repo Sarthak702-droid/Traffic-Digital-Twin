@@ -20,6 +20,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+from urllib.parse import urlsplit
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -155,6 +156,14 @@ def find_executable(name: str, fallback_paths: list[str]) -> str:
         if os.path.isfile(expanded) and os.access(expanded, os.X_OK):
             return expanded
     return name
+
+
+def frontend_command(root: Path, npm_bin: str) -> tuple[list[str], str]:
+    """Choose Vite without assuming worktree-local node_modules exists."""
+    for candidate in (root / "apps/web/node_modules/.bin/vite", root / "node_modules/.bin/vite"):
+        if candidate.exists() and os.access(candidate, os.X_OK):
+            return [str(candidate), "--host", "127.0.0.1", "--port", "3100"], str(root / "apps/web")
+    return [npm_bin, "run", "dev", "-w", "apps/web"], str(root)
 
 
 def wait_for_port(name: str, port: int, process: subprocess.Popen, timeout: float = 20.0):
@@ -344,11 +353,10 @@ def workspace_service_pids(proc_root: Path = Path("/proc")) -> set[int]:
         is_compute = "services.shared.server" in command and (" simulation " in f" {command} " or " intelligence " in f" {command} ")
         is_vite = ("vite" in command and "--port 3100" in command) or ("apps/web" in command and "vite" in command)
 
-        # Match workspace-owned stack processes, or any process listening on our specific stack ports
-        # that matches our service signatures
-        if in_workspace and (owns_stack_port or is_api or is_compute or is_vite):
-            found.add(pid)
-        elif owns_stack_port and (is_api or is_compute or is_vite or "vite" in command or "traffic" in command):
+        # A launcher shell can mention a Vite path or service command without
+        # being that service. Registered children have separate PID/start-time
+        # evidence; argument matches here also require a positive listener.
+        if owns_stack_port and in_workspace and (is_api or is_compute or is_vite):
             found.add(pid)
     return found
 
@@ -428,28 +436,14 @@ def cleanup_stale_services():
                 break
             time.sleep(0.08)
 
-    # If any port is still busy, forcefully kill remaining listener processes and release ports
+    # Never kill an unidentified owner of a shared port.
     busy_ports = [p for p in ports if check_port("127.0.0.1", p, timeout=0.2)]
     if busy_ports:
-        leftover_pids = _listener_pids(set(busy_ports)) - {os.getpid()}
+        leftover_pids = _listener_pids(set(busy_ports)) & workspace_service_pids()
         if leftover_pids:
             log(f"Force-stopping remaining listener process(es) on port(s) {busy_ports}: {leftover_pids}")
             for pid in leftover_pids:
                 _terminate_pid(pid, signal.SIGKILL)
-
-        # Use fuser and lsof to forcefully drop lingering sockets on still-busy ports
-        for p in busy_ports:
-            try:
-                subprocess.run(["fuser", "-k", "-9", f"{p}/tcp"], capture_output=True, timeout=1)
-            except Exception:
-                pass
-            try:
-                out = subprocess.run(["lsof", "-ti", f":{p}"], capture_output=True, text=True, timeout=1)
-                for line in out.stdout.splitlines():
-                    if line.strip().isdigit():
-                        _terminate_pid(int(line.strip()), signal.SIGKILL)
-            except Exception:
-                pass
 
         # Wait up to 3.0s for the kernel to release all busy ports
         deadline = time.monotonic() + 3.0
@@ -510,7 +504,7 @@ def main():
     if go_available:
         log("Compiling Go API to bin/ for instant startup...")
         try:
-            subprocess.run([go_bin, "build", "-o", str(bin_api), "./apps/api/cmd/api"], check=True, cwd=ROOT)
+            subprocess.run([go_bin, "build", "-buildvcs=false", "-o", str(bin_api), "./apps/api/cmd/api"], check=True, cwd=ROOT)
         except Exception as e:
             log(f"Pre-compilation note: {e}")
 
@@ -561,17 +555,13 @@ def main():
     if to_add:
         env["PATH"] = ":".join(to_add) + (":" + cur_path if cur_path else "")
 
-    vite_bin = ROOT / "apps/web" / "node_modules" / ".bin" / "vite"
-    if vite_bin.exists() and os.access(vite_bin, os.X_OK):
-        vite_cmd = [str(vite_bin), "--host", "127.0.0.1", "--port", "3100"]
-    else:
-        vite_cmd = [npm_bin, "run", "dev", "-w", "apps/web"]
+    vite_cmd, vite_workdir = frontend_command(ROOT, npm_bin)
 
     commands = [
         ("Python Simulation gRPC", [py_bin, "-m", "services.shared.server", "simulation", "--port", "50051"], str(ROOT)),
         ("Python Intelligence gRPC", [py_bin, "-m", "services.shared.server", "intelligence", "--port", "50052"], str(ROOT)),
         ("Go API Gateway", api_cmd, str(ROOT)),
-        ("Frontend Web (Vite)", vite_cmd, str(ROOT / "apps/web")),
+        ("Frontend Web (Vite)", vite_cmd, vite_workdir),
     ]
 
     children = []
@@ -622,6 +612,7 @@ def main():
                 wait_for_port(name, 3100, proc)
 
         api_p = env["API_ADDR"].split(":")[-1]
+        db_name = urlsplit(env["DATABASE_URL"]).path.lstrip("/") or "configured database"
         print(
             f"""
 \033[1;32m========================================================================\033[0m
@@ -629,7 +620,7 @@ def main():
 \033[1;32m========================================================================\033[0m
   \033[1mFrontend:\033[0m       \033[34mhttp://127.0.0.1:3100\033[0m
   \033[1mGo API:\033[0m         http://127.0.0.1:{api_p}
-  \033[1mDatabase:\033[0m       PostgreSQL on 127.0.0.1:5433 (traffic)
+  \033[1mDatabase:\033[0m       PostgreSQL on 127.0.0.1:5433 ({db_name})
 
   \033[1mServices:\033[0m
   [✓] PostgreSQL 16 (Docker)

@@ -56,6 +56,23 @@ class LauncherRecoveryTests(unittest.TestCase):
                 {"50051", "8081"},
             )
 
+    def test_launcher_shell_mentioning_vite_is_not_a_stale_service(self):
+        with tempfile.TemporaryDirectory() as directory:
+            proc_root = Path(directory)
+            shell = proc_root / "42"
+            shell.mkdir()
+            (shell / "cmdline").write_bytes(b"bash\0-c\0ln -s apps/web/node_modules/.bin/vite && python3 scripts/start_all.py\0")
+            with patch.object(start_all, "ROOT", Path(directory)), patch.object(start_all, "_listener_pids", return_value=set()):
+                self.assertNotIn(42, start_all.workspace_service_pids(proc_root))
+
+    def test_fallback_vite_launcher_runs_from_workspace_root(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "apps/web").mkdir(parents=True)
+            command, cwd = start_all.frontend_command(root, "npm")
+            self.assertEqual(command, ["npm", "run", "dev", "-w", "apps/web"])
+            self.assertEqual(cwd, str(root))
+
 
 if __name__ == "__main__":
     unittest.main()

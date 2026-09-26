@@ -1,101 +1,39 @@
-# Traffic Digital Twin Runbook
+# Traffic Digital Twin: local prototype runbook
 
-Operational procedures, rehearsal flows, and verification steps for the Traffic Digital Twin.
+This runbook operates the Go API, PostgreSQL, Python gRPC compute services, and Vite browser on one workstation. It exercises virtual control only. The target machine and supported concurrency remain to be established by P01/Q01 measurements.
 
----
+## Prepare the workstation
 
-## 1. System Requirements & Diagnostics
+1. Use Python 3.12, Go, Node.js, Docker Compose and the checked-in `go.sum`, `package-lock.json`, `services/requirements.lock`, and `services/vision/requirements.lock`. Keep `.venv`, `.runtime`, source MP4 files and model weights out of git. Run `python3 scripts/twin.py doctor --config agent-config.json` to inspect local dependencies.
+2. Place only footage you are authorized to process under a local authorized root. Preserve the original recording. Record the license or written authorization reference separately; the processing command requires that reference. `reports/asset-manifest.json` declares registered filenames, dimensions, lengths, byte sizes and SHA-256 digests. Run `python3 scripts/twin.py assets --config agent-config.json` from the repository root to verify every staged clip's complete size and digest. A missing or mismatched clip fails the check.
+3. Put the private ITD v1.2 checkpoint at the configured `.runtime/models/itd-v1.2/best_xl_ITD_v1.2.pt` path. Run `python3 scripts/twin.py model-check --config agent-config.json` to verify its digest. Do not put the checkpoint or private signing material in git or a customer package.
+4. Create the local Python environment and install the locked dependencies. Install root/web Node dependencies with `npm ci` and download Go modules using the checked-in `go.sum`. Keep the command output and versions with the run record. The launcher uses `node_modules/.bin/vite` from the root or web workspace; its npm fallback runs from the repository root.
+5. Start PostgreSQL with `docker compose up -d postgres`. Do not use `down -v` on the shared local database. Run `python3 scripts/bootstrap-local.py` to create private local settings, then provision an operator with `python3 scripts/create-gateway-user.py .runtime/gateway-users.json <username> --role operator`; the script prompts for a password without placing it in shell arguments. Keep the account file private.
 
-Verify system dependencies, Python 3.12+, Go 1.22+, Node.js, and PostgreSQL:
+## Process a registered clip
+
+Check `packages/camera-config/cameras.json` for the registered camera, counting line, queue region and declared virtual boundary. Process an authorized clip with:
+
 ```bash
-python3 scripts/twin.py doctor --config agent-config.json
+.venv/bin/python scripts/process-recorded-clip.py \
+  --camera CAM-01 \
+  --clip /absolute/authorized/root/registered-file.mp4 \
+  --authorized-root /absolute/authorized/root \
+  --authorization-reference <local-rights-record-id>
 ```
 
-Verify media assets (12 MP4 videos) and the authentic ITD v1.2 model checkpoint:
-```bash
-python3 scripts/twin.py assets --config agent-config.json
-python3 scripts/twin.py model-check --config agent-config.json
-```
+The output under `.runtime/vision/processed` identifies the clip/config/model/source session and finalized windows. A valid zero crossing remains a zero, and a window is usable only after its end and processing completion. A cached entry may be reused only when its complete identity matches. The original media remains immutable. For a video-derived run, the configured boundary cameras need matching processed inputs; start with one freshly processed camera and already validated cached inputs for the others. Independent clips are declared virtual demand, not a measured physical corridor.
 
----
+## Operate the virtual run
 
-## 2. Running the Digital Twin
+1. Run `npm start` from the repository root. It starts PostgreSQL if needed, Python simulation/intelligence gRPC, Go API on `127.0.0.1:8081`, and Vite on `127.0.0.1:3100`. The Go API is the only command path. Use the browser login; viewer mutations must fail.
+2. Open **Vision Analytics** and inspect registered clip status, finalized window timing, provenance and data quality. Its play/pause/seek changes display time only. It does not change a run's authoritative input. Missing or degraded data is unavailable, and playback stops at end of file.
+3. Select a graph, scenario and demand source. The original two-controlled-junction graph and synthetic three-controlled-junction graph, plus peak, incident and emergency scenarios, require separate verification. In Recommend mode inspect source video time, latest completed observation window, virtual simulation time, forecast origin and input quality together. The 30/60/120/300-second forecast horizons may be unavailable when evidence is insufficient.
+4. Inspect current and candidate plans over the same window and demand assumptions. Compare modeled queue delay (veh·s), boundary exits (veh), waiting-to-enter backlog (veh) and worst service debt (s). `no_action` calls for no timing change; `cannot_evaluate` signals unsuitable input or compute. Individual stops, journey time, and uncalibrated video speed are unavailable.
+5. An authenticated operator may simulate, approve, modify with a reason, or reject with a reason. An accepted plan waits for a safe virtual boundary. Confirm a later `virtual_plan_applied` audit with the virtual tick and changed signal state. On stale input, timeout, dependency loss or uncertain command outcome, inspect the command and audit before retrying. Replay is an explicit labeled operator action.
 
-The running web application plays registered MP4s with cached ITD telemetry. The offline batch command below can recompute observations; it is not a live CCTV ingest service.
+## Verification and evidence
 
-### Mode A: Cached Observation Mode (Recommended for Demos & Verification)
-Pre-computed 5-second observation bins generated by the authentic ITD v1.2 YOLO model and ByteTrack. Provides zero-lag, deterministic playback and exact mass conservation:
-```bash
-python3 scripts/twin.py process --mode cached --config agent-config.json
-```
+Run focused suites and contract checks after a change: `go test ./...` under `apps/api`, `.venv/bin/python -m pytest -q services`, `npm test -- --run` under `apps/web`, and `python3 scripts/verify-contracts.py`. Go/PostgreSQL tests need the local database. Mock-backed tests do not establish real OpenCV/gRPC/browser acceptance.
 
-### Batch concurrent inference benchmark
-Executes multi-stream decoding, inference, and tracking from recorded files with bounded queues. It currently runs below media rate on this CPU and is not selectable as a live browser stream:
-```bash
-python3 scripts/twin.py process --mode online --config agent-config.json
-```
-
----
-
-## 3. Launching Services & Web Dashboard
-
-### 1. Database (PostgreSQL)
-Ensure the Docker container is running on port 5433:
-```bash
-docker start trafficdigitaltwin-postgres-1
-```
-
-### 2. Go API Gateway
-Run the complete stack with `npm start` from the repository root. The Go API listens on port 8081:
-```bash
-go run ./apps/api/cmd/api
-```
-Key endpoints:
-- `GET /api/v1/observations?camera_id=CAM-01&mode=cached_observations`
-- `GET /api/v1/cameras`
-- `GET /api/v1/clips/{id}/media` (Range/seek supported MP4 video)
-- `GET /api/v1/demand-profiles`
-
-### 3. Vite Web UI
-The unified launcher starts Vite; to run it separately:
-```bash
-npm --prefix apps/web run dev
-```
-Access the application at `http://127.0.0.1:3100`.
-
----
-
-## 4. Demo Rehearsal Workflow (PRD §25)
-
-1. **Vision Screen Review**:
-   - Navigate to the **Vision Analytics** view (`/?view=vision`).
-   - Select camera slots `CAM-01` through `CAM-06`.
-   - Inspect the cached ITD observation windows and the 12 recorded camera feeds. Online inference is a separate CPU-limited batch job.
-   - Verify PRD §19.3 Authority Classifications (`OBSERVED FROM VIDEO`, `VIDEO-DERIVED SCENARIO INPUT`, `MODELED NETWORK STATE`, `FORECAST`, `UNAVAILABLE`).
-   - Observe that uncalibrated speed is clearly labeled `UNAVAILABLE`.
-2. **Boundary Demand Injection**:
-   - In Command Center, select **ITD v1.2 recorded-video counts** and initiate a run. The source is stored with the run and shown in model state.
-   - Verify that boundary inflows enter `C2-C1`, `C4-C1`, `C5-C1`, and `C6-C3` according to the 5-second delayed uniform release schedule.
-3. **Bottleneck & Capacity Reduction Demonstration**:
-   - Open Junction `C3` drawer.
-   - Apply a capacity reduction (e.g. 50% restriction).
-   - Observe upstream queue buildup on `C1-C3` and `C6-C3` approaches.
-   - Verify recovery cycle restores flow when resolved.
-4. **Candidate Signal Plan Evaluation**:
-   - Open the Decision panel.
-   - Run a 120-second simulation rollout comparing baseline timing against a proposed candidate.
-   - Review comparative metrics: average queue, total delay, and boundary exits.
-
----
-
-## 5. Automated Verification Suite
-
-Run full verification across all sub-systems (Python unit/integration tests, Go contracts/migrations, and Vitest UI):
-```bash
-python3 scripts/twin.py verify --config agent-config.json
-```
-Or run individual test suites:
-- **Python**: `.venv/bin/pytest -v`
-- **Go**: `go test ./...`
-- **UI**: `npm --prefix apps/web test`
-- **Benchmarking**: `python3 scripts/twin.py benchmark --config agent-config.json`
+P01 must record fresh-video processing time, inference throughput, simulation and candidate evaluation time separately, including CPU, peak RAM, input age and state-to-recommendation latency. Declare hardware, source intervals, input identities, workload, candidate budget, supported concurrency, failures and raw commands. Freeze benchmark inputs and thresholds before held-out evaluation. Q01 must repeat the complete Go/PostgreSQL/Python/browser path and have an independent operator process a reserved clip without developer edits. P02 will add one-action authenticated report export; until then, preserve audit and test artifacts separately and mark that gate open.

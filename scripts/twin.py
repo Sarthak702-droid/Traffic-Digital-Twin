@@ -94,19 +94,41 @@ def cmd_assets(args):
 
     assets = manifest.get("assets", [])
     print(f"Total registered assets: {len(assets)}")
-    all_exist = True
+    all_valid = True
     for a in assets:
         fname = a["filename"]
         slot = a.get("assigned_slot", "UNASSIGNED")
-        p = Path(fname)
-        exists = p.exists()
-        print(f"  [{slot}] {fname} - {'FOUND' if exists else 'MISSING'} ({a.get('resolution')}, {a.get('duration_s')}s)")
-        if not exists:
-            all_exist = False
+        error = validate_manifest_asset(a, Path.cwd())
+        print(f"  [{slot}] {fname} - {'VERIFIED' if error is None else 'FAILED: ' + error}")
+        if error is not None:
+            all_valid = False
 
-    if not all_exist:
+    if not all_valid:
         sys.exit(1)
-    print("Asset validation completed.")
+    print("Asset identity validation completed.")
+
+
+def validate_manifest_asset(asset: dict, root: Path) -> str | None:
+    """Return a non-secret reason when a registered local clip does not match."""
+    filename = asset.get("filename")
+    if not isinstance(filename, str) or not filename or Path(filename).name != filename or filename in {".", ".."}:
+        return "invalid filename"
+    path = root / filename
+    if path.is_symlink() or not path.is_file():
+        return "missing regular file"
+    expected_size = asset.get("size_bytes")
+    if not isinstance(expected_size, int) or expected_size < 0 or path.stat().st_size != expected_size:
+        return "size mismatch"
+    expected_hash = asset.get("sha256")
+    if not isinstance(expected_hash, str) or len(expected_hash) != 64 or any(ch not in "0123456789abcdef" for ch in expected_hash):
+        return "invalid SHA-256 in manifest"
+    hasher = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            hasher.update(chunk)
+    if hasher.hexdigest() != expected_hash:
+        return "SHA-256 mismatch"
+    return None
 
 
 def cmd_model_check(args):
