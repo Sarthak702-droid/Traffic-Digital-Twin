@@ -20,6 +20,7 @@ import argparse
 import hashlib
 import json
 import os
+import socket
 import subprocess
 import sys
 import time
@@ -44,6 +45,18 @@ def load_agent_config(config_path: str) -> dict:
         return json.load(f)
 
 
+def python_version_supported(version: tuple[int, ...]) -> bool:
+    return version >= (3, 12)
+
+
+def postgres_reachable(host: str, port: int) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=1):
+            return True
+    except OSError:
+        return False
+
+
 def cmd_doctor(args):
     print("=== Traffic Digital Twin Doctor ===")
     config = load_agent_config(args.config)
@@ -51,7 +64,7 @@ def cmd_doctor(args):
 
     # 1. Python & Packages
     py_ver = sys.version.split()[0]
-    checks.append(("Python 3.12+", py_ver.startswith("3.12") or py_ver.startswith("3.11"), f"Found Python {py_ver}"))
+    checks.append(("Python 3.12+", python_version_supported(sys.version_info), f"Found Python {py_ver}"))
 
     # 2. Go
     go_res = subprocess.run(["go", "version"], capture_output=True, text=True)
@@ -62,9 +75,8 @@ def cmd_doctor(args):
     checks.append(("Node.js", node_res.returncode == 0, node_res.stdout.strip() if node_res.returncode == 0 else "Node not found"))
 
     # 4. PostgreSQL Database
-    pg_res = subprocess.run(["docker", "ps", "--filter", "name=trafficdigitaltwin-postgres", "--format", "{{.Status}}"], capture_output=True, text=True)
-    pg_running = "Up" in pg_res.stdout
-    checks.append(("PostgreSQL (Port 5433)", pg_running, "Container healthy" if pg_running else "PostgreSQL not running"))
+    pg_running = postgres_reachable("127.0.0.1", 5433)
+    checks.append(("PostgreSQL (Port 5433)", pg_running, "TCP port reachable" if pg_running else "TCP port unavailable"))
 
     # 5. Model weights
     model_path = Path(config.get("assets", {}).get("itd_checkpoint_path", ".runtime/models/itd-v1.2/best_xl_ITD_v1.2.pt"))

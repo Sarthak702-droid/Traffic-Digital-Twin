@@ -7,10 +7,20 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from scripts.twin import cmd_assets, validate_manifest_asset
+from scripts.twin import cmd_assets, python_version_supported, postgres_reachable, validate_manifest_asset
 
 
 class AssetVerificationTests(unittest.TestCase):
+    def test_doctor_checks_supported_python_and_database_socket(self):
+        self.assertTrue(python_version_supported((3, 12)))
+        self.assertTrue(python_version_supported((3, 14)))
+        self.assertFalse(python_version_supported((3, 11)))
+        with patch("scripts.twin.socket.create_connection") as connect:
+            self.assertTrue(postgres_reachable("127.0.0.1", 5433))
+            connect.assert_called_once_with(("127.0.0.1", 5433), timeout=1)
+        with patch("scripts.twin.socket.create_connection", side_effect=OSError):
+            self.assertFalse(postgres_reachable("127.0.0.1", 5433))
+
     def test_command_reads_registered_clips_from_configured_media_directory(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
