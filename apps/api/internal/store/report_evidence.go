@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -68,4 +69,38 @@ func (s *Store) ListReportEvidence(ctx context.Context, runID pgtype.UUID) ([]Re
 		events = append(events, event)
 	}
 	return events, rows.Err()
+}
+
+// SaveObservationEvidence stores an aggregate finalized window once. A repeated
+// identity with different content is an error, preserving source provenance.
+func (s *Store) SaveObservationEvidence(ctx context.Context, runID pgtype.UUID, observation *pb.FinalizedObservation) error {
+	if !runID.Valid || observation == nil || observation.ObservationId == "" || observation.CameraId == "" || observation.SourceIdentity == nil || observation.SourceIdentity.SourceSessionId == "" || observation.WindowEndS <= observation.WindowStartS || observation.AvailableAtSourceS < observation.WindowEndS || observation.ProcessedAtUtc == "" {
+		return errors.New("finalized observation identity and completion required")
+	}
+	payload, err := (protojson.MarshalOptions{UseProtoNames: true}).Marshal(observation)
+	if err != nil {
+		return err
+	}
+	tag, err := s.Pool.Exec(ctx, "INSERT INTO run_evidence_events(id,run_id,event_identity,kind,payload) VALUES($1,$2,$3,'observation',$4) ON CONFLICT DO NOTHING", UUID(), runID, observation.ObservationId, payload)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 1 {
+		return nil
+	}
+	var prior []byte
+	if err = s.Pool.QueryRow(ctx, "SELECT payload FROM run_evidence_events WHERE run_id=$1 AND kind='observation' AND event_identity=$2", runID, observation.ObservationId).Scan(&prior); err != nil {
+		return err
+	}
+	var left, right any
+	if err = json.Unmarshal(prior, &left); err != nil {
+		return err
+	}
+	if err = json.Unmarshal(payload, &right); err != nil {
+		return err
+	}
+	if !reflect.DeepEqual(left, right) {
+		return errors.New("duplicate observation identity has different content")
+	}
+	return nil
 }

@@ -69,6 +69,22 @@ func TestReportEvidenceEventsAreAppendOnlyAndSurviveReconnect(t *testing.T) {
 	if err = s.SaveAnalysisEvidence(ctx, &pb.Analysis{RunId: run.ID.String(), Outcome: "recommend", Recommendation: &pb.Recommendation{Id: recID, RunId: run.ID.String(), Status: "pending"}}); err != nil {
 		t.Fatal(err)
 	}
+	observation := &pb.FinalizedObservation{ObservationId: "obs-1", CameraId: "CAM-01", WindowStartS: 0, WindowEndS: 5, AvailableAtSourceS: 5, ProcessedAtUtc: "2026-09-27T00:00:00Z", CrossingsVeh: 0, ObservationStatus: "valid", SourceIdentity: &pb.SourceIdentity{ClipSha256: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", GeometrySha256: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", SourceSessionId: "source-1"}}
+	if err = s.SaveObservationEvidence(ctx, run.ID, observation); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.SaveObservationEvidence(ctx, run.ID, observation); err != nil {
+		t.Fatal(err)
+	}
+	changed := *observation
+	changed.CrossingsVeh = 1
+	if err = s.SaveObservationEvidence(ctx, run.ID, &changed); err == nil {
+		t.Fatal("changed duplicate observation was silently accepted")
+	}
+	var observed int
+	if err = pool.QueryRow(ctx, "SELECT count(*) FROM run_evidence_events WHERE run_id=$1 AND kind='observation' AND payload->>'observation_id'='obs-1'", run.ID).Scan(&observed); err != nil || observed != 1 {
+		t.Fatalf("duplicate observation persisted: %d %v", observed, err)
+	}
 	var recommendationCount int
 	if err = pool.QueryRow(ctx, "SELECT count(*) FROM recommendations WHERE id=$1 AND run_id=$2", recID, run.ID).Scan(&recommendationCount); err != nil || recommendationCount != 1 {
 		t.Fatalf("analysis recommendation not coupled: %d %v", recommendationCount, err)
@@ -80,7 +96,7 @@ func TestReportEvidenceEventsAreAppendOnlyAndSurviveReconnect(t *testing.T) {
 	}
 	defer pool.Close()
 	saved, err := New(pool).ListReportEvidence(ctx, run.ID)
-	if err != nil || len(saved) != 3 || saved[1].Kind != "analysis" {
+	if err != nil || len(saved) != 4 || saved[1].Kind != "analysis" {
 		t.Fatalf("analysis evidence not durable: %+v %v", saved, err)
 	}
 	var outcome string

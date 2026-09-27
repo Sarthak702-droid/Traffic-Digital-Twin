@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 	"net"
 	"net/http/httptest"
 	"os"
@@ -84,6 +85,32 @@ func TestStartResetFailureAndAuditedLifecycle(t *testing.T) {
 	}
 	var first map[string]any
 	json.Unmarshal(w.Body.Bytes(), &first)
+	observedFrame := proto.Clone(s.state).(*pb.TrafficState)
+	observedFrame.ObservationHistory = []*pb.FinalizedObservation{{ObservationId: "obs-live-zero", CameraId: "CAM-01", WindowStartS: 0, WindowEndS: 5, AvailableAtSourceS: 5, ProcessedAtUtc: "2026-09-27T00:00:00Z", ObservationStatus: "valid", SourceIdentity: &pb.SourceIdentity{ClipSha256: strings.Repeat("a", 64), GeometrySha256: strings.Repeat("b", 64), SourceSessionId: "source-1"}}}
+	if e = s.acceptFrame(observedFrame); e != nil {
+		t.Fatal(e)
+	}
+	if e = s.acceptFrame(observedFrame); e != nil {
+		t.Fatal(e)
+	}
+	var captured int
+	if e = pool.QueryRow(ctx, "SELECT count(*) FROM run_evidence_events WHERE kind='observation' AND payload->>'observation_id'='obs-live-zero'").Scan(&captured); e != nil || captured != 1 {
+		t.Fatalf("live valid-zero observation not captured once: %d %v", captured, e)
+	}
+	wrongEpoch := proto.Clone(observedFrame).(*pb.TrafficState)
+	wrongEpoch.InputSessionId = "different-epoch"
+	wrongEpoch.ObservationHistory[0].ObservationId = "wrong-epoch-observation"
+	if e = s.acceptFrame(wrongEpoch); e == nil {
+		t.Fatal("wrong source epoch was accepted")
+	}
+	if e = pool.QueryRow(ctx, "SELECT count(*) FROM run_evidence_events WHERE kind='observation' AND event_identity='wrong-epoch-observation'").Scan(&captured); e != nil || captured != 0 {
+		t.Fatalf("wrong epoch evidence persisted: %d %v", captured, e)
+	}
+	changedFrame := proto.Clone(observedFrame).(*pb.TrafficState)
+	changedFrame.ObservationHistory[0].CrossingsVeh = 1
+	if e = s.acceptFrame(changedFrame); e == nil {
+		t.Fatal("changed duplicate observation was accepted")
+	}
 	w = post("/api/v1/scenarios/incident_c3/start", `{"schema_version":"1.0","seed":2202,"mode":"recommend","incident":{"kind":"capacity_reduction","capacity_ratio":0.5}}`)
 	if w.Code != 200 || fake.last == nil || fake.last.IncidentKind != "capacity_reduction" || fake.last.IncidentCapacityRatio != 0.5 {
 		t.Fatalf("incident override was not validated and forwarded: %d %s %#v", w.Code, w.Body.String(), fake.last)

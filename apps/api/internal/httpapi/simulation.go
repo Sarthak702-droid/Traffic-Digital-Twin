@@ -202,6 +202,32 @@ func (s *Server) acceptFrame(frame *pb.TrafficState) error {
 	if e := contracts.ValidateState(frame); e != nil {
 		return e
 	}
+	// Persist completed aggregate observations before publishing this frame.
+	// Database work must not hold the subscriber/state mutex.
+	s.mu.RLock()
+	eligible := s.sim != nil && s.sim.command != nil && frame.RunId == s.sim.command.RunId &&
+		(s.state == nil || s.state.RunId != frame.RunId || s.state.SimulationTimeS <= frame.SimulationTimeS)
+	epoch := s.activeInputSessionID
+	s.mu.RUnlock()
+	if !eligible {
+		return nil
+	}
+	if frame.InputSessionId != "" && frame.InputSessionId != epoch {
+		return fmt.Errorf("simulator state carries a different input epoch")
+	}
+	if s.Store != nil && len(frame.ObservationHistory) > 0 {
+		var runID pgtype.UUID
+		if e := runID.Scan(frame.RunId); e != nil {
+			return fmt.Errorf("invalid report run id: %w", e)
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		for _, observation := range frame.ObservationHistory {
+			if e := s.Store.SaveObservationEvidence(ctx, runID, observation); e != nil {
+				return fmt.Errorf("persist finalized observation: %w", e)
+			}
+		}
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.sim == nil || s.sim.command == nil || frame.RunId != s.sim.command.RunId {
