@@ -31,6 +31,9 @@ var authSessions string
 //go:embed migrations/008_run_input_binding.sql
 var runInputBinding string
 
+//go:embed migrations/009_run_report_evidence.sql
+var runReportEvidence string
+
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	tx, e := pool.Begin(ctx)
 	if e != nil {
@@ -114,6 +117,14 @@ func applyControl(ctx context.Context, tx pgx.Tx) error {
 	}
 	if !done {
 		if _, err := tx.Exec(ctx, runInputBinding); err != nil {
+			return err
+		}
+	}
+	if err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=9)").Scan(&done); err != nil {
+		return err
+	}
+	if !done {
+		if _, err := tx.Exec(ctx, runReportEvidence); err != nil {
 			return err
 		}
 	}

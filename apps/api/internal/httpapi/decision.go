@@ -154,13 +154,13 @@ func (s *Server) ConnectIntelligence(ctx context.Context, address string) error 
 				}
 				persisted := proto.Clone(analysis).(*pb.Analysis)
 				s.mu.Unlock()
-				if s.Store != nil && persisted.Recommendation != nil {
+				if s.Store != nil {
 					saveCtx, saveCancel := context.WithTimeout(ctx, time.Second)
-					err := s.Store.Write(saveCtx, "recommendation", json.RawMessage(jsonProto(persisted.Recommendation)), nil)
+					err := s.Store.SaveAnalysisEvidence(saveCtx, persisted)
 					saveCancel()
 					if err != nil {
 						s.mu.Lock()
-						s.analysisFault = "Recommendation persistence failed"
+						s.analysisFault = "Analysis evidence persistence failed"
 						s.mu.Unlock()
 						continue
 					}
