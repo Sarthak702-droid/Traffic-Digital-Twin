@@ -72,17 +72,21 @@ class Model:
         validate_plan(self.config,plan)
         evaluation=evaluation or self._evaluation_input(state)
         frozen=evaluation['state']; cells={edge:list(values) for edge,values in evaluation['cells'].items()}; scheduler=self._scheduler(frozen,plan); rates=evaluation['rates']; saved_backlogs=evaluation['backlogs']; backlogs={e:saved_backlogs.get(e,0.0) for e in self.index.boundary_inputs}
+        demand_trace=evaluation.get('demand_trace')
+        if demand_trace is not None and (len(demand_trace)!=horizon or any(set(row)!=set(self.index.boundary_inputs) or any(not math.isfinite(value) or value<0 for value in row.values()) for row in demand_trace)):
+            raise ValueError('Benchmark demand trace must cover every boundary and rollout tick')
         snapshots={}; arrivals={m:0.0 for m in self.moves}; eta={m:None for m in self.moves}; peak=queue_delay=congested=throughput=boundary_wait=worst_service_debt=0.0
+        initial_mass=sum(map(sum,cells.values()))+sum(backlogs.values());offered_total=0.0
         capacity={m:1.0 for m in self.moves}
         if state.HasField('incident') and state.incident.status=='active':
             for mid,m in self.moves.items():
                 if m['node_id']==state.incident.node_id:capacity[mid]=state.incident.capacity_ratio
         for tick in range(1,horizon+1):
-            external=dict(rates); permissions=set()
+            external=dict(demand_trace[tick-1]) if demand_trace is not None else dict(rates); permissions=set()
             for node,phases in scheduler.nodes.items():
                 index,stage,_=scheduler.state[node]
                 if stage=='green':permissions.update(phases[index]['movement_ids'])
-            out=step_cells(self.index,cells,backlogs,external,permissions,capacity); throughput+=sum(out.exited.values())
+            offered_total+=sum(external.values());out=step_cells(self.index,cells,backlogs,external,permissions,capacity); throughput+=sum(out.exited.values())
             for mid,m in self.moves.items():
                 arrivals[mid]+=(out.admitted.get(m['incoming_link_id'],0.0)+sum(v for source,v in out.junction_flows.items() if self.moves[source]['outgoing_link_id']==m['incoming_link_id']))*m['turning_ratio']
             queues={}; congested_links=0
@@ -100,7 +104,7 @@ class Model:
         backlog=sum(backlogs.values()); change=sum(abs(plan[p]-self.plan(frozen)[p]) for p in plan)
         metrics={'queue_delay':queue_delay,'boundary_wait':boundary_wait,'congested':congested,'throughput':throughput,'worst_service_debt':worst_service_debt,'timing_change':change}
         cost=self.score_metrics(metrics,self._score_mode(frozen))
-        return {'snapshots':snapshots,'peak':peak,'queue_delay':queue_delay,'throughput':throughput,'congested':congested,'backlog':backlog,'boundary_wait':boundary_wait,'worst_service_debt':worst_service_debt,'delay':queue_delay/max(1,sum(arrivals.values())),'spill':congested,'stops':0.0,'cost':cost,'demand_version':FORECAST_VERSION}
+        return {'snapshots':snapshots,'peak':peak,'queue_delay':queue_delay,'throughput':throughput,'congested':congested,'backlog':backlog,'boundary_wait':boundary_wait,'worst_service_debt':worst_service_debt,'delay':queue_delay/max(1,sum(arrivals.values())),'spill':congested,'stops':0.0,'cost':cost,'demand_version':FORECAST_VERSION,'offered_external_veh':offered_total,'mass_residual_veh':initial_mass+offered_total-sum(map(sum,cells.values()))-sum(backlogs.values())-throughput}
     def allocate(self,state):
         values={m.movement_id:m for m in state.movements}; current=self.plan(state); plan={}
         for node in sorted({p['node_id'] for p in self.phases.values()}):

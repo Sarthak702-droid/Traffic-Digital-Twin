@@ -103,3 +103,26 @@ def test_pending_virtual_application_cannot_be_compared_as_stable_baseline(tmp_p
     changes=[pb.TimingChange(node_id=model.phases[pid]['node_id'],phase_id=pid,green_s=g) for pid,g in model.plan(state).items()]
     with pytest.raises(ValueError,match='pending virtual plan'):
         model.comparison(state,changes)
+
+
+def test_benchmark_replay_uses_explicit_future_demand_only_for_scoring(tmp_path):
+    state = _state(tmp_path)
+    model = Model()
+    plan = model.plan(state)
+    frozen = model._evaluation_input(state)
+    empty = {edge: 0.0 for edge in model.index.boundary_inputs}
+    surge = {edge: 5.0 for edge in model.index.boundary_inputs}
+    without = model.rollout(state, plan, 30, {**frozen, "demand_trace": [empty] * 30})
+    with_surge = model.rollout(state, plan, 30, {**frozen, "demand_trace": [surge] * 30})
+    assert with_surge["backlog"] > without["backlog"]
+    assert model._evaluation_input(state)["demand_hash"] == frozen["demand_hash"]
+
+
+def test_replayed_rollout_reports_offered_mass_conservation(tmp_path):
+    state = _state(tmp_path)
+    model = Model()
+    frozen = model._evaluation_input(state)
+    trace = [{edge: 2.0 for edge in model.index.boundary_inputs} for _ in range(30)]
+    result = model.rollout(state, model.plan(state), 30, {**frozen, "demand_trace": trace})
+    assert result["offered_external_veh"] == 30 * len(model.index.boundary_inputs) * 2.0
+    assert abs(result["mass_residual_veh"]) < 1e-6
