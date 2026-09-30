@@ -29,6 +29,8 @@ No Go authorization change, public schema change, protobuf change or authenticat
 - `node scripts/verify-a02-browser.mjs`: browser fixture passed; no protected polling while signed out, six-node topology after login, retained uncertain command, no command resubmission and no page errors. This fixture uses mocked HTTP/WebSocket responses.
 - `node scripts/verify-session-startup-live.mjs`: passed with real Go, PostgreSQL, Python gRPC and Chromium. Checked unauthenticated idle without protected reads, password/cookie login, server-returned `c1-c6-v5` and six-node topology, server session revocation, stopped polling, re-login and logout. Used isolated ports 8083/50061/50062/3116 and cleaned up its disposable schema/account/processes.
 - Inspected browser screenshots at `/tmp/traffic-a02-live-signed-out.png` and `/tmp/traffic-a02-live-signed-in.png`. Source screen recording and credentials were not copied into git.
+- Integrated into main by fast-forward as `482e2c7`. Re-ran the web suite (120 passed), direct-venv Python suite (143 passed), Go/API/PostgreSQL suites, typecheck and production build successfully after integration.
+- Re-ran the real Go/PostgreSQL/gRPC/Chromium login, six-node topology, revocation, idle, re-login and logout probe on the integrated main build: passed. Probe processes and its schema/credentials were cleaned up.
 
 ## Remaining scope
 
