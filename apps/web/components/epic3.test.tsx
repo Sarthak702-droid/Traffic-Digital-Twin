@@ -204,6 +204,7 @@ describe("Epic 3 S08: Product Shell & Disclosure", () => {
   it("shows server-assigned role without a privilege selector", () => {
     render(
       <TopBar
+        identity={{ actor: "test-viewer", role: "viewer" }}
         health={mockHealth}
         manual={false}
         onToggleManual={() => {}}

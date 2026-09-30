@@ -133,10 +133,14 @@ export const useLiveStore = create<{
   health: null,
   set,
 }));
-export function useLive() {
+export function useLive(enabled = true) {
   const store = useLiveStore();
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
+    if (!enabled) {
+      useLiveStore.getState().set({ connected: false, received: 0 });
+      return;
+    }
     let socket: WebSocket | undefined;
     let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
     let initialConnectTimer: ReturnType<typeof setTimeout> | undefined;
@@ -148,10 +152,12 @@ export function useLive() {
       );
       socket = connection;
       connection.onopen = () => {
+        if (disposed) return;
         attempts = 0;
         useLiveStore.getState().set({ connected: true, failed: false });
       };
       connection.onmessage = (event) => {
+        if (disposed) return;
         try {
           const envelope = JSON.parse(event.data);
           if (envelope.schema_version !== "1.0")
@@ -209,10 +215,11 @@ export function useLive() {
       clearInterval(interval);
       socket?.close();
     };
-  }, []);
+  }, [enabled]);
   return {
     ...store,
     fresh:
+      enabled &&
       store.connected &&
       !store.failed &&
       !!store.frame &&

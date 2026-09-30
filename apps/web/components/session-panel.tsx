@@ -10,7 +10,10 @@ import { useWorkspace } from "@/lib/state";
 export interface Session { actor:string;role:"operator"|"supervisor"|"viewer" }
 
 export function useSession(){
- return useQuery({queryKey:["session"],queryFn:()=>request<Session>("/session"),retry:false,refetchInterval:30000});
+ return useQuery({queryKey:["session"],queryFn:async ({signal}):Promise<Session|null>=>{
+  try{return await request<Session>("/session",{signal})}
+  catch(error){if(error instanceof ApiError&&error.status===401)return null;throw error}
+ },retry:false,refetchInterval:30000});
 }
 
 export function SessionPanel({onReviewFinished}:{onReviewFinished?:(commandId:string)=>void}={}){
@@ -25,9 +28,10 @@ export function SessionPanel({onReviewFinished}:{onReviewFinished?:(commandId:st
  useEffect(()=>{
   const update=()=>setUncertain(pendingCommand());
   const expired=()=>{
+   // Repeated 401s from an expired batch must not reset active queries again.
+   if(!client.getQueryData<Session|null>(["session"]))return;
    client.setQueryData<Session|null>(["session"],null);
    client.removeQueries({predicate:q=>q.queryKey[0]!=="session"});
-   client.invalidateQueries({queryKey:["session"]});
   };
   update();
   window.addEventListener("command-outcome",update);
@@ -57,12 +61,13 @@ export function SessionPanel({onReviewFinished}:{onReviewFinished?:(commandId:st
  });
 
  const outcome=useQuery({queryKey:["command-outcome",uncertain],queryFn:()=>request<{status:string;response:unknown}>(`/commands/${uncertain}`),enabled:!!uncertain&&session.isSuccess&&!!session.data,refetchInterval:3000,retry:false});
- const active=session.isSuccess&&!!session.data;
+ const identity=session.isSuccess?session.data:null;
+ const active=!!identity;
  const authError=session.error instanceof ApiError ? session.error : null;
  const submit=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();login.mutate()};
 
  return <section className="session-panel" aria-label="Session and command recovery">
- {active ? <div><p>Authenticated session · <strong>{session.data.actor}</strong> · {session.data.role}</p><Button variant="outline" type="button" onClick={()=>logout.mutate()} loading={logout.isPending}>Sign out</Button>{logout.error&&<p role="alert">Sign-out could not be confirmed. Try again before leaving this browser.</p>}</div>
+ {active && session.data ? <div><p>Authenticated session · <strong>{session.data.actor}</strong> · {session.data.role}</p><Button variant="outline" type="button" onClick={()=>logout.mutate()} loading={logout.isPending}>Sign out</Button>{logout.error&&<p role="alert">Sign-out could not be confirmed. Try again before leaving this browser.</p>}</div>
  : <div>
    {session.isPending ? <LoadingState compact label="Checking session…"/> : <p role="alert">{authError?.status===401?"Sign in to use the operator workspace.":session.isError?"Session service unavailable. Your unsent draft and command ID remain here.":"Sign in to use the operator workspace."}</p>}
    {!session.isPending&&<form onSubmit={submit}>

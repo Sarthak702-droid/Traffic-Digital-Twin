@@ -17,12 +17,12 @@ import {
 } from "lucide-react";
 import {ProductBrand} from "@/components/product-brand";
 import { Button } from "@/components/ui/button";
-import { useWorkspace, type UserRole } from "@/lib/state";
 import {inputDisclosure} from "@/lib/input-disclosure";
-import type {TrafficState} from "../../../packages/contracts/typescript/events";
-import type { HealthState } from "../../../packages/contracts/typescript/events";
+import type { TrafficState, HealthState } from "../../../packages/contracts/typescript/events";
+import type { Session } from "./session-panel";
 
 export function TopBar({
+  identity,
   health,
   frame,
   manual,
@@ -31,6 +31,7 @@ export function TopBar({
   mode = manual ? "manual" : "recommend",
   onChangeMode,
 }: {
+  identity?: Session;
   health?: HealthState;
   frame?: TrafficState | null;
   manual: boolean;
@@ -39,7 +40,6 @@ export function TopBar({
   mode?: "recommend" | "observe" | "manual";
   onChangeMode?: (m: "recommend" | "observe" | "manual") => void;
 }) {
-  const { role, setRole, setDgpModalOpen } = useWorkspace();
   const [clock, setClock] = useState("00:00:00");
   const [healthOpen, setHealthOpen] = useState(false);
   const healthButton=useRef<HTMLButtonElement>(null);
@@ -203,7 +203,7 @@ export function TopBar({
             Active User Role
           </label>
           <User size={13} />
-          <span id="user-role-select">{role} · authenticated role</span>
+          <span id="user-role-select">{identity ? `${identity.role} · authenticated role` : "Signed out"}</span>
         </div>
 
         {/* START DGP DEMONSTRATION Button (PRD §5, §8.1) */}

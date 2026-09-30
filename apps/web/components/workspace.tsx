@@ -84,8 +84,9 @@ const scenarioLabels: Record<Scenario["id"], string> = {
 };
 
 export function Workspace() {
-  const live = useLive();
   const session = useSession();
+  const authenticated = session.isSuccess && !!session.data;
+  const live = useLive(authenticated);
   const [dirty, setDirty] = useState(false);
   const [online,setOnline]=useState(true);
   const clockControl=useMutation({mutationFn:(paused:boolean)=>request(`/runs/${live.frame?.run_id}/clock`,{method:"POST",body:JSON.stringify({paused})})});
@@ -106,45 +107,46 @@ export function Workspace() {
   const {
     selectedNode,
     selectNode,
-    role,
     dgpModalOpen,
     setDgpModalOpen,
     selectedHorizon,
   } = useWorkspace();
 
-  const activeRole = session.isSuccess && session.data?.role ? session.data.role : role;
-  const canWrite = session.isSuccess && !!session.data && activeRole !== "viewer";
+  const activeRole = authenticated ? session.data!.role : "viewer";
+  const canWrite = authenticated && activeRole !== "viewer";
   const draftActor = useRef<string | undefined>(undefined);
   if (session.isSuccess && session.data?.actor) draftActor.current = session.data.actor;
 
   const client = useQueryClient();
-  const network = useQuery({ queryKey: ["network"], queryFn: getNetwork });
-  const processedClips=useQuery({queryKey:["processed-clips"],queryFn:()=>request<{clips:ProcessedClip[]}>("/vision/clips"),enabled:!!session.data,refetchInterval:10000});
+  const network = useQuery({ queryKey: ["network"], queryFn: getNetwork, enabled: authenticated });
+  const processedClips=useQuery({queryKey:["processed-clips"],queryFn:()=>request<{clips:ProcessedClip[]}>("/vision/clips"),enabled:authenticated,refetchInterval:10000});
   const boundaryMapping=network.data?.camera_boundary_links ?? {};
   const runInputReady=demandSource==="seeded" || videoInputReady(boundaryMapping,processedClips.data?.clips??[],sourceSessions,live.fresh ? live.frame?.config_hash : undefined);
   const health = useQuery({
     queryKey: ["health"],
     queryFn: () => request<HealthState>("/health"),
     refetchInterval: 10000,
+    enabled: authenticated,
   });
   const runs = useQuery({
     queryKey: ["runs"],
     queryFn: () => request<Run[]>("/runs"),
     refetchInterval: 10000,
+    enabled: authenticated,
   });
   const audit = useQuery({
     queryKey: ["audit", auditAfter],
     queryFn: () =>
       request<{ events: AuditRecord[]; next_after: number }>(`/audit?limit=50&after=${auditAfter}`),
     refetchInterval: 5000,
-    enabled: view === "audit",
+    enabled: authenticated && view === "audit",
   });
 
   // Real-time analysis query (forecasts, recommendations, comparisons)
   const analysisQuery = useQuery({
     queryKey: ["analysis", live.frame?.run_id, live.frame?.input_session_id],
     queryFn: ({signal}) => request<Analysis>("/analysis", {signal}),
-    enabled: live.fresh && session.isSuccess,
+    enabled: live.fresh && authenticated,
     refetchInterval: 2000,
     retry: false,
   });
@@ -175,7 +177,7 @@ export function Workspace() {
   } else if (analysis?.comparison && comparisonMatchesAnalysis(analysis.comparison, analysis, live.frame, currentAlternative?.id || analysis?.recommendation?.id)) {
     activeComparison = analysis.comparison;
   }
-  const modeQuery=useQuery({queryKey:["mode"],queryFn:()=>request<{mode:"recommend"|"observe"|"manual";locks:string[]}>("/mode"),refetchInterval:3000,enabled:session.isSuccess});
+  const modeQuery=useQuery({queryKey:["mode"],queryFn:()=>request<{mode:"recommend"|"observe"|"manual";locks:string[]}>("/mode"),refetchInterval:3000,enabled:authenticated});
   const systemMode=modeQuery.data?.mode ?? "observe";
   const manual=systemMode==="manual";
   const unresolvedQuery = useQuery({
@@ -191,7 +193,7 @@ export function Workspace() {
         }>;
       }>("/decisions/unresolved"),
     refetchInterval: 3000,
-    enabled: session.isSuccess,
+    enabled: authenticated,
   });
 
   const resolveDecisionMutation = useMutation({
@@ -470,6 +472,7 @@ export function Workspace() {
       <div className="app-main">
         {/* TopBar with Chips, Health, Clock, Role Switcher, and DGP Launcher (Story S08, S14) */}
         <TopBar
+          identity={authenticated ? session.data! : undefined}
           health={health.isError ? undefined : health.data}
           frame={live.frame}
           manual={manual}
@@ -504,7 +507,7 @@ export function Workspace() {
           </div>}
           <OperatorTimeStatus frame={live.fresh ? live.frame : null} analysis={analysis} />
           {/* Role-Specific Executive / Supervisor Banner */}
-          {activeRole === "viewer" && session.isSuccess && (
+          {activeRole === "viewer" && authenticated && (
             <div className="role-banner viewer-banner" role="status">
               <div>
                 <strong>EXECUTIVE BRIEFING MODE (DGP / SENIOR LEADERSHIP)</strong>
@@ -522,7 +525,7 @@ export function Workspace() {
             </div>
           )}
 
-          {activeRole === "supervisor" && session.isSuccess && (
+          {activeRole === "supervisor" && authenticated && (
             <div className="role-banner supervisor-banner" role="status">
               <div>
                 <strong>SUPERVISOR OVERSIGHT MODE</strong>
@@ -570,7 +573,13 @@ export function Workspace() {
             </Button>
           </div>
 
-          {view === "vision" ? (
+          {!authenticated ? (
+            <div className="error-panel" role="status">
+              <ShieldCheck size={24} />
+              <h2>{session.isPending ? "Checking access…" : "Sign in to load the command center"}</h2>
+              <p>{session.isError ? "The session service is unavailable. Retry sign-in when the API recovers." : "Use your provisioned account above to view the network, observations and virtual runs."}</p>
+            </div>
+          ) : view === "vision" ? (
             <VisionAnalyticsPanel processedClips={processedClips.data?.clips??[]} onSelectSourceSession={(camera,sourceSession)=>setSourceSessions(previous=>({...previous,[camera]:sourceSession}))} boundaryMapping={boundaryMapping} sourceSessions={sourceSessions} onReturn={() => setView("command")} frame={live.fresh ? live.frame : null} analysis={analysis} />
           ) : network.isPending ? (
             <LoadingState label="Loading network configuration…" />
