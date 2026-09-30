@@ -58,11 +58,12 @@ function displacedQueues(network: Network, frame: TrafficState | null, route: st
 }
 
 export function EmergencyCorridorPanel({
-  network, frame, canOperate, pending, locked, error, onLaunch, onReset,
+  network, frame, canOperate, startReady = true, pending, locked, error, onLaunch, onReset,
 }: {
   network: Network;
   frame: TrafficState | null;
   canOperate: boolean;
+  startReady?: boolean;
   pending: boolean;
   locked: boolean;
   error?: string;
@@ -120,7 +121,7 @@ export function EmergencyCorridorPanel({
 
       {blocked && <p className="emergency-blocked" role="alert"><AlertTriangle size={16} />{locked ? "Clear active manual timing locks before scheduling this protected scenario." : "A fresh authorized database and service connection is required to schedule the virtual scenario."}</p>}
       <div className="emergency-actions">
-        <Button disabled={blocked || pending} onClick={onLaunch}>{pending ? "Scheduling…" : "Start virtual emergency"}</Button>
+        <Button disabled={blocked || !startReady || pending} onClick={onLaunch}>{pending ? "Scheduling…" : "Start virtual emergency"}</Button>
         <Button variant="outline" disabled={!active || !canOperate || pending} onClick={onReset}><RotateCcw size={15} /> Reset same seed</Button>
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}

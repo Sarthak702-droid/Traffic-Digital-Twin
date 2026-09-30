@@ -50,9 +50,12 @@ export function NetworkCanvas({
     }
   }
   const aggregatesByLink = new Map((frame?.links ?? []).map((link) => [link.link_id, link]));
+  const cellsByLink = new Map((frame?.cells ?? []).map((cell) => [cell.link_id, cell.stock_veh]));
+  const forecastAvailable = horizon === 0 || forecasts.some(f=>f.horizon_s===horizon && (!f.horizon_status || f.horizon_status==="available"));
 
   return (
     <div className="network-canvas-container">
+      {horizon>0 && !forecastAvailable && <p role="status" className="panel-message">+{horizon}s forecast unavailable · current virtual state shown</p>}
       <svg
         className="network-svg"
         viewBox={`0 0 ${maxX} ${maxY}`}
@@ -202,6 +205,19 @@ export function NetworkCanvas({
                 strokeLinecap="round"
               />
 
+              {frame && cellsByLink.has(link.id) && <g role="group" aria-label={`${link.id} modeled road cells: ${totalVehicles.toFixed(1)} vehicles`}>
+                {cellsByLink.get(link.id)!.map((stock,index,cells)=>{
+                  const cellLength=Math.hypot(x2-x1,y2-y1)/cells.length;
+                  const cellCapacity=link.storage_capacity_veh/cells.length;
+                  const ratio=Math.min(1,stock/cellCapacity);
+                  const start=index*cellLength+2;
+                  const end=(index+1)*cellLength-2;
+                  return <line key={index} x1={x1+dx*start} y1={y1+dy*start} x2={x1+dx*end} y2={y1+dy*end}
+                    stroke={ratio>0.7?"#f87171":ratio>0.35?"#fbbf24":"#34d399"} strokeWidth="10"
+                    strokeOpacity={0.1+0.8*ratio}><title>Cell {index+1}: {stock.toFixed(1)} veh · {(ratio*100).toFixed(0)}% synthetic storage</title></line>;
+                })}
+              </g>}
+
               {/* Visual Queue Buildup Overlay on incoming stop-line */}
               {frame && linkQueue > 0 && (
                 <line
@@ -315,7 +331,7 @@ export function NetworkCanvas({
                         className="canvas-queue-text"
                         fill={queueColor}
                       >
-                        Q:{linkQueue}
+                        Q:{linkQueue.toFixed(1)}
                       </text>
                     </g>
                   )}

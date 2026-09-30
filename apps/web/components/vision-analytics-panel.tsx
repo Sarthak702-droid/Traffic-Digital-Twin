@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OperatorTimeStatus } from "@/components/operator-time-status";
+import { observationQuery } from "@/lib/observation-query";
 import { latestDisplayObservation } from "@/lib/observations";
 import type { Analysis, TrafficState } from "../../../packages/contracts/typescript/events";
 
@@ -27,6 +28,8 @@ interface VisionAnalyticsPanelProps {
   initialOffline?: boolean;
   frame?: TrafficState | null;
   analysis?: Analysis | null;
+  boundaryMapping?: Record<string, string>;
+  sourceSessions?: Record<string, string>;
 }
 
 export interface CameraSlot {
@@ -158,7 +161,7 @@ function safePauseVideo(video: HTMLVideoElement | null) {
   }
 }
 
-export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame = null, analysis = null }: VisionAnalyticsPanelProps) {
+export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame = null, analysis = null, boundaryMapping = {}, sourceSessions = {} }: VisionAnalyticsPanelProps) {
   const [isOffline, setIsOffline] = useState(initialOffline);
   const [isPlaying, setIsPlaying] = useState(true);
   const [currentFrameIdx, setCurrentFrameIdx] = useState(0);
@@ -222,13 +225,15 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     }).catch(() => setCameraRegistryError(true));
   }, []);
 
+  const observationURL = observationQuery(selectedCamera, processingMode, frame, boundaryMapping, sourceSessions);
+
   // Fetch live vision state or real observations from Go API gateway
   useEffect(() => {
     if (isOffline) return;
     if (typeof process !== "undefined" && process.env?.NODE_ENV === "test") return;
     let isMounted = true;
 
-    fetch(`/api/v1/observations?camera_id=${selectedCamera}&mode=${processingMode}`)
+    fetch(observationURL)
       .then((res) => {
         if (!res.ok) throw Error(`Observation request failed (${res.status})`);
         return res.json();
@@ -245,7 +250,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     return () => {
       isMounted = false;
     };
-  }, [isOffline, selectedCamera, processingMode]);
+  }, [isOffline, observationURL]);
 
   // Display-only clip selection. Playback never changes the run's bound input.
   useEffect(() => {

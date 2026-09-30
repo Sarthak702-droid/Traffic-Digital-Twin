@@ -66,7 +66,7 @@ export function KpiStrip({
       <div className="kpi-card">
         <span className="kpi-label">VEHICLES IN NETWORK</span>
         <strong className="kpi-value">
-          {f ? inNetwork : "—"}
+          {f ? inNetwork.toFixed(1) : "—"}
           <small className="kpi-unit">veh</small>
         </strong>
         <span className="kpi-subtext">

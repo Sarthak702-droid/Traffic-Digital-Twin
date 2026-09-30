@@ -26,3 +26,15 @@ describe("comparison evidence", () => {
     expect(outcome(0, 2)).toBe("Worse: 2.00 (baseline is zero)");
   });
 });
+
+describe('comparison safety',()=>{
+ afterEach(cleanup);
+ it('does not display a comparison from another input epoch',()=>{
+  const frame={schema_version:'1.1',run_id:'run',input_session_id:'current',snapshot_sequence:'9',config_hash:'cfg',metrics_version:'metrics',movements:[],signals:[],seed:1} as any;
+  const comparison={run_id:'run',recommendation_id:'rec',input_session_id:'old',snapshot_sequence:'9',config_hash:'cfg',metrics_version:'metrics',baseline_max_queue_veh:1,candidate_max_queue_veh:0,horizon_s:120} as any;
+  const analysis={run_id:'run',input_session_id:'current',snapshot_sequence:'9',config_hash:'cfg',metrics_version:'metrics',outcome:'recommend',forecasts:[],recommendation:{id:'rec'},comparison} as any;
+  render(<NetworkView network={network as unknown as Network} frame={frame} analysis={analysis} onSelectNode={()=>{}}/>);
+  fireEvent.click(screen.getByRole('button',{name:/Before vs After/}));
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
+ });
+});

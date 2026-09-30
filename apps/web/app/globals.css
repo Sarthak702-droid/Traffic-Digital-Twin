@@ -4588,3 +4588,23 @@ input, textarea, select { max-width: 100%; font-size: 1rem; }
 .network-flow-table-wrap table { width: 100%; border-collapse: collapse; font-size: 11px; }
 .network-flow-table-wrap th, .network-flow-table-wrap td { padding: 7px 9px; text-align: left; border-bottom: 1px solid #26343e; white-space: nowrap; }
 .network-flow-table-wrap thead th { color: #9cb3bf; }
+
+/* Keep workstation controls and the virtual map within the available panel. */
+.product-topbar { height:auto; min-height:64px; flex-wrap:wrap; gap:12px; padding:12px 24px; }
+.topbar-left, .topbar-right, .topbar-chips { min-width:0; flex-wrap:wrap; }
+.topbar-right { justify-content:flex-end; }
+.operations-grid > *, .network-screen-container { min-width:0; }
+.workspace-status { flex-wrap:wrap; gap:12px; }
+.source-selection { padding:16px; margin-bottom:16px; border:1px solid var(--border); border-radius:10px; }
+.source-selection h2 { font-size:16px; }
+.source-selection p { font-size:12px; color:var(--muted); }
+.source-selection label { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:8px 0; font-size:12px; }
+.source-selection select { max-width:100%; background:var(--surface); padding:8px; border:1px solid var(--border); }
+.network-canvas-container { min-width:0; }
+.network-svg { min-height:320px; }
+@media (prefers-reduced-motion:reduce) { .network-flow-motion { animation:none; } }
+@media (max-width:1000px) { .operations-grid { grid-template-columns:minmax(0,1fr); } }
+
+.run-confirmation-dialog { position:fixed; z-index:100; left:50%; top:50%; transform:translate(-50%,-50%); width:min(480px,90vw); padding:24px; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:0 24px 80px #000a; }
+.run-confirmation-dialog p { margin:16px 0; font-size:13px; }
+.run-confirmation-dialog button { margin-right:12px; }

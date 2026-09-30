@@ -14,6 +14,9 @@ export function MatchedComparison({ result }: { result: ComparisonResult }) {
   ] as const;
   return <div className="simulation-comparison-card" role="region" aria-label="Matched virtual comparison">
     <strong>MODELED VIRTUAL PLAN COMPARISON</strong>
+    <p>Aggregate modeled comparison · {result.model_version} · metrics {result.metrics_version || "Unavailable"} · horizon {result.horizon_s}s · initial {result.initial_time_s}s · seed {result.seed}</p>
+    <p>Run <code>{result.run_id}</code> · Recommendation <code>{result.recommendation_id}</code></p>
+    <p>Zero mutation of live digital twin run. Individual vehicle trajectories are unavailable.</p>
     <p>Same initial snapshot and demand assumptions · {shown(result.window_start_simulation_s, "")}–{shown(result.window_end_simulation_s, " s")} · {result.horizon_s}s horizon</p>
     <p>Scoring: {result.scoring_version || "Unavailable"} · Individual stops and journey time unavailable</p>
     <table className="comparison-table"><thead><tr><th>Metric</th><th>Current plan</th><th>Candidate</th></tr></thead>

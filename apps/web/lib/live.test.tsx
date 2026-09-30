@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderHook, act, cleanup } from "@testing-library/react";
-import { useLive, useLiveStore } from "./live";
+import { liveSchema, useLive, useLiveStore } from "./live";
 class FakeSocket {
   static sockets: FakeSocket[] = [];
   onopen = () => {};
@@ -28,6 +28,24 @@ afterEach(() => {
   });
 });
 describe("live reconnection", () => {
+  it("retains aggregate links, road cells and conservation metrics used by the twin", () => {
+    const frame = liveSchema.parse({
+      schema_version: "1.1", run_id: "run", timestamp: new Date().toISOString(),
+      simulation_time_s: 10, source: "synthetic", movements: [], signals: [],
+      vehicles_in_network: 4, inserted_total: 6, arrived_total: 2, teleported_total: 0,
+      scenario_type: "peak_surge", seed: 1, engine_kind: "aggregate_ctm",
+      links: [{link_id:"C2-C1",stock_veh:4,queued_veh_estimate:2,density_veh_per_km_lane:3,
+        storage_utilization_ratio:0.1,receiving_storage_veh:76,inflow_vpm:10,outflow_vpm:2,
+        flow_window_s:10,speed_method:"model",speed_status:"unavailable",mean_speed_kph:null,
+        queue_length_m_estimate:10,receiving_blocked:false}],
+      cells:[{link_id:"C2-C1",stock_veh:[1,3]}], boundary_backlog_veh:2,
+      cumulative_demand_veh:8, cumulative_admitted_veh:6, cumulative_boundary_exits_veh:2,
+      boundary_demand:[{link_id:"C2-C1",backlog_veh:2,offered_rate_vpm:10}],
+    });
+    expect(frame).toMatchObject({engine_kind:"aggregate_ctm",links:[{stock_veh:4}],
+      cells:[{stock_veh:[1,3]}],boundary_backlog_veh:2,cumulative_demand_veh:8});
+    expect(() => liveSchema.parse({...frame,cells:[{link_id:"C2-C1",stock_veh:[-1]}]})).toThrow();
+  });
   it("accepts current 1.1 state identity and finalized source time", () => {
     vi.useFakeTimers();
     vi.stubGlobal("WebSocket", FakeSocket);

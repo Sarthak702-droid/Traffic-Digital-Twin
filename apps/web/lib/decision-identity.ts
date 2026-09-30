@@ -3,6 +3,7 @@ import type { Analysis, ComparisonResult, TrafficState } from "../../../packages
 export function analysisMatchesFrame(analysis: Analysis | null | undefined, frame: TrafficState | null | undefined): boolean {
   if (!analysis || !frame || analysis.run_id !== frame.run_id) return false;
   if (frame.schema_version === "1.0") return true;
+  if (analysis.forecasts?.length && frame.demand_source === "video_profile" && ["stale", "missing", "degraded", "invalid"].includes(frame.input_quality || "")) return false;
   const sourceBound = !!frame.input_session_id || (frame.demand_source === "seeded" && frame.input_quality === "synthetic" && !analysis.input_session_id);
   const sameSnapshot = analysis.snapshot_sequence === frame.snapshot_sequence;
   const olderNonAction = !analysis.recommendation && (analysis.outcome === "no_action" || analysis.outcome === "cannot_evaluate") &&

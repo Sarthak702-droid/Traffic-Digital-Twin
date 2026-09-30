@@ -1,5 +1,6 @@
 "use client";
 
+import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useState } from "react";
 import {
   Activity,
@@ -65,6 +66,7 @@ export function ActionRail({
   seed,
   setSeed,
   dbReady,
+  startReady = true,
   liveFresh,
   prepareMutation,
   resetMutation,
@@ -89,6 +91,7 @@ export function ActionRail({
   seed: string;
   setSeed: (seed: string) => void;
   dbReady: boolean;
+  startReady?: boolean;
   liveFresh: boolean;
   prepareMutation: {
     mutate: () => void;
@@ -120,6 +123,7 @@ export function ActionRail({
   onDirty?: (dirty:boolean)=>void;
   draftOwner?: string;
 }) {
+  const [runConfirmation,setRunConfirmation]=useState<"replace"|"reset"|null>(null);
   const [selectedAltId, setSelectedAltId] = useState<string | null>(null);
   const [showAllFacts, setShowAllFacts] = useState(false);
 
@@ -213,13 +217,14 @@ export function ActionRail({
   }
 
   function handleStart() {
+    if (!startReady) return;
     if (!/^\d+$/.test(seed) || Number(seed) < 1 || Number(seed) > 4294967295) {
       setFormError("Enter an integer seed between 1 and 4294967295.");
       return;
     }
     setFormError("");
     resetMutation.reset();
-    if(frame && !window.confirm("Replace the active run? Unsent changes will be discarded.")) return;
+    if(frame) {setRunConfirmation("replace");return;}
     prepareMutation.mutate();
   }
 
@@ -687,7 +692,7 @@ export function ActionRail({
 
         <Button
           onClick={handleStart}
-          disabled={prepareMutation.isPending || resetMutation.isPending || !dbReady}
+          disabled={prepareMutation.isPending || resetMutation.isPending || !dbReady || !startReady}
         >
           {prepareMutation.isPending ? "Starting aggregate flow…" : "Start simulation"}
           <ArrowRight size={15} />
@@ -695,13 +700,23 @@ export function ActionRail({
 
         <Button
           variant="outline"
-          onClick={() => {if(window.confirm("Reset this scenario to its seed? This creates a new run."))resetMutation.mutate()}}
+          onClick={() => setRunConfirmation("reset")}
           disabled={!frame || resetMutation.isPending || prepareMutation.isPending || !dbReady}
         >
           {resetMutation.isPending ? "Resetting…" : "Reset same seed"}
           <RefreshCw size={14} />
         </Button>
 
+        <Dialog.Root open={runConfirmation!==null} onOpenChange={open=>{if(!open)setRunConfirmation(null)}}>
+          <Dialog.Portal><Dialog.Overlay className="sheet-overlay"/><Dialog.Content role="alertdialog" className="run-confirmation-dialog">
+            <Dialog.Title>{runConfirmation==="replace"?"Replace the active run?":"Reset this scenario?"}</Dialog.Title>
+            <Dialog.Description>A new virtual run will replace the active simulation. Unsent decision changes for that run will be discarded. Existing audit history is preserved.</Dialog.Description>
+            <Dialog.Close asChild><Button variant="outline">Cancel</Button></Dialog.Close>
+            <Button disabled={!dbReady || decisionPending || (runConfirmation==="replace" && !startReady)} onClick={()=>{
+              if(runConfirmation==="replace")prepareMutation.mutate();else resetMutation.mutate();setRunConfirmation(null);
+            }}>{runConfirmation==="replace"?"Replace run":"Reset run"}</Button>
+          </Dialog.Content></Dialog.Portal>
+        </Dialog.Root>
         {resetMutation.isError && (
           <p role="alert" className="form-error">
             {resetMutation.error?.message}

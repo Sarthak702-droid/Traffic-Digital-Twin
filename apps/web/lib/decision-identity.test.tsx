@@ -39,3 +39,7 @@ describe("operator decision identity", () => {
     expect(analysisMatchesFrame(analysis, later)).toBe(false);
   });
 });
+
+it("invalidates retained numeric forecasts when recorded input becomes stale",()=>{
+ expect(analysisMatchesFrame({...analysis,outcome:"no_action",recommendation:null,forecasts:[{horizon_s:30} as any]}, {...frame,demand_source:"video_profile",input_quality:"stale",snapshot_sequence:"10"})).toBe(false);
+});

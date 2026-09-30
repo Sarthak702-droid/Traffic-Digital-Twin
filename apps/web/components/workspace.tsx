@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { getNetwork, isEmergencyProtectionError, isStaleUncertainCommandError, pendingCommand, request } from "@/lib/api";
+import { buildScenarioInput, videoInputReady, type ProcessedClip } from "@/lib/run-input";
 import { useLive } from "@/lib/live";
 import { LiveSummary } from "@/components/live-panel";
 import { SessionPanel, useSession } from "@/components/session-panel";
@@ -89,7 +90,8 @@ export function Workspace() {
   const setView=(next:View)=>{if(dirty&&!window.confirm("Discard unsent decision draft and change section?"))return;setDirty(false);setViewState(next);const url=new URL(location.href);url.searchParams.set("view",next);history.pushState(null,"",url);acceptedURL.current=url.href};
   useEffect(()=>{const read=()=>{const next=new URL(location.href).searchParams.get("view");if(sections.some(s=>s.id===next))setViewState(next as View);acceptedURL.current=location.href};read();const back=()=>{if(!dirty||window.confirm("Leave the unsent draft?")){setDirty(false);read()}else if(acceptedURL.current){history.pushState(null,"",acceptedURL.current)}};const connectivity=()=>setOnline(navigator.onLine);connectivity();window.addEventListener("popstate",back);window.addEventListener("online",connectivity);window.addEventListener("offline",connectivity);const leave=(e:BeforeUnloadEvent)=>{if(dirty){e.preventDefault();e.returnValue=""}};window.addEventListener("beforeunload",leave);return()=>{window.removeEventListener("popstate",back);window.removeEventListener("online",connectivity);window.removeEventListener("offline",connectivity);window.removeEventListener("beforeunload",leave)}},[dirty]);
   const [scenarioID, setScenarioID] = useState<Scenario["id"]>("peak_surge");
-  const [demandSource, setDemandSource] = useState<"seeded" | "video_profile">("video_profile");
+  const [demandSource, setDemandSource] = useState<"seeded" | "video_profile">("seeded");
+  const [sourceSessions,setSourceSessions]=useState<Record<string,string>>({});
   const [seed, setSeed] = useState("1101");
   const [incidentCapacity, setIncidentCapacity] = useState(0.35);
 
@@ -109,6 +111,9 @@ export function Workspace() {
 
   const client = useQueryClient();
   const network = useQuery({ queryKey: ["network"], queryFn: getNetwork });
+  const processedClips=useQuery({queryKey:["processed-clips"],queryFn:()=>request<{clips:ProcessedClip[]}>("/vision/clips"),enabled:!!session.data,refetchInterval:10000});
+  const boundaryMapping=network.data?.camera_boundary_links ?? {};
+  const runInputReady=demandSource==="seeded" || videoInputReady(boundaryMapping,processedClips.data?.clips??[],sourceSessions);
   const health = useQuery({
     queryKey: ["health"],
     queryFn: () => request<HealthState>("/health"),
@@ -310,7 +315,7 @@ export function Workspace() {
           schema_version: "1.0",
           seed: Number(seed),
           mode: systemMode,
-          demand_source: demandSource,
+          ...buildScenarioInput(demandSource,sourceSessions),
           ...(scenarioID === "incident_c3" ? { incident: { kind: "capacity_reduction", capacity_ratio: incidentCapacity } } : {}),
         }),
       }),
@@ -337,6 +342,7 @@ export function Workspace() {
         schema_version: "1.0",
         seed: 2202,
         mode: systemMode,
+        ...buildScenarioInput(demandSource,sourceSessions),
         incident: { kind: "capacity_reduction", capacity_ratio: incidentCapacity },
       }),
     }),
@@ -353,7 +359,7 @@ export function Workspace() {
   const startEmergency = useMutation({
     mutationFn: () => request<Run>("/scenarios/ambulance_corridor/start", {
       method: "POST",
-      body: JSON.stringify({ schema_version: "1.0", seed: 3303, mode: systemMode }),
+      body: JSON.stringify({ schema_version: "1.0", seed: 3303, mode: systemMode, ...buildScenarioInput(demandSource,sourceSessions) }),
     }),
     onSuccess: () => {
       setScenarioID("ambulance_corridor");
@@ -480,7 +486,7 @@ export function Workspace() {
           <SessionPanel onReviewFinished={clearRecoveredCommandErrors}/>
           {!online&&<p role="alert">Offline. Measurements may be stale; commands are disabled.</p>}
           {network.data?.provenance==="bundled-offline"&&<p role="alert">Bundled offline topology only. This configuration is not a live service response.</p>}
-          {(decision.error||modeMutation.error||changeModeMutation.error||startIncident.error||startEmergency.error||replay.error||lock.error)&&<p className="form-error" role="alert">{(decision.error||modeMutation.error||changeModeMutation.error||startIncident.error||startEmergency.error||replay.error||lock.error)?.message}</p>}
+          {(prepare.error||decision.error||modeMutation.error||changeModeMutation.error||startIncident.error||startEmergency.error||replay.error||lock.error)&&<p className="form-error" role="alert">{(prepare.error||decision.error||modeMutation.error||changeModeMutation.error||startIncident.error||startEmergency.error||replay.error||lock.error)?.message}</p>}
           {decision.isSuccess&&<p role="status">{decision.data.action} acknowledged. Inspect the returned plan and audit; accepted timing waits for its safe phase boundary.</p>}
           {!analysis&&live.frame&&<p role="status">Fresh intelligence unavailable. Forecasts and decisions are disabled until recovery.</p>}
 
@@ -552,7 +558,7 @@ export function Workspace() {
           </div>
 
           {view === "vision" ? (
-            <VisionAnalyticsPanel onReturn={() => setView("command")} frame={live.fresh ? live.frame : null} analysis={analysis} />
+            <VisionAnalyticsPanel boundaryMapping={boundaryMapping} sourceSessions={sourceSessions} onReturn={() => setView("command")} frame={live.fresh ? live.frame : null} analysis={analysis} />
           ) : network.isPending ? (
             <div className="loading-panel" role="status">
               <div className="skeleton" />
@@ -599,6 +605,20 @@ export function Workspace() {
                       </select>
                       <span>{live.frame ? `Active run: ${live.frame.demand_source || "seeded"}` : "Selection applies when a scenario starts"}</span>
                     </div>
+                    {demandSource==="video_profile" && <section className="source-selection" aria-label="Recorded input sessions">
+                      <h2>Bind finalized recorded observations</h2>
+                      <p>Choose one validated source session for every configured virtual boundary. Playback remains independent of the run.</p>
+                      {Object.entries(boundaryMapping).map(([camera,boundary])=><label key={camera}>{camera} → {boundary}
+                        <select aria-label={`${camera} source session`} value={sourceSessions[camera]??""} disabled={anyCommandPending}
+                          onChange={event=>setSourceSessions({...sourceSessions,[camera]:event.target.value})}>
+                          <option value="">Select finalized session</option>
+                          {(processedClips.data?.clips??[]).filter(clip=>clip.camera_id===camera && clip.status==="cached_valid").map(clip=><option key={clip.source_session_id} value={clip.source_session_id}>
+                            {clip.source_session_id.slice(0,12)} · {clip.window_count} windows · end {clip.latest_completed_window_end_source_s}s
+                          </option>)}
+                        </select></label>)}
+                      {!runInputReady && <p role="status">Video run unavailable until every boundary has a compatible finalized session. Process missing clips using the runbook, or explicitly select seeded demand.</p>}
+                      {processedClips.isError && <p role="alert">Processed input catalog unavailable: {processedClips.error.message}</p>}
+                    </section>}
                     <OperatorTimeStatus frame={live.fresh ? live.frame : null} analysis={analysis} />
 
                     {/* Operations Grid: 8-column Canvas + 4-column Action Rail */}
@@ -606,7 +626,7 @@ export function Workspace() {
                       <section className="network-panel">
                         <div className="panel-heading">
                           <div>
-                            <h2>C1–C6 Network Twin</h2>
+                            <h2>{data.name} · Virtual simulation</h2>
                             <span>
                               Directed links · {data.nodes.length} nodes ·{" "}
                               {data.links.length} links
@@ -666,10 +686,10 @@ export function Workspace() {
 
                         <div className="canvas-footer">
                           <span>
-                            <MapPin size={14} /> Select any junction (C1–C6) to inspect approach queues, storage, and signal phases
+                            <MapPin size={14} /> Select any configured junction to inspect approach queues, storage, and signal phases
                           </span>
                           <span>
-                            Overlays: Direction · Queue (veh) · Speed (km/h) · Signals (countdown)
+                            Road cells: modeled storage occupancy · Animated bands: aggregate flow · Signals: countdown
                           </span>
                         </div>
                       </section>
@@ -724,6 +744,7 @@ export function Workspace() {
                         seed={seed}
                         setSeed={setSeed}
                         dbReady={!!dbReady}
+                        startReady={runInputReady}
                         liveFresh={live.fresh}
                         prepareMutation={prepare}
                         resetMutation={reset}
@@ -809,7 +830,7 @@ export function Workspace() {
                     comparisonResult={activeComparison}
                     onSimulate={() => decision.mutate({ action: "simulate" })}
                     isSimulating={decision.isPending}
-                    onStartScenario={() => prepare.mutate()}
+                    onStartScenario={dbReady && runInputReady ? () => prepare.mutate() : undefined}
                     isStartingScenario={prepare.isPending}
                   />
                 )}
@@ -820,8 +841,8 @@ export function Workspace() {
                     <section className="network-panel">
                       <div className="panel-heading">
                         <div>
-                          <h2>Incident Scenario · C3 Capacity Reduction</h2>
-                          <span>Bottleneck simulation at C3 with upstream feeder metering</span>
+                          <h2>Incident Scenario · {data.scenarios.find(s=>s.id==="incident_c3")?.incident_node_id??"Configured junction"} Capacity Reduction</h2>
+                          <span>Configured bottleneck simulation with upstream feeder metering</span>
                         </div>
                         <span className="quiet-badge">INCIDENT_C3</span>
                       </div>
@@ -829,7 +850,7 @@ export function Workspace() {
                         network={data}
                         frame={live.fresh ? live.frame : null}
                         onSelect={selectNode}
-                        route={["C6", "C3", "C1"]}
+                        route={data.scenarios.find(s=>s.id==="incident_c3")?.route_node_ids??[]}
                       />
                     </section>
                     <aside className="action-rail">
@@ -841,6 +862,7 @@ export function Workspace() {
                         onLaunch={() => startIncident.mutate()}
                         onReset={() => { if (window.confirm("Reset the C3 incident to the same seed and selected virtual capacity?")) reset.mutate(); }}
                         canOperate={!!dbReady}
+                        startReady={runInputReady}
                         pending={anyCommandPending}
                         error={startIncident.error?.message || reset.error?.message}
                       />
@@ -855,7 +877,7 @@ export function Workspace() {
                       <div className="panel-heading">
                         <div>
                           <h2>Ambulance Corridor Priority</h2>
-                          <span>Designated green wave route: C6 → C3 → C1 → C2</span>
+                          <span>Designated virtual route: {data.scenarios.find(s=>s.id==="ambulance_corridor")?.route_node_ids.join(" → ")}</span>
                         </div>
                         <span className="quiet-badge">AMBULANCE_CORRIDOR</span>
                       </div>
@@ -866,7 +888,7 @@ export function Workspace() {
                         route={
                           data.scenarios.find(
                             (s) => s.id === "ambulance_corridor",
-                          )?.route_node_ids ?? ["C6", "C3", "C1", "C2"]
+                          )?.route_node_ids ?? []
                         }
                       />
                     </section>
@@ -875,6 +897,7 @@ export function Workspace() {
                         network={data}
                         frame={live.fresh ? live.frame : null}
                         canOperate={!!dbReady}
+                        startReady={runInputReady}
                         pending={anyCommandPending}
                         locked={!!modeQuery.data?.locks.length || manual}
                         error={startEmergency.error?.message || reset.error?.message}

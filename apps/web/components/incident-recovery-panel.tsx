@@ -14,15 +14,19 @@ export type IncidentRecovery = {
   estimateCycles: number | null;
 };
 
+function configuredIncidentNode(network:Network):string {
+  return (network.scenarios.find(s=>s.id==="incident_c3") as (Network["scenarios"][number] & {incident_node_id?:string})|undefined)?.incident_node_id ?? "";
+}
 export function incidentRecovery(network: Network, frame: TrafficState | null): IncidentRecovery {
-  const incoming = new Set(network.movements.filter((movement) => movement.node_id === "C3").map((movement) => movement.id));
+  const incidentNode=frame?.incident?.node_id || configuredIncidentNode(network);
+  const incoming = new Set(network.movements.filter((movement) => movement.node_id === incidentNode).map((movement) => movement.id));
   const links = [...new Set(network.movements.filter((movement) => incoming.has(movement.id)).map((movement) => movement.incoming_link_id))];
   const aggregates = (frame?.links ?? []).filter((link) => links.includes(link.link_id));
   const measured = frame?.movements.filter((movement) => incoming.has(movement.movement_id)) ?? [];
   const upstreamQueueVeh = aggregates.length ? aggregates.reduce((sum, link) => sum + link.queued_veh_estimate, 0) : measured.reduce((sum, movement) => sum + movement.queue_veh, 0);
   const upstreamDepartureVpm = aggregates.length ? aggregates.reduce((sum, link) => sum + link.outflow_vpm, 0) : measured.reduce((sum, movement) => sum + movement.departure_rate_vpm, 0);
   const blocked = aggregates.length ? aggregates.some((link) => link.receiving_blocked || link.storage_utilization_ratio >= 0.98) : measured.some((movement) => movement.downstream_capacity_veh <= 0 || movement.occupancy_ratio >= 0.98);
-  const c3Phases = network.phases.filter((phase) => phase.node_id === "C3");
+  const c3Phases = network.phases.filter((phase) => phase.node_id === incidentNode);
   const cycleSeconds = c3Phases.reduce((sum, phase) => {
     const green = frame?.active_plan.find((change) => change.phase_id === phase.id)?.green_s ?? phase.min_green_s;
     return sum + green + phase.amber_s + phase.all_red_s;
@@ -46,6 +50,7 @@ export function IncidentRecoveryPanel({
   onLaunch,
   onReset,
   canOperate,
+  startReady = true,
   pending,
   error,
 }: {
@@ -56,9 +61,11 @@ export function IncidentRecoveryPanel({
   onLaunch: () => void;
   onReset: () => void;
   canOperate: boolean;
+  startReady?: boolean;
   pending: boolean;
   error?: string;
 }) {
+  const incidentNode=configuredIncidentNode(network);
   const configured = network.scenarios.find((scenario) => scenario.id === "incident_c3")?.capacity_ratio ?? 0.35;
   const active = frame?.scenario_type === "incident_c3" ? frame.incident : null;
   const recovery = incidentRecovery(network, active ? frame : null);
@@ -67,7 +74,7 @@ export function IncidentRecoveryPanel({
     <section className="incident-recovery-panel" aria-labelledby="incident-heading">
       <div className="panel-heading">
         <div>
-          <div className="overline">C3 VIRTUAL CAPACITY INCIDENT</div>
+          <div className="overline">{incidentNode} VIRTUAL CAPACITY INCIDENT</div>
           <h2 id="incident-heading">Containment and recovery</h2>
         </div>
         <span className={`quiet-badge ${active?.status === "active" ? "badge-warning" : ""}`}>{active?.status ?? "READY"}</span>
@@ -75,8 +82,8 @@ export function IncidentRecoveryPanel({
 
       <div className="incident-control-grid">
         <label>
-          <span><SlidersHorizontal size={14} /> Remaining C3 capacity</span>
-          <select aria-label="Remaining C3 capacity" value={capacityRatio} onChange={(event) => onCapacityRatio(Number(event.target.value))} disabled={!canOperate || pending}>
+          <span><SlidersHorizontal size={14} /> Remaining {incidentNode} capacity</span>
+          <select aria-label={`Remaining ${incidentNode} capacity`} value={capacityRatio} onChange={(event) => onCapacityRatio(Number(event.target.value))} disabled={!canOperate || pending}>
             <option value={0.2}>Severe · 20%</option>
             <option value={0.35}>Configured default · 35%</option>
             <option value={0.5}>Moderate · 50%</option>
@@ -99,16 +106,16 @@ export function IncidentRecoveryPanel({
         <div className={`incident-recovery-note ${recovery.blocked ? "incident-blocked" : ""}`} role="status">
           {recovery.blocked ? <AlertTriangle size={17} /> : <ShieldCheck size={17} />}
           <div>
-            <strong>{recovery.blocked ? "Release gate held: a receiving link is full or blocked." : recovery.estimateCycles !== null ? `Modeled queue-drain estimate: about ${recovery.estimateCycles} C3 cycles (${recovery.estimateSeconds}s).` : "Recovery estimate unavailable until modeled discharge is positive."}</strong>
+            <strong>{recovery.blocked ? "Release gate held: a receiving link is full or blocked." : recovery.estimateCycles !== null ? `Modeled queue-drain estimate: about ${recovery.estimateCycles} ${incidentNode} cycles (${recovery.estimateSeconds}s).` : "Recovery estimate unavailable until modeled discharge is positive."}</strong>
             <p>Affected approaches: {recovery.affectedLinks.join(", ") || "unavailable"}. This estimate uses current aggregate queues and discharge; the configured countdown is not a measured clearance guarantee.</p>
           </div>
         </div>
       ) : (
-        <p className="panel-message">The default run reduces C3 to {Math.round(configured * 100)}% from 30s to 150s. Select a permitted virtual severity before launch.</p>
+        <p className="panel-message">The default run reduces {incidentNode} to {Math.round(configured * 100)}% from 30s to 150s. Select a permitted virtual severity before launch.</p>
       )}
 
       <div className="incident-actions">
-        <Button disabled={!canOperate || pending} onClick={onLaunch}>{pending ? "Starting incident…" : "Start configured C3 incident"}</Button>
+        <Button disabled={!canOperate || !startReady || pending} onClick={onLaunch}>{pending ? "Starting incident…" : `Start configured ${incidentNode} incident`}</Button>
         <Button variant="outline" disabled={!active || !canOperate || pending} onClick={onReset}><RotateCcw size={15} /> Reset same seed</Button>
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}

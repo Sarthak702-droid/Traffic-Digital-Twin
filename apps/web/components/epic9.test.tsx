@@ -32,3 +32,10 @@ describe("Epic 9: C3 incident and network recovery", () => {
     expect(screen.getByText(/not a measured clearance guarantee/)).toBeInTheDocument();
   });
 });
+
+it('uses the configured incident junction on the synthetic three-junction graph',async()=>{
+ const config3=(await import('../../../packages/scenario-config/three-controlled-junctions.json')).default;
+ const net=networkSchema.parse(config3);
+ const state={...frame,incident:{...frame.incident!,node_id:'C7'},links:[{link_id:'C1-C7',queued_veh_estimate:7,outflow_vpm:14,receiving_blocked:false,storage_utilization_ratio:0.2}]} as TrafficState;
+ expect(incidentRecovery(net,state).affectedLinks).toContain('C1-C7');
+});

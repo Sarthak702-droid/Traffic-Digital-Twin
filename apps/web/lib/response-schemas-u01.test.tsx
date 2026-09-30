@@ -40,3 +40,8 @@ describe("prototype analysis response", () => {
     expect(result.scoring_version).toBe("score-1");
   });
 });
+
+it('preserves virtual plan offsets in recommendations',()=>{
+ const result=validateResponse('/recommendations/rec/approve',{id:'rec',run_id:'run',timestamp:'now',priority:'normal',reason:'test',changes:[{node_id:'C1',phase_id:'p',green_s:30,offset_s:7}],safety_status:'validated',status:'pending',explanation_facts:[]}) as any;
+ expect(result.changes[0].offset_s).toBe(7);
+});

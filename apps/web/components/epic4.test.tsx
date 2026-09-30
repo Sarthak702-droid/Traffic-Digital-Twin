@@ -60,6 +60,7 @@ function makeAnalysis(forecasts: Forecast[]): Analysis {
       run_id: "test-run",
       recommendation_id: "rec-1",
       baseline_max_queue_veh: 28.0,
+      baseline_queue_delay_veh_s: 365, candidate_queue_delay_veh_s: 221,
       candidate_max_queue_veh: 14.0,
       baseline_avg_delay_s: 36.5,
       candidate_avg_delay_s: 22.1,
@@ -209,7 +210,7 @@ describe("Epic 4 (S11 & S12): Forecasts, Platoons & Spillback Intelligence", () 
 
     // Switch to Before vs After split mode
     fireEvent.click(screen.getByRole("button", { name: "Before vs After · Aggregate comparison" }));
-    expect(screen.getByText("28.00")).toBeInTheDocument();
-    expect(screen.getByText("14.00")).toBeInTheDocument();
+    expect(screen.getByText("365.0")).toBeInTheDocument();
+    expect(screen.getByText("221.0")).toBeInTheDocument();
   });
 });

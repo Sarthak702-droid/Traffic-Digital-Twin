@@ -183,7 +183,7 @@ describe("Epic 14: Production UX, Access & Acceptance (S44–S48)", () => {
     });
 
     it("prompts confirmation before replacing an active run", () => {
-      const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+
       const prepareMutate = vi.fn();
 
       const net = makeNetwork();
@@ -214,10 +214,11 @@ describe("Epic 14: Production UX, Access & Acceptance (S44–S48)", () => {
       const startButton = screen.getByRole("button", { name: /start simulation/i });
       fireEvent.click(startButton);
 
-      expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining("Replace the active run?"));
+      expect(screen.getByRole("alertdialog",{name:"Replace the active run?"})).toBeInTheDocument();
       expect(prepareMutate).not.toHaveBeenCalled();
 
-      confirmSpy.mockRestore();
+      fireEvent.click(screen.getByRole("button",{name:"Replace run"}));
+      expect(prepareMutate).toHaveBeenCalledOnce();
     });
 
     it("alerts and blocks new actions when an uncertain command is pending", () => {

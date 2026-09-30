@@ -175,7 +175,7 @@ describe("Epic 7: Before-vs-after Evidence (S21, S22)", () => {
       expect(screen.getByText("CANDIDATE PLAN · SAME INITIAL STATE")).toBeInTheDocument();
     });
 
-    it("displays exactly 4 PRD §8.4 outcome metrics with SIMULATED badge", () => {
+    it("displays all six bounded aggregate metrics with explicit virtual labels", () => {
       const comparison = makeComparison();
       const frame = makeFrame();
       const analysis = makeAnalysis(comparison);
@@ -192,19 +192,14 @@ describe("Epic 7: Before-vs-after Evidence (S21, S22)", () => {
 
       fireEvent.click(screen.getByRole("button", { name: /Before vs After/ }));
 
-      // 4 metrics (each appears in both summary card and table row)
-      const metricsSection = screen.getByLabelText("Aggregate comparison result");
-      expect(within(metricsSection).getAllByText("Maximum queue (veh)").length).toBeGreaterThanOrEqual(1);
-      expect(within(metricsSection).getAllByText("Queue-delay").length).toBeGreaterThanOrEqual(1);
-      expect(within(metricsSection).getAllByText("Boundary throughput").length).toBeGreaterThanOrEqual(1);
-      expect(within(metricsSection).getAllByText("Congested-link exposure").length).toBeGreaterThanOrEqual(1);
-
-      // SIMULATED badge (may appear multiple times in split header and table)
-      const badges = screen.getAllByText("SIMULATED");
-      expect(badges.length).toBeGreaterThanOrEqual(1);
+      const metricsSection = screen.getByRole("region",{name:"Matched virtual comparison"});
+      for (const label of ["Queue delay (veh·s)","Boundary exits (veh)","Waiting to enter (veh)","Worst service debt (s)","Boundary wait (veh·s)","Congested link time (s)"]) {
+        expect(within(metricsSection).getByText(label)).toBeInTheDocument();
+      }
+      expect(within(metricsSection).getByText("MODELED VIRTUAL PLAN COMPARISON")).toBeInTheDocument();
     });
 
-    it("renders honest delta indicators (improved, unchanged, worse)", () => {
+    it("keeps unavailable mandatory outcomes unavailable instead of substituting legacy metrics", () => {
       const comparison = makeComparison({
         baseline_max_queue_veh: 22.5,
         candidate_max_queue_veh: 18.3,   // improved
@@ -232,8 +227,8 @@ describe("Epic 7: Before-vs-after Evidence (S21, S22)", () => {
       fireEvent.click(screen.getByRole("button", { name: /Before vs After/ }));
 
       // Check outcome texts (rendered via outcome function in table rows)
-      expect(screen.getByText(/Improved: 4.20/)).toBeInTheDocument();  // max_queue 22.5->18.3
-      expect(screen.getAllByText(/Unchanged/).length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Unavailable").length).toBeGreaterThanOrEqual(12);
+      expect(screen.queryByText(/Improved:/)).not.toBeInTheDocument();
     });
 
     it("shows no-comparison empty state when run_id mismatches (stale rejection)", () => {

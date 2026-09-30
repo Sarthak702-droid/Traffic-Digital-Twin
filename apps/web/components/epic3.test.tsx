@@ -156,6 +156,7 @@ function makeSampleAnalysis(): Analysis {
       run_id: "test-run-123",
       recommendation_id: "rec-1",
       baseline_max_queue_veh: 16.5,
+      baseline_queue_delay_veh_s: 362, candidate_queue_delay_veh_s: 224,
       candidate_max_queue_veh: 11.2,
       baseline_avg_delay_s: 36.2,
       candidate_avg_delay_s: 22.4,
@@ -240,7 +241,7 @@ describe("Epic 3 S09: Data-driven Animated Twin & 5 Summary KPIs", () => {
     render(<KpiStrip frame={frame} analysis={analysis} />);
 
     expect(screen.getByText("VEHICLES IN NETWORK")).toBeInTheDocument();
-    expect(screen.getByText("20")).toBeInTheDocument(); // in network count
+    expect(screen.getByText("20.0")).toBeInTheDocument(); // in network count
 
     expect(screen.getByText("AVG SPEED")).toBeInTheDocument();
     expect(screen.getByText("AVG QUEUE")).toBeInTheDocument();
@@ -267,7 +268,7 @@ describe("Epic 3 S09: Data-driven Animated Twin & 5 Summary KPIs", () => {
     // Link speed overlays rendered
     expect(screen.getByText("22 km/h")).toBeInTheDocument();
     // Queue badges rendered
-    expect(screen.getByText("Q:8")).toBeInTheDocument();
+    expect(screen.getByText("Q:8.0")).toBeInTheDocument();
   });
 
   it("renders ActionRail with highest priority alert, recommendation, and next issue", () => {
@@ -374,9 +375,9 @@ describe("Epic 3 Network Screen Before-vs-After Mode (PRD §8.4)", () => {
     // Switch to Before vs After mode
     fireEvent.click(screen.getByRole("button", { name: /Before vs After · Aggregate comparison/ }));
 
-    expect(screen.getByRole("region", { name: "Aggregate comparison result" })).toBeInTheDocument();
-    expect(screen.getByText("16.50")).toBeInTheDocument();
-    expect(screen.getByText("11.20")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Matched virtual comparison" })).toBeInTheDocument();
+    expect(screen.getByText("362.0")).toBeInTheDocument();
+    expect(screen.getByText("224.0")).toBeInTheDocument();
     expect(screen.queryByText("100% Spillback Eliminated")).not.toBeInTheDocument();
   });
 });

@@ -76,6 +76,7 @@ export const networkSchema = z.object({
   schema_version: z.literal("1.0"),
   id: z.string(),
   name: z.string(),
+  camera_boundary_links:z.record(z.string(),z.string()).optional(),
   units: z.record(z.string(), z.string()),
   nodes: z.array(node).min(2),
   links: z.array(link),
@@ -88,6 +89,7 @@ export const networkSchema = z.object({
       seed: positive.int(),
       route_node_ids: z.array(z.string()),
       capacity_ratio: z.number().min(0).max(1),
+      incident_node_id:z.string().optional(),
     }),
   ),
 });

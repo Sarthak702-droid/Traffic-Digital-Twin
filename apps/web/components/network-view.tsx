@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
+import { comparisonMatchesAnalysis } from "@/lib/decision-identity";
+import { MatchedComparison } from "@/components/matched-comparison";
 import { NetworkCanvas } from "@/components/network-canvas";
-import { Activity, Clock, ShieldCheck, Sparkles } from "lucide-react";
+import { Clock, ShieldCheck, Sparkles } from "lucide-react";
 import type { Network } from "../../../packages/contracts/typescript/network";
 import type {
   Analysis,
@@ -19,99 +21,7 @@ export function outcome(base: number, candidate: number) {
 }
 
 export function ComparisonTable({ comparison }: { comparison: ComparisonResult }) {
-  const rows = [
-    ["Maximum queue (veh)", comparison.baseline_max_queue_veh, comparison.candidate_max_queue_veh, "veh"],
-    ["Queue-delay", comparison.baseline_queue_delay_veh_s ?? 0, comparison.candidate_queue_delay_veh_s ?? 0, "veh-s"],
-    ["Boundary throughput", comparison.baseline_boundary_throughput_veh ?? 0, comparison.candidate_boundary_throughput_veh ?? 0, "veh"],
-    ["Congested-link exposure", comparison.baseline_congested_link_s ?? 0, comparison.candidate_congested_link_s ?? 0, "link-s"],
-  ] as const;
-
-  return (
-    <section aria-label="Aggregate comparison result" className="outcome-metrics-table-card">
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <h3 className="text-sm font-semibold flex items-center gap-2">
-          <Activity className="h-4 w-4 text-emerald-400" />
-          PRD §8.4 Synchronized Outcome Metrics (120s Rollout)
-        </h3>
-        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800/60">
-          SIMULATED
-        </span>
-      </div>
-
-      <p className="disclaimer-note">
-        Aggregate modeled comparison · {comparison.model_version} · metrics {comparison.metrics_version} · horizon {comparison.horizon_s}s · initial {comparison.initial_time_s}s · seed {comparison.seed}
-      </p>
-      <p className="text-xs text-slate-400 mb-1">
-        Run <code>{comparison.run_id}</code> · Recommendation <code>{comparison.recommendation_id}</code>
-      </p>
-      <p className="text-xs text-slate-500 italic mb-4">
-        These are equal-state aggregate estimates, not synchronized vehicle trajectories. Zero mutation of live digital twin run.
-      </p>
-
-      {/* Metric Cards Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-        {rows.map(([label, base, candidate, unit]) => {
-          const delta = candidate - base;
-          const isImproved = delta < 0;
-          const isUnchanged = delta === 0;
-          return (
-            <div
-              key={label}
-              className="p-2.5 rounded-lg border border-slate-800/80 bg-slate-900/60 flex flex-col justify-between"
-            >
-              <span className="text-[10px] text-slate-400 font-medium line-clamp-1">{label}</span>
-              <div className="flex items-baseline justify-between mt-1">
-                <span className="text-base font-bold text-slate-200">
-                  {candidate.toFixed(1)} <small className="text-[10px] font-normal text-slate-400">{unit}</small>
-                </span>
-                <span
-                  className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                    isImproved
-                      ? "bg-emerald-950/70 text-emerald-300 border border-emerald-800/40"
-                      : isUnchanged
-                      ? "bg-slate-800/60 text-slate-300 border border-slate-700/40"
-                      : "bg-rose-950/70 text-rose-300 border border-rose-800/40"
-                  }`}
-                >
-                  {isImproved ? `-${Math.abs(delta).toFixed(1)}` : isUnchanged ? "±0.0" : `+${delta.toFixed(1)}`}
-                </span>
-              </div>
-              <span className="text-[9px] text-slate-500 mt-1">
-                Base: {base.toFixed(1)} {unit}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="table-scroll overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-slate-800 text-left text-slate-400">
-              <th className="py-2 px-3">Metric</th>
-              <th className="py-2 px-3">Baseline</th>
-              <th className="py-2 px-3">Candidate</th>
-              <th className="py-2 px-3">Outcome</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(([label, base, candidate]) => (
-              <tr key={label} className="border-b border-slate-800/50 hover:bg-slate-800/20">
-                <th scope="row" className="py-2.5 px-3 font-medium text-slate-300">
-                  {label}
-                </th>
-                <td className="py-2.5 px-3 text-slate-300">{base.toFixed(2)}</td>
-                <td className="py-2.5 px-3 font-semibold text-emerald-300">{candidate.toFixed(2)}</td>
-                <td className="py-2.5 px-3 font-medium">
-                  {outcome(base, candidate)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  );
+  return <MatchedComparison result={comparison} />;
 }
 
 export function NetworkView({
@@ -146,15 +56,7 @@ export function NetworkView({
 
   // S21/S22: Verification that comparison belongs to the active run and recommendation
   const recId = analysis?.recommendation?.id;
-  const matching = Boolean(
-    frame &&
-      result &&
-      result.run_id === frame.run_id &&
-      recId &&
-      (result.recommendation_id === recId ||
-        result.recommendation_id === recId.replace(/^rec-/, "alt-") ||
-        result.recommendation_id.startsWith("alt-"))
-  );
+  const matching = comparisonMatchesAnalysis(result,analysis,frame,recId);
 
   // Candidate outcomes are read from the server comparison result below.
 
@@ -192,6 +94,7 @@ export function NetworkView({
         </div>
       </div>
 
+      {!frame && onStartScenario && !compare && <div className="panel-message"><p>No virtual run is active. Start the configured scenario to see road-cell stock, flows and signal countdowns.</p><button onClick={onStartScenario} disabled={isStartingScenario}>{isStartingScenario?"Starting simulation…":"Start simulation"}</button></div>}
       {compare ? (
         <section className="context-panel" data-testid="split-comparison-view">
           <div className="split-header">
@@ -254,7 +157,7 @@ export function NetworkView({
               </div>
 
               {/* 4 Outcome Metrics Table Card */}
-              <ComparisonTable comparison={result} />
+              <MatchedComparison result={result} />
             </div>
           ) : (
             <div className="p-6 rounded-xl border border-slate-800 bg-slate-900/40 text-center flex flex-col items-center gap-3">
@@ -294,7 +197,7 @@ export function NetworkView({
         <section className="network-panel">
           <div className="panel-heading">
             <div>
-              <h2>C1–C6 Network Twin</h2>
+              <h2>{network.name} · Virtual simulation</h2>
               <span>
                 {frame?.replay
                   ? "Prerecorded replay"
