@@ -1,6 +1,6 @@
 # Operator workflow repair — 2026-10-01
 
-Branch: `codex/operator-workflow-repair`, isolated from `main` at `a693ddf`.
+Branch: `codex/operator-workflow-repair`, initially isolated from local `main` at `a693ddf`, then rebased onto remote `main` at `e235e09` to include the v5 configuration/startup repair.
 The existing E02 evaluation and P02 report worktrees remain untouched and unmerged.
 
 ## Observed failures and changes
@@ -23,13 +23,13 @@ Final verification:
 
 - Web: 129 tests in 26 files; TypeScript check; Vite production build.
 - Go: `TEST_DATABASE_URL=.../traffic_repair_tests ./scripts/run-go.sh test -p 1 ./apps/api/...` against separate real PostgreSQL database. The running application's database was not used for destructive test setup.
-- Python: real installed gRPC/OpenCV environment, `PYTHONPATH=.:packages/contracts/gen/python .venv/bin/python -m pytest -q services scripts/tests`: 141 passed.
+- Python: real installed gRPC/OpenCV environment, `PYTHONPATH=.:packages/contracts/gen/python .venv/bin/python -m pytest -q services scripts/tests`: 143 passed after integration.
 - Bugbot review found one reset-readiness issue; corrected with regression coverage. Subsequent integration changes received manual diff review and focused/full affected tests.
 - Browser: authenticated start, finalized-session selections, accessible run replacement, seeded live state, recorded playback/analytics, no horizontal overflow, ten road-cell groups, and available forecast values in the full network view. Screenshot: local `/tmp/traffic-operator-repair.png` (not a readiness gate).
 
 ## Real runtime evidence and limits
 
-Processed all four configured boundary clips through the real vision pipeline using project-authorized local media and model assets. CAM-01/02/06 produced 12 finalized windows each; CAM-03 produced 13. These are detector predictions, not independently reviewed reference labels. Media, tracking data, credentials and private model assets remain outside Git.
+Processed all four configured boundary clips again under the integrated v5 configuration identity through the real vision pipeline using project-authorized local media and model assets. CAM-01/02/06 produced 12 finalized windows each; CAM-03 produced 13. These are detector predictions, not independently reviewed reference labels. Media, tracking data, credentials and private model assets remain outside Git.
 
 Two-junction graph: newly processed recorded-input peak, incident and emergency runs returned ten links/road-cell groups and two signals, with durable per-run input bindings and valid run-scoped observations. Peak returned 56 forecasts across 30/60/120/300 seconds after the publication repair. Incident/emergency samples at seven seconds included unavailable intelligence; that failure is retained in local evidence rather than counted as acceptance.
 
