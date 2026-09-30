@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "id": "c1-c6-v4",
+  "id": "c1-c6-v5",
   "camera_boundary_links": {"CAM-01": "C2-C1", "CAM-02": "C4-C1", "CAM-03": "C5-C1", "CAM-06": "C6-C3"},
   "name": "C1\u2013C6 demonstration network",
   "units": {

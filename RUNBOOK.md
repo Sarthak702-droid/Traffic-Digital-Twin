@@ -33,6 +33,12 @@ The processor admits one job at a time for each processed-output directory. If a
 4. Inspect current and candidate plans over the same window and demand assumptions. Compare modeled queue delay (veh·s), boundary exits (veh), waiting-to-enter backlog (veh) and worst service debt (s). `no_action` calls for no timing change; `cannot_evaluate` signals unsuitable input or compute. Individual stops, journey time, and uncalibrated video speed are unavailable.
 5. An authenticated operator may simulate, approve, modify with a reason, or reject with a reason. An accepted plan waits for a safe virtual boundary. Confirm a later `virtual_plan_applied` audit with the virtual tick and changed signal state. On stale input, timeout, dependency loss or uncertain command outcome, inspect the command and audit before retrying. Replay is an explicit labeled operator action.
 
+## Network configuration upgrades
+
+Network config IDs identify immutable definitions in PostgreSQL. The current two-junction definition is `c1-c6-v5`; it versions the camera boundary mappings and explicit incident location added after the original `c1-c6-v4`. Startup inserts v5 alongside existing versions and keeps historical runs bound to their original configs. Restarting with the same definition is idempotent.
+
+When changing a persisted network definition, assign a new config ID before starting the stack. A `config ... already exists with different content` error indicates an ID was reused; compare the definitions and version the changed configuration. Preserve the existing database and audit history. Config hashes change with the new definition, so process recorded inputs again before using them with the revised graph. Regenerate synthetic replay assets with `PYTHONPATH=.:packages/contracts/gen/python .venv/bin/python scripts/record-replay.py`, then run the same command with `--write-manifest`. Manifest generation checks every frame's config hash and simulator version before writing checksums.
+
 ## Verification and evidence
 
 Run focused suites and contract checks after a change: `go test ./...` under `apps/api`, `.venv/bin/python -m pytest -q services`, `npm test -- --run` under `apps/web`, and `python3 scripts/verify-contracts.py`. Go/PostgreSQL tests need the local database. Mock-backed tests do not establish real OpenCV/gRPC/browser acceptance.

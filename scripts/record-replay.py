@@ -8,6 +8,8 @@ from google.protobuf.json_format import MessageToDict
 import twin_pb2 as pb
 from services.simulation.engine import Engine
 from services.intelligence.model import Model
+from services.shared.network_config import config_hash, load_config
+from services.simulation.metrics import METRICS_VERSION
 
 SCENARIOS=[('peak_surge',1101),('incident_c3',2202),('ambulance_corridor',3303)]
 
@@ -33,15 +35,24 @@ def record(selected=None):
         finally:engine.close()
 
 def write_manifest():
-    target=Path('packages/replay'); model=Model()
-    manifest={"config_id":model.config["id"],"engine_kind":"aggregate_ctm","model_version":"aggregate-predictor-v1","metrics_version":"flow-metrics-v1","recordings":{}}
+    target=Path('packages/replay'); config=load_config()
+    versions={"engine_kind":Engine.engine_kind,"model_version":Engine.model_version,"metrics_version":METRICS_VERSION}
+    manifest={"config_id":config["id"],**versions,"recordings":{}}
+    digest=config_hash(config)
     for scenario,seed in SCENARIOS:
         path=target/(scenario+'.jsonl.gz')
+        frames=0
         with gzip.open(path,'rt') as stream:
-            first=json.loads(next(stream))['state']
-        if first.get('engine_kind') != 'aggregate_ctm' or first.get('metrics_version') != 'flow-metrics-v1':
-            raise RuntimeError(f'{path} is not an aggregate replay')
-        manifest['recordings'][scenario]={'seed':seed,'frames':480,'engine_kind':'aggregate_ctm','model_version':'aggregate-predictor-v1','metrics_version':'flow-metrics-v1','sha256':hashlib.sha256(path.read_bytes()).hexdigest()}
+            for line in stream:
+                state=json.loads(line)['state']
+                if state.get('config_hash') != digest:
+                    raise RuntimeError(f'{path} has a different configuration; regenerate its recording')
+                if any(state.get(key) != value for key,value in versions.items()) or state.get('scenario_type') != scenario or state.get('seed') != seed:
+                    raise RuntimeError(f'{path} has incompatible replay metadata; regenerate its recording')
+                frames+=1
+        if frames != 480:
+            raise RuntimeError(f'{path} must contain 480 frames, found {frames}')
+        manifest['recordings'][scenario]={'seed':seed,'frames':frames,**versions,'sha256':hashlib.sha256(path.read_bytes()).hexdigest()}
     (target/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
