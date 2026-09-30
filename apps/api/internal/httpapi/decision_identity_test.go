@@ -136,3 +136,35 @@ func TestLateAnalysisDoesNotMatchChangedRunInput(t *testing.T) {
 		t.Fatal("late analysis from old snapshot accepted")
 	}
 }
+
+func TestPublishAnalysisRetainsBoundForecastsWithoutStaleActions(t *testing.T) {
+	state := &pb.TrafficState{SchemaVersion: "1.1", RunId: "run", InputSessionId: "epoch", SnapshotSequence: 11, SimulationTimeS: 11, ConfigHash: "cfg", MetricsVersion: "metrics"}
+	analysis := &pb.Analysis{RunId: "run", InputSessionId: "epoch", SnapshotSequence: 10, SimulationTimeS: 10, ConfigHash: "cfg", MetricsVersion: "metrics", Outcome: "recommend", Recommendation: &pb.Recommendation{Id: "old"}, Alternatives: []*pb.Recommendation{{Id: "alt"}}, Comparison: &pb.ComparisonResult{}, Forecasts: []*pb.Forecast{{HorizonS: 30}}}
+	published := publishableAnalysis(analysis, state)
+	if published == nil || len(published.Forecasts) != 1 || published.Recommendation != nil || published.Comparison != nil || len(published.Alternatives) != 0 || published.Outcome != "cannot_evaluate" {
+		t.Fatal("bound forecasts were lost or stale actions exposed")
+	}
+	if analysis.Recommendation == nil {
+		t.Fatal("input analysis mutated")
+	}
+	state.DemandSource = "video_profile"
+	state.InputQuality = "stale"
+	if publishableAnalysis(analysis, state) != nil {
+		t.Fatal("stale input retained numeric forecasts")
+	}
+	state.InputQuality = "cached_valid"
+	state.InputSessionId = "other"
+	if publishableAnalysis(analysis, state) != nil {
+		t.Fatal("old source accepted")
+	}
+	state.InputSessionId = "epoch"
+	state.SnapshotSequence = 9
+	if publishableAnalysis(analysis, state) != nil {
+		t.Fatal("future snapshot accepted")
+	}
+	state.SnapshotSequence = 21
+	state.SimulationTimeS = 21
+	if publishableAnalysis(analysis, state) != nil {
+		t.Fatal("expired forecast accepted")
+	}
+}

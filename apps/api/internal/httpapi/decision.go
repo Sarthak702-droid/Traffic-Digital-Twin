@@ -44,6 +44,29 @@ func analysisMatchesState(analysis *pb.Analysis, state *pb.TrafficState) bool {
 	return analysisInputMatchesState(analysis, state) && (state.SchemaVersion == "1.0" && analysis.SnapshotSequence == 0 || analysis.SnapshotSequence == state.SnapshotSequence)
 }
 
+// Forecasts may remain useful while the virtual clock advances. Actions always
+// retain the stricter exact-snapshot gate and cannot be revived by this path.
+func publishableAnalysis(analysis *pb.Analysis, state *pb.TrafficState) *pb.Analysis {
+	if state != nil && analysis != nil && len(analysis.Forecasts) > 0 && state.DemandSource == "video_profile" && (state.InputQuality == "stale" || state.InputQuality == "missing" || state.InputQuality == "degraded" || state.InputQuality == "invalid") {
+		return nil
+	}
+	if !analysisInputMatchesState(analysis, state) || state.SimulationTimeS < analysis.SimulationTimeS || state.SimulationTimeS-analysis.SimulationTimeS > 10 || analysis.SnapshotSequence > state.SnapshotSequence {
+		return nil
+	}
+	visible := proto.Clone(analysis).(*pb.Analysis)
+	if !analysisMatchesState(visible, state) {
+		hadAction := visible.Recommendation != nil || len(visible.Alternatives) > 0 || visible.Comparison != nil
+		visible.Recommendation = nil
+		visible.Alternatives = nil
+		visible.Comparison = nil
+		if hadAction {
+			visible.Outcome = "cannot_evaluate"
+			visible.OutcomeReason = "Snapshot advanced; request fresh analysis"
+		}
+	}
+	return visible
+}
+
 func recommendationCurrent(rec *pb.Recommendation, analysis *pb.Analysis, state *pb.TrafficState) bool {
 	if rec == nil || !analysisMatchesState(analysis, state) || rec.Id == "" || rec.Status != "pending" ||
 		rec.RunId != state.RunId || rec.InputSessionId != state.InputSessionId ||
@@ -102,7 +125,8 @@ func (s *Server) ConnectIntelligence(ctx context.Context, address string) error 
 					s.mu.Unlock()
 					continue
 				}
-				if !analysisMatchesState(analysis, s.state) {
+				analysis = publishableAnalysis(analysis, s.state)
+				if analysis == nil {
 					s.analysis = nil
 					s.analysisFault = "Stale intelligence result"
 					s.mu.Unlock()
@@ -142,7 +166,8 @@ func (s *Server) ConnectIntelligence(ctx context.Context, address string) error 
 					}
 				}
 				s.mu.Lock()
-				if analysisMatchesState(persisted, s.state) && !s.replaying {
+				persisted = publishableAnalysis(persisted, s.state)
+				if persisted != nil && !s.replaying {
 					// Persistence can overlap an operator command; never resurrect its pending state.
 					if s.manual || s.sim.command == nil || s.sim.command.Mode != "recommend" {
 						persisted.Recommendation = nil
