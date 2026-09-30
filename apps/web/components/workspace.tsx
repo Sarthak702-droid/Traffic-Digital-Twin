@@ -113,7 +113,7 @@ export function Workspace() {
   const network = useQuery({ queryKey: ["network"], queryFn: getNetwork });
   const processedClips=useQuery({queryKey:["processed-clips"],queryFn:()=>request<{clips:ProcessedClip[]}>("/vision/clips"),enabled:!!session.data,refetchInterval:10000});
   const boundaryMapping=network.data?.camera_boundary_links ?? {};
-  const runInputReady=demandSource==="seeded" || videoInputReady(boundaryMapping,processedClips.data?.clips??[],sourceSessions);
+  const runInputReady=demandSource==="seeded" || videoInputReady(boundaryMapping,processedClips.data?.clips??[],sourceSessions,live.fresh ? live.frame?.config_hash : undefined);
   const health = useQuery({
     queryKey: ["health"],
     queryFn: () => request<HealthState>("/health"),
@@ -558,7 +558,7 @@ export function Workspace() {
           </div>
 
           {view === "vision" ? (
-            <VisionAnalyticsPanel boundaryMapping={boundaryMapping} sourceSessions={sourceSessions} onReturn={() => setView("command")} frame={live.fresh ? live.frame : null} analysis={analysis} />
+            <VisionAnalyticsPanel processedClips={processedClips.data?.clips??[]} onSelectSourceSession={(camera,sourceSession)=>setSourceSessions(previous=>({...previous,[camera]:sourceSession}))} boundaryMapping={boundaryMapping} sourceSessions={sourceSessions} onReturn={() => setView("command")} frame={live.fresh ? live.frame : null} analysis={analysis} />
           ) : network.isPending ? (
             <div className="loading-panel" role="status">
               <div className="skeleton" />
@@ -612,8 +612,8 @@ export function Workspace() {
                         <select aria-label={`${camera} source session`} value={sourceSessions[camera]??""} disabled={anyCommandPending}
                           onChange={event=>setSourceSessions({...sourceSessions,[camera]:event.target.value})}>
                           <option value="">Select finalized session</option>
-                          {(processedClips.data?.clips??[]).filter(clip=>clip.camera_id===camera && clip.status==="cached_valid").map(clip=><option key={clip.source_session_id} value={clip.source_session_id}>
-                            {clip.source_session_id.slice(0,12)} · {clip.window_count} windows · end {clip.latest_completed_window_end_source_s}s
+                          {(processedClips.data?.clips??[]).filter(clip=>clip.camera_id===camera && clip.status==="cached_valid" && (!live.fresh || !live.frame?.config_hash || clip.config_hash===live.frame.config_hash)).map(clip=><option key={clip.source_session_id} value={clip.source_session_id}>
+                            {clip.source_session_id.slice(0,12)} · config {clip.config_hash.slice(0,8)} · {clip.window_count} windows · end {clip.latest_completed_window_end_source_s}s
                           </option>)}
                         </select></label>)}
                       {!runInputReady && <p role="status">Video run unavailable until every boundary has a compatible finalized session. Process missing clips using the runbook, or explicitly select seeded demand.</p>}

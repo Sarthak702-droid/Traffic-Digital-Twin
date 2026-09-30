@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OperatorTimeStatus } from "@/components/operator-time-status";
+import type { ProcessedClip } from "@/lib/run-input";
 import { observationQuery } from "@/lib/observation-query";
 import { latestDisplayObservation } from "@/lib/observations";
 import type { Analysis, TrafficState } from "../../../packages/contracts/typescript/events";
@@ -30,6 +31,8 @@ interface VisionAnalyticsPanelProps {
   analysis?: Analysis | null;
   boundaryMapping?: Record<string, string>;
   sourceSessions?: Record<string, string>;
+  processedClips?: ProcessedClip[];
+  onSelectSourceSession?: (camera: string, session: string) => void;
 }
 
 export interface CameraSlot {
@@ -161,7 +164,7 @@ function safePauseVideo(video: HTMLVideoElement | null) {
   }
 }
 
-export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame = null, analysis = null, boundaryMapping = {}, sourceSessions = {} }: VisionAnalyticsPanelProps) {
+export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame = null, analysis = null, boundaryMapping = {}, sourceSessions = {}, processedClips = [], onSelectSourceSession }: VisionAnalyticsPanelProps) {
   const [isOffline, setIsOffline] = useState(initialOffline);
   const [isPlaying, setIsPlaying] = useState(true);
   const [currentFrameIdx, setCurrentFrameIdx] = useState(0);
@@ -763,6 +766,20 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
             </div>
           </div>
         </div>
+
+        {frame?.demand_source === "video_profile" && boundaryMapping[selectedCamera] ? (
+          <p className="field-hint">Observations are bound to the active recorded-input run. Playback selection changes no run input.</p>
+        ) : (
+          <label className="field-hint">Observation source session
+            <select aria-label="Observation source session" value={sourceSessions[selectedCamera] || ""} disabled={!onSelectSourceSession}
+              onChange={event=>onSelectSourceSession?.(selectedCamera,event.target.value)}>
+              <option value="">Select finalized observations</option>
+              {processedClips.filter(clip=>clip.camera_id===selectedCamera && clip.status==="cached_valid" && (!frame?.config_hash || clip.config_hash===frame.config_hash)).map(clip=>(
+                <option key={clip.source_session_id} value={clip.source_session_id}>{clip.source_session_id.slice(0,12)} · config {clip.config_hash.slice(0,8)} · {clip.window_count} windows</option>
+              ))}
+            </select>
+          </label>
+        )}
 
         {/* PRD §19.3 Authority Classification Strip */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "10px", fontSize: "10px" }} role="region" aria-label="Authority Classification">

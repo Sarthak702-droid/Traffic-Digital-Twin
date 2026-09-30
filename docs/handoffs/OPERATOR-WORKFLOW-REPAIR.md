@@ -12,7 +12,7 @@ The existing E02 evaluation and P02 report worktrees remain untouched and unmerg
 - Native start/reset confirmation stalled browser interaction. Those controls now use an accessible in-app confirmation dialog. Browser start, replacement confirmation and subsequent live state were verified.
 - Incident UI assumed C3, even when the configured bottleneck was C7. Resolve the junction and affected movements from configuration/current state; route headings use configuration.
 - Comparison display accepted results from another source epoch and substituted zero for absent metrics. Require the existing full identity check and use the matched aggregate comparison table with explicit unavailable values. Preserve offset fields in timing responses.
-- Analytics queries did not identify the active recorded run. Boundary observation queries now use the authoritative run binding; independent display can use an explicitly selected session.
+- Analytics queries did not identify the active recorded run. Boundary observation queries now use the authoritative run binding; independent display has its own explicit finalized-session selector. Compatible old batches are rejected when their hash differs from the active configuration; source choices show configuration hash prefixes.
 - Go discarded all computation when the simulation advanced during analysis. Retain input-bound forecasts only within the existing 10-second freshness bound, reject future/foreign/stale-input results, and strip all older-snapshot recommendations, alternatives and comparisons. Exact-snapshot decision authorization is unchanged. Publication is rechecked after persistence.
 
 ## Regression and suite evidence
@@ -21,7 +21,7 @@ Each behavioral repair was preceded by a focused failing regression, followed by
 
 Final verification:
 
-- Web: 129 tests in 26 files; TypeScript check; Vite production build.
+- Web: 131 tests in 26 files; TypeScript check; Vite production build.
 - Go: `TEST_DATABASE_URL=.../traffic_repair_tests ./scripts/run-go.sh test -p 1 ./apps/api/...` against separate real PostgreSQL database. The running application's database was not used for destructive test setup.
 - Python: real installed gRPC/OpenCV environment, `PYTHONPATH=.:packages/contracts/gen/python .venv/bin/python -m pytest -q services scripts/tests`: 143 passed after integration.
 - Bugbot review found one reset-readiness issue; corrected with regression coverage. Subsequent integration changes received manual diff review and focused/full affected tests.
@@ -31,7 +31,7 @@ Final verification:
 
 Processed all four configured boundary clips again under the integrated v5 configuration identity through the real vision pipeline using project-authorized local media and model assets. CAM-01/02/06 produced 12 finalized windows each; CAM-03 produced 13. These are detector predictions, not independently reviewed reference labels. Media, tracking data, credentials and private model assets remain outside Git.
 
-Two-junction graph: newly processed recorded-input peak, incident and emergency runs returned ten links/road-cell groups and two signals, with durable per-run input bindings and valid run-scoped observations. Peak returned 56 forecasts across 30/60/120/300 seconds after the publication repair. Incident/emergency samples at seven seconds included unavailable intelligence; that failure is retained in local evidence rather than counted as acceptance.
+Two-junction graph: newly processed recorded-input peak, incident and emergency runs returned ten links/road-cell groups and two signals, with durable per-run input bindings and valid run-scoped observations. The pre-rebase peak probe returned 56 forecasts across 30/60/120/300 seconds after the publication repair. After reprocessing for v5, all three starts and run-scoped observations passed; emergency returned 56 forecasts and `no_action` (current plan best), while peak/incident samples at seven seconds had unavailable intelligence. Those failures are retained in local evidence rather than counted as acceptance.
 
 Three-junction graph: a separate Go/Python stack and PostgreSQL database ran all three seeded scenarios with twelve links/road-cell groups and three signals. The incident was at C7; emergency route was C6 → C3 → C7 → C1 → C2. All three returned 64 forecasts across all four horizons. Results carried `cannot_evaluate` for decisions when their exact snapshot advanced; no stale decision was enabled.
 

@@ -15,3 +15,8 @@ describe('operator run input',()=>{
   expect(buildScenarioInput('seeded',{'CAM-01':'one'})).toEqual({demand_source:'seeded'});
  });
 });
+
+it('rejects an internally compatible batch that belongs to an older active configuration',()=>{
+ const clips=[{camera_id:'CAM-01',source_session_id:'old',config_hash:'v4',status:'cached_valid'}];
+ expect(videoInputReady({'CAM-01':'boundary'},clips,{'CAM-01':'old'},'v5')).toBe(false);
+});
