@@ -9,7 +9,6 @@ import {
   Check,
   ChevronRight,
   Database,
-  GitBranch,
   Layers,
   MapPin,
   Network as NetworkIcon,
@@ -22,6 +21,7 @@ import {
   TrafficCone,
   Video,
 } from "lucide-react";
+import {ProductBrand} from "@/components/product-brand";
 import {LoadingState} from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
@@ -431,12 +431,7 @@ export function Workspace() {
       {/* Primary Sidebar (Story S08: Only 6 Primary Sections) */}
       <aside className="app-sidebar">
         <a href="/" className="wordmark">
-          <span className="logo">
-            <GitBranch size={22} />
-          </span>
-          <span>
-            TRAFFIC<span className="wordmark-sub">DIGITAL TWIN</span>
-          </span>
+          <ProductBrand />
         </a>
 
         <div className="sidebar-label">OPERATIONS</div>
@@ -1083,7 +1078,7 @@ export function Workspace() {
 
           <footer className="product-footer">
             <span>
-              TRAFFIC DIGITAL TWIN <span>/ VIRTUAL ENGINEERING PROTOTYPE</span>
+              RoadFlow <span>/ VIRTUAL ENGINEERING PROTOTYPE</span>
             </span>
             <span>
               Demonstration mode · {inputDisclosure(live.frame)} · Zero live signal control.

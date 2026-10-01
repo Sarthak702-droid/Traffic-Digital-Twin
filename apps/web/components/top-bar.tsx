@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Clock,
   Gauge,
-  GitBranch,
   Presentation,
   Radio,
   ShieldAlert,
@@ -16,6 +15,7 @@ import {
   User,
   Users,
 } from "lucide-react";
+import {ProductBrand} from "@/components/product-brand";
 import { Button } from "@/components/ui/button";
 import { useWorkspace, type UserRole } from "@/lib/state";
 import {inputDisclosure} from "@/lib/input-disclosure";
@@ -73,12 +73,7 @@ export function TopBar({
     <header className="product-topbar" aria-label="Command center top bar">
       <div className="topbar-left">
         <div className="topbar-brand">
-          <span className="logo small-logo">
-            <GitBranch size={16} />
-          </span>
-          <span className="brand-text">
-            TRAFFIC<strong>DIGITAL TWIN</strong>
-          </span>
+          <ProductBrand compact />
         </div>
 
         {/* Environment & Policy Chips */}
