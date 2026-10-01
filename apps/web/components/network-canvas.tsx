@@ -187,7 +187,7 @@ export function NetworkCanvas({
           const ly = midY + dx * labelShift;
 
           return (
-            <g key={link.id} className="network-link-group">
+            <g key={link.id} className={`network-link-group ${isRoute ? "is-priority-route" : ""}`}>
               <title>
                 {link.id}: {link.from_node} → {link.to_node} ({link.length_m}m,{" "}
                 {link.storage_capacity_veh} veh storage)
@@ -196,6 +196,7 @@ export function NetworkCanvas({
 
               {/* Roadway Base Track */}
               <line
+                className="roadway-base"
                 x1={x1}
                 y1={y1}
                 x2={x2}

@@ -4713,3 +4713,42 @@ input, select, textarea { accent-color:#60a5fa; }
 .product-brand-description { display:block; font-size:10px; font-weight:500; color:#a6b5c8; letter-spacing:.1px; margin-top:5px; }
 .product-brand-compact .product-brand-name { font-size:18px; }
 .wordmark { padding:0 8px; }
+/* Emergency corridor: route overview, live signals and aggregate network. */
+.emergency-workspace-grid { grid-template-columns:minmax(0,1fr) 320px; gap:20px; }
+.emergency-simulation { overflow:hidden; border:1px solid #30445e; border-radius:14px; background:#111d2e; box-shadow:0 6px 24px #02061726; }
+.emergency-map-heading { display:flex; align-items:center; gap:14px; padding:22px; background:linear-gradient(120deg,#172b45,#111d2e); border-bottom:1px solid #2b3c52; }
+.emergency-map-heading h2 { margin-top:4px; font-size:21px; letter-spacing:-.5px; }
+.emergency-map-heading p { margin:5px 0 0; color:#a6b5c8; font-size:12px; }
+.emergency-map-icon { display:grid; place-items:center; width:46px; height:46px; flex-shrink:0; border-radius:12px; background:#203e64; color:#93c5fd; border:1px solid #345b87; }
+.emergency-map-stage { margin-left:auto; padding:6px 10px; border:1px solid #3b506b; border-radius:20px; color:#c4d7ee; font-size:11px; text-transform:capitalize; white-space:nowrap; }
+.emergency-map-stage.stage-priority,.emergency-map-stage.stage-pre_clearance { color:#9be5c9; border-color:#2c7860; background:#143a30; }
+.emergency-map-meta { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:14px 22px 0; color:#a6b5c8; font-size:11px; }
+.emergency-map-meta > span { display:flex; align-items:center; gap:6px; }
+.emergency-map-meta strong { color:#dce8f7; font-variant-numeric:tabular-nums; }
+.emergency-route-stops { list-style:none; display:flex; gap:10px; padding:16px 22px; margin:0; overflow-x:auto; }
+.emergency-route-stops li { flex:1 0 115px; min-width:0; }
+.emergency-route-stops button { display:flex; flex-direction:column; gap:8px; width:100%; text-align:left; background:#16263c; color:#edf3fa; border:1px solid #314966; border-radius:10px; padding:12px; transition:background .15s,border-color .15s; }
+.emergency-route-stops button:hover { background:#213853; border-color:#60a5fa; }
+.route-stop-top { display:flex; align-items:center; gap:8px; width:100%; }
+.route-stop-top > svg { margin-left:auto; color:#93c5fd; }
+.route-stop-number { display:grid; place-items:center; width:22px; height:22px; border-radius:6px; background:#28476b; font-size:10px; color:#bfdbfe; }
+.route-stop-top strong { font-size:15px; }
+.route-stop-signal,.route-stop-eta { font-size:10px; color:#a6b5c8; }
+.route-stop-signal.signal-green { color:#86efc4; }
+.route-stop-signal.signal-amber { color:#fcd68b; }
+.route-stop-signal.signal-all_red,.route-stop-signal.signal-red { color:#fca5a5; }
+.emergency-map-canvas { position:relative; margin:0 14px; border:1px solid #243950; border-radius:12px; background:radial-gradient(ellipse at center,#12263b,#0b1524); overflow:hidden; }
+.emergency-map-canvas .network-svg { max-height:520px; min-height:360px; }
+.emergency-map-canvas .network-canvas-container { background:transparent; }
+.emergency-simulation .is-priority-route .roadway-base { stroke:#304b72; stroke-width:22; }
+.emergency-map-caption { display:block; padding:10px 16px; font-size:9px; letter-spacing:1px; color:#8da4be; text-align:center; background:#0f1d30; border-top:1px solid #243950; }
+.emergency-map-legend { display:flex; flex-wrap:wrap; gap:12px 20px; padding:16px 22px; color:#b9c9de; font-size:10px; }
+.emergency-map-legend span { display:flex; align-items:center; gap:7px; }
+.emergency-map-legend i { width:18px; height:4px; border-radius:4px; background:#c0abed; }
+.emergency-map-legend .legend-stock { background:linear-gradient(90deg,#34d399,#fbbf24,#f87171); height:8px; }
+.emergency-map-legend .legend-junction { width:10px; height:10px; border:2px solid #a6b5c8; background:transparent; border-radius:50%; }
+.emergency-map-note { display:flex; align-items:flex-start; flex-wrap:wrap; gap:8px; padding:14px 22px; color:#92a8c1; font-size:10px; border-top:1px solid #2b3c52; background:#101c2d; }
+.emergency-map-note svg { flex-shrink:0; color:#93c5fd; }
+@media(max-width:1100px) { .emergency-workspace-grid { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:600px) { .emergency-map-heading { padding:16px; flex-wrap:wrap; gap:10px; } .emergency-map-stage { margin-left:0; } .emergency-map-heading h2 { font-size:18px; } .emergency-route-stops { padding:14px; } .emergency-map-canvas { margin:0 10px; } .emergency-map-canvas .network-svg { min-height:300px; } }
+@media(prefers-reduced-motion:reduce) { .emergency-route-stops button { transition:none; } }

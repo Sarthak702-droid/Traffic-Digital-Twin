@@ -21,6 +21,7 @@ import {
   TrafficCone,
   Video,
 } from "lucide-react";
+import {EmergencySimulation} from "@/components/emergency-simulation";
 import {ProductBrand} from "@/components/product-brand";
 import {LoadingState} from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
@@ -881,26 +882,8 @@ export function Workspace() {
 
                 {/* 4. EMERGENCY VIEW */}
                 {view === "emergency" && (
-                  <div className="operations-grid">
-                    <section className="network-panel">
-                      <div className="panel-heading">
-                        <div>
-                          <h2>Ambulance Corridor Priority</h2>
-                          <span>Designated virtual route: {data.scenarios.find(s=>s.id==="ambulance_corridor")?.route_node_ids.join(" → ")}</span>
-                        </div>
-                        <span className="quiet-badge">AMBULANCE_CORRIDOR</span>
-                      </div>
-                      <NetworkCanvas
-                        network={data}
-                        frame={live.fresh ? live.frame : null}
-                        onSelect={selectNode}
-                        route={
-                          data.scenarios.find(
-                            (s) => s.id === "ambulance_corridor",
-                          )?.route_node_ids ?? []
-                        }
-                      />
-                    </section>
+                  <div className="operations-grid emergency-workspace-grid">
+                    <EmergencySimulation network={data} frame={live.fresh ? live.frame : null} onSelect={selectNode}/>
                     <aside className="action-rail">
                       <EmergencyCorridorPanel
                         network={data}
