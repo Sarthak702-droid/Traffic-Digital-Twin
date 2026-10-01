@@ -18,10 +18,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useWorkspace, type UserRole } from "@/lib/state";
+import {inputDisclosure} from "@/lib/input-disclosure";
+import type {TrafficState} from "../../../packages/contracts/typescript/events";
 import type { HealthState } from "../../../packages/contracts/typescript/events";
 
 export function TopBar({
   health,
+  frame,
   manual,
   onToggleManual,
   isPendingManual,
@@ -29,6 +32,7 @@ export function TopBar({
   onChangeMode,
 }: {
   health?: HealthState;
+  frame?: TrafficState | null;
   manual: boolean;
   onToggleManual: () => void;
   isPendingManual?: boolean;
@@ -83,7 +87,7 @@ export function TopBar({
             DEMONSTRATION MODE
           </span>
           <span className="chip chip-data" title="Traffic data source">
-            RECORDED VIDEO + VIRTUAL TRAFFIC
+            {inputDisclosure(frame)}
           </span>
           <span className="chip chip-control" title="Signal actuation authority">
             NO LIVE SIGNAL CONTROL

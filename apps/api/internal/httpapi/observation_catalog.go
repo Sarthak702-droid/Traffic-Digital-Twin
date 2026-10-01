@@ -19,18 +19,19 @@ import (
 )
 
 type processedManifest struct {
-	Status                   string `json:"status"`
-	CameraID                 string `json:"camera_id"`
-	SourceSessionID          string `json:"source_session_id"`
-	ClipSHA256               string `json:"clip_sha256"`
-	GeometrySHA256           string `json:"geometry_sha256"`
-	ModelSHA256              string `json:"model_sha256"`
-	ConfigHash               string `json:"config_hash"`
-	DetectorVersion          string `json:"detector_version"`
-	TrackerVersion           string `json:"tracker_version"`
-	ObservationSchemaVersion string `json:"observation_schema_version"`
-	WindowCount              int    `json:"window_count"`
-	ObservationsSHA256       string `json:"observations_sha256"`
+	ResourceMeasurements     *store.PerceptionResource `json:"resource_measurements,omitempty"`
+	Status                   string                    `json:"status"`
+	CameraID                 string                    `json:"camera_id"`
+	SourceSessionID          string                    `json:"source_session_id"`
+	ClipSHA256               string                    `json:"clip_sha256"`
+	GeometrySHA256           string                    `json:"geometry_sha256"`
+	ModelSHA256              string                    `json:"model_sha256"`
+	ConfigHash               string                    `json:"config_hash"`
+	DetectorVersion          string                    `json:"detector_version"`
+	TrackerVersion           string                    `json:"tracker_version"`
+	ObservationSchemaVersion string                    `json:"observation_schema_version"`
+	WindowCount              int                       `json:"window_count"`
+	ObservationsSHA256       string                    `json:"observations_sha256"`
 }
 
 type observationIdentity struct {

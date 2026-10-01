@@ -102,3 +102,38 @@ def test_report_schema_accepts_missing_metrics_but_rejects_raw_media():
     missing_reason["resources"]["peak_ram_bytes"] = {"value": None}
     with pytest.raises(ValidationError):
         validate(missing_reason, schema)
+
+
+def test_report_v2_rejects_private_fields_inside_chronological_observations():
+    contracts = Path(__file__).resolve().parents[1]
+    schema = json.loads((contracts / 'run-report-v2.schema.json').read_text())
+    report = json.loads((contracts / 'fixtures/prototype-contract/run-report.json').read_text())
+    report.update(schema_version='prototype-run-report-v2', scenario_type='peak_surge', seed=7,
+                  demand_source='seeded', run_status='ended', analyses=[], observations=[],
+                  clock_events=[], application_events=[])
+    report['forecast']['origin_simulation_s'] = 15
+    validate(report, schema)
+    report['observations'] = [{'tracking_id': 'private-object-identity'}]
+    with pytest.raises(ValidationError):
+        validate(report, schema)
+
+
+def test_openapi_contains_complete_scheduler_and_all_owned_routes():
+    contracts = Path(__file__).resolve().parents[1]
+    api = json.loads((contracts / 'openapi.json').read_text())
+    scheduler = api['components']['schemas']['SchedulerSnapshot']['properties']
+    assert set(scheduler) == {field.name for field in pb.SchedulerSnapshot.DESCRIPTOR.fields}
+    ownership = json.loads((contracts / 'endpoint-ownership.json').read_text())
+    owned = {(row['method'].lower(), row['path']) for row in ownership['endpoints']}
+    described = {(method, path) for path, routes in api['paths'].items() for method in routes
+                 if method in ('get', 'post', 'put', 'patch', 'delete', 'head')}
+    assert owned == described
+
+
+def test_openapi_report_uses_resolvable_strict_schema_components():
+    contracts = Path(__file__).resolve().parents[1]
+    api = json.loads((contracts / 'openapi.json').read_text())
+    report = api['paths']['/api/v1/runs/{id}/report']['get']['responses']['200']['content']['application/json']['schema']
+    assert report == {'$ref': '#/components/schemas/PrototypeRunReportV2'}
+    observation = api['components']['schemas']['ReportV2_observation']
+    assert observation['additionalProperties'] is False

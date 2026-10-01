@@ -95,6 +95,7 @@ func (s *Server) ConnectSimulation(ctx context.Context, address string) error {
 		return e
 	}
 	go s.ReconcileDecisions(ctx)
+	go s.reconcileUnobservedRun(ctx)
 	go func() {
 		defer conn.Close()
 		for ctx.Err() == nil {
@@ -130,10 +131,19 @@ func (s *Server) ConnectSimulation(ctx context.Context, address string) error {
 				}
 			}
 			s.mu.Lock()
+			firstFailure := !s.replaying && s.sim.fault == "" && s.sim.command != nil
+			failedRun := ""
+			if firstFailure {
+				failedRun = s.sim.command.RunId
+			}
 			if !s.replaying {
 				s.sim.fault = "Simulation stream disconnected"
+				s.analysis = nil
 			}
 			s.mu.Unlock()
+			if firstFailure {
+				s.recordRunFailure(ctx, failedRun, "simulation_unavailable")
+			}
 			select {
 			case <-ctx.Done():
 				return
@@ -454,6 +464,20 @@ func (s *Server) launch(w http.ResponseWriter, r *http.Request, command *pb.RunC
 		problem(w, 503, "Could not prepare run; simulation unchanged")
 		return
 	}
+
+	for camera, session := range input.SourceSessions {
+		entry, err := selectProcessedEntry(s.processedEntries(camera), session)
+		if err != nil || entry.Manifest.sourceBinding() != input.SourceIdentities[camera] {
+			problem(w, 409, "Input identity changed before activation")
+			return
+		}
+		if entry.Manifest.ResourceMeasurements != nil {
+			if err = s.Store.SavePerceptionResource(ctx, run.ID, camera, session, *entry.Manifest.ResourceMeasurements); err != nil {
+				problem(w, 503, "Perception evidence persistence failed; no run activated")
+				return
+			}
+		}
+	}
 	id, _ := run.ID.Value()
 	command.RunId = id.(string)
 	applyInputBinding(command, input)
@@ -530,5 +554,36 @@ func applyInputBinding(command *pb.RunCommand, input store.RunInputBinding) {
 			DetectorVersion:    identity.DetectorVersion, TrackerVersion: identity.TrackerVersion,
 			ObservationSchemaVersion: identity.ObservationSchemaVersion,
 		})
+	}
+}
+
+// Startup/failover can precede simulator readiness or lease acquisition. Retry
+// while no authoritative frame is available; a transient outage is never proof
+// of an ended run. A confirmed empty restarted engine is audited as interrupted.
+func (s *Server) reconcileUnobservedRun(ctx context.Context) {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			s.mu.RLock()
+			eligible := s.sim != nil && s.sim.command != nil && !s.replaying && (s.state == nil || s.sim.fault != "")
+			s.mu.RUnlock()
+			if !eligible || !s.requireLeaseSilent() {
+				continue
+			}
+			s.sim.commands.Lock()
+			s.mu.RLock()
+			eligible = s.sim.command != nil && !s.replaying && (s.state == nil || s.sim.fault != "")
+			s.mu.RUnlock()
+			if eligible {
+				if err := s.reconcileRecoveredSimulation(ctx); err != nil {
+					slog.Warn("Run recovery deferred", "error", err)
+				}
+			}
+			s.sim.commands.Unlock()
+		}
 	}
 }

@@ -9,6 +9,7 @@ messages=pb.DESCRIPTOR.message_types_by_name
 schemas={};interfaces=[]
 additive_from={
     'TrafficState':18,
+    'SchedulerSnapshot':6,
     'Forecast':12,
     'TimingChange':4,
     'Recommendation':10,
@@ -21,7 +22,7 @@ additive_from={
 }
 quality=('fresh','cached_valid','synthetic','missing','stale','degraded',
          'out_of_order','duplicate','replay')
-horizon_status=('available','insufficient_history','missing_input','stale_input')
+horizon_status=('available','insufficient_history','missing_input','stale_input','compute_unavailable')
 string_vocab={
     ('SourceIdentity','processing_mode'):('online_inference','cached_observations','synthetic_replay'),
     ('FinalizedObservation','observation_status'):('valid','degraded','invalid'),
@@ -91,8 +92,20 @@ def openapi_refs(value):
     if isinstance(value,str) and value.startswith('#/$defs/'):
         return value.replace('#/$defs/','#/components/schemas/',1)
     return value
-for name in ('SourceIdentity','FinalizedObservation','TrafficState','Forecast',
-             'HorizonAvailability','TimingChange','Recommendation','ComparisonResult',
-             'PlanCommand','PlanOutcome','Analysis','CompareCommand'):
+for name in schemas:
     openapi['components']['schemas'][name]=openapi_refs(schemas[name])
+# A report schema's local $defs cannot resolve at the OpenAPI document root.
+# Give every public report definition a distinct component name instead.
+report=json.loads(Path('packages/contracts/run-report-v2.schema.json').read_text())
+def report_refs(value):
+    if isinstance(value,dict):return {key:report_refs(item) for key,item in value.items()}
+    if isinstance(value,list):return [report_refs(item) for item in value]
+    if isinstance(value,str) and value.startswith('#/$defs/'):
+        return value.replace('#/$defs/','#/components/schemas/ReportV2_',1)
+    return value
+for name,definition in report.pop('$defs').items():
+    openapi['components']['schemas']['ReportV2_'+name]=report_refs(definition)
+report.pop('$id',None);report.pop('$schema',None)
+openapi['components']['schemas']['PrototypeRunReportV2']=report_refs(report)
+openapi['paths']['/api/v1/runs/{id}/report']['get']['responses']['200']['content']['application/json']['schema']={'$ref':'#/components/schemas/PrototypeRunReportV2'}
 openapi_path.write_text(json.dumps(openapi,indent=2)+'\n')

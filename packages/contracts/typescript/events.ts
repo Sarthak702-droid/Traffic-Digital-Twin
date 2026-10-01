@@ -80,12 +80,29 @@ export interface SchedulerPriority {
   phase_id: string;
 }
 
+export interface SchedulerOffset {
+  node_id: string;
+  offset_s: number;
+}
+
+export interface SchedulerRelease {
+  node_id: string;
+  release_tick: string;
+}
+
 export interface SchedulerSnapshot {
   tick: string;
   pending_plan: TimingChange[];
   service_history: SchedulerService[];
   priority: SchedulerPriority[];
   recovering: boolean;
+  activate_not_before_tick?: string;
+  offsets?: SchedulerOffset[];
+  releases?: SchedulerRelease[];
+  waiting_node_ids?: string[];
+  requested_at_tick?: string;
+  applied_at_tick?: string;
+  rejected_reason?: string;
 }
 
 export interface CellStock {
@@ -163,6 +180,7 @@ export interface TrafficState {
   latest_finalized_window_end_source_s?: number;
   observation_history?: FinalizedObservation[];
   input_quality?: "" | "fresh" | "cached_valid" | "synthetic" | "missing" | "stale" | "degraded" | "out_of_order" | "duplicate" | "replay";
+  simulation_paused?: boolean;
 }
 
 export interface Forecast {
@@ -181,7 +199,7 @@ export interface Forecast {
   origin_source_s?: number;
   input_age_s?: number;
   input_quality?: "" | "fresh" | "cached_valid" | "synthetic" | "missing" | "stale" | "degraded" | "out_of_order" | "duplicate" | "replay";
-  horizon_status?: "" | "available" | "insufficient_history" | "missing_input" | "stale_input";
+  horizon_status?: "" | "available" | "insufficient_history" | "missing_input" | "stale_input" | "compute_unavailable";
   uncertainty_lower_veh?: number;
   uncertainty_upper_veh?: number;
   uncertainty_status?: "" | "calibrated" | "unavailable";
@@ -189,7 +207,7 @@ export interface Forecast {
 
 export interface HorizonAvailability {
   horizon_s: number;
-  status: "available" | "insufficient_history" | "missing_input" | "stale_input";
+  status: "available" | "insufficient_history" | "missing_input" | "stale_input" | "compute_unavailable";
   reason: string;
 }
 
@@ -367,6 +385,12 @@ export interface RunCommand {
   demand_source: string;
   input_session_id?: string;
   source_bindings?: BoundSource[];
+}
+
+export interface ClockCommand {
+  run_id: string;
+  input_session_id: string;
+  paused: boolean;
 }
 
 export interface RunRequest {

@@ -83,6 +83,9 @@ def test_processing_finalizes_identity_and_reuses_only_exact_cache(tmp_path):
     registration = processor.register('CAM-01', clip, 'operator rights record')
     fresh = processor.process(registration)
     assert fresh['status'] == 'complete' and fresh['processing_mode'] == 'online_inference'
+    assert fresh['resource_measurements']['wall_s'] > 0
+    assert fresh['resource_measurements']['fresh_inference_fps'] is None
+    assert fresh['resource_measurements']['peak_ram_bytes'] > 0
     rows = [json.loads(line) for line in open(fresh['observations_path'])]
     assert [row['crossings_veh'] for row in rows] == [0, 3]
     assert all(row['validation_level'] == 'provisional_unreviewed' for row in rows)

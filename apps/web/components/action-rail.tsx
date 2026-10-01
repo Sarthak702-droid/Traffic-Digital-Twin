@@ -318,36 +318,21 @@ export function ActionRail({
               </span>
             </div>
 
-            {/* S17: Coordinated Network Intervention (C1 + C3) */}
             {(() => {
-              const c1Changes = rec.changes.filter((c) => c.node_id === "C1");
-              const c3Changes = rec.changes.filter((c) => c.node_id === "C3");
-              if (c1Changes.length > 0 && c3Changes.length > 0) {
-                return (
-                  <div className="coordinated-corridor-card" data-testid="coordinated-corridor-card">
-                    <div className="coordinated-header">
-                      <NetworkIcon size={14} />
-                      <span>COORDINATED NETWORK PLAN (C1 + C3)</span>
-                    </div>
-                    <div className="junction-action-grid">
-                      <div className="junction-action-item">
-                        <strong>C1 Downstream Clearance</strong>
-                        <span>{c1Changes.map((c) => `${c.phase_id}: ${c.green_s}s`).join(" · ")}</span>
-                        <p>Clears accumulating queue before spillback reaches storage limit.</p>
-                      </div>
-                      <div className="junction-action-item">
-                        <strong>C3 Upstream Metering</strong>
-                        <span>{c3Changes.map((c) => `${c.phase_id}: ${c.green_s}s`).join(" · ")}</span>
-                        <p>Gates upstream release to match downstream corridor capacity.</p>
-                      </div>
-                    </div>
-                    <div className="corridor-transit-note">
-                      <Clock size={12} /> Platoon corridor transit delay ~22s (300m @ 50 km/h)
-                    </div>
-                  </div>
-                );
-              }
-              return null;
+              const nodes = [...new Set(rec.changes.map(change => change.node_id))];
+              if (nodes.length < 2) return null;
+              return <div className="coordinated-corridor-card" data-testid="coordinated-corridor-card">
+                <div className="coordinated-header"><NetworkIcon size={14}/>
+                  <span>COORDINATED NETWORK PLAN ({nodes.join(" + ")})</span>
+                </div>
+                <div className="junction-action-grid">
+                  {nodes.map(node => <div key={node} className="junction-action-item">
+                    <strong>{node} · proposed virtual timings</strong>
+                    <span>{rec.changes.filter(change => change.node_id === node).map(change => `${change.phase_id}: ${change.green_s}s`).join(" · ")}</span>
+                  </div>)}
+                </div>
+                <p>Inspect the matched comparison for corridor and side-road effects.</p>
+              </div>;
             })()}
 
             {rec.explanation_facts?.length > 0 && (

@@ -86,7 +86,7 @@ func TestAcceptedPlanIntentStaysOpenUntilAppliedOutcome(t *testing.T) {
 		t.Fatal("accepted scheduling prematurely settled the decision before virtual application")
 	}
 	write.Result = "virtual_plan_applied"
-	write.PlanOutcome = []byte(`{"status":"applied","applied_at_simulation_s":42}`)
+	write.PlanOutcome = []byte(`{"status":"applied","snapshot_sequence":"77","applied_at_simulation_s":42}`)
 	if err = s.SaveDecision(auditCtx, write); err != nil {
 		t.Fatal(err)
 	}
@@ -97,4 +97,13 @@ func TestAcceptedPlanIntentStaysOpenUntilAppliedOutcome(t *testing.T) {
 	if err = pool.QueryRow(ctx, "SELECT after_values->'plan_outcome'->>'applied_at_simulation_s' FROM audit_events WHERE safety_result='virtual_plan_applied' AND recommendation_id=$1", rec.Id).Scan(&appliedAt); err != nil || appliedAt != "42" {
 		t.Fatalf("applied tick missing from durable audit: value=%s err=%v", appliedAt, err)
 	}
+	report, err := s.RunReport(ctx, run.ID)
+	if err != nil {
+		t.Fatal("applied outcome report unavailable", err)
+	}
+	applied := report["applied_outcome"].(map[string]any)
+	if applied["status"] != "applied" || *applied["applied_at_simulation_s"].(*float64) != 42 {
+		t.Fatal("applied boundary missing from export")
+	}
+
 }

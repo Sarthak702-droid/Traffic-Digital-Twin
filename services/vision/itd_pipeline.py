@@ -129,6 +129,7 @@ class ITDVideoAnalyticsSession:
         self.bin_duration_s = bin_duration_s
         self.device = device
         self.target_fps = target_fps
+        self.inference_frames_total = 0
         self.session_id = session_id or f"{camera_id}-{int(time.time())}"
         self.geometry = geometry or {}
         
@@ -250,6 +251,7 @@ class ITDVideoAnalyticsSession:
                     imgsz=640
                 )
 
+                self.inference_frames_total += 1
                 boxes = results[0].boxes
                 active_queued = 0
 

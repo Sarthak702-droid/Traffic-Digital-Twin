@@ -51,6 +51,7 @@
     "boundary_demand": [],
     "input_session_id": "",
     "observation_history": [],
-    "input_quality": ""
+    "input_quality": "",
+    "simulation_paused": false
   }
 }

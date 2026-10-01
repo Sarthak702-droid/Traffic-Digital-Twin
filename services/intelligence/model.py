@@ -29,7 +29,7 @@ class Model:
             if {item.node_id for item in frozen.signals}!=set(self.index.phases_by_node):
                 raise ValueError('Operating comparison requires every controlled signal')
             pending={item.phase_id:item.green_s for item in frozen.scheduler.pending_plan}
-            if pending and pending!=self.plan(frozen):
+            if frozen.scheduler.HasField('requested_at_tick') or pending and pending!=self.plan(frozen):
                 raise ValueError('Operating comparison has a pending virtual plan')
         rates,methods=boundary_forecast_rates(frozen,self.index)
         assumptions={'run_id':frozen.run_id,'input_session_id':frozen.input_session_id,'demand_source':frozen.demand_source,'input_quality':frozen.input_quality,'config_hash':frozen.config_hash,'forecast_origin_source_s':frozen.latest_finalized_window_end_source_s,'rates_vps':rates,'forecast_methods':methods}
@@ -43,7 +43,7 @@ class Model:
     def score_metrics(self,metrics,mode='normal'):
         weights=self.scoring['weights'][mode]
         return sum(weights[key]*metrics[key] for key in weights)
-    def _scheduler(self,state,plan):
+    def _scheduler(self,state,plan,offsets=None):
         scheduler=Signals(self.config); scheduler.plan=dict(self.plan(state)); scheduler.pending=dict(scheduler.plan)
         for signal in state.signals:
             if signal.node_id not in scheduler.nodes:continue
@@ -51,8 +51,15 @@ class Model:
         if state.HasField('scheduler'):
             scheduler.tick=state.scheduler.tick; scheduler.last_served.update({x.phase_id:x.last_served_tick for x in state.scheduler.service_history}); scheduler.priority={x.node_id:x.phase_id for x in state.scheduler.priority}; scheduler.recovering=state.scheduler.recovering
             if state.scheduler.pending_plan:scheduler.pending={x.phase_id:x.green_s for x in state.scheduler.pending_plan}
-        if plan != scheduler.plan:
-            scheduler.apply(plan)
+            scheduler.activate_not_before=state.scheduler.activate_not_before_tick
+            scheduler.offsets.update({x.node_id:x.offset_s for x in state.scheduler.offsets})
+            scheduler.release_at={x.node_id:x.release_tick for x in state.scheduler.releases}
+            scheduler.waiting=set(state.scheduler.waiting_node_ids)
+            scheduler.requested_at=state.scheduler.requested_at_tick if state.scheduler.HasField('requested_at_tick') else None
+            scheduler.applied_at=state.scheduler.applied_at_tick if state.scheduler.HasField('applied_at_tick') else None
+            scheduler.rejected_reason=state.scheduler.rejected_reason or None
+        if plan != scheduler.plan or offsets and any(offsets.values()):
+            scheduler.apply(plan,offsets=offsets)
         return scheduler
     def _initial_cells(self,state):
         exact={item.link_id:list(item.stock_veh) for item in state.cells}
@@ -68,10 +75,10 @@ class Model:
                 add=min(remaining,max(0.0,cap-values[i])); values[i]+=add;remaining-=add
             cells[edge]=values
         return cells
-    def rollout(self,state,plan,horizon=300,evaluation=None):
+    def rollout(self,state,plan,horizon=300,evaluation=None,offsets=None):
         validate_plan(self.config,plan)
         evaluation=evaluation or self._evaluation_input(state)
-        frozen=evaluation['state']; cells={edge:list(values) for edge,values in evaluation['cells'].items()}; scheduler=self._scheduler(frozen,plan); rates=evaluation['rates']; saved_backlogs=evaluation['backlogs']; backlogs={e:saved_backlogs.get(e,0.0) for e in self.index.boundary_inputs}
+        frozen=evaluation['state']; cells={edge:list(values) for edge,values in evaluation['cells'].items()}; scheduler=self._scheduler(frozen,plan,offsets); rates=evaluation['rates']; saved_backlogs=evaluation['backlogs']; backlogs={e:saved_backlogs.get(e,0.0) for e in self.index.boundary_inputs}
         demand_trace=evaluation.get('demand_trace')
         if demand_trace is not None and (len(demand_trace)!=horizon or any(set(row)!=set(self.index.boundary_inputs) or any(not math.isfinite(value) or value<0 for value in row.values()) for row in demand_trace)):
             raise ValueError('Benchmark demand trace must cover every boundary and rollout tick')
@@ -101,7 +108,7 @@ class Model:
             active_green={scheduler.nodes[node][entry[0]]['id'] for node,entry in scheduler.state.items() if entry[1]=='green'}
             worst_service_debt=max(worst_service_debt,max((scheduler.tick-scheduler.last_served[pid] for pid in self.phases if pid not in active_green),default=0))
             if tick in (30,60,120,300) and tick<=horizon:snapshots[tick]=(dict(queues),dict(arrivals),dict(eta))
-        backlog=sum(backlogs.values()); change=sum(abs(plan[p]-self.plan(frozen)[p]) for p in plan)
+        backlog=sum(backlogs.values()); change=sum(abs(plan[p]-self.plan(frozen)[p]) for p in plan)+sum((offsets or {}).values())
         metrics={'queue_delay':queue_delay,'boundary_wait':boundary_wait,'congested':congested,'throughput':throughput,'worst_service_debt':worst_service_debt,'timing_change':change}
         cost=self.score_metrics(metrics,self._score_mode(frozen))
         return {'snapshots':snapshots,'peak':peak,'queue_delay':queue_delay,'throughput':throughput,'congested':congested,'backlog':backlog,'boundary_wait':boundary_wait,'worst_service_debt':worst_service_debt,'delay':queue_delay/max(1,sum(arrivals.values())),'spill':congested,'stops':0.0,'cost':cost,'demand_version':FORECAST_VERSION,'offered_external_veh':offered_total,'mass_residual_veh':initial_mass+offered_total-sum(map(sum,cells.values()))-sum(backlogs.values())-throughput}
@@ -145,11 +152,19 @@ class Model:
     def comparison(self,state,changes,rec_id='',recommendation_id=None,evaluation=None,horizon_s=0,demand_assumptions_hash=''):
         rec_id=recommendation_id if recommendation_id is not None else rec_id; plan={c.phase_id:c.green_s for c in changes}
         if len(plan)!=len(changes) or any(c.phase_id not in self.phases or self.phases[c.phase_id]['node_id']!=c.node_id for c in changes):raise ValueError('Duplicate or unknown phase/node')
+        offsets={}
+        for change in changes:
+            value=change.offset_s if change.HasField('offset_s') else 0
+            if change.node_id in offsets and offsets[change.node_id]!=value:raise ValueError('Conflicting offsets for one node')
+            offsets[change.node_id]=value
+        # Validate even an unchanged plan: an offset is an actual corridor
+        # activation, never display metadata which comparison may discard.
+        validation=Signals(self.config);validation.apply(plan,offsets=offsets)
         evaluation=evaluation or self._evaluation_input(state);frozen=evaluation['state'];horizon=self.scoring['window_s']
         if horizon_s not in (0,horizon):raise ValueError('Comparison horizon differs from configured matched window')
         if demand_assumptions_hash and demand_assumptions_hash!=evaluation['demand_hash']:
             raise ValueError('Comparison demand assumptions differ from the captured snapshot')
-        base=self.rollout(frozen,self.plan(frozen),horizon,evaluation);candidate=self.rollout(frozen,plan,horizon,evaluation)
+        base=self.rollout(frozen,self.plan(frozen),horizon,evaluation);candidate=self.rollout(frozen,plan,horizon,evaluation,offsets=offsets)
         return pb.ComparisonResult(run_id=frozen.run_id,recommendation_id=rec_id,baseline_max_queue_veh=base['peak'],candidate_max_queue_veh=candidate['peak'],initial_time_s=frozen.simulation_time_s,model_version=MODEL,baseline_spillback_s=base['congested'],candidate_spillback_s=candidate['congested'],horizon_s=horizon,seed=frozen.seed,baseline_queue_delay_veh_s=base['queue_delay'],candidate_queue_delay_veh_s=candidate['queue_delay'],baseline_boundary_throughput_veh=base['throughput'],candidate_boundary_throughput_veh=candidate['throughput'],baseline_congested_link_s=base['congested'],candidate_congested_link_s=candidate['congested'],baseline_boundary_backlog_veh=base['backlog'],candidate_boundary_backlog_veh=candidate['backlog'],baseline_worst_service_debt_s=base['worst_service_debt'],candidate_worst_service_debt_s=candidate['worst_service_debt'],baseline_boundary_wait_veh_s=base['boundary_wait'],candidate_boundary_wait_veh_s=candidate['boundary_wait'],input_session_id=frozen.input_session_id,snapshot_sequence=frozen.snapshot_sequence,config_hash=frozen.config_hash,forecast_origin_source_s=frozen.latest_finalized_window_end_source_s,demand_assumptions_hash=evaluation['demand_hash'],window_start_simulation_s=frozen.simulation_time_s,window_end_simulation_s=frozen.simulation_time_s+horizon,scoring_version=self.scoring['version'],metrics_version=METRICS_VERSION)
     def analyze(self,state):
         if not self._analysis_slots.acquire(blocking=False):

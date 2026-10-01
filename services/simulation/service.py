@@ -1,3 +1,4 @@
+from datetime import datetime,timezone
 import grpc
 import twin_pb2 as pb
 import twin_pb2_grpc as rpc
@@ -15,22 +16,27 @@ class Simulation(rpc.SimulationServicer):
         try:return self.engine.reset(request)
         except ValueError as error:context.abort(grpc.StatusCode.INVALID_ARGUMENT,str(error))
         except Exception as error:context.abort(grpc.StatusCode.UNAVAILABLE,str(error))
+    def SetClock(self,request,context):
+        try:return self.engine.set_clock(request)
+        except ValueError as error:context.abort(grpc.StatusCode.FAILED_PRECONDITION,str(error))
     def GetState(self,request,context):
         with self.engine.lock:
             if not self.engine.running or self.engine.latest is None:context.abort(grpc.StatusCode.FAILED_PRECONDITION,'No active simulation')
             if request.run_id and request.run_id!=self.engine.latest.run_id:context.abort(grpc.StatusCode.NOT_FOUND,'Run is not active')
             return self.engine.copy_state()
     def StreamState(self,request,context):
-        version=-1
+        version=-1;sent=0.0
+        import time
         while context.is_active():
             value=None
             with self.engine.changed:
                 if self.engine.failure:context.abort(grpc.StatusCode.UNAVAILABLE,self.engine.failure)
-                if self.engine.running and self.engine.latest is not None and self.engine.version!=version:
+                if self.engine.running and self.engine.latest is not None and (self.engine.version!=version or time.monotonic()-sent>=1):
                     version=self.engine.version
                     if not request.run_id or request.run_id==self.engine.latest.run_id:value=self.engine.copy_state()
                 else:self.engine.changed.wait(timeout=.2)
-            if value is not None:yield value
+            if value is not None:
+                sent=time.monotonic();value.timestamp=datetime.now(timezone.utc).isoformat();yield value
     def GetPlanOutcome(self,request,context):
         with self.engine.lock:
             state = self.engine.receipts.status(request)

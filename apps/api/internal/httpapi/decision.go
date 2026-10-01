@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -116,15 +117,23 @@ func (s *Server) ConnectIntelligence(ctx context.Context, address string) error 
 				if state == nil {
 					continue
 				}
+				started := time.Now()
 				call, cancel := context.WithTimeout(ctx, 2*time.Second)
 				analysis, err := s.intelligence.Analyze(call, state)
 				cancel()
 				s.mu.Lock()
 				if err != nil {
+					firstFailure := s.analysisFault == ""
 					s.analysisFault = err.Error()
+					s.analysis = nil
 					s.mu.Unlock()
+					if firstFailure {
+						s.recordRunFailure(ctx, state.RunId, "compute_unavailable")
+					}
 					continue
 				}
+				freshDecisionIdentities(analysis)
+				computed := proto.Clone(analysis).(*pb.Analysis)
 				analysis = publishableAnalysis(analysis, s.state)
 				if analysis == nil {
 					s.analysis = nil
@@ -156,7 +165,13 @@ func (s *Server) ConnectIntelligence(ctx context.Context, address string) error 
 				s.mu.Unlock()
 				if s.Store != nil {
 					saveCtx, saveCancel := context.WithTimeout(ctx, time.Second)
-					err := s.Store.SaveAnalysisEvidence(saveCtx, persisted)
+					err := s.Store.SaveAnalysisEvidence(saveCtx, computed)
+					if err == nil {
+						var runID pgtype.UUID
+						if runID.Scan(persisted.RunId) == nil {
+							err = s.Store.SaveAnalysisLatency(saveCtx, runID, time.Since(started).Seconds())
+						}
+					}
 					saveCancel()
 					if err != nil {
 						s.mu.Lock()
@@ -792,4 +807,41 @@ func validReason(reason string) bool {
 		}
 	}
 	return false
+}
+
+func (s *Server) recordRunFailure(ctx context.Context, run string, code string) {
+	if s.Store == nil {
+		return
+	}
+	var id pgtype.UUID
+	if id.Scan(run) != nil || !id.Valid {
+		return
+	}
+	call, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
+	if err := s.Store.SaveRunFailure(call, id, code); err != nil {
+		s.mu.Lock()
+		s.analysisFault = "Failure evidence persistence failed"
+		s.mu.Unlock()
+	}
+}
+
+// Compute recommendation IDs can be deterministic for an unchanged snapshot.
+// Gateway-issued IDs prevent a pre-failure approval from reviving when a new
+// analysis of a held snapshot is produced after dependency recovery.
+func freshDecisionIdentities(a *pb.Analysis) {
+	ids := map[string]string{}
+	for _, rec := range append([]*pb.Recommendation{a.Recommendation}, a.Alternatives...) {
+		if rec == nil {
+			continue
+		}
+		old := rec.Id
+		rec.Id = store.UUID().String()
+		ids[old] = rec.Id
+	}
+	if a.Comparison != nil {
+		if id, ok := ids[a.Comparison.RecommendationId]; ok {
+			a.Comparison.RecommendationId = id
+		}
+	}
 }

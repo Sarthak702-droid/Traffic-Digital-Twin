@@ -56,6 +56,7 @@ export const liveSchema = z.object({
     crossings_veh: nonnegative, observation_status: z.enum(["valid", "degraded", "invalid"]),
     queue_status: z.string(),
   }).passthrough()).optional(),
+  simulation_paused: z.boolean().optional(),
   replay: z.boolean().default(false),
   movements: z.array(movement),
   signals: z.array(

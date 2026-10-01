@@ -5,7 +5,17 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"traffic.local/twin/apps/api/internal/config"
 )
+
+func TestServerUsesConfiguredProcessedObservations(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("VIDEO_PROCESSED_DIR", dir)
+	app := configuredServer(config.Network{}, "http://127.0.0.1:3102", "private-compute-token")
+	if app.VisionProcessedDir != dir {
+		t.Fatalf("processed observations ignored: got %q, want %q", app.VisionProcessedDir, dir)
+	}
+}
 
 func TestRunRequiresComputeToken(t *testing.T) {
 	wd, err := os.Getwd()

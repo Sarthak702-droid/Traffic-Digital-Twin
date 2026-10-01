@@ -176,6 +176,8 @@ func (s *Server) Handler() http.Handler {
 		send(w, 200, v)
 	})
 	r.Post("/api/v1/runs", s.createRun)
+	r.Get("/api/v1/runs/{id}/report", s.getRunReport)
+	r.Post("/api/v1/runs/{id}/clock", s.setRunClock)
 	r.Get("/api/v1/audit", func(w http.ResponseWriter, r *http.Request) {
 		if !s.db(w) {
 			return

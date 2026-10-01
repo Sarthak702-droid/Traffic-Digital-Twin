@@ -72,6 +72,9 @@ func main() {
 		os.Exit(1)
 	}
 }
+func configuredServer(network config.Network, origin, computeToken string) *httpapi.Server {
+	return &httpapi.Server{ComputeToken: computeToken, Network: network, AllowedOrigin: origin, VisionProcessedDir: os.Getenv("VIDEO_PROCESSED_DIR")}
+}
 func run() error {
 	path := os.Getenv("NETWORK_CONFIG")
 	if path == "" {
@@ -89,7 +92,7 @@ func run() error {
 	if len(computeToken) < 32 {
 		return fmt.Errorf("COMPUTE_TOKEN (32+ characters) required")
 	}
-	app := &httpapi.Server{ComputeToken: computeToken, Network: network, AllowedOrigin: origin}
+	app := configuredServer(network, origin, computeToken)
 	if dsn := os.Getenv("DATABASE_URL"); dsn != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()

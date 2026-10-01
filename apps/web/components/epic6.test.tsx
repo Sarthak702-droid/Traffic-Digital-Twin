@@ -124,23 +124,15 @@ describe("Epic 6: AGDA & Network Recommendations (S16, S17, S18, S19)", () => {
     onSelectAlternative: vi.fn(),
   });
 
-  // Story S16 & S17: Coordinated candidate signal plans across C1 and C3
-  it("Story S17: renders coordinated corridor plan card with C1 clearance and C3 metering", () => {
-    render(<ActionRail {...defaultProps()} />);
-
-    // Verify coordinated corridor card exists
-    const corridorCard = screen.getByTestId("coordinated-corridor-card");
-    expect(corridorCard).toBeInTheDocument();
-    expect(screen.getByText(/COORDINATED NETWORK PLAN \(C1 \+ C3\)/i)).toBeInTheDocument();
-
-    // Verify C1 downstream clearance and C3 upstream metering
-    expect(screen.getByText(/C1 Downstream Clearance/i)).toBeInTheDocument();
-    expect(within(corridorCard).getByText(/C1-FROM-C3: 40s/i)).toBeInTheDocument();
-    expect(screen.getByText(/C3 Upstream Metering/i)).toBeInTheDocument();
-    expect(within(corridorCard).getByText(/C3-FROM-C6: 25s/i)).toBeInTheDocument();
-
-    // Verify transit delay
-    expect(screen.getByText(/Platoon corridor transit delay ~22s/i)).toBeInTheDocument();
+  it("renders every recommended junction without invented clearance or transit claims", () => {
+    const rec = makeRec();
+    rec.changes.push({node_id:"C7", phase_id:"C7-FROM-C3", green_s:25});
+    render(<ActionRail {...defaultProps(makeAnalysis(rec))} />);
+    const card = screen.getByTestId("coordinated-corridor-card");
+    expect(within(card).getByText("COORDINATED NETWORK PLAN (C1 + C3 + C7)")).toBeInTheDocument();
+    expect(within(card).getByText("C7 · proposed virtual timings")).toBeInTheDocument();
+    expect(within(card).getByText(/C7-FROM-C3: 25s/)).toBeInTheDocument();
+    expect(within(card).queryByText(/Platoon corridor transit delay|Clears accumulating queue|Gates upstream release/)).not.toBeInTheDocument();
   });
 
   // Story S18: Simulate and score PN-MPC candidates with feasible alternatives

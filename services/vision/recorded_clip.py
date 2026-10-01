@@ -14,6 +14,7 @@ from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from services.vision.resource_probe import ProcessResourceProbe
 from services.shared.network_config import config_hash, load_config
 
 OBSERVATION_SCHEMA = 'camera-observation-v1'
@@ -152,6 +153,7 @@ class RecordedClipProcessor:
         temporary = observations_path.with_name('observations.jsonl.tmp')
         count = 0
         previous_end = -1.0
+        probe=ProcessResourceProbe()
         try:
             factory = self.session_factory
             if factory is None:
@@ -202,7 +204,8 @@ class RecordedClipProcessor:
             manifest.update(status='complete', cache_key=key, source_session_id=source_session_id,
                             window_count=count, observations_path=str(observations_path),
                             observations_sha256=_hash_file(observations_path),
-                            processing_mode='online_inference')
+                            processing_mode='online_inference',
+                            resource_measurements=probe.result(getattr(session,'inference_frames_total',None)))
             _write_json(manifest_path, manifest)
             return manifest
         except Exception as error:
@@ -210,3 +213,5 @@ class RecordedClipProcessor:
             observations_path.unlink(missing_ok=True)
             _write_json(manifest_path, {'status': 'failed', 'cache_key': key, 'error': str(error)})
             raise
+        finally:
+            probe.close()

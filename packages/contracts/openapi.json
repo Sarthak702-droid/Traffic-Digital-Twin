@@ -3,7 +3,7 @@
   "info": {
     "title": "Traffic Digital Twin API",
     "version": "1.0.0",
-    "description": "Local synthetic demonstration: aggregate finite-capacity flow simulation, causal aggregate forecasts, audited operator decisions and prerecorded replay. No live signal control."
+    "description": "Local functional engineering prototype: authenticated Go control and durable evidence, recorded aggregate observations, causal forecasts and virtual signal comparisons. Acceptance remains open; physical signal control and field readiness are disabled/deferred."
   },
   "servers": [
     {
@@ -35,7 +35,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/api/v1/state": {
@@ -62,7 +63,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/api/v1/health": {
@@ -89,7 +91,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/api/v1/junctions/{id}": {
@@ -119,7 +122,8 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "security": []
       }
     },
     "/api/v1/runs": {
@@ -148,6 +152,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
           }
         }
       },
@@ -203,6 +210,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
           }
         }
       }
@@ -223,6 +233,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
           }
         },
         "parameters": [
@@ -270,6 +283,9 @@
           },
           "503": {
             "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
           }
         }
       }
@@ -296,6 +312,12 @@
           },
           "503": {
             "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
+          },
+          "403": {
+            "description": "Matching Origin and authenticated role required; viewers cannot mutate"
           }
         },
         "parameters": [
@@ -356,6 +378,12 @@
           },
           "503": {
             "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
+          },
+          "403": {
+            "description": "Matching Origin and authenticated role required; viewers cannot mutate"
           }
         },
         "parameters": [
@@ -416,6 +444,12 @@
           },
           "503": {
             "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
+          },
+          "403": {
+            "description": "Matching Origin and authenticated role required; viewers cannot mutate"
           }
         },
         "parameters": [
@@ -478,6 +512,12 @@
           },
           "503": {
             "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
+          },
+          "403": {
+            "description": "Matching Origin and authenticated role required; viewers cannot mutate"
           }
         },
         "parameters": [
@@ -533,6 +573,12 @@
           },
           "503": {
             "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
+          },
+          "403": {
+            "description": "Matching Origin and authenticated role required; viewers cannot mutate"
           }
         },
         "parameters": [
@@ -618,44 +664,12 @@
           },
           "503": {
             "description": "Dependency unavailable; inspect audit if application was not confirmed"
-          }
-        }
-      }
-    },
-    "/api/v1/mode/manual": {
-      "post": {
-        "summary": "Set manual mode and audit the transition",
-        "responses": {
-          "200": {
-            "description": "Successful operation"
           },
-          "400": {
-            "description": "Invalid request"
+          "401": {
+            "description": "Verified unexpired server session required"
           },
-          "409": {
-            "description": "Stale, locked, unsafe or already decided"
-          },
-          "503": {
-            "description": "Dependency unavailable; inspect audit if application was not confirmed"
-          }
-        }
-      }
-    },
-    "/api/v1/mode/recommendation": {
-      "post": {
-        "summary": "Set recommendation mode and audit the transition",
-        "responses": {
-          "200": {
-            "description": "Successful operation"
-          },
-          "400": {
-            "description": "Invalid request"
-          },
-          "409": {
-            "description": "Stale, locked, unsafe or already decided"
-          },
-          "503": {
-            "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          "403": {
+            "description": "Matching Origin and authenticated role required; viewers cannot mutate"
           }
         }
       }
@@ -682,6 +696,9 @@
           },
           "503": {
             "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
           }
         }
       }
@@ -701,6 +718,12 @@
           },
           "503": {
             "description": "Dependency unavailable; inspect audit if application was not confirmed"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
+          },
+          "403": {
+            "description": "Matching Origin and authenticated role required; viewers cannot mutate"
           }
         },
         "parameters": [
@@ -751,6 +774,9 @@
           },
           "503": {
             "description": "Vision service offline or dependency unavailable"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
           }
         }
       }
@@ -781,6 +807,9 @@
           },
           "409": {
             "description": "Command actor or payload conflict"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
           }
         }
       }
@@ -791,6 +820,9 @@
         "responses": {
           "200": {
             "description": "Current session information"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
           }
         }
       }
@@ -825,8 +857,12 @@
           },
           "400": {
             "description": "Missing or invalid username"
+          },
+          "403": {
+            "description": "Matching Origin and authenticated role required; viewers cannot mutate"
           }
-        }
+        },
+        "security": []
       }
     },
     "/api/v1/session/logout": {
@@ -835,6 +871,300 @@
         "responses": {
           "200": {
             "description": "Session terminated"
+          },
+          "403": {
+            "description": "Matching Origin and authenticated role required; viewers cannot mutate"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/runs/{id}/report": {
+      "get": {
+        "summary": "Authenticated durable prototype run report",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report v2; null means unavailable evidence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrototypeRunReportV2"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Verified session required"
+          },
+          "404": {
+            "description": "Run not found"
+          },
+          "503": {
+            "description": "Evidence unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/runs/{id}/clock": {
+      "post": {
+        "summary": "Pause or resume virtual clock for operator review",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "paused"
+                ],
+                "properties": {
+                  "paused": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated clock change confirmed"
+          },
+          "409": {
+            "description": "Run stale or unavailable"
+          },
+          "503": {
+            "description": "Inspect durable command outcome; no blind retry"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
+          },
+          "403": {
+            "description": "Matching Origin and authenticated role required; viewers cannot mutate"
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "summary": "Server.healthLive",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          }
+        },
+        "security": []
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "summary": "Server.healthReady",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/decisions/unresolved": {
+      "get": {
+        "summary": "Server.getUnresolvedDecisions",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
+          }
+        }
+      }
+    },
+    "/api/v1/decisions/resolve": {
+      "post": {
+        "summary": "Server.resolveDecision",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
+          },
+          "403": {
+            "description": "Matching Origin and authenticated role required; viewers cannot mutate"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "command_id",
+                  "recommendation_id",
+                  "resolution"
+                ],
+                "properties": {
+                  "command_id": {
+                    "type": "string"
+                  },
+                  "recommendation_id": {
+                    "type": "string"
+                  },
+                  "resolution": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mode": {
+      "get": {
+        "summary": "Server.getMode",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
+          }
+        }
+      }
+    },
+    "/api/v1/mode/{mode}": {
+      "post": {
+        "summary": "Audited operator mode transition",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
+          },
+          "403": {
+            "description": "Matching Origin and authenticated role required; viewers cannot mutate"
+          }
+        },
+        "parameters": [
+          {
+            "name": "mode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "recommend",
+                "observe",
+                "manual",
+                "recommendation"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/locks": {
+      "get": {
+        "summary": "Server.listLocks",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
+          }
+        }
+      }
+    },
+    "/api/v1/locks/{id}": {
+      "post": {
+        "summary": "Server.setLock",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
+          },
+          "403": {
+            "description": "Matching Origin and authenticated role required; viewers cannot mutate"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Server.deleteLock",
+        "responses": {
+          "200": {
+            "description": "Successful operation"
+          },
+          "401": {
+            "description": "Verified unexpired server session required"
+          },
+          "403": {
+            "description": "Matching Origin and authenticated role required; viewers cannot mutate"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/ws/v1/live": {
+      "get": {
+        "summary": "Authenticated read-only live events; no operator commands",
+        "responses": {
+          "401": {
+            "description": "Verified unexpired server session required"
+          },
+          "101": {
+            "description": "WebSocket upgrade; see events.schema.json for versioned event payloads"
           }
         }
       }
@@ -1072,17 +1402,13 @@
             "minimum": 0
           },
           "queued_veh_estimate": {
-            "type": "number",
-            "minimum": 0
+            "type": "number"
           },
           "density_veh_per_km_lane": {
-            "type": "number",
-            "minimum": 0
+            "type": "number"
           },
           "storage_utilization_ratio": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1
+            "type": "number"
           },
           "receiving_storage_veh": {
             "type": "number",
@@ -1101,8 +1427,7 @@
             "minimum": 0
           },
           "mean_speed_kph": {
-            "type": "number",
-            "minimum": 0
+            "type": "number"
           },
           "speed_method": {
             "type": "string"
@@ -1111,8 +1436,7 @@
             "type": "string"
           },
           "queue_length_m_estimate": {
-            "type": "number",
-            "minimum": 0
+            "type": "number"
           },
           "receiving_blocked": {
             "type": "boolean"
@@ -1308,6 +1632,9 @@
               "duplicate",
               "replay"
             ]
+          },
+          "simulation_paused": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false,
@@ -1406,7 +1733,8 @@
               "available",
               "insufficient_history",
               "missing_input",
-              "stale_input"
+              "stale_input",
+              "compute_unavailable"
             ]
           },
           "uncertainty_lower_veh": {
@@ -2081,6 +2409,18 @@
           },
           "incident_capacity_ratio": {
             "type": "number"
+          },
+          "demand_source": {
+            "type": "string"
+          },
+          "input_session_id": {
+            "type": "string"
+          },
+          "source_bindings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoundSource"
+            }
           }
         },
         "additionalProperties": false,
@@ -2089,7 +2429,10 @@
           "scenario_type",
           "seed",
           "mode",
-          "run_id"
+          "run_id",
+          "incident_kind",
+          "incident_capacity_ratio",
+          "demand_source"
         ]
       },
       "RunRequest": {
@@ -2628,7 +2971,8 @@
               "available",
               "insufficient_history",
               "missing_input",
-              "stale_input"
+              "stale_input",
+              "compute_unavailable"
             ]
           },
           "reason": {
@@ -2671,7 +3015,1190 @@
           "status",
           "message"
         ]
+      },
+      "SchedulerService": {
+        "type": "object",
+        "properties": {
+          "phase_id": {
+            "type": "string"
+          },
+          "last_served_tick": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "phase_id",
+          "last_served_tick"
+        ]
+      },
+      "SchedulerPriority": {
+        "type": "object",
+        "properties": {
+          "node_id": {
+            "type": "string"
+          },
+          "phase_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "node_id",
+          "phase_id"
+        ]
+      },
+      "SchedulerOffset": {
+        "type": "object",
+        "properties": {
+          "node_id": {
+            "type": "string"
+          },
+          "offset_s": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "node_id",
+          "offset_s"
+        ]
+      },
+      "SchedulerRelease": {
+        "type": "object",
+        "properties": {
+          "node_id": {
+            "type": "string"
+          },
+          "release_tick": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "node_id",
+          "release_tick"
+        ]
+      },
+      "SchedulerSnapshot": {
+        "type": "object",
+        "properties": {
+          "tick": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "pending_plan": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimingChange"
+            }
+          },
+          "service_history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchedulerService"
+            }
+          },
+          "priority": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchedulerPriority"
+            }
+          },
+          "recovering": {
+            "type": "boolean"
+          },
+          "activate_not_before_tick": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "offsets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchedulerOffset"
+            }
+          },
+          "releases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchedulerRelease"
+            }
+          },
+          "waiting_node_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requested_at_tick": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "applied_at_tick": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "rejected_reason": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "tick",
+          "pending_plan",
+          "service_history",
+          "priority",
+          "recovering"
+        ]
+      },
+      "CellStock": {
+        "type": "object",
+        "properties": {
+          "link_id": {
+            "type": "string"
+          },
+          "stock_veh": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "link_id",
+          "stock_veh"
+        ]
+      },
+      "BoundaryDemandState": {
+        "type": "object",
+        "properties": {
+          "link_id": {
+            "type": "string"
+          },
+          "backlog_veh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "offered_rate_vpm": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "link_id",
+          "backlog_veh",
+          "offered_rate_vpm"
+        ]
+      },
+      "BoundSource": {
+        "type": "object",
+        "properties": {
+          "camera_id": {
+            "type": "string"
+          },
+          "source_session_id": {
+            "type": "string"
+          },
+          "clip_sha256": {
+            "type": "string"
+          },
+          "geometry_sha256": {
+            "type": "string"
+          },
+          "model_sha256": {
+            "type": "string"
+          },
+          "config_hash": {
+            "type": "string"
+          },
+          "observations_sha256": {
+            "type": "string"
+          },
+          "detector_version": {
+            "type": "string"
+          },
+          "tracker_version": {
+            "type": "string"
+          },
+          "observation_schema_version": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "camera_id",
+          "source_session_id",
+          "clip_sha256",
+          "geometry_sha256",
+          "model_sha256",
+          "config_hash",
+          "observations_sha256",
+          "detector_version",
+          "tracker_version",
+          "observation_schema_version"
+        ]
+      },
+      "ClockCommand": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "input_session_id": {
+            "type": "string"
+          },
+          "paused": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "run_id",
+          "input_session_id",
+          "paused"
+        ]
+      },
+      "ReportV2_sha256": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "ReportV2_input": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "camera_id",
+          "clip_sha256",
+          "geometry_sha256",
+          "detector_version",
+          "tracker_version",
+          "observation_schema_version",
+          "source_session_id",
+          "last_finalized_window_end_source_s",
+          "processing_mode",
+          "validation_level"
+        ],
+        "properties": {
+          "camera_id": {
+            "type": "string"
+          },
+          "clip_sha256": {
+            "$ref": "#/components/schemas/ReportV2_sha256"
+          },
+          "geometry_sha256": {
+            "$ref": "#/components/schemas/ReportV2_sha256"
+          },
+          "detector_version": {
+            "type": "string"
+          },
+          "tracker_version": {
+            "type": "string"
+          },
+          "observation_schema_version": {
+            "type": "string"
+          },
+          "source_session_id": {
+            "type": "string"
+          },
+          "last_finalized_window_end_source_s": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "processing_mode": {
+            "enum": [
+              "online_inference",
+              "cached_observations",
+              "synthetic_replay"
+            ]
+          },
+          "validation_level": {
+            "enum": [
+              "provisional_unreviewed",
+              "agent_reviewed",
+              "independently_verified"
+            ]
+          },
+          "model_sha256": {
+            "$ref": "#/components/schemas/ReportV2_sha256"
+          },
+          "observations_sha256": {
+            "$ref": "#/components/schemas/ReportV2_sha256"
+          }
+        }
+      },
+      "ReportV2_versions": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "config_hash",
+          "model_version",
+          "metrics_version",
+          "scoring_version"
+        ],
+        "properties": {
+          "config_hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metrics_version": {
+            "type": "string"
+          },
+          "scoring_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "config_id": {
+            "type": "string"
+          }
+        }
+      },
+      "ReportV2_forecast": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "origin_source_s",
+          "method",
+          "input_quality",
+          "horizons",
+          "uncertainty",
+          "origin_simulation_s"
+        ],
+        "properties": {
+          "origin_source_s": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "method": {
+            "enum": [
+              "persistence",
+              "ewma",
+              "unavailable"
+            ]
+          },
+          "input_quality": {
+            "type": "string"
+          },
+          "horizons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportV2_horizon"
+            }
+          },
+          "uncertainty": {
+            "$ref": "#/components/schemas/ReportV2_metric"
+          },
+          "origin_simulation_s": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          }
+        }
+      },
+      "ReportV2_horizon": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "horizon_s",
+          "status",
+          "recorded_score_status"
+        ],
+        "properties": {
+          "horizon_s": {
+            "enum": [
+              30,
+              60,
+              120,
+              300
+            ]
+          },
+          "status": {
+            "enum": [
+              "available",
+              "insufficient_history",
+              "missing_input",
+              "stale_input",
+              "compute_unavailable"
+            ]
+          },
+          "recorded_score_status": {
+            "enum": [
+              "available",
+              "unsupported_reference",
+              "not_evaluated"
+            ]
+          }
+        }
+      },
+      "ReportV2_metric": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "value",
+          "availability"
+        ],
+        "properties": {
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "availability": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "ReportV2_alternative": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "recommendation_id",
+          "status",
+          "safety_status",
+          "changes"
+        ],
+        "properties": {
+          "recommendation_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "safety_status": {
+            "type": "string"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportV2_timing_change"
+            }
+          },
+          "input_session_id": {
+            "type": "string"
+          },
+          "config_hash": {
+            "type": "string"
+          },
+          "model_version": {
+            "type": "string"
+          },
+          "metrics_version": {
+            "type": "string"
+          },
+          "snapshot_sequence": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "ReportV2_timing_change": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "node_id",
+          "phase_id",
+          "green_s"
+        ],
+        "properties": {
+          "node_id": {
+            "type": "string"
+          },
+          "phase_id": {
+            "type": "string"
+          },
+          "green_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "offset_s": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          }
+        }
+      },
+      "ReportV2_comparison": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "recommendation_id",
+          "window_start_simulation_s",
+          "window_end_simulation_s",
+          "demand_assumptions_hash",
+          "baseline",
+          "candidate"
+        ],
+        "properties": {
+          "recommendation_id": {
+            "type": "string"
+          },
+          "window_start_simulation_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "window_end_simulation_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "demand_assumptions_hash": {
+            "type": "string"
+          },
+          "baseline": {
+            "$ref": "#/components/schemas/ReportV2_comparison_metrics"
+          },
+          "candidate": {
+            "$ref": "#/components/schemas/ReportV2_comparison_metrics"
+          },
+          "input_session_id": {
+            "type": "string"
+          },
+          "config_hash": {
+            "type": "string"
+          },
+          "model_version": {
+            "type": "string"
+          },
+          "metrics_version": {
+            "type": "string"
+          },
+          "snapshot_sequence": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "scoring_version": {
+            "type": "string"
+          },
+          "forecast_origin_source_s": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "ReportV2_comparison_metrics": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "queue_delay_veh_s",
+          "boundary_exits_veh",
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s",
+          "worst_service_debt_s"
+        ],
+        "properties": {
+          "queue_delay_veh_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "boundary_exits_veh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "boundary_backlog_veh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "boundary_wait_veh_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "worst_service_debt_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "congested_link_s": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "ReportV2_decision": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "command_id",
+          "actor",
+          "action",
+          "recommendation_id",
+          "reason",
+          "decided_at_utc"
+        ],
+        "properties": {
+          "command_id": {
+            "type": "string"
+          },
+          "actor": {
+            "type": "string"
+          },
+          "action": {
+            "enum": [
+              "approve",
+              "modify",
+              "reject",
+              "simulate"
+            ]
+          },
+          "recommendation_id": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "decided_at_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "safety_result": {
+            "type": "string"
+          }
+        }
+      },
+      "ReportV2_applied_outcome": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "command_id",
+          "status",
+          "resolved_at_utc"
+        ],
+        "properties": {
+          "command_id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "applied",
+              "rejected",
+              "timed_out"
+            ]
+          },
+          "resolved_at_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "applied_at_simulation_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "ReportV2_failure": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "occurred_at_utc",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "occurred_at_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ReportV2_resources": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "fresh_inference_fps",
+          "recommendation_latency_s",
+          "peak_cpu_percent",
+          "peak_ram_bytes"
+        ],
+        "properties": {
+          "fresh_inference_fps": {
+            "$ref": "#/components/schemas/ReportV2_metric"
+          },
+          "recommendation_latency_s": {
+            "$ref": "#/components/schemas/ReportV2_metric"
+          },
+          "peak_cpu_percent": {
+            "$ref": "#/components/schemas/ReportV2_metric"
+          },
+          "peak_ram_bytes": {
+            "$ref": "#/components/schemas/ReportV2_metric"
+          }
+        }
+      },
+      "ReportV2_report_forecast": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "movement_id",
+          "method",
+          "input_quality",
+          "horizon_status",
+          "uncertainty_status",
+          "horizon_s",
+          "queue_veh",
+          "occupancy_ratio",
+          "arrivals_veh",
+          "origin_source_s",
+          "input_age_s"
+        ],
+        "properties": {
+          "movement_id": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "input_quality": {
+            "type": "string"
+          },
+          "horizon_status": {
+            "type": "string"
+          },
+          "uncertainty_status": {
+            "type": "string"
+          },
+          "horizon_s": {
+            "enum": [
+              30,
+              60,
+              120,
+              300
+            ]
+          },
+          "queue_veh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "occupancy_ratio": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "arrivals_veh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "origin_source_s": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "input_age_s": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "ReportV2_analysis": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "input_session_id",
+          "config_hash",
+          "model_version",
+          "metrics_version",
+          "snapshot_sequence",
+          "run_id",
+          "sequence",
+          "recorded_at_utc",
+          "simulation_time_s",
+          "forecast_origin_source_s",
+          "input_quality",
+          "outcome",
+          "forecasts",
+          "recommendation",
+          "alternatives",
+          "comparison"
+        ],
+        "properties": {
+          "input_session_id": {
+            "type": "string"
+          },
+          "config_hash": {
+            "type": "string"
+          },
+          "model_version": {
+            "type": "string"
+          },
+          "metrics_version": {
+            "type": "string"
+          },
+          "snapshot_sequence": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recorded_at_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "simulation_time_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "forecast_origin_source_s": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "input_quality": {
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "recommend",
+              "no_action",
+              "cannot_evaluate"
+            ]
+          },
+          "forecasts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportV2_report_forecast"
+            }
+          },
+          "recommendation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReportV2_alternative"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alternatives": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportV2_alternative"
+            }
+          },
+          "comparison": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReportV2_comparison"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ReportV2_observation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "observation_id",
+          "camera_id",
+          "boundary_link_id",
+          "observation_status",
+          "queue_status",
+          "source_session_id",
+          "sequence",
+          "window_start_source_s",
+          "window_end_source_s",
+          "available_at_source_s",
+          "processed_at_utc",
+          "crossings_veh",
+          "queue_visible_veh_estimate"
+        ],
+        "properties": {
+          "observation_id": {
+            "type": "string"
+          },
+          "camera_id": {
+            "type": "string"
+          },
+          "boundary_link_id": {
+            "type": "string"
+          },
+          "observation_status": {
+            "type": "string"
+          },
+          "queue_status": {
+            "type": "string"
+          },
+          "source_session_id": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "window_start_source_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "window_end_source_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "available_at_source_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "processed_at_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "crossings_veh": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "queue_visible_veh_estimate": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          }
+        }
+      },
+      "ReportV2_clock_event": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "command_id",
+          "actor",
+          "sequence",
+          "paused",
+          "status",
+          "occurred_at_utc"
+        ],
+        "properties": {
+          "command_id": {
+            "type": "string"
+          },
+          "actor": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "paused": {
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "requested",
+              "confirmed",
+              "unknown"
+            ]
+          },
+          "occurred_at_utc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PrototypeRunReportV2": {
+        "title": "Durable functional prototype run report",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "report_id",
+          "run_id",
+          "created_at_utc",
+          "input_session_id",
+          "inputs",
+          "versions",
+          "forecast",
+          "analysis_outcome",
+          "alternatives",
+          "comparisons",
+          "operator_decisions",
+          "applied_outcome",
+          "failures",
+          "resources",
+          "scenario_type",
+          "seed",
+          "demand_source",
+          "run_status",
+          "analyses",
+          "observations",
+          "clock_events",
+          "application_events"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": "prototype-run-report-v2"
+          },
+          "report_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "created_at_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "input_session_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportV2_input"
+            }
+          },
+          "versions": {
+            "$ref": "#/components/schemas/ReportV2_versions"
+          },
+          "forecast": {
+            "$ref": "#/components/schemas/ReportV2_forecast"
+          },
+          "analysis_outcome": {
+            "enum": [
+              "recommend",
+              "no_action",
+              "cannot_evaluate"
+            ]
+          },
+          "alternatives": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportV2_alternative"
+            }
+          },
+          "comparisons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportV2_comparison"
+            }
+          },
+          "operator_decisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportV2_decision"
+            }
+          },
+          "applied_outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReportV2_applied_outcome"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "failures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportV2_failure"
+            }
+          },
+          "resources": {
+            "$ref": "#/components/schemas/ReportV2_resources"
+          },
+          "scenario_type": {
+            "type": "string"
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "demand_source": {
+            "enum": [
+              "seeded",
+              "video_profile",
+              "replay"
+            ]
+          },
+          "run_status": {
+            "type": "string"
+          },
+          "analyses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportV2_analysis"
+            }
+          },
+          "observations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportV2_observation"
+            }
+          },
+          "clock_events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportV2_clock_event"
+            }
+          },
+          "application_events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportV2_applied_outcome"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "SessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "twin_session",
+        "description": "Expiring and revocable server session; actor and role derived server-side. Mutation requires matching Origin."
       }
     }
-  }
+  },
+  "security": [
+    {
+      "SessionCookie": []
+    }
+  ]
 }

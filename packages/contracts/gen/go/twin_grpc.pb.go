@@ -19,6 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	Simulation_SetClock_FullMethodName       = "/traffic.v1.Simulation/SetClock"
 	Simulation_GetPlanOutcome_FullMethodName = "/traffic.v1.Simulation/GetPlanOutcome"
 	Simulation_ApplyPlan_FullMethodName      = "/traffic.v1.Simulation/ApplyPlan"
 	Simulation_ValidateState_FullMethodName  = "/traffic.v1.Simulation/ValidateState"
@@ -32,6 +33,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SimulationClient interface {
+	SetClock(ctx context.Context, in *ClockCommand, opts ...grpc.CallOption) (*TrafficState, error)
 	GetPlanOutcome(ctx context.Context, in *PlanCommand, opts ...grpc.CallOption) (*PlanOutcome, error)
 	ApplyPlan(ctx context.Context, in *PlanCommand, opts ...grpc.CallOption) (*ValidationResult, error)
 	ValidateState(ctx context.Context, in *TrafficState, opts ...grpc.CallOption) (*ValidationResult, error)
@@ -47,6 +49,16 @@ type simulationClient struct {
 
 func NewSimulationClient(cc grpc.ClientConnInterface) SimulationClient {
 	return &simulationClient{cc}
+}
+
+func (c *simulationClient) SetClock(ctx context.Context, in *ClockCommand, opts ...grpc.CallOption) (*TrafficState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TrafficState)
+	err := c.cc.Invoke(ctx, Simulation_SetClock_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *simulationClient) GetPlanOutcome(ctx context.Context, in *PlanCommand, opts ...grpc.CallOption) (*PlanOutcome, error) {
@@ -132,6 +144,7 @@ func (c *simulationClient) Stop(ctx context.Context, in *RunRequest, opts ...grp
 // All implementations must embed UnimplementedSimulationServer
 // for forward compatibility.
 type SimulationServer interface {
+	SetClock(context.Context, *ClockCommand) (*TrafficState, error)
 	GetPlanOutcome(context.Context, *PlanCommand) (*PlanOutcome, error)
 	ApplyPlan(context.Context, *PlanCommand) (*ValidationResult, error)
 	ValidateState(context.Context, *TrafficState) (*ValidationResult, error)
@@ -149,6 +162,9 @@ type SimulationServer interface {
 // pointer dereference when methods are called.
 type UnimplementedSimulationServer struct{}
 
+func (UnimplementedSimulationServer) SetClock(context.Context, *ClockCommand) (*TrafficState, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetClock not implemented")
+}
 func (UnimplementedSimulationServer) GetPlanOutcome(context.Context, *PlanCommand) (*PlanOutcome, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPlanOutcome not implemented")
 }
@@ -189,6 +205,24 @@ func RegisterSimulationServer(s grpc.ServiceRegistrar, srv SimulationServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&Simulation_ServiceDesc, srv)
+}
+
+func _Simulation_SetClock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClockCommand)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SimulationServer).SetClock(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Simulation_SetClock_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SimulationServer).SetClock(ctx, req.(*ClockCommand))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Simulation_GetPlanOutcome_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -317,6 +351,10 @@ var Simulation_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "traffic.v1.Simulation",
 	HandlerType: (*SimulationServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "SetClock",
+			Handler:    _Simulation_SetClock_Handler,
+		},
 		{
 			MethodName: "GetPlanOutcome",
 			Handler:    _Simulation_GetPlanOutcome_Handler,

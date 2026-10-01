@@ -13,12 +13,12 @@ import (
 )
 
 type LeaseManager struct {
-	server      *Server
-	instanceID  string
-	epoch       int64
-	isOwner     bool
-	mu          sync.RWMutex
-	cancel      context.CancelFunc
+	server     *Server
+	instanceID string
+	epoch      int64
+	isOwner    bool
+	mu         sync.RWMutex
+	cancel     context.CancelFunc
 }
 
 func NewLeaseManager(s *Server) *LeaseManager {
@@ -183,7 +183,21 @@ func (lm *LeaseManager) reconstructState(ctx context.Context) {
 	if err == nil {
 		for _, r := range runs {
 			if r.Status == "running" {
+				var binding store.RunInputBinding
+				if r.DemandSource == "video_profile" {
+					binding, err = lm.server.Store.GetRunInput(ctx, r.ID)
+					if err != nil {
+						lm.server.mu.Lock()
+						if lm.server.sim != nil {
+							lm.server.sim.fault = "Recovered authoritative input binding unavailable"
+						}
+						lm.server.mu.Unlock()
+						return
+					}
+				}
 				lm.server.mu.Lock()
+				lm.server.activeInputSessionID = binding.InputSessionID
+				lm.server.analysis = nil
 				lm.server.manual = r.Mode == "manual"
 				id, _ := r.ID.Value()
 				if lm.server.sim != nil {
@@ -193,6 +207,10 @@ func (lm *LeaseManager) reconstructState(ctx context.Context) {
 						ScenarioType:  r.ScenarioType,
 						Seed:          uint32(r.Seed),
 						Mode:          r.Mode,
+						DemandSource:  r.DemandSource,
+					}
+					if r.DemandSource == "video_profile" {
+						applyInputBinding(lm.server.sim.command, binding)
 					}
 				}
 				lm.server.mu.Unlock()

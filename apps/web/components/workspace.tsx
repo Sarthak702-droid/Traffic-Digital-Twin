@@ -26,8 +26,11 @@ import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { getNetwork, isEmergencyProtectionError, isStaleUncertainCommandError, pendingCommand, request } from "@/lib/api";
 import { buildScenarioInput, videoInputReady, type ProcessedClip } from "@/lib/run-input";
+import {inputDisclosure} from "@/lib/input-disclosure";
+import {downloadRunReport} from "@/lib/run-report";
 import { useLive } from "@/lib/live";
 import { LiveSummary } from "@/components/live-panel";
+import {ReplayStart} from "@/components/replay-start";
 import { SessionPanel, useSession } from "@/components/session-panel";
 import { comparisonSchema } from "@/lib/response-schemas";
 import { analysisMatchesFrame, comparisonMatchesAnalysis } from "@/lib/decision-identity";
@@ -83,6 +86,9 @@ export function Workspace() {
   const session = useSession();
   const [dirty, setDirty] = useState(false);
   const [online,setOnline]=useState(true);
+  const clockControl=useMutation({mutationFn:(paused:boolean)=>request(`/runs/${live.frame?.run_id}/clock`,{method:"POST",body:JSON.stringify({paused})})});
+  const [reportError,setReportError]=useState<string|null>(null);
+  const reportExport=useMutation({mutationFn:downloadRunReport,onMutate:()=>setReportError(null),onError:(error:Error)=>setReportError(error.message)});
   const [auditAfter,setAuditAfter]=useState(0);
   const [auditPages,setAuditPages]=useState<number[]>([]);
   const [view, setViewState] = useState<View>("command");
@@ -122,6 +128,7 @@ export function Workspace() {
   const runs = useQuery({
     queryKey: ["runs"],
     queryFn: () => request<Run[]>("/runs"),
+    refetchInterval: 10000,
   });
   const audit = useQuery({
     queryKey: ["audit", auditAfter],
@@ -467,6 +474,7 @@ export function Workspace() {
         {/* TopBar with Chips, Health, Clock, Role Switcher, and DGP Launcher (Story S08, S14) */}
         <TopBar
           health={health.isError ? undefined : health.data}
+          frame={live.frame}
           manual={manual}
           mode={systemMode}
           onChangeMode={(m) => changeModeMutation.mutate(m)}
@@ -478,7 +486,7 @@ export function Workspace() {
         <div className="disclosure" role="region" aria-label="Operating Mode Disclosure">
           <ShieldCheck size={14} />
           <span>
-            DEMONSTRATION MODE · SYNTHETIC TRAFFIC DATA · NO LIVE SIGNAL CONTROL
+            DEMONSTRATION MODE · {inputDisclosure(live.frame)} · NO LIVE SIGNAL CONTROL
           </span>
         </div>
 
@@ -490,6 +498,12 @@ export function Workspace() {
           {decision.isSuccess&&<p role="status">{decision.data.action} acknowledged. Inspect the returned plan and audit; accepted timing waits for its safe phase boundary.</p>}
           {!analysis&&live.frame&&<p role="status">Fresh intelligence unavailable. Forecasts and decisions are disabled until recovery.</p>}
 
+          {live.frame&&!live.frame.replay&&<div className="workspace-status">
+           <strong role="status">{live.frame.simulation_paused?'Virtual clock paused for operator review':'Virtual clock running'}</strong>
+           <Button disabled={!canWrite||!dbReady||!live.fresh||clockControl.isPending||!!pendingCommand()} onClick={()=>clockControl.mutate(!live.frame?.simulation_paused)}>{live.frame.simulation_paused?'Resume virtual clock':'Pause virtual clock for review'}</Button>
+           {live.frame.simulation_paused&&<span>Resume to let an accepted plan reach its safe activation boundary.</span>}
+           {clockControl.isError&&<span role="alert">{clockControl.error.message}</span>}
+          </div>}
           {/* Role-Specific Executive / Supervisor Banner */}
           {activeRole === "viewer" && session.isSuccess && (
             <div className="role-banner viewer-banner" role="status">
@@ -774,7 +788,7 @@ export function Workspace() {
                     <LiveSummary live={live} />
                     <section className="context-panel"><h2>Recovery and timing locks</h2>
                     <p>{live.frame?.replay ? "Prerecorded replay · signal decisions disabled" : "Replay is a prerecorded fallback delivered by the Go API. It requires the verified recording and PostgreSQL to create its run audit."}</p>
-                    <Button disabled={!dbReady||anyCommandPending} onClick={()=>{if(!live.frame||window.confirm("Replace the current run with prerecorded replay?"))replay.mutate()}}>Start golden replay</Button>
+                    <ReplayStart hasRun={!!live.frame} disabled={!dbReady||anyCommandPending||!canWrite} onStart={()=>replay.mutate()}/>
                     <h3>Configured timing locks</h3><p>Locks persist across restarts and are checked before operator plan changes. Emergency scheduling remains separately protected.</p>
                     {data.phases.map(p=><Button key={p.id} variant="outline" disabled={!dbReady||!live.fresh||!!live.frame?.replay||anyCommandPending} onClick={()=>lock.mutate({target:p.id,locked:!modeQuery.data?.locks.includes(p.id)})}>{modeQuery.data?.locks.includes(p.id)?"Unlock":"Lock"} {p.id}</Button>)}
                     </section>
@@ -1014,6 +1028,7 @@ export function Workspace() {
                         {runs.data?.length ?? "—"} RUNS
                       </span>
                     </div>
+                    {reportError && <p className="panel-message form-error" role="alert">{reportError}</p>}
                     {runs.isPending ? (
                       <p className="panel-message">Loading saved runs…</p>
                     ) : runs.isError ? (
@@ -1030,6 +1045,7 @@ export function Workspace() {
                               <th>Run ID</th>
                               <th>Started At</th>
                               <th>Status</th>
+                              <th>Evidence</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1048,6 +1064,7 @@ export function Workspace() {
                                     {run.status}
                                   </span>
                                 </td>
+                                <td><Button disabled={reportExport.isPending} onClick={()=>reportExport.mutate(run.id)} aria-label={`Export run report ${run.id}`}>{reportExport.isPending&&reportExport.variables===run.id?'Exporting…':'Export report'}</Button></td>
                               </tr>
                             ))}
                           </tbody>
@@ -1066,10 +1083,10 @@ export function Workspace() {
 
           <footer className="product-footer">
             <span>
-              TRAFFIC DIGITAL TWIN <span>/ SYNTHETIC DEMONSTRATION</span>
+              TRAFFIC DIGITAL TWIN <span>/ VIRTUAL ENGINEERING PROTOTYPE</span>
             </span>
             <span>
-              Demonstration mode · Synthetic traffic · Zero live signal control.
+              Demonstration mode · {inputDisclosure(live.frame)} · Zero live signal control.
             </span>
           </footer>
         </main>

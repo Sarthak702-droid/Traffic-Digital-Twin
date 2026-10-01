@@ -126,3 +126,64 @@ def test_replayed_rollout_reports_offered_mass_conservation(tmp_path):
     result = model.rollout(state, model.plan(state), 30, {**frozen, "demand_trace": trace})
     assert result["offered_external_veh"] == 30 * len(model.index.boundary_inputs) * 2.0
     assert abs(result["mass_residual_veh"]) < 1e-6
+
+
+def test_comparison_honors_offsets_even_when_green_times_are_unchanged(tmp_path):
+    state = _state(tmp_path)
+    model = Model()
+    changes = [pb.TimingChange(node_id=model.phases[pid]['node_id'], phase_id=pid,
+                               green_s=green, offset_s=10)
+               for pid, green in model.plan(state).items()]
+    result = model.comparison(state, changes)
+    assert result.candidate_queue_delay_veh_s != result.baseline_queue_delay_veh_s
+    changes[0].offset_s = -1
+    with pytest.raises(ValueError, match='offset|Offsets'):
+        model.comparison(state, changes)
+
+
+def test_comparison_rejects_conflicting_offsets_for_one_node(tmp_path):
+    state = _state(tmp_path)
+    model = Model()
+    changes = [pb.TimingChange(node_id=model.phases[pid]['node_id'], phase_id=pid,
+                               green_s=green, offset_s=0)
+               for pid, green in model.plan(state).items()]
+    changes[0].offset_s = 10
+    with pytest.raises(ValueError, match='Conflicting offsets'):
+        model.comparison(state, changes)
+
+
+def test_forecast_continues_offset_release_from_complete_scheduler_snapshot(tmp_path):
+    engine = AggregateEngine(directory=tmp_path)
+    try:
+        state = engine.reset(pb.RunCommand(schema_version='1.0', scenario_type='peak_surge',
+                                          seed=1101, mode='recommend', run_id='offset-release'))
+        model = Model()
+        changes = [pb.TimingChange(node_id=model.phases[pid]['node_id'], phase_id=pid,
+                                   green_s=green, offset_s=10)
+                   for pid, green in model.plan(state).items()]
+        engine.apply_plan(pb.PlanCommand(run_id=state.run_id, command_id='offset-command', changes=changes))
+        for _ in range(80):
+            state = engine.step()
+            if engine.scheduler.release_at:
+                break
+        assert engine.scheduler.release_at
+        scheduler = model._scheduler(state, model.plan(state))
+        assert scheduler.snapshot() == engine.scheduler.snapshot()
+    finally:
+        engine.close()
+
+
+def test_pending_offset_only_activation_is_not_a_stable_comparison(tmp_path):
+    engine = AggregateEngine(directory=tmp_path)
+    try:
+        state = engine.reset(pb.RunCommand(schema_version='1.0', scenario_type='peak_surge',
+                                          seed=1101, mode='recommend', run_id='offset-pending'))
+        model = Model()
+        changes = [pb.TimingChange(node_id=model.phases[pid]['node_id'], phase_id=pid,
+                                   green_s=green, offset_s=10)
+                   for pid, green in model.plan(state).items()]
+        engine.apply_plan(pb.PlanCommand(run_id=state.run_id, command_id='offset-command', changes=changes))
+        with pytest.raises(ValueError, match='pending virtual plan'):
+            model.comparison(engine.copy_state(), changes)
+    finally:
+        engine.close()

@@ -34,7 +34,7 @@ func TestEndpointOwnershipInventoryIsExhaustiveAndConsistent(t *testing.T) {
 	expected := map[string]bool{
 		"GET /health/live": true, "GET /health/ready": true, "GET /api/v1/network": true,
 		"GET /api/v1/state": true, "GET /api/v1/junctions/{id}": true, "GET /api/v1/health": true,
-		"GET /api/v1/runs": true, "POST /api/v1/runs": true, "GET /api/v1/audit": true,
+		"POST /api/v1/runs/{id}/clock": true, "GET /api/v1/runs/{id}/report": true, "GET /api/v1/runs": true, "POST /api/v1/runs": true, "GET /api/v1/audit": true,
 		"GET /api/v1/recommendations/active": true, "GET /api/v1/analysis": true,
 		"POST /api/v1/recommendations/{id}/simulate": true, "POST /api/v1/recommendations/{id}/approve": true,
 		"POST /api/v1/recommendations/{id}/modify": true, "POST /api/v1/recommendations/{id}/reject": true,

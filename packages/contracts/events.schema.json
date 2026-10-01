@@ -594,6 +594,40 @@
         "phase_id"
       ]
     },
+    "SchedulerOffset": {
+      "type": "object",
+      "properties": {
+        "node_id": {
+          "type": "string"
+        },
+        "offset_s": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "node_id",
+        "offset_s"
+      ]
+    },
+    "SchedulerRelease": {
+      "type": "object",
+      "properties": {
+        "node_id": {
+          "type": "string"
+        },
+        "release_tick": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "node_id",
+        "release_tick"
+      ]
+    },
     "SchedulerSnapshot": {
       "type": "object",
       "properties": {
@@ -621,6 +655,39 @@
         },
         "recovering": {
           "type": "boolean"
+        },
+        "activate_not_before_tick": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "offsets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SchedulerOffset"
+          }
+        },
+        "releases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SchedulerRelease"
+          }
+        },
+        "waiting_node_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "requested_at_tick": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "applied_at_tick": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "rejected_reason": {
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -963,6 +1030,9 @@
             "duplicate",
             "replay"
           ]
+        },
+        "simulation_paused": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false,
@@ -1061,7 +1131,8 @@
             "available",
             "insufficient_history",
             "missing_input",
-            "stale_input"
+            "stale_input",
+            "compute_unavailable"
           ]
         },
         "uncertainty_lower_veh": {
@@ -1104,7 +1175,8 @@
             "available",
             "insufficient_history",
             "missing_input",
-            "stale_input"
+            "stale_input",
+            "compute_unavailable"
           ]
         },
         "reason": {
@@ -1834,6 +1906,26 @@
         "incident_kind",
         "incident_capacity_ratio",
         "demand_source"
+      ]
+    },
+    "ClockCommand": {
+      "type": "object",
+      "properties": {
+        "run_id": {
+          "type": "string"
+        },
+        "input_session_id": {
+          "type": "string"
+        },
+        "paused": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "input_session_id",
+        "paused"
       ]
     },
     "RunRequest": {

@@ -20,13 +20,22 @@ func (s *Server) videoProfileReady() bool {
 	}
 	for camera, boundary := range s.Network.CameraBoundaryLinks {
 		entries := s.processedEntries(camera)
-		if len(entries) != 1 || entries[0].Status != "cached_valid" {
-			return false
-		}
-		for _, row := range entries[0].Rows {
-			if row.BoundaryLinkID != boundary {
-				return false
+		available := false
+		for _, entry := range entries {
+			if entry.Status != "cached_valid" || len(entry.Rows) == 0 {
+				continue
 			}
+			matches := true
+			for _, row := range entry.Rows {
+				if row.BoundaryLinkID != boundary {
+					matches = false
+					break
+				}
+			}
+			available = available || matches
+		}
+		if !available {
+			return false
 		}
 	}
 	return true

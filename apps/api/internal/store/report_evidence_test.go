@@ -2,8 +2,10 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -66,7 +68,7 @@ func TestReportEvidenceEventsAreAppendOnlyAndSurviveReconnect(t *testing.T) {
 		t.Fatal(err)
 	}
 	recID := UUID().String()
-	if err = s.SaveAnalysisEvidence(ctx, &pb.Analysis{RunId: run.ID.String(), Outcome: "recommend", Recommendation: &pb.Recommendation{Id: recID, RunId: run.ID.String(), Status: "pending"}}); err != nil {
+	if err = s.SaveAnalysisEvidence(ctx, &pb.Analysis{RunId: run.ID.String(), Outcome: "recommend", Comparison: &pb.ComparisonResult{RecommendationId: recID, ScoringVersion: "test-score", BaselineQueueDelayVehS: 100, CandidateQueueDelayVehS: 80}, Recommendation: &pb.Recommendation{Id: recID, RunId: run.ID.String(), Status: "pending", ExplanationFacts: []string{"password=PRIVATE tracking_id=PRIVATE /private/raw.mp4"}}}); err != nil {
 		t.Fatal(err)
 	}
 	observation := &pb.FinalizedObservation{ObservationId: "obs-1", CameraId: "CAM-01", WindowStartS: 0, WindowEndS: 5, AvailableAtSourceS: 5, ProcessedAtUtc: "2026-09-27T00:00:00Z", CrossingsVeh: 0, ObservationStatus: "valid", SourceIdentity: &pb.SourceIdentity{ClipSha256: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", GeometrySha256: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", SourceSessionId: "source-1"}}
@@ -89,6 +91,33 @@ func TestReportEvidenceEventsAreAppendOnlyAndSurviveReconnect(t *testing.T) {
 	if err = pool.QueryRow(ctx, "SELECT count(*) FROM recommendations WHERE id=$1 AND run_id=$2", recID, run.ID).Scan(&recommendationCount); err != nil || recommendationCount != 1 {
 		t.Fatalf("analysis recommendation not coupled: %d %v", recommendationCount, err)
 	}
+	if err = s.SaveRunFailure(ctx, run.ID, "compute_unavailable"); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.SavePerceptionResource(ctx, run.ID, "CAM-01", "source-1", PerceptionResource{FreshInferenceFPS: ptrFloat(2.5), PeakCPUPercent: 450, PeakRAMBytes: 1073741824, WallS: 30}); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.SaveAnalysisLatency(ctx, run.ID, 0.75); err != nil {
+		t.Fatal(err)
+	}
+	clockCtx := WithCommand(WithActor(ctx, "report-test"), "clock-report-recovery")
+	if _, err = s.Command(clockCtx, "command.reserve", CommandWrite{ID: "clock-report-recovery", Hash: strings.Repeat("a", 64), Route: "/api/v1/runs/" + run.ID.String() + "/clock"}); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.SaveClockAudit(clockCtx, run.ID, true, "confirmed", &pb.TrafficState{RunId: run.ID.String(), SimulationPaused: true, SimulationTimeS: 16, SnapshotSequence: 17}); err != nil {
+		t.Fatal(err)
+	}
+	receipt, err := s.Command(clockCtx, "command.get", CommandWrite{ID: "clock-report-recovery"})
+	if err != nil || receipt.(map[string]any)["status"] != "completed" {
+		t.Fatal("confirmed clock command not durably recoverable", err)
+	}
+	var clockResponse map[string]any
+	if err = json.Unmarshal(receipt.(map[string]any)["response"].(json.RawMessage), &clockResponse); err != nil {
+		t.Fatal(err)
+	}
+	if clockResponse["snapshot_sequence"] != float64(17) || clockResponse["simulation_time_s"] != float64(16) {
+		t.Fatal("clock receipt lost the held snapshot identity")
+	}
 	pool.Close()
 	pool, err = pgxpool.NewWithConfig(ctx, cfg.Copy())
 	if err != nil {
@@ -96,11 +125,53 @@ func TestReportEvidenceEventsAreAppendOnlyAndSurviveReconnect(t *testing.T) {
 	}
 	defer pool.Close()
 	saved, err := New(pool).ListReportEvidence(ctx, run.ID)
-	if err != nil || len(saved) != 4 || saved[1].Kind != "analysis" {
+	if err != nil || len(saved) != 7 || saved[1].Kind != "analysis" {
 		t.Fatalf("analysis evidence not durable: %+v %v", saved, err)
+	}
+	report, err := New(pool).RunReport(ctx, run.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	exported, err := json.Marshal(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if path := os.Getenv("REPORT_TEST_OUTPUT"); path != "" {
+		if err = os.WriteFile(path, exported, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var document map[string]any
+	if err = json.Unmarshal(exported, &document); err != nil {
+		t.Fatal(err)
+	}
+	if document["schema_version"] != "prototype-run-report-v2" || document["input_session_id"] != nil {
+		t.Fatalf("seeded run invented source identity: %s", exported)
+	}
+	forecast := document["forecast"].(map[string]any)
+	if forecast["origin_source_s"] != nil {
+		t.Fatal("missing forecast origin invented")
+	}
+	if len(document["observations"].([]any)) != 1 || len(document["analyses"].([]any)) != 3 {
+		t.Fatalf("durable evidence missing: %s", exported)
+	}
+	if len(document["comparisons"].([]any)) != 1 {
+		t.Fatal("evaluated comparison lost")
+	}
+	if strings.Contains(string(exported), "password") || strings.Contains(string(exported), "tracking_id") {
+		t.Fatal("private evidence leaked")
+	}
+	if len(document["failures"].([]any)) != 1 {
+		t.Fatal("durable failure missing")
+	}
+	resource := document["resources"].(map[string]any)["recommendation_latency_s"].(map[string]any)
+	if resource["value"] != 0.75 {
+		t.Fatal("measured latency missing")
 	}
 	var outcome string
 	if err = pool.QueryRow(ctx, "SELECT payload->>'outcome' FROM run_evidence_events WHERE run_id=$1", run.ID).Scan(&outcome); err != nil || outcome != "no_action" {
 		t.Fatalf("report evidence lost after restart: %s %v", outcome, err)
 	}
 }
+
+func ptrFloat(v float64) *float64 { return &v }

@@ -21,7 +21,7 @@ class AggregateEngine:
         self.directory=Path(directory or os.environ.get("SIMULATION_DIRECTORY") or ROOT/".runtime/aggregate"); self.directory.mkdir(parents=True,exist_ok=True)
         self.receipts=Receipts(self.directory/"aggregate-command-receipts.sqlite")
         self.lock=threading.RLock(); self.changed=threading.Condition(self.lock)
-        self.version=0; self.latest=None; self.running=False; self.closed=False; self.failure=None; self.thread=None
+        self.version=0; self.latest=None; self.running=False; self.paused=False; self.closed=False; self.failure=None; self.thread=None
         self.config_digest=config_hash(self.config)
     def _validate_command(self,c):
         if c.schema_version!='1.0' or not c.run_id or c.mode not in ('observe','recommend','manual') or c.seed<1 or c.scenario_type not in {s['id'] for s in self.config['scenarios']}: raise ValueError('Invalid version, scenario, seed, mode or run ID')
@@ -56,7 +56,7 @@ class AggregateEngine:
             self.cumulative_demand=self.cumulative_admitted=self.cumulative_exits=0.0
             self.offered_history={e:deque(maxlen=5) for e in self.index.boundary_inputs}
             self.flow_history={e:deque(maxlen=60) for e in self.links}; self.movement_arrivals={m:0.0 for m in self.moves}; self.movement_departures={m:0.0 for m in self.moves}; self.waiting_age={m:0.0 for m in self.moves}
-            self.failure=None; self.incident=None; self.emergency=None; self.version=0; self._events(); self.signal_states=self._signal_states(); self.latest=self._snapshot(); self.running=True; self.version+=1; self.changed.notify_all(); return self.copy_state()
+            self.failure=None; self.incident=None; self.emergency=None; self.version=0; self._events(); self.signal_states=self._signal_states(); self.latest=self._snapshot(); self.paused=False;self.running=True; self.version+=1; self.changed.notify_all(); return self.copy_state()
     def _events(self):
         self.incident=self.emergency=None; ratios={m:1.0 for m in self.moves}
         if self.command.scenario_type=='incident_c3':
@@ -82,6 +82,7 @@ class AggregateEngine:
         validate_runtime_safety(self.config,states,self.scheduler.plan); return states
     def step(self):
         with self.lock:
+            if self.running and self.paused:return self.copy_state()
             if not self.running: raise RuntimeError('No active simulation')
             self.tick+=1; ratios=self._events(); external=self.demand.next(self.tick); self.cumulative_demand+=sum(external.values()); permissions={m for s in self.signal_states for m in s.permitted_movement_ids}
             for edge in self.offered_history:self.offered_history[edge].append(external.get(edge,0.0))
@@ -120,6 +121,13 @@ class AggregateEngine:
         else:
             r.input_quality='synthetic'
         r.scheduler.tick=self.scheduler.tick; r.scheduler.recovering=self.scheduler.recovering
+        r.scheduler.activate_not_before_tick=self.scheduler.activate_not_before
+        r.scheduler.offsets.extend(pb.SchedulerOffset(node_id=node,offset_s=value) for node,value in self.scheduler.offsets.items())
+        r.scheduler.releases.extend(pb.SchedulerRelease(node_id=node,release_tick=value) for node,value in self.scheduler.release_at.items())
+        r.scheduler.waiting_node_ids.extend(sorted(self.scheduler.waiting))
+        if self.scheduler.requested_at is not None:r.scheduler.requested_at_tick=self.scheduler.requested_at
+        if self.scheduler.applied_at is not None:r.scheduler.applied_at_tick=self.scheduler.applied_at
+        r.scheduler.rejected_reason=self.scheduler.rejected_reason or ''
         for edge, stocks in self.cells.items():r.cells.add(link_id=edge, stock_veh=stocks)
         for edge, backlog in self.backlogs.items():
             samples=self.offered_history[edge]
@@ -166,7 +174,21 @@ class AggregateEngine:
                 self.scheduler.restore(previous)
                 raise
             self.pending_command=pb.PlanCommand();self.pending_command.CopyFrom(c)
+            # Publish accepted scheduler intent even while the virtual clock is
+            # held. Offset-only plans must invalidate the reviewed snapshot too.
+            self.latest=self._snapshot();self.latest.simulation_paused=self.paused
+            self.version+=1;self.changed.notify_all()
     def copy_state(self):v=pb.TrafficState();v.CopyFrom(self.latest);return v
+    def set_clock(self,command):
+        with self.lock:
+            if not self.running or self.latest is None or command.run_id!=self.command.run_id:
+                raise ValueError('Run is not active')
+            if command.input_session_id!=self.latest.input_session_id:
+                raise ValueError('Authoritative input session changed')
+            self.paused=command.paused
+            self.latest.simulation_paused=self.paused
+            self.version+=1;self.changed.notify_all()
+            return self.copy_state()
     def start_clock(self):
         def run():
             deadline=time.monotonic()+1

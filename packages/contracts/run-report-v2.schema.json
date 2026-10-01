@@ -1,0 +1,927 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:traffic:prototype-run-report-v2",
+  "title": "Durable functional prototype run report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "report_id",
+    "run_id",
+    "created_at_utc",
+    "input_session_id",
+    "inputs",
+    "versions",
+    "forecast",
+    "analysis_outcome",
+    "alternatives",
+    "comparisons",
+    "operator_decisions",
+    "applied_outcome",
+    "failures",
+    "resources",
+    "scenario_type",
+    "seed",
+    "demand_source",
+    "run_status",
+    "analyses",
+    "observations",
+    "clock_events",
+    "application_events"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "prototype-run-report-v2"
+    },
+    "report_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "input_session_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/input"
+      }
+    },
+    "versions": {
+      "$ref": "#/$defs/versions"
+    },
+    "forecast": {
+      "$ref": "#/$defs/forecast"
+    },
+    "analysis_outcome": {
+      "enum": [
+        "recommend",
+        "no_action",
+        "cannot_evaluate"
+      ]
+    },
+    "alternatives": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/alternative"
+      }
+    },
+    "comparisons": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/comparison"
+      }
+    },
+    "operator_decisions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/decision"
+      }
+    },
+    "applied_outcome": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/applied_outcome"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "failures": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/failure"
+      }
+    },
+    "resources": {
+      "$ref": "#/$defs/resources"
+    },
+    "scenario_type": {
+      "type": "string"
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "demand_source": {
+      "enum": [
+        "seeded",
+        "video_profile",
+        "replay"
+      ]
+    },
+    "run_status": {
+      "type": "string"
+    },
+    "analyses": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/analysis"
+      }
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/observation"
+      }
+    },
+    "clock_events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/clock_event"
+      }
+    },
+    "application_events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/applied_outcome"
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "camera_id",
+        "clip_sha256",
+        "geometry_sha256",
+        "detector_version",
+        "tracker_version",
+        "observation_schema_version",
+        "source_session_id",
+        "last_finalized_window_end_source_s",
+        "processing_mode",
+        "validation_level"
+      ],
+      "properties": {
+        "camera_id": {
+          "type": "string"
+        },
+        "clip_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "geometry_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "detector_version": {
+          "type": "string"
+        },
+        "tracker_version": {
+          "type": "string"
+        },
+        "observation_schema_version": {
+          "type": "string"
+        },
+        "source_session_id": {
+          "type": "string"
+        },
+        "last_finalized_window_end_source_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "processing_mode": {
+          "enum": [
+            "online_inference",
+            "cached_observations",
+            "synthetic_replay"
+          ]
+        },
+        "validation_level": {
+          "enum": [
+            "provisional_unreviewed",
+            "agent_reviewed",
+            "independently_verified"
+          ]
+        },
+        "model_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "observations_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "versions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "config_hash",
+        "model_version",
+        "metrics_version",
+        "scoring_version"
+      ],
+      "properties": {
+        "config_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "metrics_version": {
+          "type": "string"
+        },
+        "scoring_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "config_id": {
+          "type": "string"
+        }
+      }
+    },
+    "forecast": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "origin_source_s",
+        "method",
+        "input_quality",
+        "horizons",
+        "uncertainty",
+        "origin_simulation_s"
+      ],
+      "properties": {
+        "origin_source_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "method": {
+          "enum": [
+            "persistence",
+            "ewma",
+            "unavailable"
+          ]
+        },
+        "input_quality": {
+          "type": "string"
+        },
+        "horizons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/horizon"
+          }
+        },
+        "uncertainty": {
+          "$ref": "#/$defs/metric"
+        },
+        "origin_simulation_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "horizon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "horizon_s",
+        "status",
+        "recorded_score_status"
+      ],
+      "properties": {
+        "horizon_s": {
+          "enum": [
+            30,
+            60,
+            120,
+            300
+          ]
+        },
+        "status": {
+          "enum": [
+            "available",
+            "insufficient_history",
+            "missing_input",
+            "stale_input",
+            "compute_unavailable"
+          ]
+        },
+        "recorded_score_status": {
+          "enum": [
+            "available",
+            "unsupported_reference",
+            "not_evaluated"
+          ]
+        }
+      }
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "availability"
+      ],
+      "properties": {
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "availability": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "alternative": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recommendation_id",
+        "status",
+        "safety_status",
+        "changes"
+      ],
+      "properties": {
+        "recommendation_id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "safety_status": {
+          "type": "string"
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/timing_change"
+          }
+        },
+        "input_session_id": {
+          "type": "string"
+        },
+        "config_hash": {
+          "type": "string"
+        },
+        "model_version": {
+          "type": "string"
+        },
+        "metrics_version": {
+          "type": "string"
+        },
+        "snapshot_sequence": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "timing_change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "node_id",
+        "phase_id",
+        "green_s"
+      ],
+      "properties": {
+        "node_id": {
+          "type": "string"
+        },
+        "phase_id": {
+          "type": "string"
+        },
+        "green_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "offset_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recommendation_id",
+        "window_start_simulation_s",
+        "window_end_simulation_s",
+        "demand_assumptions_hash",
+        "baseline",
+        "candidate"
+      ],
+      "properties": {
+        "recommendation_id": {
+          "type": "string"
+        },
+        "window_start_simulation_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "window_end_simulation_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "demand_assumptions_hash": {
+          "type": "string"
+        },
+        "baseline": {
+          "$ref": "#/$defs/comparison_metrics"
+        },
+        "candidate": {
+          "$ref": "#/$defs/comparison_metrics"
+        },
+        "input_session_id": {
+          "type": "string"
+        },
+        "config_hash": {
+          "type": "string"
+        },
+        "model_version": {
+          "type": "string"
+        },
+        "metrics_version": {
+          "type": "string"
+        },
+        "snapshot_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scoring_version": {
+          "type": "string"
+        },
+        "forecast_origin_source_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "comparison_metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "queue_delay_veh_s",
+        "boundary_exits_veh",
+        "boundary_backlog_veh",
+        "boundary_wait_veh_s",
+        "worst_service_debt_s"
+      ],
+      "properties": {
+        "queue_delay_veh_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "boundary_exits_veh": {
+          "type": "number",
+          "minimum": 0
+        },
+        "boundary_backlog_veh": {
+          "type": "number",
+          "minimum": 0
+        },
+        "boundary_wait_veh_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "worst_service_debt_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "congested_link_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command_id",
+        "actor",
+        "action",
+        "recommendation_id",
+        "reason",
+        "decided_at_utc"
+      ],
+      "properties": {
+        "command_id": {
+          "type": "string"
+        },
+        "actor": {
+          "type": "string"
+        },
+        "action": {
+          "enum": [
+            "approve",
+            "modify",
+            "reject",
+            "simulate"
+          ]
+        },
+        "recommendation_id": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "decided_at_utc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "safety_result": {
+          "type": "string"
+        }
+      }
+    },
+    "applied_outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command_id",
+        "status",
+        "resolved_at_utc"
+      ],
+      "properties": {
+        "command_id": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "applied",
+            "rejected",
+            "timed_out"
+          ]
+        },
+        "resolved_at_utc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "applied_at_simulation_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
+    "failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "occurred_at_utc",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "occurred_at_utc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fresh_inference_fps",
+        "recommendation_latency_s",
+        "peak_cpu_percent",
+        "peak_ram_bytes"
+      ],
+      "properties": {
+        "fresh_inference_fps": {
+          "$ref": "#/$defs/metric"
+        },
+        "recommendation_latency_s": {
+          "$ref": "#/$defs/metric"
+        },
+        "peak_cpu_percent": {
+          "$ref": "#/$defs/metric"
+        },
+        "peak_ram_bytes": {
+          "$ref": "#/$defs/metric"
+        }
+      }
+    },
+    "report_forecast": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "movement_id",
+        "method",
+        "input_quality",
+        "horizon_status",
+        "uncertainty_status",
+        "horizon_s",
+        "queue_veh",
+        "occupancy_ratio",
+        "arrivals_veh",
+        "origin_source_s",
+        "input_age_s"
+      ],
+      "properties": {
+        "movement_id": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string"
+        },
+        "input_quality": {
+          "type": "string"
+        },
+        "horizon_status": {
+          "type": "string"
+        },
+        "uncertainty_status": {
+          "type": "string"
+        },
+        "horizon_s": {
+          "enum": [
+            30,
+            60,
+            120,
+            300
+          ]
+        },
+        "queue_veh": {
+          "type": "number",
+          "minimum": 0
+        },
+        "occupancy_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "arrivals_veh": {
+          "type": "number",
+          "minimum": 0
+        },
+        "origin_source_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "input_age_s": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input_session_id",
+        "config_hash",
+        "model_version",
+        "metrics_version",
+        "snapshot_sequence",
+        "run_id",
+        "sequence",
+        "recorded_at_utc",
+        "simulation_time_s",
+        "forecast_origin_source_s",
+        "input_quality",
+        "outcome",
+        "forecasts",
+        "recommendation",
+        "alternatives",
+        "comparison"
+      ],
+      "properties": {
+        "input_session_id": {
+          "type": "string"
+        },
+        "config_hash": {
+          "type": "string"
+        },
+        "model_version": {
+          "type": "string"
+        },
+        "metrics_version": {
+          "type": "string"
+        },
+        "snapshot_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "recorded_at_utc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "simulation_time_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "forecast_origin_source_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "input_quality": {
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "recommend",
+            "no_action",
+            "cannot_evaluate"
+          ]
+        },
+        "forecasts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/report_forecast"
+          }
+        },
+        "recommendation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/alternative"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "alternatives": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/alternative"
+          }
+        },
+        "comparison": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/comparison"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observation_id",
+        "camera_id",
+        "boundary_link_id",
+        "observation_status",
+        "queue_status",
+        "source_session_id",
+        "sequence",
+        "window_start_source_s",
+        "window_end_source_s",
+        "available_at_source_s",
+        "processed_at_utc",
+        "crossings_veh",
+        "queue_visible_veh_estimate"
+      ],
+      "properties": {
+        "observation_id": {
+          "type": "string"
+        },
+        "camera_id": {
+          "type": "string"
+        },
+        "boundary_link_id": {
+          "type": "string"
+        },
+        "observation_status": {
+          "type": "string"
+        },
+        "queue_status": {
+          "type": "string"
+        },
+        "source_session_id": {
+          "type": "string"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "window_start_source_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "window_end_source_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "available_at_source_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "processed_at_utc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "crossings_veh": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "queue_visible_veh_estimate": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "clock_event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command_id",
+        "actor",
+        "sequence",
+        "paused",
+        "status",
+        "occurred_at_utc"
+      ],
+      "properties": {
+        "command_id": {
+          "type": "string"
+        },
+        "actor": {
+          "type": "string"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "paused": {
+          "type": "boolean"
+        },
+        "status": {
+          "enum": [
+            "requested",
+            "confirmed",
+            "unknown"
+          ]
+        },
+        "occurred_at_utc": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

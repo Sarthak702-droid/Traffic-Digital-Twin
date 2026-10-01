@@ -153,6 +153,10 @@ func TestProcessedClipCatalogExposesSafeStatusAndRequiresSessionSelection(t *tes
 	if w.Code != 409 {
 		t.Fatalf("ambiguous source selection accepted: %d %s", w.Code, w.Body.String())
 	}
+	s.Network.CameraBoundaryLinks = map[string]string{"CAM-01": "C2-C1"}
+	if !s.videoProfileReady() {
+		t.Fatal("retained cache entries falsely mark valid selectable recorded input unavailable")
+	}
 }
 
 func TestVideoRunBindingRequiresExactValidBoundarySources(t *testing.T) {

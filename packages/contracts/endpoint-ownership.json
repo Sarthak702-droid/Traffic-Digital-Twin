@@ -344,6 +344,28 @@
       "required_role": "viewer",
       "idempotency_supported": false,
       "description": "Live WebSocket stream for traffic frames, audit events, and component health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/runs/{id}/report",
+      "go_owner": "Server.getRunReport",
+      "rpc_dependency": "none",
+      "persistence_class": "read_only_query",
+      "is_mutating": false,
+      "required_role": "viewer",
+      "idempotency_supported": false,
+      "description": "Authenticated durable report export without media, tracking identities or credentials"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/runs/{id}/clock",
+      "go_owner": "Server.setRunClock",
+      "rpc_dependency": "Simulation.SetClock",
+      "persistence_class": "audited_command",
+      "is_mutating": true,
+      "required_role": "operator",
+      "idempotency_supported": true,
+      "description": "Explicit pause/resume of virtual model clock for snapshot review"
     }
   ]
 }
