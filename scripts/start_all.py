@@ -140,6 +140,14 @@ def ensure_local_env() -> dict:
     merged.update(env_data)
     merged.setdefault("TWIN_ENGINE", "aggregate")
     merged.setdefault("PYTHONPATH", ".:packages/contracts/gen/python")
+    venv_sites = [str(p) for p in (ROOT / ".venv/lib").glob("python*/site-packages") if p.is_dir()]
+    if venv_sites:
+        existing_pp = merged.get("PYTHONPATH", ".:packages/contracts/gen/python")
+        pp_parts = [p for p in existing_pp.split(":") if p]
+        for vs in venv_sites:
+            if vs not in pp_parts:
+                pp_parts.append(vs)
+        merged["PYTHONPATH"] = ":".join(pp_parts)
     merged.setdefault("VIDEO_ASSET_DIR", str(ROOT / "traffic video"))
     merged["API_ADDR"] = f"127.0.0.1:{api_port}"
     merged["API_ORIGIN"] = f"http://127.0.0.1:{api_port}"
@@ -477,6 +485,10 @@ def cleanup_stale_services():
 
 
 def main():
+    if shutil.which("flatpak-spawn") and not os.environ.get("TWIN_FLATPAK_HOST"):
+        os.environ["TWIN_FLATPAK_HOST"] = "1"
+        cmd = ["flatpak-spawn", "--host", "bash", "-c", f"cd $(printf %q '{ROOT}') && exec python3 scripts/start-all.py {' '.join(sys.argv[1:])}"]
+        sys.exit(subprocess.call(cmd))
     instance_lock = acquire_instance_lock()
     if instance_lock is None:
         return
@@ -529,6 +541,14 @@ def main():
         env["VIRTUAL_ENV"] = str(venv_dir)
         # Remove any inherited PYTHONHOME that would override the venv
         env.pop("PYTHONHOME", None)
+        venv_sites = [str(p) for p in (venv_dir / "lib").glob("python*/site-packages") if p.is_dir()]
+        if venv_sites:
+            existing_pp = env.get("PYTHONPATH", "")
+            pp_parts = [p for p in existing_pp.split(":") if p]
+            for vs in venv_sites:
+                if vs not in pp_parts:
+                    pp_parts.append(vs)
+            env["PYTHONPATH"] = ":".join(pp_parts)
 
     npm_bin = find_executable("npm", [
         "/usr/local/bin/npm",

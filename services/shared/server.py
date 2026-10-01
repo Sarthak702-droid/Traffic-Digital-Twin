@@ -1,6 +1,15 @@
 """Private gRPC services; the browser communicates through Go only."""
 import argparse
 import os
+import sys
+from pathlib import Path
+
+# Ensure matching/available virtualenv site-packages is in sys.path
+_root = Path(__file__).resolve().parents[2]
+for _site in (_root / ".venv/lib").glob("python*/site-packages"):
+    if _site.is_dir() and str(_site) not in sys.path:
+        sys.path.insert(0, str(_site))
+
 import hmac
 from concurrent import futures
 import grpc
