@@ -72,3 +72,4 @@ def test_stale_video_history_marks_every_horizon_unavailable():
     assert not analysis.forecasts
     assert analysis.outcome == "cannot_evaluate"
     assert {item.status for item in analysis.horizon_availability} == {"stale_input"}
+    assert analysis.forecast_origin_source_s == state.latest_finalized_window_end_source_s

@@ -69,6 +69,9 @@ func publishableAnalysis(analysis *pb.Analysis, state *pb.TrafficState) *pb.Anal
 }
 
 func recommendationCurrent(rec *pb.Recommendation, analysis *pb.Analysis, state *pb.TrafficState) bool {
+	if state != nil && state.DemandSource == "video_profile" && state.InputQuality != "fresh" && state.InputQuality != "cached_valid" {
+		return false
+	}
 	if rec == nil || !analysisMatchesState(analysis, state) || rec.Id == "" || rec.Status != "pending" ||
 		rec.RunId != state.RunId || rec.InputSessionId != state.InputSessionId ||
 		rec.SnapshotSequence != state.SnapshotSequence || rec.ConfigHash != state.ConfigHash ||
@@ -330,7 +333,11 @@ func (s *Server) getAnalysis(w http.ResponseWriter, r *http.Request) {
 		problem(w, 503, "Fresh intelligence unavailable")
 		return
 	}
-	visible := proto.Clone(s.analysis).(*pb.Analysis)
+	visible := publishableAnalysis(s.analysis, s.state)
+	if visible == nil {
+		problem(w, 503, "Fresh intelligence unavailable")
+		return
+	}
 	if visible.Recommendation != nil && !recommendationCurrent(visible.Recommendation, visible, s.state) {
 		visible.Recommendation = nil
 		visible.Alternatives = nil

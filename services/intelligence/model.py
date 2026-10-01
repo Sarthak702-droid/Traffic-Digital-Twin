@@ -173,7 +173,7 @@ class Model:
         try:return self._analyze(state)
         finally:self._analysis_slots.release()
     def _compute_unavailable(self,state,reason):
-        return pb.Analysis(run_id=state.run_id,simulation_time_s=state.simulation_time_s,input_session_id=state.input_session_id,snapshot_sequence=state.snapshot_sequence,config_hash=state.config_hash,model_version=MODEL,metrics_version=METRICS_VERSION,input_quality=state.input_quality or 'synthetic',outcome='cannot_evaluate',outcome_reason=reason,horizon_availability=[pb.HorizonAvailability(horizon_s=h,status='compute_unavailable',reason=reason) for h in HORIZONS_S])
+        return pb.Analysis(run_id=state.run_id,simulation_time_s=state.simulation_time_s,input_session_id=state.input_session_id,snapshot_sequence=state.snapshot_sequence,config_hash=state.config_hash,model_version=MODEL,metrics_version=METRICS_VERSION,input_quality=state.input_quality or 'synthetic',forecast_origin_source_s=state.latest_finalized_window_end_source_s if state.HasField('latest_finalized_window_end_source_s') else 0,outcome='cannot_evaluate',outcome_reason=reason,horizon_availability=[pb.HorizonAvailability(horizon_s=h,status='compute_unavailable',reason=reason) for h in HORIZONS_S])
     def _analyze(self,state):
         started=time.monotonic()
         timeout=self.scoring['analysis_timeout_s']
@@ -183,7 +183,7 @@ class Model:
         except ValueError as exc:
             reason=str(exc)
             status='stale_input' if 'stale' in reason.lower() or state.input_quality=='stale' else 'missing_input'
-            return pb.Analysis(run_id=state.run_id,simulation_time_s=state.simulation_time_s,input_session_id=state.input_session_id,snapshot_sequence=state.snapshot_sequence,config_hash=state.config_hash,model_version=MODEL,metrics_version=METRICS_VERSION,input_quality=state.input_quality,outcome='cannot_evaluate',outcome_reason=reason,horizon_availability=[pb.HorizonAvailability(horizon_s=h,status=status,reason=reason) for h in HORIZONS_S])
+            return pb.Analysis(run_id=state.run_id,simulation_time_s=state.simulation_time_s,input_session_id=state.input_session_id,snapshot_sequence=state.snapshot_sequence,config_hash=state.config_hash,model_version=MODEL,metrics_version=METRICS_VERSION,input_quality=state.input_quality,forecast_origin_source_s=state.latest_finalized_window_end_source_s if state.HasField('latest_finalized_window_end_source_s') else 0,outcome='cannot_evaluate',outcome_reason=reason,horizon_availability=[pb.HorizonAvailability(horizon_s=h,status=status,reason=reason) for h in HORIZONS_S])
         state=evaluation['state'];baseline=self.plan(state)
         if expired():
             return self._compute_unavailable(state,'Analysis timeout')

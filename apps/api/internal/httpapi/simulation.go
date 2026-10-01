@@ -239,7 +239,13 @@ func (s *Server) acceptFrame(frame *pb.TrafficState) error {
 		}
 	}
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	gapRun := ""
+	defer func() {
+		s.mu.Unlock()
+		if gapRun != "" {
+			s.recordRunFailure(context.Background(), gapRun, "simulation_unavailable")
+		}
+	}()
 	if s.sim == nil || s.sim.command == nil || frame.RunId != s.sim.command.RunId {
 		return nil
 	}
@@ -248,6 +254,13 @@ func (s *Server) acceptFrame(frame *pb.TrafficState) error {
 	}
 	if frame.InputSessionId != "" && frame.InputSessionId != s.activeInputSessionID {
 		return fmt.Errorf("simulator state carries a different input epoch")
+	}
+	if s.state != nil && s.state.RunId == frame.RunId && !s.sim.received.IsZero() && time.Since(s.sim.received) > 2500*time.Millisecond {
+		s.analysis = nil
+		s.analysisFault = "Fresh computation required after state stream recovery"
+		if s.sim.fault == "" {
+			gapRun = frame.RunId
+		}
 	}
 	s.state = proto.Clone(frame).(*pb.TrafficState)
 	s.state.InputSessionId = s.activeInputSessionID

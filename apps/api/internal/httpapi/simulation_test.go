@@ -379,3 +379,17 @@ func TestLaunchFailureModes(t *testing.T) {
 		})
 	}
 }
+
+func TestResumedStateHeartbeatInvalidatesPreGapAnalysis(t *testing.T) {
+	s := app(t)
+	frame := &pb.TrafficState{SchemaVersion: "1.0", RunId: "run-active", Timestamp: time.Now().UTC().Format(time.RFC3339Nano), Source: "synthetic", SimulationTimeS: 16, SimulationPaused: true, Movements: []*pb.MovementState{{MovementId: "C6-C3-C1", CurrentPhaseId: "C3-FROM-C6"}}}
+	s.state = frame
+	s.analysis = &pb.Analysis{RunId: frame.RunId, Outcome: "recommend", Recommendation: &pb.Recommendation{Id: "before-gap", Status: "pending"}}
+	s.sim = &simulationLink{command: &pb.RunCommand{RunId: frame.RunId}, received: time.Now().Add(-3 * time.Second)}
+	if err := s.acceptFrame(frame); err != nil {
+		t.Fatal(err)
+	}
+	if s.analysis != nil || s.analysisFault == "" {
+		t.Fatal("resumed held snapshot revived pre-gap analysis")
+	}
+}

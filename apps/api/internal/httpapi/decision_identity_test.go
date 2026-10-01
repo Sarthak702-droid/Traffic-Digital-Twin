@@ -55,6 +55,14 @@ func TestRecommendationRejectsChangedVersionsAndNoAction(t *testing.T) {
 	if recommendationCurrent(rec, analysis, state) {
 		t.Fatal("no-action analysis retained an old recommendation")
 	}
+	analysis.Outcome = "recommend"
+	state.DemandSource = "video_profile"
+	for _, quality := range []string{"stale", "missing", "degraded", "invalid"} {
+		state.InputQuality = quality
+		if recommendationCurrent(rec, analysis, state) {
+			t.Fatalf("action retained despite %s recorded input", quality)
+		}
+	}
 }
 
 func pointer(value float64) *float64 { return &value }
@@ -166,5 +174,21 @@ func TestPublishAnalysisRetainsBoundForecastsWithoutStaleActions(t *testing.T) {
 	state.SimulationTimeS = 21
 	if publishableAnalysis(analysis, state) != nil {
 		t.Fatal("expired forecast accepted")
+	}
+}
+
+func TestAnalysisReadHidesForecastsImmediatelyWhenRecordedInputBecomesUnsuitable(t *testing.T) {
+	for _, quality := range []string{"stale", "missing", "degraded", "invalid"} {
+		t.Run(quality, func(t *testing.T) {
+			s := app(t)
+			s.sim = &simulationLink{received: time.Now()}
+			s.state = &pb.TrafficState{SchemaVersion: "1.1", RunId: "run", InputSessionId: "epoch", SnapshotSequence: 11, SimulationTimeS: 66, ConfigHash: "cfg", MetricsVersion: "metrics", DemandSource: "video_profile", InputQuality: quality}
+			s.analysis = &pb.Analysis{RunId: "run", InputSessionId: "epoch", SnapshotSequence: 10, SimulationTimeS: 65, ConfigHash: "cfg", MetricsVersion: "metrics", InputQuality: "cached_valid", Outcome: "no_action", Forecasts: []*pb.Forecast{{HorizonS: 30, QueueVeh: 4, HorizonStatus: "available"}}}
+			response := httptest.NewRecorder()
+			s.getAnalysis(response, httptest.NewRequest(http.MethodGet, "/analysis", nil))
+			if response.Code != http.StatusServiceUnavailable {
+				t.Fatalf("old numeric forecasts exposed for %s: %d %s", quality, response.Code, response.Body.String())
+			}
+		})
 	}
 }
