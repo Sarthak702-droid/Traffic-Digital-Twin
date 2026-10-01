@@ -115,7 +115,7 @@ export function IncidentRecoveryPanel({
       )}
 
       <div className="incident-actions">
-        <Button disabled={!canOperate || !startReady || pending} onClick={onLaunch}>{pending ? "Starting incident…" : `Start configured ${incidentNode} incident`}</Button>
+        <Button loading={pending} disabled={!canOperate || !startReady || pending} onClick={onLaunch}>{pending ? "Starting incident…" : `Start configured ${incidentNode} incident`}</Button>
         <Button variant="outline" disabled={!active || !canOperate || pending} onClick={onReset}><RotateCcw size={15} /> Reset same seed</Button>
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}

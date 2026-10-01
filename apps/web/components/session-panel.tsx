@@ -1,5 +1,7 @@
 "use client";
 
+import {Button} from "@/components/ui/button";
+import {LoadingState} from "@/components/ui/loading";
 import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, request, pendingCommand, clearPendingCommand } from "@/lib/api";
@@ -60,13 +62,13 @@ export function SessionPanel({onReviewFinished}:{onReviewFinished?:(commandId:st
  const submit=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();login.mutate()};
 
  return <section className="session-panel" aria-label="Session and command recovery">
- {active ? <div><p>Authenticated session · <strong>{session.data.actor}</strong> · {session.data.role}</p><button type="button" onClick={()=>logout.mutate()} disabled={logout.isPending}>Sign out</button>{logout.error&&<p role="alert">Sign-out could not be confirmed. Try again before leaving this browser.</p>}</div>
+ {active ? <div><p>Authenticated session · <strong>{session.data.actor}</strong> · {session.data.role}</p><Button variant="outline" type="button" onClick={()=>logout.mutate()} loading={logout.isPending}>Sign out</Button>{logout.error&&<p role="alert">Sign-out could not be confirmed. Try again before leaving this browser.</p>}</div>
  : <div>
-   <p role={session.isPending?"status":"alert"}>{session.isPending?"Checking session…":authError?.status===401?"Sign in to use the operator workspace.":session.isError?"Session service unavailable. Your unsent draft and command ID remain here.":"Sign in to use the operator workspace."}</p>
+   {session.isPending ? <LoadingState compact label="Checking session…"/> : <p role="alert">{authError?.status===401?"Sign in to use the operator workspace.":session.isError?"Session service unavailable. Your unsent draft and command ID remain here.":"Sign in to use the operator workspace."}</p>}
    {!session.isPending&&<form onSubmit={submit}>
     <label>Username <input autoComplete="username" value={username} onChange={e=>setUsername(e.target.value)} required/></label>
     <label>Password <input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>
-    <button type="submit" disabled={login.isPending}>{login.isPending?"Signing in…":"Sign in"}</button>
+    <Button type="submit" loading={login.isPending}>{login.isPending?"Signing in…":"Sign in"}</Button>
    </form>}
    {login.error&&<p role="alert">{login.error instanceof ApiError&&login.error.status===401?"Invalid username or password.":"Sign-in unavailable. Try again when the API recovers."}</p>}
   </div>}

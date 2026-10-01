@@ -22,6 +22,7 @@ import {
   TrafficCone,
   Video,
 } from "lucide-react";
+import {LoadingState} from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { getNetwork, isEmergencyProtectionError, isStaleUncertainCommandError, pendingCommand, request } from "@/lib/api";
@@ -492,6 +493,7 @@ export function Workspace() {
 
         <main className="product-content">
           <SessionPanel onReviewFinished={clearRecoveredCommandErrors}/>
+          {anyCommandPending && <div className="command-progress" role="status" aria-live="polite"><span className="loading-spinner" aria-hidden="true"/>Processing operator request. Waiting for confirmation…</div>}
           {!online&&<p role="alert">Offline. Measurements may be stale; commands are disabled.</p>}
           {network.data?.provenance==="bundled-offline"&&<p role="alert">Bundled offline topology only. This configuration is not a live service response.</p>}
           {(prepare.error||decision.error||modeMutation.error||changeModeMutation.error||startIncident.error||startEmergency.error||replay.error||lock.error)&&<p className="form-error" role="alert">{(prepare.error||decision.error||modeMutation.error||changeModeMutation.error||startIncident.error||startEmergency.error||replay.error||lock.error)?.message}</p>}
@@ -500,7 +502,7 @@ export function Workspace() {
 
           {live.frame&&!live.frame.replay&&<div className="workspace-status">
            <strong role="status">{live.frame.simulation_paused?'Virtual clock paused for operator review':'Virtual clock running'}</strong>
-           <Button disabled={!canWrite||!dbReady||!live.fresh||clockControl.isPending||!!pendingCommand()} onClick={()=>clockControl.mutate(!live.frame?.simulation_paused)}>{live.frame.simulation_paused?'Resume virtual clock':'Pause virtual clock for review'}</Button>
+           <Button loading={clockControl.isPending} disabled={!canWrite||!dbReady||!live.fresh||clockControl.isPending||!!pendingCommand()} onClick={()=>clockControl.mutate(!live.frame?.simulation_paused)}>{live.frame.simulation_paused?'Resume virtual clock':'Pause virtual clock for review'}</Button>
            {live.frame.simulation_paused&&<span>Resume to let an accepted plan reach its safe activation boundary.</span>}
            {clockControl.isError&&<span role="alert">{clockControl.error.message}</span>}
           </div>}
@@ -575,10 +577,7 @@ export function Workspace() {
           {view === "vision" ? (
             <VisionAnalyticsPanel processedClips={processedClips.data?.clips??[]} onSelectSourceSession={(camera,sourceSession)=>setSourceSessions(previous=>({...previous,[camera]:sourceSession}))} boundaryMapping={boundaryMapping} sourceSessions={sourceSessions} onReturn={() => setView("command")} frame={live.fresh ? live.frame : null} analysis={analysis} />
           ) : network.isPending ? (
-            <div className="loading-panel" role="status">
-              <div className="skeleton" />
-              <p>Loading network configuration…</p>
-            </div>
+            <LoadingState label="Loading network configuration…" />
           ) : network.isError ? (
             <div className="error-panel" role="alert">
               <Radio size={24} />
@@ -726,6 +725,7 @@ export function Workspace() {
                             {(activeRole === "supervisor" || activeRole === "operator") && (
                               <Button
                                 variant="default"
+                                loading={resolveDecisionMutation.isPending}
                                 disabled={resolveDecisionMutation.isPending}
                                 onClick={() =>
                                   resolveDecisionMutation.mutate({
@@ -934,7 +934,7 @@ export function Workspace() {
                         <ShieldCheck size={18} />
                       </div>
                       {audit.isPending ? (
-                        <p className="panel-message">Loading audit history…</p>
+                        <LoadingState compact label="Loading audit history…" />
                       ) : audit.isError ? (
                         <p className="panel-message form-error" role="alert">
                           {audit.error.message}
@@ -995,7 +995,7 @@ export function Workspace() {
                       {health.isError ? (
                         <p className="form-error">Health API unavailable</p>
                       ) : health.isPending ? (
-                        <p className="panel-message">Checking component availability…</p>
+                        <LoadingState compact label="Checking component availability…" />
                       ) : (
                         health.data?.components.map((c) => (
                           <div className="component" key={c.component}>
@@ -1030,7 +1030,7 @@ export function Workspace() {
                     </div>
                     {reportError && <p className="panel-message form-error" role="alert">{reportError}</p>}
                     {runs.isPending ? (
-                      <p className="panel-message">Loading saved runs…</p>
+                      <LoadingState compact label="Loading saved runs…" />
                     ) : runs.isError ? (
                       <p className="panel-message form-error" role="alert">
                         {runs.error.message}
@@ -1064,7 +1064,7 @@ export function Workspace() {
                                     {run.status}
                                   </span>
                                 </td>
-                                <td><Button disabled={reportExport.isPending} onClick={()=>reportExport.mutate(run.id)} aria-label={`Export run report ${run.id}`}>{reportExport.isPending&&reportExport.variables===run.id?'Exporting…':'Export report'}</Button></td>
+                                <td><Button loading={reportExport.isPending&&reportExport.variables===run.id} disabled={reportExport.isPending} onClick={()=>reportExport.mutate(run.id)} aria-label={`Export run report ${run.id}`}>{reportExport.isPending&&reportExport.variables===run.id?'Exporting…':'Export report'}</Button></td>
                               </tr>
                             ))}
                           </tbody>

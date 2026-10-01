@@ -17,6 +17,7 @@ import {
   Compass,
   Layers,
 } from "lucide-react";
+import {LoadingState} from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
 import { OperatorTimeStatus } from "@/components/operator-time-status";
 import type { ProcessedClip } from "@/lib/run-input";
@@ -581,7 +582,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     );
   }
 
-  if (!cameraRegistryReady) return <div className="vision-container" role={cameraRegistryError ? "alert" : "status"}>{cameraRegistryError ? "Camera registry unavailable; recorded feeds cannot be verified." : "Loading registered cameras…"}</div>;
+  if (!cameraRegistryReady) return cameraRegistryError ? <div className="vision-container" role="alert">Camera registry unavailable; recorded feeds cannot be verified.</div> : <LoadingState label="Loading registered cameras…"/>;
 
   const streamRole = STREAM_ROLE_DETAILS[activeCamInfo.role];
   const streamFrames = activeTelemetry?.frames as any[] | undefined;

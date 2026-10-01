@@ -677,6 +677,7 @@ export function ActionRail({
 
         <Button
           onClick={handleStart}
+          loading={prepareMutation.isPending}
           disabled={prepareMutation.isPending || resetMutation.isPending || !dbReady || !startReady}
         >
           {prepareMutation.isPending ? "Starting aggregate flow…" : "Start simulation"}
@@ -686,6 +687,7 @@ export function ActionRail({
         <Button
           variant="outline"
           onClick={() => setRunConfirmation("reset")}
+          loading={resetMutation.isPending}
           disabled={!frame || resetMutation.isPending || prepareMutation.isPending || !dbReady}
         >
           {resetMutation.isPending ? "Resetting…" : "Reset same seed"}
