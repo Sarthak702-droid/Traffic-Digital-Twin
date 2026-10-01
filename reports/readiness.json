@@ -28,10 +28,10 @@
       "verified": [
         "Real gRPC recorded-demand forecasts on both graphs and all three scenarios",
         "30/60/120/300 horizons",
-        "Compute loss clears analysis; recovered decision IDs differ; old approvals rejected"
+        "Compute loss clears analysis; recovered decision IDs differ; old approvals rejected",
+        "Exhausted recorded input exposes zero numeric forecasts and four stale-input horizons; old approval rejected"
       ],
       "remaining": [
-        "Complete recorded input exhaustion/unavailability browser rehearsal",
         "Predefined forecast accuracy evaluation",
         "Frozen 10-second processing-age gate unresolved for immutable cached observations"
       ]
@@ -42,7 +42,8 @@
       "verified": [
         "Authenticated approval changes later virtual scheduler at safe boundary",
         "Matched comparison now honors offsets",
-        "Complete scheduler snapshot includes pending and offset release state"
+        "Complete scheduler snapshot includes pending and offset release state",
+        "Stalled simulation heartbeat recovery invalidates prior held-state decision identities"
       ],
       "remaining": [
         "Complete scenario/safety and failure matrix",

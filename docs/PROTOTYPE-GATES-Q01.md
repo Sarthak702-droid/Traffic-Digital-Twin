@@ -64,3 +64,11 @@ The input disclosure now separates video-derived boundary demand from virtual mo
 Static contract verification now compares actual ownership routes with OpenAPI and resolves every local schema reference. It no longer requires historical stories to be marked complete or describes configured nodes as active runtime evidence. Two focused verifier regressions passed after failing against the prior checker.
 
 A new post-integration recorded-input approval published pending scheduler intent during review, resumed, and applied at virtual second 35. Actual active greens matched every approved phase; the run report records its applied command outcome. This is virtual actuation proof, not control-benefit acceptance.
+
+## Final dependency/exhaustion probes
+
+Real simulation-process suspension preserved the authoritative input epoch but blocked approval (409). On resumed heartbeat, Go invalidated the pre-gap held-snapshot analysis, recomputed with a new gateway decision identity, and continued rejecting the old approval (409). The durable report records `simulation_unavailable`; no replay was substituted.
+
+A fresh recorded run exhausted its eligible input at virtual second 66, with the final source window at 61.97 seconds. After the read-path/source-identity fixes it returned zero numeric forecasts, `cannot_evaluate`, and `stale_input` for all 30/60/120/300-second horizons. The browser displayed those unavailable statuses, the old approval returned 409, and replay remained false. The strict v2 durable report validates. The earlier failing exhaustion probe is retained under `.runtime/pre-fix-q01-input-exhaustion-*`; it exposed stale numeric forecasts and was not counted as acceptance.
+
+Focused RED/GREEN additionally covered immediate stale forecast reads, stale input approval rejection, source identity on unavailable results, and held-state heartbeat recovery. Final full Python/service/script/contract validation: 183 passed. All affected Go/PostgreSQL packages passed after these fixes; frontend validation remains 137 passed with typecheck/build.
