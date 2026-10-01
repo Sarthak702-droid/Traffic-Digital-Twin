@@ -1,6 +1,6 @@
 # Verification Reports & Artifacts Registry
 
-This directory contains the audit reports, benchmark measurements, manifests, and execution evidence generated during system verification and PRD qualification.
+This directory includes historical demonstration reports and current prototype evidence. Use `readiness.json` and `docs/PROTOTYPE-GATES-Q01.md` for current acceptance. Older completion, resource and accuracy statements are not current gate evidence.
 
 ---
 
@@ -17,7 +17,7 @@ This directory contains the audit reports, benchmark measurements, manifests, an
 
 | File | Description |
 | :--- | :--- |
-| [`readiness.json`](./readiness.json) | Release gate evaluation matrix covering tasks T01–T17 and operational readiness criteria. |
+| [`readiness.json`](./readiness.json) | Current six-gate functional-prototype assessment; failed and unavailable requirements remain explicit. |
 | [`baseline-status.json`](./baseline-status.json) | Baseline commit hash, repository state, and tracked vs untracked asset discovery. |
 | [`blockers.json`](./blockers.json) | Explicit tracking of field-pilot constraints, GPU limitations, and commercial licensing boundaries. |
 | [`test-plan.json`](./test-plan.json) | Comprehensive test matrix for contracts, simulation invariants, vision, and UI. |

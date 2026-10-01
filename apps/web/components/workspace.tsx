@@ -504,6 +504,7 @@ export function Workspace() {
            {live.frame.simulation_paused&&<span>Resume to let an accepted plan reach its safe activation boundary.</span>}
            {clockControl.isError&&<span role="alert">{clockControl.error.message}</span>}
           </div>}
+          <OperatorTimeStatus frame={live.fresh ? live.frame : null} analysis={analysis} />
           {/* Role-Specific Executive / Supervisor Banner */}
           {activeRole === "viewer" && session.isSuccess && (
             <div className="role-banner viewer-banner" role="status">
@@ -633,7 +634,6 @@ export function Workspace() {
                       {!runInputReady && <p role="status">Video run unavailable until every boundary has a compatible finalized session. Process missing clips using the runbook, or explicitly select seeded demand.</p>}
                       {processedClips.isError && <p role="alert">Processed input catalog unavailable: {processedClips.error.message}</p>}
                     </section>}
-                    <OperatorTimeStatus frame={live.fresh ? live.frame : null} analysis={analysis} />
 
                     {/* Operations Grid: 8-column Canvas + 4-column Action Rail */}
                     <div className="operations-grid">

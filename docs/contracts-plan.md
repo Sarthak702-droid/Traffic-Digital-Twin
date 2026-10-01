@@ -184,3 +184,13 @@ The one-action authenticated report export is `GET /api/v1/runs/{id}/report`. It
 - New public JSON uses the generated snake_case names; protobuf 64-bit integers remain JSON strings. OpenAPI, TypeScript, JSON Schema and generated bindings change in one C01 commit.
 - A source epoch mismatch, stale snapshot sequence/version, malformed timing, unsuitable input, or absent safe boundary rejects an approval without changing the current plan. Terminal outcomes and reasons remain queryable by command ID after session expiry and re-login.
 - API, Python and UI review lenses: Go must retain authority and durable audit; Python must enforce causal state and matched comparison; UI must display the status/units/origin without manufacturing unavailable values. These cross-layer checks are C00 design review criteria, not completed implementation claims.
+
+### Q01 additive integration contract (2026-10-01)
+
+`TrafficState.simulation_paused` is field 37. Private `ClockCommand` carries run/input-session identity and an explicit paused boolean; `Simulation.SetClock` holds only the virtual engine clock. Authenticated Go `POST /api/v1/runs/{id}/clock` owns origin/role/lease/idempotency checks and durable intent/outcome audit. Confirmed command recovery returns the original held snapshot sequence and virtual time. Stream heartbeat timestamps represent current delivery, not a changed source processing timestamp.
+
+`SchedulerSnapshot` retains fields 1–5 and adds activation-not-before tick (6), per-node offsets (7), delayed releases (8), waiting nodes (9), optional requested/applied ticks (10/11), and rejection reason (12). Comparisons reconstruct the complete scheduler and reject pending offset-only plans. All generated bindings are regenerated together.
+
+Public run-report v2 preserves v1 separately, uses strict aggregate-only chronological evidence, includes nullable unavailable identities/origins, and reads a repeatable PostgreSQL snapshot through authenticated Go. Its OpenAPI component definitions are self-contained; every owned HTTP route is represented. Raw media, individual tracking identities and secrets are excluded.
+
+Unresolved E01 conflict: the frozen actionable processing-age cap of 10 seconds is not met by immutable cached observations whose actual processing completion is older. Source-window causal freshness and current state delivery are distinct. Q01 preserves `Forecast.input_age_s` semantics, displays processing age, and does not claim that the recorded-cache rehearsals pass this frozen age cap. Resolve the recorded-cache acceptance interpretation in a versioned protocol before fresh held-out evaluation.

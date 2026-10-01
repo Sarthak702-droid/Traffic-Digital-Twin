@@ -1,8 +1,10 @@
-# Remediation Final Report — 2026-09-19
+# Historical remediation record — 2026-09-19
 
-**Status: Production-Ready. All 20 Audit Gaps (A01–A20) and All 45 Stories (S01–S48) are Closed.**
+**Current status (2026-10-01): functional-prototype acceptance remains open; no production or field readiness is claimed.**
 
-This document records the definitive remediation and verified closure of all Critical, High, Medium, and Low audit findings originally identified in [UX-PRODUCTION-AUDIT.md](UX-PRODUCTION-AUDIT.md). All 14 Epics (E01–E14) and 45 Stories (S01–S48) have been implemented, verified with automated end-to-end test suites, accepted, merged into `main`, and marked complete in the repository delivery tracking records.
+Use `docs/IMPLEMENTATION-PLAN.md`, `docs/PROTOTYPE-GATES-Q01.md` and `reports/readiness.json` for current gates. The older completion statements below are historical task records, not acceptance evidence. The predefined control benchmark failed; independent measurement labels and a non-implementer reserved-input rehearsal remain outstanding.
+
+The historical report originally asserted remediation and closure of all Critical, High, Medium, and Low audit findings originally identified in [UX-PRODUCTION-AUDIT.md](UX-PRODUCTION-AUDIT.md). All 14 Epics (E01–E14) and 45 Stories (S01–S48) have been implemented, verified with automated end-to-end test suites, accepted, merged into `main`, and marked complete in the repository delivery tracking records.
 
 ---
 

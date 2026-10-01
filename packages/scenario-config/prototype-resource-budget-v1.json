@@ -1,0 +1,13 @@
+{
+  "version": "prototype-resource-budget-v1",
+  "scope": "local engineering prototype; offline fresh-video processing and serialized aggregate compute",
+  "target_cpu": "Intel Core Ultra 9 285H",
+  "fresh_perception": {"concurrent_jobs": 1, "cached_boundary_inputs": 3, "peak_cpu_cores": 6, "peak_ram_bytes": 2147483648},
+  "simulation": {"step_samples_per_scenario": 600, "step_p95_wall_s": 1, "peak_cpu_cores": 2, "peak_ram_bytes": 536870912},
+  "candidate_evaluation": {"samples_per_scenario": 10, "max_candidates": 5, "concurrent_analyses": 1, "comparison_window_s": 120, "analysis_p95_wall_s": 1.5, "peak_cpu_cores": 2, "peak_ram_bytes": 536870912},
+  "end_to_end": {"state_to_analysis_wall_s_target": 5, "continuous_run_p95": "requires separate full-stack measurement"},
+  "graphs": ["c1-c6.json", "three-controlled-junctions.json"],
+  "scenarios": ["peak_surge", "incident_c3", "ambulance_corridor"],
+  "seed": 1101,
+  "seed_split": "tuning_only; no held-out accuracy or control scoring"
+}
