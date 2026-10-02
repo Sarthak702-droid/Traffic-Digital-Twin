@@ -1,9 +1,11 @@
+import pytest
 import importlib
 import sys
 from types import ModuleType, SimpleNamespace
 
 
-def test_crossing_at_window_boundary_belongs_to_later_window(tmp_path, monkeypatch):
+@pytest.mark.parametrize("class_id, expected_vehicles", [(2, 1), (7, 0)])
+def test_crossing_at_window_boundary_belongs_to_later_window(tmp_path, monkeypatch, class_id, expected_vehicles):
     class Frame:
         shape = (100, 100, 3)
     class Capture:
@@ -36,7 +38,7 @@ def test_crossing_at_window_boundary_belongs_to_later_window(tmp_path, monkeypat
     class Boxes:
         def __init__(self, index):
             self.id = [Scalar(1)] if index >= 4 else None
-            self.cls = [Scalar(2)] if index >= 4 else []
+            self.cls = [Scalar(class_id)] if index >= 4 else []
             self.xyxy = [Array([256, 192, 384, 320 if index == 4 else 384])] if index >= 4 else []
         def __len__(self): return len(self.xyxy)
     class YOLO:
@@ -58,7 +60,7 @@ def test_crossing_at_window_boundary_belongs_to_later_window(tmp_path, monkeypat
                   'direction_vector': [0, 1], 'primary_direction': 'approaching'},
         target_fps=1)
     rows = list(session.process_stream())
-    assert [(row.window_start_s, row.window_end_s, row.crossings_veh) for row in rows] == [(0, 5, 0), (5, 6, 1)]
+    assert [(row.window_start_s, row.window_end_s, row.crossings_veh) for row in rows] == [(0, 5, 0), (5, 6, expected_vehicles)]
     assert rows[0].available_at_source_s >= rows[0].window_end_s
     assert rows[0].validation_level == 'provisional_unreviewed'
     assert len(rows[0].geometry_hash) == len(rows[0].model_hash) == 64

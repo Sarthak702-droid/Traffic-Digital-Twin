@@ -272,7 +272,8 @@ class ITDVideoAnalyticsSession:
                             prev_pt = track_positions[track_id]
                             crossing_dir = counter.check_crossing(track_id, prev_pt, bottom_center)
                             if crossing_dir == "approaching":
-                                current_bin_crossings += 1
+                                if cls_name != "pedestrain":
+                                    current_bin_crossings += 1
                                 current_bin_classes[cls_name] = current_bin_classes.get(cls_name, 0) + 1
 
                             dx = bottom_center[0] - prev_pt[0]
@@ -286,7 +287,7 @@ class ITDVideoAnalyticsSession:
 
                         track_positions[track_id] = bottom_center
 
-                        if queue_pts is not None:
+                        if queue_pts is not None and cls_name != "pedestrain":
                             in_roi = cv2.pointPolygonTest(queue_pts, bottom_center, False) >= 0
                             if in_roi:
                                 recent = track_motion.get(track_id, [0.0])

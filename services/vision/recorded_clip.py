@@ -18,7 +18,7 @@ from services.vision.resource_probe import ProcessResourceProbe
 from services.shared.network_config import config_hash, load_config
 
 OBSERVATION_SCHEMA = 'camera-observation-v1'
-DETECTOR_VERSION = 'itd-v1.2-yolo'
+DETECTOR_VERSION = 'itd-v1.2-yolo-vehicle-counts-v2'
 TRACKER_VERSION = 'bytetrack-ultralytics-8.4.129'
 EXPECTED_ITD_SHA256 = '06006ecb5fe52a348ceed805bf0aa6b32af7e24e689d09a6582f6d53159d6b00'
 

@@ -17,6 +17,7 @@ import {
   Compass,
   Layers,
 } from "lucide-react";
+import { canvasSize, detectionFrameIndex, sameGeometry, DISPLAY_TELEMETRY_VERSION } from "@/lib/video-display";
 import {LoadingState} from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
 import { OperatorTimeStatus } from "@/components/operator-time-status";
@@ -44,6 +45,8 @@ export interface CameraSlot {
   role: string;
   resolution: string;
   fps: number;
+  clipSha256?: string;
+  geometry?: unknown;
 }
 
 export const ALL_CAMERA_SLOTS: CameraSlot[] = [
@@ -107,6 +110,7 @@ function getStreamLaneMetrics(frame: any, telemetry: any): StreamLaneMetric[] {
 
   detections.forEach((detection: any) => {
     const bbox = detection?.bbox;
+    if (detection.class === "pedestrain") return;
     if (!Array.isArray(bbox) || bbox.length < 4) return;
     const centreX = (Number(bbox[0]) + Number(bbox[2])) / 2;
     const band = centreX < 1 / 3 ? 0 : centreX < 2 / 3 ? 1 : 2;
@@ -165,10 +169,17 @@ function safePauseVideo(video: HTMLVideoElement | null) {
   }
 }
 
+function activeCameraResolution(camera: string, slots: CameraSlot[]): [number, number] {
+  const match = slots.find((slot) => slot.id === camera)?.resolution.match(/(\d+)x(\d+)/);
+  return match ? [Number(match[1]), Number(match[2])] : [16, 9];
+}
+
 export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame = null, analysis = null, boundaryMapping = {}, sourceSessions = {}, processedClips = [], onSelectSourceSession }: VisionAnalyticsPanelProps) {
   const [isOffline, setIsOffline] = useState(initialOffline);
   const [isPlaying, setIsPlaying] = useState(true);
   const [currentFrameIdx, setCurrentFrameIdx] = useState(0);
+  const [mediaTime, setMediaTime] = useState(0);
+  const [mediaSize, setMediaSize] = useState({ width: 960, height: 540 });
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   const [showLanes, setShowLanes] = useState(true);
   const [showCountingLine, setShowCountingLine] = useState(true);
@@ -189,14 +200,13 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const playIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevCrossedCountRef = useRef<number>(0);
 
   // Load 12-camera telemetry generated from ITD v1.2 YOLO + ByteTrack
   useEffect(() => {
     if (typeof process !== "undefined" && process.env?.NODE_ENV === "test") return;
     let isMounted = true;
-    fetch("/vision_clips_data.json")
+    fetch("/vision-display-data.json", { cache: "no-store" })
       .then((res) => {
         if (!res.ok) return null;
         return res.json();
@@ -210,7 +220,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [selectedCamera]);
 
   useEffect(() => {
     if (typeof process !== "undefined" && process.env?.NODE_ENV === "test") return;
@@ -221,7 +231,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
         const camera = raw as any;
         const asset = assets.get(id);
         if (!asset || !camera.assigned_video || asset.filename !== camera.assigned_video) return null;
-        return { id, label: id, approach: camera.virtual_direction || id, videoFile: camera.assigned_video, role: camera.network_role === "internal_link_sample_analytics" ? "internal_link_observation" : camera.network_role, resolution: asset.resolution || "unknown", fps: Number(asset.fps || 0) } as CameraSlot;
+        return { id, label: id, approach: camera.virtual_direction || id, videoFile: camera.assigned_video, role: camera.network_role === "internal_link_sample_analytics" ? "internal_link_observation" : camera.network_role, resolution: asset.resolution || "unknown", fps: Number(asset.fps || 0), clipSha256: asset.sha256, geometry: camera.geometry } as CameraSlot;
       }).filter((slot): slot is CameraSlot => slot !== null).sort((a, b) => a.id.localeCompare(b.id));
       if (slots.length !== 12) { setCameraRegistryError(true); return; }
       setCameraSlots(slots);
@@ -266,47 +276,43 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     setObservationStatus("missing");
     setObservationReason("");
     video.currentTime = 0;
-    setCurrentFrameIdx(0);
+    setCurrentFrameIdx(-1);
+    setMediaTime(0);
+    prevCrossedCountRef.current = 0;
+    setCrossingPulse(false);
+    const dimensions = activeCameraResolution(selectedCamera, cameraSlots);
+    setMediaSize(canvasSize(dimensions[0], dimensions[1]));
     if (isPlaying) {
       safePlayVideo(video);
     }
   }, [selectedCamera]);
 
   const totalFrames = telemetryMap[selectedCamera]?.frames?.length || 100;
-  const activeTelemetry = telemetryMap[selectedCamera];
-  const activeFrameData = activeTelemetry?.frames?.[currentFrameIdx];
+  const registeredCamera = cameraSlots.find((camera) => camera.id === selectedCamera);
+  const cachedTelemetry = telemetryMap[selectedCamera];
+  const activeTelemetry = cachedTelemetry?.schema_version === DISPLAY_TELEMETRY_VERSION && cachedTelemetry?.video_file === registeredCamera?.videoFile
+    && (!registeredCamera?.clipSha256 || cachedTelemetry?.source_identity?.clip_sha256 === registeredCamera.clipSha256)
+    && (!registeredCamera?.geometry || sameGeometry(cachedTelemetry?.geometry, registeredCamera.geometry))
+    ? cachedTelemetry : undefined;
+  const activeFrameData = currentFrameIdx >= 0 ? activeTelemetry?.frames?.[currentFrameIdx] : undefined;
   const activeCamInfo = cameraSlots.find((c) => c.id === selectedCamera) || cameraSlots[0];
 
-  // Follow media time until the recorded clip ends.
+  // Display playback never changes the authoritative run or observation session.
   useEffect(() => {
-    if (!isPlaying || isOffline) {
-      if (playIntervalRef.current) clearInterval(playIntervalRef.current);
-      safePauseVideo(videoRef.current);
-      return;
-    }
+    const video = videoRef.current;
+    if (!video) return;
+    video.playbackRate = playbackSpeed;
+    if (!isPlaying || isOffline) safePauseVideo(video);
+    else safePlayVideo(video);
+  }, [isPlaying, isOffline, playbackSpeed, selectedCamera, cameraRegistryReady]);
 
-    if (videoRef.current && videoRef.current.paused) {
-      safePlayVideo(videoRef.current);
-    }
-
-    if (typeof process !== "undefined" && process.env?.NODE_ENV === "test") {
-      return;
-    }
-
-    const intervalMs = Math.max(25, Math.round(100 / playbackSpeed));
-    playIntervalRef.current = setInterval(() => {
-      const video = videoRef.current;
-      if (video && video.duration) {
-        const coverage = Number(telemetryMap[selectedCamera]?.duration_s || 10);
-        const calculatedIdx = Math.min(totalFrames - 1, Math.floor((video.currentTime / coverage) * totalFrames));
-        setCurrentFrameIdx(calculatedIdx);
-      }
-    }, intervalMs);
-
-    return () => {
-      if (playIntervalRef.current) clearInterval(playIntervalRef.current);
-    };
-  }, [isPlaying, isOffline, playbackSpeed, totalFrames, selectedCamera, telemetryMap]);
+  const syncMediaTime = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const time = video.currentTime;
+    setMediaTime(Math.floor(time * 10) / 10);
+    setCurrentFrameIdx(detectionFrameIndex(activeTelemetry, time));
+  }, [activeTelemetry]);
 
   // Single-pulse line crossing detection
   useEffect(() => {
@@ -317,6 +323,8 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
       prevCrossedCountRef.current = crossedCount;
       return () => clearTimeout(timer);
     }
+    prevCrossedCountRef.current = crossedCount;
+    setCrossingPulse(false);
   }, [activeFrameData]);
 
   // Render real video + computer vision overlays on HTML5 canvas
@@ -466,8 +474,8 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
       ctx.stroke();
 
       // Label Header: TRK #ID CLASS CONF%
-      const className = String(det.class).replace("_", " ").toUpperCase();
-      const label = `#${det.id} ${className} ${(det.conf * 100).toFixed(0)}%`;
+      const className = displayVehicleClass(String(det.class)).toUpperCase();
+      const label = `${className} ${(det.conf * 100).toFixed(0)}%`;
       ctx.font = "bold 9px monospace";
       const tm = typeof ctx.measureText === "function" ? ctx.measureText(label) : { width: label.length * 6 };
       const tagW = tm.width + 8;
@@ -484,7 +492,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
 
     // 6. CCTV HUD / OSD Overlay Banner
     ctx.fillStyle = "rgba(10, 15, 20, 0.85)";
-    ctx.fillRect(0, 0, width, 24);
+    ctx.fillRect(0, 0, width, 44);
 
     // Blinking REC square icon
     ctx.fillStyle = "#ef4444";
@@ -493,9 +501,9 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 10px monospace";
     ctx.textAlign = "left";
-    const secCur = (currentFrameIdx / 10).toFixed(1);
+    const secCur = mediaTime.toFixed(1);
     ctx.fillText(
-      `● RECORDED VIDEO · ${selectedCamera} · ${activeCamInfo.videoFile} · ${secCur}s / ${activeTelemetry?.duration_s ?? 10}s`,
+      `● RECORDED VIDEO · ${selectedCamera} · ${activeCamInfo.videoFile} · SOURCE ${secCur}s`,
       26,
       16
     );
@@ -505,15 +513,16 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     const actCount = activeFrameData?.active_count ?? detections.length;
     const qCount = activeFrameData?.queue_count ?? 0;
     ctx.fillText(
-      `ITD v1.2 YOLO-XL + BYTETRACK · DETECTED: ${actCount} · QUEUE: ${qCount}`,
+      activeFrameData ? `CACHED DETECTIONS · VEHICLES: ${actCount} · PEDESTRIANS: ${activeFrameData.pedestrian_count ?? 0} · QUEUE ROI: ${qCount}` : "DETECTION UNAVAILABLE AT THIS SOURCE TIME",
       width - 12,
-      16
+      36
     );
   }, [
     activeCamInfo.videoFile,
     activeFrameData,
     activeTelemetry,
     currentFrameIdx,
+    mediaTime,
     isOffline,
     selectedCamera,
     showCountingLine,
@@ -522,9 +531,15 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     crossingPulse,
   ]);
 
+  const drawRef = useRef(renderCanvas);
+  drawRef.current = renderCanvas;
   useEffect(() => {
-    renderCanvas();
-  }, [renderCanvas]);
+    let animation: number;
+    const draw = () => { syncMediaTime(); drawRef.current(); animation = requestAnimationFrame(draw); };
+    if (typeof process !== "undefined" && process.env?.NODE_ENV === "test") { renderCanvas(); return; }
+    animation = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(animation);
+  }, [syncMediaTime]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -535,15 +550,19 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
         setIsPlaying((p) => !p);
       } else if (e.code === "ArrowRight") {
         e.preventDefault();
-        setCurrentFrameIdx((prev) => Math.min(totalFrames - 1, prev + 1));
+        const next = Math.min(totalFrames - 1, Math.max(0, currentFrameIdx + 1));
+        if (videoRef.current) videoRef.current.currentTime = activeTelemetry?.frames?.[next]?.time_s ?? 0;
+        syncMediaTime();
       } else if (e.code === "ArrowLeft") {
         e.preventDefault();
-        setCurrentFrameIdx((prev) => Math.max(0, prev - 1));
+        const prev = Math.max(0, currentFrameIdx - 1);
+        if (videoRef.current) videoRef.current.currentTime = activeTelemetry?.frames?.[prev]?.time_s ?? 0;
+        syncMediaTime();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [totalFrames]);
+  }, [totalFrames, currentFrameIdx, activeTelemetry, syncMediaTime]);
 
   // Offline / Disconnected State View
   if (isOffline) {
@@ -590,19 +609,19 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
   // Each selected video owns the numbers in its dashboard. The C3 fallback is
   // used only until the selected clip's telemetry has loaded.
   const displayTotalVehicles = activeTelemetry?.summary?.total_unique_vehicles ?? 0;
-  const displayCrossed = activeFrameData?.cumulative_crossed ?? activeTelemetry?.summary?.total_crossed ?? 0;
+  const displayCrossed = activeFrameData?.cumulative_crossed ?? 0;
   const displayActiveVehicles = activeFrameData?.active_count ?? 0;
   const displayQueueVehicles = activeFrameData?.queue_count ?? 0;
   const classBreakdown = activeTelemetry?.summary?.class_breakdown || {};
   const laneMetrics = getStreamLaneMetrics(activeFrameData, activeTelemetry);
-  const replayTimeS = Number(activeFrameData?.time_s ?? currentFrameIdx / 10);
+  const replayTimeS = mediaTime;
   const currentObservation = latestDisplayObservation(liveObservations, replayTimeS);
   const observedFlowVpm = currentObservation?.observation_status === "valid" ? Number(currentObservation.flow_vpm) : null;
-  const coverageLabel = activeTelemetry ? `${activeTelemetry.duration_s ?? "10"}s clip · ${activeCamInfo.resolution}` : "Loading stream telemetry…";
+  const coverageLabel = activeTelemetry ? `${activeTelemetry.duration_s}s analyzed · cached detections sampled at ${(1 / activeTelemetry.sample_interval_s).toFixed(1)} FPS · ${activeCamInfo.resolution}` : "Detection cache unavailable; process this registered clip";
   const activeClassCounts = activeFrameData?.class_counts || {};
   const [dominantClass, dominantClassCount] = Object.entries(activeClassCounts)
     .sort(([, left], [, right]) => Number(right) - Number(left))[0] || ["—", 0];
-  const detectedClassCount = Object.values(activeClassCounts).filter((count) => Number(count) > 0).length;
+
   const queuePressure = displayActiveVehicles > 0 ? displayQueueVehicles / displayActiveVehicles : 0;
   const queuePressureLabel = displayActiveVehicles === 0
     ? "No vehicles in frame"
@@ -622,7 +641,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
 
   return (
     <div className="vision-container" data-testid="vision-analytics-panel">
-      <OperatorTimeStatus frame={frame} analysis={analysis} displaySourceTimeS={activeFrameData ? replayTimeS : null} />
+      <OperatorTimeStatus frame={frame} analysis={analysis} displaySourceTimeS={mediaError ? null : replayTimeS} />
       {/* Header Banner & PRD Disclaimers */}
       <section className="vision-header" aria-labelledby="vision-title">
         <div className="vision-header-top">
@@ -813,30 +832,38 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                 className={`vision-badge ${isPlaying ? "vision-badge-success" : "vision-badge-neutral"}`}
                 style={{ fontSize: "10px" }}
               >
-                {isPlaying ? "RECORDED PLAYBACK" : "PAUSED"}
+                {isPlaying ? "RECORDED LOOP · DISPLAY ONLY" : "PAUSED"}
               </span>
               <span style={{ fontSize: "11px", color: "#8ea3b3", fontVariantNumeric: "tabular-nums" }}>
-                Frame {currentFrameIdx + 1} / {totalFrames}
+                {activeFrameData ? `Sample ${currentFrameIdx + 1} / ${totalFrames}` : "Detection unavailable"}
               </span>
             </div>
           </div>
 
-          <div className="vision-canvas-wrapper" style={{ position: "relative" }}>
+          <div className="vision-canvas-wrapper" style={{ position: "relative", aspectRatio: `${mediaSize.width} / ${mediaSize.height}`, width: `min(100%, ${640 * mediaSize.width / mediaSize.height}px)` }}>
             <video
               ref={videoRef}
               aria-label="Recorded clip display only"
               src={`/api/v1/clips/${selectedCamera}/media`}
               muted
               playsInline
-              autoPlay
-              onEnded={() => setIsPlaying(false)}
+              loop
+              onLoadedMetadata={(event) => {
+                const video = event.currentTarget;
+                if (video.videoWidth && video.videoHeight) setMediaSize(canvasSize(video.videoWidth, video.videoHeight));
+                video.playbackRate = playbackSpeed;
+                if (isPlaying) safePlayVideo(video); else safePauseVideo(video);
+                syncMediaTime();
+              }}
+              onTimeUpdate={syncMediaTime}
+              onSeeked={syncMediaTime}
               onError={() => setMediaError(true)}
               style={{ display: "none" }}
             />
             <canvas
               ref={canvasRef}
-              width={640}
-              height={400}
+              width={mediaSize.width}
+              height={mediaSize.height}
               className="vision-canvas"
               aria-label="Computer vision video stream showing lane polygons, queue detection zone, and counting line."
             />
@@ -900,7 +927,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                   const prev = Math.max(0, currentFrameIdx - 1);
                   setCurrentFrameIdx(prev);
                   if (videoRef.current) {
-                    videoRef.current.currentTime = (prev / totalFrames) * 10.0;
+                    videoRef.current.currentTime = activeTelemetry?.frames?.[prev]?.time_s ?? 0;
                   }
                 }}
                 aria-label="Step back one frame"
@@ -913,10 +940,10 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                 type="button"
                 className="vision-transport-btn"
                 onClick={() => {
-                  const next = Math.min(totalFrames - 1, currentFrameIdx + 1);
+                  const next = Math.min(totalFrames - 1, Math.max(0, currentFrameIdx + 1));
                   setCurrentFrameIdx(next);
                   if (videoRef.current) {
-                    videoRef.current.currentTime = (next / totalFrames) * 10.0;
+                    videoRef.current.currentTime = activeTelemetry?.frames?.[next]?.time_s ?? 0;
                   }
                 }}
                 aria-label="Step forward one frame"
@@ -937,30 +964,6 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
               >
                 <RotateCcw size={16} />
               </button>
-
-              {/* Range Scrubber */}
-              <div className="vision-scrubber">
-                <input
-                  type="range"
-                  min={0}
-                  max={totalFrames - 1}
-                  value={currentFrameIdx}
-                  onChange={(e) => {
-                    const idx = Number(e.target.value);
-                    setCurrentFrameIdx(idx);
-                    if (videoRef.current) {
-                      videoRef.current.currentTime = (idx / totalFrames) * 10.0;
-                    }
-                  }}
-                  aria-label="Video frame scrubber"
-                />
-                <div className="vision-scrubber-labels">
-                  <span>0.0s</span>
-                  <span>
-                    {(currentFrameIdx / 10).toFixed(1)}s / 10.0s
-                  </span>
-                </div>
-              </div>
 
               {/* Speed Buttons */}
               <div style={{ display: "flex", gap: "4px" }}>
@@ -996,8 +999,8 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
               <span className="vision-stream-role">{streamRole.label}</span>
             </div>
             <div className="vision-stream-kpis">
-              <div><span>Active now</span><strong>{displayActiveVehicles}</strong><small>tracked in frame</small></div>
-              <div><span>Queue ROI</span><strong>{displayQueueVehicles}</strong><small>observed vehicles</small></div>
+              <div><span>Active vehicles</span><strong>{activeFrameData ? displayActiveVehicles : "—"}</strong><small>tracked in frame</small></div>
+              <div><span>Queue ROI</span><strong>{activeFrameData ? displayQueueVehicles : "—"}</strong><small>observed vehicles</small></div>
               <div><span>Line flow</span><strong>{observedFlowVpm == null ? "—" : observedFlowVpm.toFixed(1)}</strong><small>{observedFlowVpm == null ? "window not ready" : "vpm · observed"}</small></div>
             </div>
             <p className="vision-stream-coverage">{coverageLabel} · {activeCamInfo.fps} FPS · {activeCamInfo.videoFile}</p>
@@ -1009,12 +1012,13 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                 <Activity size={16} color="#64b5f6" aria-hidden="true" />
                 Recorded Frame Insights
               </h3>
-              <span style={{ fontSize: "11px", color: "#8da5b8" }}>{(activeFrameData?.time_s ?? currentFrameIdx / 10).toFixed(1)}s</span>
+              <span style={{ fontSize: "11px", color: "#8da5b8" }}>{mediaTime.toFixed(1)}s</span>
             </div>
             <div className="vision-stream-kpis">
-              <div><span>Queue pressure</span><strong>{(queuePressure * 100).toFixed(0)}%</strong><small>{queuePressureLabel}</small></div>
+              <div><span>Queue pressure</span><strong>{activeFrameData ? `${(queuePressure * 100).toFixed(0)}%` : "—"}</strong><small>{queuePressureLabel}</small></div>
               <div><span>Dominant type</span><strong>{displayVehicleClass(String(dominantClass))}</strong><small>{Number(dominantClassCount)} active tracked</small></div>
-              <div><span>Detected classes</span><strong>{detectedClassCount}</strong><small>in this camera frame</small></div>
+              <div><span>Detected classes</span><strong>{activeFrameData ? Object.keys(activeClassCounts).length : "—"}</strong><small>in this camera frame</small></div>
+              <div><span>Pedestrians now</span><strong>{activeFrameData ? activeClassCounts.pedestrain ?? 0 : "—"}</strong><small>in this camera frame</small></div>
             </div>
           </div>
 
@@ -1035,7 +1039,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
             <div className="vision-card-header">
               <h3>
                 <Car size={16} color="#64b5f6" aria-hidden="true" />
-                Class Breakdown (Observed {displayTotalVehicles} Vehicles)
+                Class Breakdown ({displayTotalVehicles} vehicles · {classBreakdown.pedestrain ?? 0} pedestrians)
               </h3>
               <span style={{ fontSize: "11px", color: "#8da5b8" }}>
                 Crossed: {displayCrossed}
