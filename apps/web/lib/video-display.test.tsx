@@ -29,3 +29,13 @@ it("matches geometry regardless of Go JSON property ordering", () => {
     {counting_line: {p2: [1,1], p1: [0,0]}, road_roi: [[0,1]]})).toBe(true);
   expect(sameGeometry({road_roi: [[0,1]]}, {road_roi: [[1,0]]})).toBe(false);
 });
+
+it("uses only a display rendition bound to the registered source", async () => {
+  const { displayMediaURL } = await import("./video-display");
+  const hash = "a".repeat(64);
+  const manifest = { schema_version: "display-rendition-v1", cameras: {"CAM-10": {source_clip_sha256: hash, filename: `CAM-10-${hash}-v1.mp4`}} };
+  expect(displayMediaURL("CAM-10", hash, manifest)).toBe(`/vision-display-media/CAM-10-${hash}-v1.mp4`);
+  expect(displayMediaURL("CAM-10", "b".repeat(64), manifest)).toBeNull();
+  expect(displayMediaURL("CAM-11", hash, manifest)).toBeNull();
+  expect(displayMediaURL("CAM-10", hash, {...manifest, cameras: {"CAM-10": {...manifest.cameras['CAM-10'], filename: "https://external.invalid/video.mp4"}}})).toBeNull();
+});

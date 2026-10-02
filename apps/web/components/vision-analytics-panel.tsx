@@ -17,7 +17,7 @@ import {
   Compass,
   Layers,
 } from "lucide-react";
-import { canvasSize, detectionFrameIndex, sameGeometry, DISPLAY_TELEMETRY_VERSION } from "@/lib/video-display";
+import { canvasSize, detectionFrameIndex, sameGeometry, DISPLAY_TELEMETRY_VERSION, displayMediaURL } from "@/lib/video-display";
 import {LoadingState} from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
 import { OperatorTimeStatus } from "@/components/operator-time-status";
@@ -193,6 +193,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
   const [observationStatus, setObservationStatus] = useState("missing");
   const [observationReason, setObservationReason] = useState("");
   const [telemetryMap, setTelemetryMap] = useState<Record<string, any>>({});
+  const [displayManifest, setDisplayManifest] = useState<any>(null);
   const [cameraSlots, setCameraSlots] = useState<CameraSlot[]>(ALL_CAMERA_SLOTS);
   const [cameraRegistryReady, setCameraRegistryReady] = useState(typeof process !== "undefined" && process.env?.NODE_ENV === "test");
   const [cameraRegistryError, setCameraRegistryError] = useState(false);
@@ -202,6 +203,17 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const prevCrossedCountRef = useRef<number>(0);
+
+  const displayURL = displayMediaURL(selectedCamera, cameraSlots.find(camera => camera.id === selectedCamera)?.clipSha256, displayManifest);
+  const mediaURL = displayURL || `/api/v1/clips/${selectedCamera}/media`;
+
+  useEffect(() => {
+    let mounted = true;
+    if (typeof process !== "undefined" && process.env?.NODE_ENV === "test") return;
+    fetch("/vision-display-media/manifest.json", {cache: "no-store"}).then(response => response.ok ? response.json() : null)
+      .then(manifest => { if (mounted) setDisplayManifest(manifest); }).catch(() => {});
+    return () => { mounted = false; };
+  }, [selectedCamera]);
 
   // Load 12-camera telemetry generated from ITD v1.2 YOLO + ByteTrack
   useEffect(() => {
@@ -271,7 +283,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    video.src = `/api/v1/clips/${selectedCamera}/media`;
+    video.src = mediaURL;
     setMediaError(false);
     setMediaReady(false);
     setLiveObservations([]);
@@ -287,7 +299,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     if (isPlaying) {
       safePlayVideo(video);
     }
-  }, [selectedCamera]);
+  }, [selectedCamera, mediaURL]);
 
   const totalFrames = telemetryMap[selectedCamera]?.frames?.length || 100;
   const registeredCamera = cameraSlots.find((camera) => camera.id === selectedCamera);
@@ -845,7 +857,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
               ref={videoRef}
               aria-label="Recorded clip display only"
               data-media-ready={mediaReady}
-              src={`/api/v1/clips/${selectedCamera}/media`}
+              src={mediaURL}
               muted
               playsInline
               loop
@@ -1004,7 +1016,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
               <div><span>Queue ROI</span><strong>{activeFrameData ? displayQueueVehicles : "—"}</strong><small>observed vehicles</small></div>
               <div><span>Line flow</span><strong>{observedFlowVpm == null ? "—" : observedFlowVpm.toFixed(1)}</strong><small>{observedFlowVpm == null ? "window not ready" : "vpm · observed"}</small></div>
             </div>
-            <p className="vision-stream-coverage">{coverageLabel} · {activeCamInfo.fps} FPS · {activeCamInfo.videoFile}</p>
+            <p className="vision-stream-coverage">{coverageLabel} · {activeCamInfo.fps} source FPS · {displayURL ? "15 FPS display copy; original preserved · " : ""}{activeCamInfo.videoFile}</p>
           </div>
 
           <div className="vision-card vision-live-insights" role="region" aria-label={`${selectedCamera} live frame insights`}>

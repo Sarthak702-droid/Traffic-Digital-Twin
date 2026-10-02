@@ -28,3 +28,11 @@ function canonical(value: any): any {
 export function sameGeometry(left: unknown, right: unknown) {
   return JSON.stringify(canonical(left)) === JSON.stringify(canonical(right));
 }
+
+// A display copy is never an authoritative input. Its source must match the registry.
+export function displayMediaURL(camera: string, clipSha256: string | undefined, manifest: any): string | null {
+  if (!clipSha256 || !/^[a-f0-9]{64}$/.test(clipSha256) || manifest?.schema_version !== "display-rendition-v1") return null;
+  const entry = manifest.cameras?.[camera];
+  const filename = `${camera}-${clipSha256}-v1.mp4`;
+  return entry?.source_clip_sha256 === clipSha256 && entry.filename === filename ? `/vision-display-media/${filename}` : null;
+}

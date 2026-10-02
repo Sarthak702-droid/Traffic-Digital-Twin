@@ -23,3 +23,4 @@ test_*.jpg
 
 # Private local display associations; regenerate from authorized source clips.
 apps/web/public/vision-display-data.json*
+apps/web/public/vision-display-media/
