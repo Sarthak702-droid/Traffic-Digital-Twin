@@ -161,7 +161,7 @@ def test_forecast_continues_offset_release_from_complete_scheduler_snapshot(tmp_
         changes = [pb.TimingChange(node_id=model.phases[pid]['node_id'], phase_id=pid,
                                    green_s=green, offset_s=10)
                    for pid, green in model.plan(state).items()]
-        engine.apply_plan(pb.PlanCommand(run_id=state.run_id, command_id='offset-command', changes=changes))
+        engine.apply_plan(pb.PlanCommand(expected_input_session_id=engine.latest.input_session_id, expected_snapshot_sequence=engine.latest.snapshot_sequence, run_id=state.run_id, command_id='offset-command', changes=changes))
         for _ in range(80):
             state = engine.step()
             if engine.scheduler.release_at:
@@ -182,7 +182,7 @@ def test_pending_offset_only_activation_is_not_a_stable_comparison(tmp_path):
         changes = [pb.TimingChange(node_id=model.phases[pid]['node_id'], phase_id=pid,
                                    green_s=green, offset_s=10)
                    for pid, green in model.plan(state).items()]
-        engine.apply_plan(pb.PlanCommand(run_id=state.run_id, command_id='offset-command', changes=changes))
+        engine.apply_plan(pb.PlanCommand(expected_input_session_id=engine.latest.input_session_id, expected_snapshot_sequence=engine.latest.snapshot_sequence, run_id=state.run_id, command_id='offset-command', changes=changes))
         with pytest.raises(ValueError, match='pending virtual plan'):
             model.comparison(engine.copy_state(), changes)
     finally:

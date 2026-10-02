@@ -85,7 +85,14 @@ message RunCommand { string schema_version = 1; string scenario_type = 2; uint32
 message ClockCommand { string run_id = 1; string input_session_id = 2; bool paused = 3; }
 message RunRequest { string run_id = 1; }
 message ValidationResult { bool valid = 1; repeated string errors = 2; }
-message PlanCommand { string run_id = 1; repeated TimingChange changes = 2; string command_id = 3; double activate_not_before_simulation_s = 4; }
+message PlanCommand {
+  string run_id = 1;
+  repeated TimingChange changes = 2;
+  string command_id = 3;
+  double activate_not_before_simulation_s = 4;
+  optional string expected_input_session_id = 5;
+  optional uint64 expected_snapshot_sequence = 6;
+}
 message PlanOutcome { string command_id = 1; string status = 2; string message = 3; optional double applied_at_simulation_s = 4; string input_session_id = 5; uint64 snapshot_sequence = 6; }
 message Analysis { string run_id = 1; double simulation_time_s = 2; repeated Forecast forecasts = 3; Recommendation recommendation = 4; ComparisonResult comparison = 5; repeated Recommendation alternatives = 6; string input_session_id = 7; uint64 snapshot_sequence = 8; string config_hash = 9; string model_version = 10; string metrics_version = 11; double forecast_origin_source_s = 12; string input_quality = 13; string outcome = 14; string outcome_reason = 15; repeated HorizonAvailability horizon_availability = 16; }
 message CompareCommand { TrafficState state = 1; repeated TimingChange changes = 2; string recommendation_id = 3; uint32 horizon_s = 4; string demand_assumptions_hash = 5; }

@@ -137,3 +137,14 @@ def test_openapi_report_uses_resolvable_strict_schema_components():
     assert report == {'$ref': '#/components/schemas/PrototypeRunReportV2'}
     observation = api['components']['schemas']['ReportV2_observation']
     assert observation['additionalProperties'] is False
+
+
+def test_plan_dispatch_identity_preserves_explicit_seeded_epoch_and_zero_sequence():
+    command = json_format.ParseDict({'run_id': 'r', 'command_id': 'c',
+        'expected_input_session_id': '', 'expected_snapshot_sequence': '0',
+        'activate_not_before_simulation_s': 45}, pb.PlanCommand())
+    restored = pb.PlanCommand.FromString(command.SerializeToString())
+    assert restored.HasField('expected_input_session_id')
+    assert restored.HasField('expected_snapshot_sequence')
+    assert restored.expected_snapshot_sequence == 0
+    assert not pb.PlanCommand().HasField('expected_snapshot_sequence')

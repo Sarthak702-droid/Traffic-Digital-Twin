@@ -474,9 +474,9 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 		w.Write(jsonProto(result))
 		return
 	}
-	if action == "modify" {
+	if action == "approve" || action == "modify" {
 		if _, e := s.intelligence.Compare(ctx, &pb.CompareCommand{State: state, Changes: changes, RecommendationId: rec.Id}); e != nil {
-			problem(w, 503, "Modified plan comparison failed; nothing applied")
+			problem(w, 503, "Fresh plan comparison unavailable; nothing applied")
 			return
 		}
 	}
@@ -518,7 +518,7 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 			problem(w, 503, "Decision could not be persisted; nothing applied")
 			return
 		}
-		result, e := s.sim.client.ApplyPlan(ctx, &pb.PlanCommand{RunId: state.RunId, Changes: changes, CommandId: commandID(r.Context(), rec.Id)})
+		result, e := s.sim.client.ApplyPlan(ctx, decisionPlanCommand(rec, changes, commandID(r.Context(), rec.Id)))
 		if e != nil || !result.Valid {
 			auditCtx, auditCancel := context.WithTimeout(context.Background(), time.Second)
 			auditCtx = store.WithCommand(store.WithActor(auditCtx, store.Actor(r.Context())), store.CommandID(r.Context()))
@@ -562,7 +562,20 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 func (s *Server) auditDecision(ctx context.Context, rec *pb.Recommendation, state *pb.TrafficState, action, reason, result string, changes []*pb.TimingChange) error {
 	before, _ := json.Marshal(state.ActivePlan)
 	after, _ := json.Marshal(changes)
-	return s.Store.Write(ctx, "decision", store.DecisionWrite{CommandID: store.CommandID(ctx), Recommendation: jsonProto(rec), Before: before, After: after, Action: action, Reason: reason, Result: result}, nil)
+	write := store.DecisionWrite{CommandID: store.CommandID(ctx), Recommendation: jsonProto(rec), Before: before, After: after, Action: action, Reason: reason, Result: result}
+	if action == "approve" || action == "modify" {
+		write.PlanCommand = jsonProto(decisionPlanCommand(rec, changes, commandID(ctx, rec.Id)))
+	}
+	return s.Store.Write(ctx, "decision", write, nil)
+}
+
+// The simulator compares this reviewed identity under its engine lock. The
+// exact payload is also stored with the intent for hash-bound receipt recovery.
+func decisionPlanCommand(rec *pb.Recommendation, changes []*pb.TimingChange, id string) *pb.PlanCommand {
+	epoch, sequence := rec.InputSessionId, rec.SnapshotSequence
+	return &pb.PlanCommand{RunId: rec.RunId, Changes: changes, CommandId: id,
+		ActivateNotBeforeSimulationS: rec.ActivateNotBeforeSimulationS,
+		ExpectedInputSessionId:       &epoch, ExpectedSnapshotSequence: &sequence}
 }
 
 func (s *Server) getLocks() map[string]bool {

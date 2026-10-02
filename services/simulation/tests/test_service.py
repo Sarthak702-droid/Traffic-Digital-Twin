@@ -31,7 +31,7 @@ def test_applied_outcome_reports_actual_virtual_boundary(tmp_path):
     service=Simulation(engine)
     try:
         service.Reset(pb.RunCommand(schema_version='1.0',scenario_type='peak_surge',seed=1101,mode='recommend',run_id='outcome-run'),Context())
-        request=pb.PlanCommand(run_id='outcome-run',command_id='outcome-1',changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']])
+        request=pb.PlanCommand(expected_input_session_id=engine.latest.input_session_id, expected_snapshot_sequence=engine.latest.snapshot_sequence, run_id='outcome-run',command_id='outcome-1',changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']])
         assert service.ApplyPlan(request,Context()).valid
         assert service.GetPlanOutcome(request,Context()).status=='accepted'
         for _ in range(50):

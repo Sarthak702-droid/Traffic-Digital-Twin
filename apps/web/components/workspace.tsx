@@ -326,7 +326,7 @@ export function Workspace() {
           schema_version: "1.0",
           seed: Number(seed),
           mode: systemMode,
-          ...buildScenarioInput(demandSource,sourceSessions),
+          ...buildScenarioInput(demandSource,sourceSessions,boundaryMapping),
           ...(scenarioID === "incident_c3" ? { incident: { kind: "capacity_reduction", capacity_ratio: incidentCapacity } } : {}),
         }),
       }),
@@ -353,7 +353,7 @@ export function Workspace() {
         schema_version: "1.0",
         seed: 2202,
         mode: systemMode,
-        ...buildScenarioInput(demandSource,sourceSessions),
+        ...buildScenarioInput(demandSource,sourceSessions,boundaryMapping),
         incident: { kind: "capacity_reduction", capacity_ratio: incidentCapacity },
       }),
     }),
@@ -370,7 +370,7 @@ export function Workspace() {
   const startEmergency = useMutation({
     mutationFn: () => request<Run>("/scenarios/ambulance_corridor/start", {
       method: "POST",
-      body: JSON.stringify({ schema_version: "1.0", seed: 3303, mode: systemMode, ...buildScenarioInput(demandSource,sourceSessions) }),
+      body: JSON.stringify({ schema_version: "1.0", seed: 3303, mode: systemMode, ...buildScenarioInput(demandSource,sourceSessions,boundaryMapping) }),
     }),
     onSuccess: () => {
       setScenarioID("ambulance_corridor");

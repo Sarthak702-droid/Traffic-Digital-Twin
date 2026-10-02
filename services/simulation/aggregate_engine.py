@@ -155,6 +155,12 @@ class AggregateEngine:
             receipt=self.receipts.status(c)
             if receipt=='accepted':return
             if receipt!='not_found':raise ValueError('Command receipt: '+receipt+'; inspect outcome, do not replay')
+            if not c.HasField('expected_input_session_id') or not c.HasField('expected_snapshot_sequence'):
+                raise ValueError('Plan dispatch identity is required')
+            if c.expected_input_session_id != self.latest.input_session_id:
+                raise ValueError('Authoritative input session changed before plan dispatch')
+            if c.expected_snapshot_sequence != self.latest.snapshot_sequence:
+                raise ValueError('Snapshot changed before plan dispatch')
             plan={v.phase_id:v.green_s for v in c.changes}
             if len(plan)!=len(c.changes):raise ValueError('Duplicate phase changes')
             validate_plan(self.config,plan)

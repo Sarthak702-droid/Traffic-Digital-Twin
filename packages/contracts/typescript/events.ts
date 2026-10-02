@@ -407,6 +407,8 @@ export interface PlanCommand {
   changes: TimingChange[];
   command_id: string;
   activate_not_before_simulation_s?: number;
+  expected_input_session_id?: string;
+  expected_snapshot_sequence?: string;
 }
 
 export interface PlanOutcome {

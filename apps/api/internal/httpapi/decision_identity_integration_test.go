@@ -14,7 +14,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"traffic.local/twin/apps/api/internal/store"
 	"traffic.local/twin/db"
@@ -26,19 +28,35 @@ type changedSourceSimulation struct {
 	latest     *pb.TrafficState
 	outcome    *pb.PlanOutcome
 	applyCalls int
+	lastPlan   *pb.PlanCommand
+	lastLookup *pb.PlanCommand
 }
 
 func (f *changedSourceSimulation) GetState(context.Context, *pb.RunRequest) (*pb.TrafficState, error) {
 	return proto.Clone(f.latest).(*pb.TrafficState), nil
 }
 
-func (f *changedSourceSimulation) ApplyPlan(context.Context, *pb.PlanCommand) (*pb.ValidationResult, error) {
+func (f *changedSourceSimulation) ApplyPlan(_ context.Context, command *pb.PlanCommand) (*pb.ValidationResult, error) {
 	f.applyCalls++
+	f.lastPlan = proto.Clone(command).(*pb.PlanCommand)
 	return &pb.ValidationResult{Valid: true}, nil
 }
 
-func (f *changedSourceSimulation) GetPlanOutcome(context.Context, *pb.PlanCommand) (*pb.PlanOutcome, error) {
+func (f *changedSourceSimulation) GetPlanOutcome(_ context.Context, command *pb.PlanCommand) (*pb.PlanOutcome, error) {
+	f.lastLookup = proto.Clone(command).(*pb.PlanCommand)
 	return proto.Clone(f.outcome).(*pb.PlanOutcome), nil
+}
+
+type dispatchIntelligence struct {
+	pb.UnimplementedIntelligenceServer
+	unavailable bool
+}
+
+func (f *dispatchIntelligence) Compare(_ context.Context, request *pb.CompareCommand) (*pb.ComparisonResult, error) {
+	if f.unavailable {
+		return nil, status.Error(codes.Unavailable, "compute lost")
+	}
+	return &pb.ComparisonResult{RunId: request.State.RunId}, nil
 }
 
 func TestApprovalRechecksLatestSimulatorEpochBeforeActuation(t *testing.T) {
@@ -97,6 +115,8 @@ func TestApprovalRechecksLatestSimulatorEpochBeforeActuation(t *testing.T) {
 	}
 	rpc := grpc.NewServer()
 	pb.RegisterSimulationServer(rpc, fake)
+	compute := &dispatchIntelligence{}
+	pb.RegisterIntelligenceServer(rpc, compute)
 	go rpc.Serve(listener)
 	defer rpc.Stop()
 	conn, err := grpc.NewClient(listener.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -104,6 +124,7 @@ func TestApprovalRechecksLatestSimulatorEpochBeforeActuation(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer conn.Close()
+	s.intelligence = pb.NewIntelligenceClient(conn)
 	s.sim = &simulationLink{client: pb.NewSimulationClient(conn), received: time.Now(), command: &pb.RunCommand{RunId: "run-1", Mode: "recommend"}}
 	route := chi.NewRouteContext()
 	route.URLParams.Add("id", "rec-1")
@@ -125,6 +146,45 @@ func TestApprovalRechecksLatestSimulatorEpochBeforeActuation(t *testing.T) {
 	run, err := s.Store.CreateRun(auditCtx, s.Network.ID, "peak_surge", "recommend", 1101)
 	if err != nil {
 		t.Fatal(err)
+	}
+	// Matching approval forwards activation and retains exact receipt identity.
+	state.RunId = run.ID.String()
+	latest = proto.Clone(state).(*pb.TrafficState)
+	fake.latest = latest
+	rec.RunId = state.RunId
+	rec.Id = store.UUID().String()
+	rec.ActivateNotBeforeSimulationS = 45
+	s.state = state
+	s.analysis.RunId = state.RunId
+	s.analysis.Recommendation = rec
+	s.sim.command.RunId = state.RunId
+	forwardID := "d01-forward-command"
+	if _, err = pool.Exec(ctx, "INSERT INTO command_outcomes(id,actor,payload_hash,status,route) VALUES($1,$2,$3,'pending',$4)", forwardID, actor, "hash", "/api/v1/recommendations/id/approve"); err != nil {
+		t.Fatal(err)
+	}
+	route = chi.NewRouteContext()
+	route.URLParams.Add("id", rec.Id)
+	route.URLParams.Add("action", "approve")
+	request = httptest.NewRequest(http.MethodPost, "/api/v1/recommendations/"+rec.Id+"/approve", strings.NewReader("{}"))
+	request = request.WithContext(context.WithValue(store.WithCommand(store.WithActor(request.Context(), actor), forwardID), chi.RouteCtxKey, route))
+	response = httptest.NewRecorder()
+	compute.unavailable = true
+	s.decision(response, request)
+	if response.Code != 503 || fake.applyCalls != 0 {
+		t.Fatalf("cached analysis allowed approval during compute loss: status=%d calls=%d", response.Code, fake.applyCalls)
+	}
+	compute.unavailable = false
+	request = httptest.NewRequest(http.MethodPost, "/api/v1/recommendations/"+rec.Id+"/approve", strings.NewReader("{}"))
+	request = request.WithContext(context.WithValue(store.WithCommand(store.WithActor(request.Context(), actor), forwardID), chi.RouteCtxKey, route))
+	response = httptest.NewRecorder()
+	s.decision(response, request)
+	if response.Code != 200 || fake.lastPlan == nil || fake.lastPlan.ActivateNotBeforeSimulationS != 45 || fake.lastPlan.ExpectedSnapshotSequence == nil || fake.lastPlan.GetExpectedSnapshotSequence() != state.SnapshotSequence || fake.lastPlan.ExpectedInputSessionId == nil || fake.lastPlan.GetExpectedInputSessionId() != state.InputSessionId {
+		t.Fatalf("reviewed activation omitted: status=%d plan=%v body=%s", response.Code, fake.lastPlan, response.Body.String())
+	}
+	fake.outcome = &pb.PlanOutcome{CommandId: forwardID, Status: "accepted"}
+	s.reconcileDecisions(ctx)
+	if !proto.Equal(fake.lastPlan, fake.lastLookup) {
+		t.Fatalf("receipt lookup changed the dispatch payload: sent=%v lookup=%v", fake.lastPlan, fake.lastLookup)
 	}
 	commandID := "d01-applied-command"
 	if _, err = pool.Exec(ctx, "INSERT INTO command_outcomes(id,actor,payload_hash,status,route) VALUES($1,$2,$3,'pending',$4)", commandID, actor, "hash", "/api/v1/recommendations/id/approve"); err != nil {

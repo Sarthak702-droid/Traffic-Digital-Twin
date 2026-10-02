@@ -2696,6 +2696,13 @@
           },
           "activate_not_before_simulation_s": {
             "type": "number"
+          },
+          "expected_input_session_id": {
+            "type": "string"
+          },
+          "expected_snapshot_sequence": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
           }
         },
         "additionalProperties": false,

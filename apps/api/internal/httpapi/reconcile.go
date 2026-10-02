@@ -77,8 +77,16 @@ func (s *Server) reconcileDecisions(ctx context.Context) {
 		if json.Unmarshal(v.After, &changes) != nil {
 			continue
 		}
+		// Older intents retain their original legacy payload. New intents carry
+		// the exact activation/compare-and-set fields used at dispatch.
+		command := &pb.PlanCommand{RunId: rec.RunId, CommandId: v.CommandID, Changes: changes}
+		if len(v.PlanCommand) > 0 {
+			if protojson.Unmarshal(v.PlanCommand, command) != nil || command.RunId != rec.RunId || command.CommandId != v.CommandID {
+				continue
+			}
+		}
 		s.sim.commands.Lock()
-		outcome, e := s.sim.client.GetPlanOutcome(call, &pb.PlanCommand{RunId: rec.RunId, CommandId: v.CommandID, Changes: changes})
+		outcome, e := s.sim.client.GetPlanOutcome(call, command)
 		if e == nil {
 			switch outcome.Status {
 			case "accepted":

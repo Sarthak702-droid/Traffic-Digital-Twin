@@ -112,7 +112,7 @@ def test_incident_override_is_deterministic_and_reflected_in_live_state(engine):
 def test_plan_application_idempotency_and_validation(engine):
     engine.reset(command())
     changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']]
-    request=pb.PlanCommand(run_id='test-run',command_id='decision-1',changes=changes)
+    request=pb.PlanCommand(expected_input_session_id=engine.latest.input_session_id, expected_snapshot_sequence=engine.latest.snapshot_sequence, run_id='test-run',command_id='decision-1',changes=changes)
     engine.apply_plan(request);engine.apply_plan(request)
     for _ in range(36):state=engine.step()
     assert all(c.green_s==15 for c in state.active_plan)
@@ -126,7 +126,7 @@ def test_plan_command_activation_and_offset_change_later_virtual_state(engine):
     changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']]
     for change in changes:
         if change.node_id == 'C3': change.offset_s = 2
-    request=pb.PlanCommand(run_id='test-run',command_id='delayed-plan',changes=changes,activate_not_before_simulation_s=45)
+    request=pb.PlanCommand(expected_input_session_id=engine.latest.input_session_id, expected_snapshot_sequence=engine.latest.snapshot_sequence, run_id='test-run',command_id='delayed-plan',changes=changes,activate_not_before_simulation_s=45)
     engine.apply_plan(request)
     for _ in range(44):
         state=engine.step()
@@ -146,12 +146,12 @@ def test_plan_command_rejects_conflicting_offsets_and_emergency(engine):
     changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']]
     changes[0].offset_s=1
     changes[1].offset_s=2
-    request=pb.PlanCommand(run_id='test-run',command_id='bad-offset',changes=changes)
+    request=pb.PlanCommand(expected_input_session_id=engine.latest.input_session_id, expected_snapshot_sequence=engine.latest.snapshot_sequence, run_id='test-run',command_id='bad-offset',changes=changes)
     with pytest.raises(ValueError): engine.apply_plan(request)
     assert engine.scheduler.pending==engine.scheduler.plan
     engine.reset(command('ambulance_corridor',3303))
     for _ in range(120): engine.step()
-    request=pb.PlanCommand(run_id='test-run',command_id='emergency-plan',changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']])
+    request=pb.PlanCommand(expected_input_session_id=engine.latest.input_session_id, expected_snapshot_sequence=engine.latest.snapshot_sequence, run_id='test-run',command_id='emergency-plan',changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']])
     with pytest.raises(ValueError): engine.apply_plan(request)
 
 
@@ -160,7 +160,7 @@ def test_three_junction_plan_applies_atomically_and_survives_lookup(tmp_path):
     try:
         engine.reset(command())
         changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']]
-        request=pb.PlanCommand(run_id='test-run',command_id='three-node-plan',changes=changes)
+        request=pb.PlanCommand(expected_input_session_id=engine.latest.input_session_id, expected_snapshot_sequence=engine.latest.snapshot_sequence, run_id='test-run',command_id='three-node-plan',changes=changes)
         engine.apply_plan(request)
         for _ in range(140):
             state=engine.step()
@@ -178,7 +178,7 @@ def test_three_junction_plan_applies_atomically_and_survives_lookup(tmp_path):
 def test_boundary_guard_rejects_plan_without_changing_timing(engine):
     engine.reset(command())
     changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']]
-    request=pb.PlanCommand(run_id='test-run',command_id='blocked-plan',changes=changes)
+    request=pb.PlanCommand(expected_input_session_id=engine.latest.input_session_id, expected_snapshot_sequence=engine.latest.snapshot_sequence, run_id='test-run',command_id='blocked-plan',changes=changes)
     engine.apply_plan(request)
     engine.scheduler.priority['C1']=engine.config['phases'][0]['id']
     for _ in range(100):
@@ -195,7 +195,7 @@ def test_offset_that_would_exceed_service_debt_is_rejected_at_boundary(engine):
     changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']]
     for change in changes:
         if change.node_id=='C1':change.offset_s=180
-    request=pb.PlanCommand(run_id='test-run',command_id='excess-debt',changes=changes)
+    request=pb.PlanCommand(expected_input_session_id=engine.latest.input_session_id, expected_snapshot_sequence=engine.latest.snapshot_sequence, run_id='test-run',command_id='excess-debt',changes=changes)
     engine.apply_plan(request)
     for _ in range(100):
         engine.step()
@@ -207,7 +207,7 @@ def test_offset_that_would_exceed_service_debt_is_rejected_at_boundary(engine):
 
 def test_stop_rejects_an_accepted_but_unapplied_command(engine):
     engine.reset(command())
-    request=pb.PlanCommand(run_id='test-run',command_id='stopped-plan',activate_not_before_simulation_s=100,changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']])
+    request=pb.PlanCommand(expected_input_session_id=engine.latest.input_session_id, expected_snapshot_sequence=engine.latest.snapshot_sequence, run_id='test-run',command_id='stopped-plan',activate_not_before_simulation_s=100,changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']])
     engine.apply_plan(request)
     assert engine.receipts.status(request)=='accepted'
     engine.stop()
@@ -217,8 +217,8 @@ def test_stop_rejects_an_accepted_but_unapplied_command(engine):
 def test_second_command_cannot_displace_pending_receipt(engine):
     engine.reset(command())
     changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']]
-    first=pb.PlanCommand(run_id='test-run',command_id='first-plan',changes=changes,activate_not_before_simulation_s=100)
-    second=pb.PlanCommand(run_id='test-run',command_id='second-plan',changes=changes)
+    first=pb.PlanCommand(expected_input_session_id=engine.latest.input_session_id, expected_snapshot_sequence=engine.latest.snapshot_sequence, run_id='test-run',command_id='first-plan',changes=changes,activate_not_before_simulation_s=100)
+    second=pb.PlanCommand(expected_input_session_id=engine.latest.input_session_id, expected_snapshot_sequence=engine.latest.snapshot_sequence, run_id='test-run',command_id='second-plan',changes=changes)
     engine.apply_plan(first)
     with pytest.raises(ValueError):engine.apply_plan(second)
     assert engine.receipts.status(first)=='accepted'
@@ -235,7 +235,7 @@ def test_full_downstream_storage_blocks_boundary_activation(engine):
 
 def test_reset_rejects_unapplied_plan(engine):
     engine.reset(command())
-    request=pb.PlanCommand(run_id='test-run',command_id='reset-plan',activate_not_before_simulation_s=100,changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']])
+    request=pb.PlanCommand(expected_input_session_id=engine.latest.input_session_id, expected_snapshot_sequence=engine.latest.snapshot_sequence, run_id='test-run',command_id='reset-plan',activate_not_before_simulation_s=100,changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']])
     engine.apply_plan(request)
     engine.reset(command())
     assert engine.receipts.status(request)=='rejected'
@@ -243,7 +243,7 @@ def test_reset_rejects_unapplied_plan(engine):
 
 def test_failed_reset_preserves_pending_plan_and_receipt(engine, tmp_path, monkeypatch):
     engine.reset(command())
-    request=pb.PlanCommand(run_id='test-run',command_id='retained-plan',activate_not_before_simulation_s=100,changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']])
+    request=pb.PlanCommand(expected_input_session_id=engine.latest.input_session_id, expected_snapshot_sequence=engine.latest.snapshot_sequence, run_id='test-run',command_id='retained-plan',activate_not_before_simulation_s=100,changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']])
     engine.apply_plan(request)
     monkeypatch.setenv('VIDEO_PROCESSED_DIR',str(tmp_path/'missing'))
     bad=command()
@@ -257,7 +257,7 @@ def test_failed_reset_preserves_pending_plan_and_receipt(engine, tmp_path, monke
 
 def test_receipt_write_failure_does_not_schedule_plan(engine, monkeypatch):
     engine.reset(command())
-    request=pb.PlanCommand(run_id='test-run',command_id='unrecorded-plan',changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']])
+    request=pb.PlanCommand(expected_input_session_id=engine.latest.input_session_id, expected_snapshot_sequence=engine.latest.snapshot_sequence, run_id='test-run',command_id='unrecorded-plan',changes=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=15) for p in engine.config['phases']])
     def fail(_):raise RuntimeError('receipt store unavailable')
     monkeypatch.setattr(engine.receipts,'prepare',fail)
     with pytest.raises(RuntimeError):engine.apply_plan(request)

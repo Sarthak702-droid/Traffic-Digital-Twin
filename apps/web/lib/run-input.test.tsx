@@ -11,12 +11,17 @@ describe('operator run input',()=>{
   expect(videoInputReady(mapping,[clips[0],{...clips[1],status:'degraded'}],{'CAM-01':'one','CAM-02':'two'})).toBe(false);
  });
  it('sends selected sessions for all scenarios and excludes them from seeded runs',()=>{
-  expect(buildScenarioInput('video_profile',{'CAM-01':'one'})).toEqual({demand_source:'video_profile',source_sessions:{'CAM-01':'one'}});
-  expect(buildScenarioInput('seeded',{'CAM-01':'one'})).toEqual({demand_source:'seeded'});
+  expect(buildScenarioInput('video_profile',{'CAM-01':'one'},{'CAM-01':'boundary'})).toEqual({demand_source:'video_profile',source_sessions:{'CAM-01':'one'}});
+  expect(buildScenarioInput('seeded',{'CAM-01':'one'},mapping)).toEqual({demand_source:'seeded'});
  });
 });
 
 it('rejects an internally compatible batch that belongs to an older active configuration',()=>{
  const clips=[{camera_id:'CAM-01',source_session_id:'old',config_hash:'v4',status:'cached_valid'}];
  expect(videoInputReady({'CAM-01':'boundary'},clips,{'CAM-01':'old'},'v5')).toBe(false);
+});
+
+it('binds only declared boundary cameras after viewing an independent clip',()=>{
+ expect(buildScenarioInput('video_profile',{'CAM-01':'one','CAM-02':'two','CAM-12':'independent'},mapping))
+  .toEqual({demand_source:'video_profile',source_sessions:{'CAM-01':'one','CAM-02':'two'}});
 });

@@ -12,6 +12,6 @@ export function videoInputReady(mapping: Record<string,string>, clips: Processed
   const selected=cameras.map(camera=>clips.find(clip=>clip.camera_id===camera && clip.source_session_id===sessions[camera] && clip.status==='cached_valid' && (!expectedConfigHash || clip.config_hash===expectedConfigHash)));
   return selected.every(clip=>!!clip && !!clip.config_hash) && new Set(selected.map(clip=>clip?.config_hash)).size===1;
 }
-export function buildScenarioInput(source:'seeded'|'video_profile', sessions:Record<string,string>) {
-  return {demand_source:source,...(source==='video_profile'?{source_sessions:sessions}:{})};
+export function buildScenarioInput(source:'seeded'|'video_profile', sessions:Record<string,string>, mapping:Record<string,string>) {
+  return {demand_source:source,...(source==='video_profile'?{source_sessions:Object.fromEntries(Object.keys(mapping).map(camera=>[camera,sessions[camera]??'']))}:{})};
 }

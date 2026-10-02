@@ -162,6 +162,7 @@ type DecisionWrite struct {
 	Reason         string          `json:"reason"`
 	Result         string          `json:"result"`
 	PlanOutcome    json.RawMessage `json:"plan_outcome,omitempty"`
+	PlanCommand    json.RawMessage `json:"plan_command,omitempty"`
 }
 
 func (s *Store) SaveDecision(ctx context.Context, v DecisionWrite) error {
