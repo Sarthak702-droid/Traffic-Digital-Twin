@@ -8,6 +8,27 @@ from scripts import start_all
 
 
 class LauncherRecoveryTests(unittest.TestCase):
+    def test_missing_account_stops_startup_with_setup_instruction(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "users.json"
+            with self.assertRaisesRegex(RuntimeError, "create-gateway-user.py"):
+                start_all.check_local_accounts({"GATEWAY_USERS_FILE": str(path)})
+
+    def test_empty_or_public_account_file_cannot_start(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "users.json"
+            path.write_text("{}")
+            path.chmod(0o600)
+            with self.assertRaises(RuntimeError):
+                start_all.check_local_accounts({"GATEWAY_USERS_FILE": str(path)})
+            path.write_text(json.dumps({"operator": {"role": "operator", "version": 1,
+                "salt": "a" * 48, "hash": "b" * 64}}))
+            path.chmod(0o644)
+            with self.assertRaisesRegex(RuntimeError, "chmod 600"):
+                start_all.check_local_accounts({"GATEWAY_USERS_FILE": str(path)})
+            path.chmod(0o600)
+            start_all.check_local_accounts({"GATEWAY_USERS_FILE": str(path)})
+
     def test_reads_process_start_time_even_when_command_has_spaces(self):
         with tempfile.TemporaryDirectory() as directory:
             proc_root = Path(directory)

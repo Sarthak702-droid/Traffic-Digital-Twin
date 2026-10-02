@@ -27,7 +27,9 @@ npm start
 
 The account command prompts for a password and stores its verifier in the ignored `.runtime` directory. The Go API requires this file; signing in and changing virtual controls use a server session.
 
-Bootstrap preserves an existing environment and keeps generated compute credentials in ignored `.runtime` files. Open **http://127.0.0.1:3100**. Public Go API: **8081** (or the next available loopback port); private Python simulation and intelligence gRPC services: **50051** and **50052**; PostgreSQL: **5433**. Go performs migrations and durable writes through its persistence modules. These are development startup instructions; full-stack acceptance and production deployment remain pending.
+Bootstrap preserves an existing environment and keeps generated compute credentials in ignored `.runtime` files. Open **http://127.0.0.1:3100**. Public Go API: **8081**; private Python simulation and intelligence gRPC services: **50051** and **50052**; PostgreSQL: **5433**. Go performs migrations and durable writes through its persistence modules. These are development startup instructions; full-stack acceptance and production deployment remain pending.
+
+The initial screen is signed out: enter the username and password you provisioned to load the network. There is no default password. If you forgot it, repeat the account command above to choose a new password; previous sessions for that account are revoked. After login, explicitly select **Seeded reference scenario** for synthetic traffic and start a virtual scenario, or configure all required processed clips for video demand. Run times and forecasts remain unavailable before a run starts. The launcher checks account setup before starting services.
 
 `API_ORIGIN` controls the Vite proxy. Keep private services on loopback. Local HTTP does not establish a production transport-security pass.
 
@@ -72,7 +74,7 @@ Browser acceptance: install Chromium once with `npx playwright install chromium`
 ```text
 ├── apps/                    # Frontend and backend application code
 │   ├── api/                 # Go API gateway, orchestrator, and PostgreSQL store
-│   └── web/                 # Next.js/React operator dashboard, network canvas, and UI panels
+│   └── web/                 # React/Vite operator dashboard, network canvas, and UI panels
 ├── dashboard/               # Delivery tracking dashboard server and client (npm run dashboard)
 ├── db/                      # PostgreSQL migrations and sqlc query definitions
 ├── docs/                    # Architecture guides, PRDs, and delivery plans

@@ -4760,3 +4760,8 @@ input, select, textarea { accent-color:#60a5fa; }
 @media(max-width:1100px) { .emergency-workspace-grid { grid-template-columns:minmax(0,1fr); } }
 @media(max-width:600px) { .emergency-map-heading { padding:16px; flex-wrap:wrap; gap:10px; } .emergency-map-stage { margin-left:0; } .emergency-map-heading h2 { font-size:18px; } .emergency-route-stops { padding:14px; } .emergency-map-canvas { margin:0 10px; } .emergency-map-canvas .network-svg { min-height:300px; } }
 @media(prefers-reduced-motion:reduce) { .emergency-route-stops button { transition:none; } }
+
+.session-panel details { flex-basis: 100%; min-width: 0; }
+.session-panel summary { cursor: pointer; color: #b9c9de; }
+.session-panel details p { margin-top: 10px; }
+.session-panel details code { display: block; margin-top: 10px; overflow-wrap: anywhere; }

@@ -13,6 +13,7 @@ import fcntl
 import json
 import os
 import secrets
+import shlex
 import shutil
 import signal
 import socket
@@ -154,6 +155,31 @@ def ensure_local_env() -> dict:
     merged["UI_ORIGIN"] = "http://127.0.0.1:3100"
     return merged
 
+
+
+def check_local_accounts(env: dict) -> None:
+    """Fail before launching a workspace that nobody can sign into."""
+    path = Path(env["GATEWAY_USERS_FILE"])
+    setup = f"python3 scripts/create-gateway-user.py {shlex.quote(str(path))} operator --role operator"
+    try:
+        info = path.stat()
+        if not path.is_file() or info.st_mode & 0o077:
+            raise RuntimeError(f"Account file must be private. Run chmod 600 {shlex.quote(str(path))}.")
+        accounts = json.loads(path.read_text())
+        usable = isinstance(accounts, dict) and any(
+            isinstance(record, dict)
+            and record.get("role") in ("operator", "supervisor", "viewer")
+            and isinstance(record.get("version"), int) and record["version"] >= 1
+            and isinstance(record.get("salt"), str) and len(record["salt"]) == 48
+            and isinstance(record.get("hash"), str) and len(record["hash"]) == 64
+            and all(c in "0123456789abcdefABCDEF" for c in record["hash"])
+            for record in accounts.values()
+        )
+    except (OSError, ValueError):
+        usable = False
+    if not usable:
+        raise RuntimeError(f"No usable local login account. Provision one first:\n  {setup}")
+    log("Login account ready. Sign in with your provisioned username and password; no run starts automatically.")
 
 
 def find_executable(name: str, fallback_paths: list[str]) -> str:
@@ -495,6 +521,7 @@ def main():
     cleanup_stale_services()
     ensure_postgres()
     env = ensure_local_env()
+    check_local_accounts(env)
 
     # Root-level resolution for Go services (precompiled binary or Go compiler)
     bin_dir = ROOT / "bin"
@@ -642,6 +669,10 @@ def main():
   \033[1mFrontend:\033[0m       \033[34mhttp://127.0.0.1:3100\033[0m
   \033[1mGo API:\033[0m         http://127.0.0.1:{api_p}
   \033[1mDatabase:\033[0m       PostgreSQL on 127.0.0.1:5433 ({db_name})
+
+  Sign in with your provisioned account to load the network.
+  Then choose a demand source and start a virtual scenario.
+  Run metrics remain unavailable until a run starts.
 
   \033[1mServices:\033[0m
   [✓] PostgreSQL 16 (Docker)

@@ -18,3 +18,13 @@ it('shows a skeleton while the session request is pending and replaces it with t
  expect(screen.getByRole('button',{name:'Sign out'})).toBeEnabled();
  client.clear();
 });
+
+it('explains how to provision local access and load virtual data while signed out',async()=>{
+ vi.mocked(request).mockResolvedValue(null);
+ const client=new QueryClient({defaultOptions:{queries:{retry:false}}});
+ render(<QueryClientProvider client={client}><SessionPanel/></QueryClientProvider>);
+ await screen.findByText('Local startup help');
+ expect(screen.getByText(/create-gateway-user.py/)).toBeInTheDocument();
+ expect(screen.getByText(/Seeded reference scenario/)).toBeInTheDocument();
+ client.clear();
+});

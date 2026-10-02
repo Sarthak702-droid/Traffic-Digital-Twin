@@ -100,6 +100,7 @@ try {
   await page.goto(url);
   await page.getByLabel("Username").waitFor();
   await page.getByText("Signed out", { exact: true }).waitFor();
+  await page.getByText("Local startup help", { exact: true }).waitFor();
   await delay(3500);
   assert.equal(reads, 0, "Signed-out browser requested protected data");
   assert.equal(await page.getByText("Loading network configuration…", { exact: true }).count(), 0);

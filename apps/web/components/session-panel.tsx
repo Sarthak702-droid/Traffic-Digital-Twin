@@ -75,6 +75,13 @@ export function SessionPanel({onReviewFinished}:{onReviewFinished?:(commandId:st
     <label>Password <input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>
     <Button type="submit" loading={login.isPending}>{login.isPending?"Signing in…":"Sign in"}</Button>
    </form>}
+   {!session.isPending&&<details>
+    <summary>Local startup help</summary>
+    <p>Sign in with the account created during setup. There is no default password. To create an account or reset its password, run this in the project terminal, then enter the new password above:</p>
+    <code>python3 scripts/create-gateway-user.py .runtime/gateway-users.json operator --role operator</code>
+    <p>This resets the local operator account and revokes its previous sessions. If your launcher uses a custom account file, use that path instead.</p>
+    <p>After signing in, the network loads. Select Seeded reference scenario to inspect synthetic traffic, then start a virtual scenario. Recorded-video demand requires compatible processed clips for every configured boundary. Run metrics remain unavailable until a run starts.</p>
+   </details>}
    {login.error&&<p role="alert">{login.error instanceof ApiError&&login.error.status===401?"Invalid username or password.":"Sign-in unavailable. Try again when the API recovers."}</p>}
   </div>}
  {uncertain&&<div role="alert"><h2>Previous command needs review</h2><p>Command <code>{uncertain}</code> · {outcome.data?.status||"outcome unavailable"}. Do not repeat an uncertain action.</p>
