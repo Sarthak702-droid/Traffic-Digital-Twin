@@ -10,6 +10,10 @@ import pathlib
 import platform
 import tempfile
 import time
+import sys
+
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
+sys.path[:0] = [str(REPO_ROOT), str(REPO_ROOT / 'packages/contracts/gen/python')]
 
 import twin_pb2 as pb
 from services.intelligence.model import Model
@@ -22,12 +26,23 @@ def percentile95(values):
     return sorted(values)[max(0, math.ceil(.95 * len(values)) - 1)]
 
 
+def resource_protocol(path, cpu=None):
+    protocol = json.loads(pathlib.Path(path).read_text())
+    if cpu is None:
+        cpu = next(line.split(':', 1)[1].strip() for line in pathlib.Path('/proc/cpuinfo').read_text().splitlines()
+                   if line.startswith('model name'))
+    if protocol['target_cpu'] != cpu:
+        raise ValueError('Resource protocol target machine differs; freeze a new budget before execution')
+    return protocol
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--mode', choices=['simulation', 'candidate_evaluation'], required=True)
     parser.add_argument('--output', type=pathlib.Path, required=True)
+    parser.add_argument('--protocol', type=pathlib.Path, default=ROOT / 'packages/scenario-config/prototype-resource-budget-v1.json')
     args = parser.parse_args()
-    protocol = json.loads((ROOT / 'packages/scenario-config/prototype-resource-budget-v1.json').read_text())
+    protocol = resource_protocol(args.protocol)
     budget = protocol[args.mode]
     cases, times = [], []
     probe = ProcessResourceProbe()

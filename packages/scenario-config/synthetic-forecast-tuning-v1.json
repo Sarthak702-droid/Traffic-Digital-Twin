@@ -1,0 +1,33 @@
+{
+  "trace_conditions": [
+    "constant_noisy",
+    "rising",
+    "falling",
+    "change_point"
+  ],
+  "seeds": [
+    1101,
+    2202,
+    3303
+  ],
+  "bin_s": 5,
+  "duration_s": 1200,
+  "scoring_start_s": 600,
+  "base_count_per_bin": 20,
+  "noise_std_count": 4,
+  "trend_count_per_bin": 0.03,
+  "change_point_s": 800,
+  "changed_count_per_bin": 40,
+  "history_limit_bins": 60,
+  "version": "synthetic-forecast-tuning-v1",
+  "evidence_scope": "tuning_only",
+  "horizons_s": [
+    30,
+    60,
+    120,
+    300
+  ],
+  "minimum_eligible_origins": 5,
+  "minimum_mae_improvement_fraction": 0.05,
+  "maximum_horizon_regression_fraction": 0.1
+}

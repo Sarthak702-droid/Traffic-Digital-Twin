@@ -275,6 +275,83 @@ def _within_regression(candidate, baseline, key, fraction, lower_is_better=True)
     return value + 1e-9 >= reference * (1 - fraction)
 
 
+def emergency_plan_metrics(live, plan, horizon_s, trace=None):
+    """Tuning diagnostic of aggregate route service and actual model recovery.
+
+    Replay the same configured seeded world to the complete origin, then use the
+    same realized boundary trace for every policy. This is not ambulance travel
+    time, independent footage evidence, or an operating future-demand input.
+    """
+    import copy
+    import tempfile
+    import twin_pb2 as pb
+    from services.simulation.aggregate_engine import AggregateEngine
+
+    if horizon_s <= 0 or live.command.scenario_type != 'ambulance_corridor':
+        raise ValueError('Emergency metric requires an emergency comparison window')
+    origin = int(live.tick)
+    future = copy.deepcopy(live.demand)
+    trace = trace if trace is not None else [future.next(origin + tick) for tick in range(1, horizon_s + 1)]
+    if len(trace) != horizon_s:
+        raise ValueError('Emergency comparison trace must cover the entire window')
+    scenario = live.scenario
+    route = scenario['route_node_ids']
+    route_moves = {mid for mid, move in live.moves.items()
+        if any(move['node_id'] == node and live.links[move['incoming_link_id']]['from_node'] == previous
+               and live.links[move['outgoing_link_id']]['to_node'] == following
+               for previous, node, following in zip(route, route[1:], route[2:]))}
+    if not route_moves:
+        raise ValueError('Emergency route has no configured controlled movement')
+    with tempfile.TemporaryDirectory(prefix='traffic-emergency-metric-') as directory:
+        config = Path(directory) / 'world.json'
+        config.write_text(json.dumps(live.config))
+        engine = AggregateEngine(config_path=config, directory=Path(directory) / 'runtime')
+        try:
+            state = engine.reset(live.command)
+            recovery_start = recovery_end = None
+            def observe_recovery(frame):
+                nonlocal recovery_start, recovery_end
+                if frame.emergency.status == 'recovery' and recovery_start is None:
+                    recovery_start = frame.simulation_time_s
+                if (recovery_start is not None and recovery_end is None
+                    and frame.emergency.status == 'complete' and not engine.scheduler.priority
+                    and not engine.scheduler.recovering):
+                    recovery_end = frame.simulation_time_s
+            for _ in range(origin):
+                state = engine.step()
+                observe_recovery(state)
+            if engine.snapshot_internal() != live.snapshot_internal():
+                raise ValueError('Emergency benchmark origin is not the same complete seeded state')
+            current = {change.phase_id: change.green_s for change in state.active_plan}
+            if plan != current:
+                engine.apply_plan(pb.PlanCommand(run_id=state.run_id, command_id='metric-plan',
+                    expected_input_session_id=state.input_session_id,
+                    expected_snapshot_sequence=state.snapshot_sequence,
+                    changes=[pb.TimingChange(node_id=engine.index.phases[phase]['node_id'], phase_id=phase, green_s=green)
+                             for phase, green in plan.items()]))
+            class TraceDemand:
+                def next(self, tick):
+                    return dict(trace[tick - origin - 1])
+            engine.demand = TraceDemand()
+            departed = sum(engine.movement_departures[mid] for mid in route_moves)
+            green_service = 0
+            for _ in range(horizon_s):
+                green_service += sum(mid in signal.permitted_movement_ids for mid in route_moves for signal in engine.signal_states)
+                state = engine.step()
+                observe_recovery(state)
+            return {'status': 'available', 'route_service_target': 'aggregate_route_traffic_not_ambulance_travel',
+                'route_departures_veh': sum(engine.movement_departures[mid] for mid in route_moves) - departed,
+                'route_green_service_node_s': green_service,
+                'recovery_status': 'completed' if recovery_end is not None else 'censored_at_window_end',
+                'recovery_time_s': recovery_end - recovery_start if recovery_end is not None else None,
+                'recovery_started_at_simulation_s': recovery_start,
+                'recovery_completed_at_simulation_s': recovery_end,
+                'window_start_simulation_s': origin, 'window_end_simulation_s': origin + horizon_s,
+                'measurement_scope': 'synthetic authorized-request lifecycle; recovery observed from request start; route flow during matched window'}
+        finally:
+            engine.close()
+
+
 def sample_virtual_origin(engine, model, horizon_s, protocol, condition="peak"):
     """Choose plans causally, then score each on one copied future demand trace."""
     import copy
@@ -327,8 +404,19 @@ def sample_virtual_origin(engine, model, horizon_s, protocol, condition="peak"):
         return result
     if condition == "emergency":
         result["emergency_status"] = state.emergency.status if state.HasField("emergency") else "missing"
-        result["emergency_recovery_availability"] = "unavailable_no_matched_route_metric"
-        result["pass"] = False
+        if protocol.get('emergency_metrics') == 'aggregate-route-service-v1':
+            metrics = {}
+            for name, plan in (("fixed_timing", current), ("local_adaptive", local), ("coordinated", coordinated)):
+                try:
+                    metrics[name] = emergency_plan_metrics(engine, plan, horizon_s, trace)
+                except ValueError as error:
+                    metrics[name] = {'status': 'cannot_evaluate', 'reason': str(error)}
+            result['emergency_metrics'] = metrics
+            result['emergency_recovery_availability'] = 'completed' if all(item.get('recovery_status') == 'completed' for item in metrics.values()) else 'censored_or_rejected'
+            result['pass'] = all(item.get('status') == 'available' and item.get('recovery_status') == 'completed' for item in metrics.values())
+        else:
+            result["emergency_recovery_availability"] = "unavailable_no_matched_route_metric"
+            result["pass"] = False
         return result
     if any(item["status"] != "available" or abs(item["mass_residual_veh"]) >= 1e-6
            for item in plans.values()):
@@ -434,7 +522,7 @@ def run_virtual_suite(protocol, workspace):
             "failed_cases": failed, "eligible_origins": len(eligible),
             "improved_origins": improved,
             "improved_fraction": improved / len(eligible) if eligible else None,
-            "gate_pass": (failed == 0 and bool(eligible) and guarded and conservation
+            "gate_pass": (protocol.get("evidence_scope") != "tuning_only" and failed == 0 and bool(eligible) and guarded and conservation
                           and improved / len(eligible) >=
                           protocol["control"]["minimum_improved_eligible_cases_fraction"]),
             "cases": cases}

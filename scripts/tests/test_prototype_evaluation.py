@@ -331,3 +331,29 @@ def test_insufficient_later_windows_do_not_publish_partial_forecast_score():
     assert result["eligible_origins"] == 1
     assert "first_origin_prediction_veh" not in result
     assert "active_mae_veh" not in result
+
+
+def test_emergency_diagnostic_measures_real_route_flow_and_censored_recovery(tmp_path):
+    from scripts.prototype_evaluation import emergency_plan_metrics
+    from services.simulation.aggregate_engine import AggregateEngine
+    import twin_pb2 as pb
+    engine = AggregateEngine(directory=tmp_path / 'live')
+    try:
+        state = engine.reset(pb.RunCommand(schema_version='1.0', run_id='emergency-metric',
+            scenario_type='ambulance_corridor', seed=1101, mode='recommend'))
+        for _ in range(120): state = engine.step()
+        plan = {p.phase_id:p.green_s for p in state.active_plan}
+        short = emergency_plan_metrics(engine, plan, 5)
+        assert short['status'] == 'available'
+        assert short['route_service_target'] == 'aggregate_route_traffic_not_ambulance_travel'
+        assert short['recovery_status'] == 'censored_at_window_end'
+        assert short['recovery_time_s'] is None
+        assert short['route_departures_veh'] >= 0
+        assert short['route_green_service_node_s'] >= 0
+        long = emergency_plan_metrics(engine, plan, 500)
+        assert long['recovery_status'] == 'completed'
+        assert long['recovery_time_s'] > 0
+        assert long['recovery_completed_at_simulation_s'] > long['recovery_started_at_simulation_s']
+        assert engine.tick == 120  # Diagnostics cannot advance the live world.
+    finally:
+        engine.close()
