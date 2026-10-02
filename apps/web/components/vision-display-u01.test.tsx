@@ -33,6 +33,9 @@ it("uses actual portrait metadata for the canvas", () => {
   Object.defineProperty(video, "videoWidth", { value: 2160, configurable: true });
   Object.defineProperty(video, "videoHeight", { value: 3840, configurable: true });
   fireEvent.loadedMetadata(video);
+  expect(video).toHaveAttribute("data-media-ready", "true");
   const canvas = screen.getByLabelText(/Computer vision video stream/);
   expect(Number(canvas.getAttribute("width")) / Number(canvas.getAttribute("height"))).toBeCloseTo(2160 / 3840, 2);
+  fireEvent.click(screen.getByRole("button", { name: "CAM-11" }));
+  expect(video).toHaveAttribute("data-media-ready", "false");
 });

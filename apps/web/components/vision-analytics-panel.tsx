@@ -196,6 +196,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
   const [cameraSlots, setCameraSlots] = useState<CameraSlot[]>(ALL_CAMERA_SLOTS);
   const [cameraRegistryReady, setCameraRegistryReady] = useState(typeof process !== "undefined" && process.env?.NODE_ENV === "test");
   const [cameraRegistryError, setCameraRegistryError] = useState(false);
+  const [mediaReady, setMediaReady] = useState(false);
   const [mediaError, setMediaError] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -272,6 +273,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     if (!video) return;
     video.src = `/api/v1/clips/${selectedCamera}/media`;
     setMediaError(false);
+    setMediaReady(false);
     setLiveObservations([]);
     setObservationStatus("missing");
     setObservationReason("");
@@ -294,7 +296,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     && (!registeredCamera?.clipSha256 || cachedTelemetry?.source_identity?.clip_sha256 === registeredCamera.clipSha256)
     && (!registeredCamera?.geometry || sameGeometry(cachedTelemetry?.geometry, registeredCamera.geometry))
     ? cachedTelemetry : undefined;
-  const activeFrameData = currentFrameIdx >= 0 ? activeTelemetry?.frames?.[currentFrameIdx] : undefined;
+  const activeFrameData = mediaReady && currentFrameIdx >= 0 ? activeTelemetry?.frames?.[currentFrameIdx] : undefined;
   const activeCamInfo = cameraSlots.find((c) => c.id === selectedCamera) || cameraSlots[0];
 
   // Display playback never changes the authoritative run or observation session.
@@ -617,7 +619,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
   const replayTimeS = mediaTime;
   const currentObservation = latestDisplayObservation(liveObservations, replayTimeS);
   const observedFlowVpm = currentObservation?.observation_status === "valid" ? Number(currentObservation.flow_vpm) : null;
-  const coverageLabel = activeTelemetry ? `${activeTelemetry.duration_s}s analyzed · cached detections sampled at ${(1 / activeTelemetry.sample_interval_s).toFixed(1)} FPS · ${activeCamInfo.resolution}` : "Detection cache unavailable; process this registered clip";
+  const coverageLabel = activeTelemetry ? `${Number(activeTelemetry.duration_s).toFixed(1)}s analyzed · cached detections sampled at ${(1 / activeTelemetry.sample_interval_s).toFixed(1)} FPS · ${activeCamInfo.resolution}` : "Detection cache unavailable; process this registered clip";
   const activeClassCounts = activeFrameData?.class_counts || {};
   const [dominantClass, dominantClassCount] = Object.entries(activeClassCounts)
     .sort(([, left], [, right]) => Number(right) - Number(left))[0] || ["—", 0];
@@ -842,20 +844,21 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
             <video
               ref={videoRef}
               aria-label="Recorded clip display only"
+              data-media-ready={mediaReady}
               src={`/api/v1/clips/${selectedCamera}/media`}
               muted
               playsInline
               loop
               onLoadedMetadata={(event) => {
                 const video = event.currentTarget;
-                if (video.videoWidth && video.videoHeight) setMediaSize(canvasSize(video.videoWidth, video.videoHeight));
+                if (video.videoWidth && video.videoHeight) { setMediaSize(canvasSize(video.videoWidth, video.videoHeight)); setMediaReady(true); }
                 video.playbackRate = playbackSpeed;
                 if (isPlaying) safePlayVideo(video); else safePauseVideo(video);
                 syncMediaTime();
               }}
               onTimeUpdate={syncMediaTime}
               onSeeked={syncMediaTime}
-              onError={() => setMediaError(true)}
+              onError={() => { setMediaError(true); setMediaReady(false); }}
               style={{ display: "none" }}
             />
             <canvas
