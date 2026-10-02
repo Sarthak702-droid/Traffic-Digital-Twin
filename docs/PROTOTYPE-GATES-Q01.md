@@ -2,6 +2,8 @@
 
 Branch: `task/Q01-prototype-gates`, based on the operator-workflow repair and integrated E02/P02 prerequisites. Gate status is provisional until the complete acceptance evidence is reviewed. This work does not claim field readiness.
 
+The [2026-10-02 acceptance repair](handoffs/Q01-acceptance-repair.md) supplements this historical evidence. It closes atomic dispatch and immediate compute-loss approval gaps, verifies recorded runs and applied plans on both graphs, and adds tuning-only forecast/emergency diagnostics. All six gates remain open or failed; independent labels, untouched control evaluation, input-age semantics and continuous capacity/latency acceptance remain unresolved.
+
 | Gate | Current evidence | Remaining acceptance |
 |---|---|---|
 | 1. Authenticated access and accurate claims | Server-session role/origin/idempotency regressions; authenticated report and clock endpoints | Complete expiry/uncertain-command failure rehearsal and remaining product-claim audit |
