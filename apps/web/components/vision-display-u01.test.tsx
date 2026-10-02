@@ -11,6 +11,8 @@ describe("recorded clip display", () => {
     const video = screen.getByLabelText("Recorded clip display only") as HTMLVideoElement;
     expect(video.loop).toBe(true);
     expect(screen.queryByRole("slider", { name: "Video frame scrubber" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Replay progress")).not.toBeInTheDocument();
+    expect(screen.getByText("Class Breakdown unavailable")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Pause video" }));
     expect(screen.getByRole("button", { name: "Play video" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "CAM-12" }));

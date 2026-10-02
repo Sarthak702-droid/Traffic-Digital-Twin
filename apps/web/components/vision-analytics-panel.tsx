@@ -623,15 +623,13 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     .sort(([, left], [, right]) => Number(right) - Number(left))[0] || ["—", 0];
 
   const queuePressure = displayActiveVehicles > 0 ? displayQueueVehicles / displayActiveVehicles : 0;
-  const queuePressureLabel = displayActiveVehicles === 0
+  const queuePressureLabel = !activeFrameData ? "Detection unavailable" : displayActiveVehicles === 0
     ? "No vehicles in frame"
     : queuePressure >= 0.6
     ? "High queue pressure"
     : queuePressure >= 0.3
     ? "Queue building"
     : "Free-moving frame";
-  const clipDurationS = Number(activeTelemetry?.duration_s ?? 10);
-  const replayProgress = clipDurationS > 0 ? Math.min(100, (replayTimeS / clipDurationS) * 100) : 0;
   const peakActiveVehicles = streamFrames?.length
     ? Math.max(...streamFrames.map((frame) => Number(frame?.active_count ?? 0)))
     : displayActiveVehicles;
@@ -1039,10 +1037,10 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
             <div className="vision-card-header">
               <h3>
                 <Car size={16} color="#64b5f6" aria-hidden="true" />
-                Class Breakdown ({displayTotalVehicles} vehicles · {classBreakdown.pedestrain ?? 0} pedestrians)
+                {activeTelemetry ? `Class Breakdown (${displayTotalVehicles} vehicles · ${classBreakdown.pedestrain ?? 0} pedestrians)` : "Class Breakdown unavailable"}
               </h3>
               <span style={{ fontSize: "11px", color: "#8da5b8" }}>
-                Crossed: {displayCrossed}
+                Crossed: {activeFrameData ? displayCrossed : "—"}
               </span>
             </div>
             <div className="vision-classes-grid">
@@ -1059,10 +1057,10 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                 };
                 const entries = Object.entries(classBreakdown || {}).sort(([, a], [, b]) => (b as number) - (a as number));
                 if (entries.length === 0) {
-                  return Object.entries(CLASS_DISPLAY).slice(0, 5).map(([key, meta]) => (
+                  return Object.entries(CLASS_DISPLAY).map(([key, meta]) => (
                     <div className="vision-class-item" key={key}>
                       <span className="vision-class-label">{meta.label}</span>
-                      <span className="vision-class-count" style={{ color: meta.color }}>0</span>
+                      <span className="vision-class-count" style={{ color: meta.color }}>—</span>
                     </div>
                   ));
                 }
@@ -1087,7 +1085,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                 <Activity size={16} color="#64b5f6" aria-hidden="true" />
                 {selectedCamera} ROI Activity Assignment
               </h3>
-              <span style={{ fontSize: "11px", color: "#8da5b8" }}>Frame {currentFrameIdx + 1} · 3 ROI bands</span>
+              <span style={{ fontSize: "11px", color: "#8da5b8" }}>{activeFrameData ? `Sample ${currentFrameIdx + 1}` : "Detection unavailable"} · 3 ROI bands</span>
             </div>
             <table className="vision-lane-table">
               <thead>
@@ -1102,9 +1100,9 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                 {laneMetrics.map((lane) => (
                   <tr key={lane.id}>
                     <td>{lane.label}</td>
-                    <td>{lane.active}</td>
-                    <td>{lane.queue} veh</td>
-                    <td>{(lane.share * 100).toFixed(0)}%</td>
+                    <td>{activeFrameData ? lane.active : "—"}</td>
+                    <td>{activeFrameData ? `${lane.queue} veh` : "—"}</td>
+                    <td>{activeFrameData ? `${(lane.share * 100).toFixed(0)}%` : "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1116,7 +1114,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
 
       <section className="vision-upstream-card" aria-label="ITD flow detection by recorded camera">
         <div className="vision-card-header"><h2>ITD v1.2 flow detection · all recorded cameras</h2></div>
-        <p className="vision-roi-note">Each row uses its own ITD-processed recorded segment. All 12 have finalized 5-second windows; CAM-07–12 windows are derived from cached frame telemetry and lack class-specific crossing counts. The clips are independent samples mapped to virtual directions.</p>
+        <p className="vision-roi-note">Each row summarizes sampled detections from its own recorded clip. Finalized observation windows are queried separately from Go. The clips are independent samples; display loops do not add virtual traffic.</p>
         <div className="vision-camera-grid">
           {cameraSlots.map((camera) => {
             const item = telemetryMap[camera.id];
@@ -1139,7 +1137,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
           <h2 id="upstream-heading" style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "#e5edf5" }}>
             {selectedCamera} Clip Summary
           </h2>
-          <span className="vision-badge vision-badge-success">RECORDED REPLAY</span>
+          <span className="vision-badge vision-badge-success">RECORDED LOOP · DISPLAY ONLY</span>
         </div>
         <p style={{ fontSize: "12px", color: "#8da5b8", margin: "0 0 12px 0" }}>
           {selectedCamera} · {activeCamInfo.approach} · Values update from the selected video stream as playback moves.
@@ -1147,23 +1145,23 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
 
         <div className="vision-upstream-grid">
           <div className="vision-upstream-box">
-            <span className="vision-upstream-box-label">Replay progress</span>
-            <span className="vision-upstream-box-val">{replayProgress.toFixed(0)}%</span>
-            <span className="vision-upstream-box-sub">{replayTimeS.toFixed(1)}s / {clipDurationS.toFixed(1)}s</span>
+            <span className="vision-upstream-box-label">Detection coverage</span>
+            <span className="vision-upstream-box-val">{activeTelemetry ? "Full clip" : "Unavailable"}</span>
+            <span className="vision-upstream-box-sub">Cached sampled inference · display only</span>
           </div>
           <div className="vision-upstream-box">
             <span className="vision-upstream-box-label">Peak active vehicles</span>
-            <span className="vision-upstream-box-val">{peakActiveVehicles}</span>
+            <span className="vision-upstream-box-val">{activeTelemetry ? peakActiveVehicles : "—"}</span>
             <span className="vision-upstream-box-sub">Highest tracked frame in this clip</span>
           </div>
           <div className="vision-upstream-box">
             <span className="vision-upstream-box-label">Peak queue ROI</span>
-            <span className="vision-upstream-box-val">{peakQueueVehicles} veh</span>
+            <span className="vision-upstream-box-val">{activeTelemetry ? `${peakQueueVehicles} veh` : "—"}</span>
             <span className="vision-upstream-box-sub">Highest queue observation in this clip</span>
           </div>
           <div className="vision-upstream-box">
             <span className="vision-upstream-box-label">Observed unique vehicles</span>
-            <span className="vision-upstream-box-val">{displayTotalVehicles}</span>
+            <span className="vision-upstream-box-val">{activeTelemetry ? displayTotalVehicles : "—"}</span>
             <span className="vision-upstream-box-sub">Whole {selectedCamera} video stream</span>
           </div>
         </div>

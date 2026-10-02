@@ -81,7 +81,7 @@ def has_crossed_line(prev_pt, curr_pt, p1, p2, vec) -> bool:
     return False
 
 
-def process_video(video_path, cam_cfg, model, sample_fps=5.0, device="cpu", identity=None):
+def process_video(video_path, cam_cfg, model, sample_fps=2.0, device="cpu", identity=None):
     validate_model_classes(model)
     if not math.isfinite(sample_fps) or sample_fps <= 0:
         raise ValueError("Sampling FPS must be finite and positive")
@@ -176,7 +176,7 @@ def main():
     parser.add_argument("--model", type=Path, default=ROOT / ".runtime/models/itd-v1.2/best_xl_ITD_v1.2.pt")
     parser.add_argument("--video-root", type=Path, default=ROOT)
     parser.add_argument("--output", type=Path, default=ROOT / "apps/web/public/vision-display-data.json")
-    parser.add_argument("--sample-fps", type=float, default=5)
+    parser.add_argument("--sample-fps", type=float, default=2)
     parser.add_argument("--cameras", nargs="*")
     args = parser.parse_args()
     torch.set_num_threads(min(4, os.cpu_count() or 4))
