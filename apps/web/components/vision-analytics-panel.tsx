@@ -861,13 +861,15 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
               muted
               playsInline
               loop
+              preload="auto"
               onLoadedMetadata={(event) => {
                 const video = event.currentTarget;
-                if (video.videoWidth && video.videoHeight) { setMediaSize(canvasSize(video.videoWidth, video.videoHeight)); setMediaReady(true); }
+                if (video.videoWidth && video.videoHeight) setMediaSize(canvasSize(video.videoWidth, video.videoHeight));
                 video.playbackRate = playbackSpeed;
                 if (isPlaying) safePlayVideo(video); else safePauseVideo(video);
                 syncMediaTime();
               }}
+              onLoadedData={() => setMediaReady(true)}
               onTimeUpdate={syncMediaTime}
               onSeeked={syncMediaTime}
               onError={() => { setMediaError(true); setMediaReady(false); }}
