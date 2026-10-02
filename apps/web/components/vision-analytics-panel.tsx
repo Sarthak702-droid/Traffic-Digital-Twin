@@ -256,6 +256,11 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
 
   // Fetch live vision state or real observations from Go API gateway
   useEffect(() => {
+    // Clear only when observation identity changes. A later display-copy URL
+    // for the same registered clip must not erase an already loaded response.
+    setLiveObservations([]);
+    setObservationStatus("missing");
+    setObservationReason("");
     if (isOffline) return;
     if (typeof process !== "undefined" && process.env?.NODE_ENV === "test") return;
     let isMounted = true;
@@ -286,9 +291,6 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     video.src = mediaURL;
     setMediaError(false);
     setMediaReady(false);
-    setLiveObservations([]);
-    setObservationStatus("missing");
-    setObservationReason("");
     video.currentTime = 0;
     setCurrentFrameIdx(-1);
     setMediaTime(0);
