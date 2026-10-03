@@ -127,9 +127,9 @@ const RADAR_CLASS_COLORS: Record<string, string> = {
 function getStreamLaneMetrics(frame: any, telemetry: any): StreamLaneMetric[] {
   const detections = frame?.detections || [];
   const bands = [
-    { id: "left", label: "Left ROI band", active: 0 },
-    { id: "centre", label: "Centre ROI band", active: 0 },
-    { id: "right", label: "Right ROI band", active: 0 },
+    { id: "left", label: "Left ROI band (Outbound · Jaane wala ↑)", active: 0 },
+    { id: "centre", label: "Centre ROI band (Median)", active: 0 },
+    { id: "right", label: "Right ROI band (Inbound · Aane wala ↓)", active: 0 },
   ];
 
   detections.forEach((detection: any) => {
@@ -356,7 +356,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     const video = videoRef.current;
     if (!video) return;
     const time = video.currentTime;
-    setMediaTime(Math.floor(time * 10) / 10);
+    setMediaTime(Math.floor(time * 100) / 100);
     setCurrentFrameIdx(detectionFrameIndex(activeTelemetry, time));
   }, [activeTelemetry]);
 
@@ -547,7 +547,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 10px monospace";
     ctx.textAlign = "left";
-    const secCur = mediaTime.toFixed(1);
+    const secCur = mediaTime.toFixed(2);
     ctx.fillText(
       `● RECORDED VIDEO · ${selectedCamera} · ${activeCamInfo.videoFile} · SOURCE ${secCur}s`,
       26,
@@ -663,7 +663,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
   const replayTimeS = mediaTime;
   const currentObservation = latestDisplayObservation(liveObservations, replayTimeS);
   const observedFlowVpm = currentObservation?.observation_status === "valid" ? Number(currentObservation.flow_vpm) : null;
-  const coverageLabel = activeTelemetry ? `${Number(activeTelemetry.duration_s).toFixed(1)}s analyzed · cached detections sampled at ${(1 / activeTelemetry.sample_interval_s).toFixed(1)} FPS · ${activeCamInfo.resolution}` : "Detection cache unavailable; process this registered clip";
+  const coverageLabel = activeTelemetry ? `${Number(activeTelemetry.duration_s).toFixed(2)}s analyzed · cached detections sampled at ${(1 / activeTelemetry.sample_interval_s).toFixed(2)} FPS · ${activeCamInfo.resolution}` : "Detection cache unavailable; process this registered clip";
   const activeClassCounts = activeFrameData?.class_counts || {};
   const [dominantClass, dominantClassCount] = Object.entries(activeClassCounts)
     .sort(([, left], [, right]) => Number(right) - Number(left))[0] || ["—", 0];
@@ -1220,7 +1220,12 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
             {/* SUB-COLUMN 1: TOP-DOWN ORTHOGRAPHIC RADAR */}
             <div className="vision-radar-subcol">
               <div className="vision-radar-subcol-title">
-                <span>CORRIDOR ORTHOGRAPHIC RADAR</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span>CORRIDOR ORTHOGRAPHIC RADAR</span>
+                  <span style={{ fontSize: "9px", padding: "1px 5px", background: "rgba(16, 185, 129, 0.15)", color: "#10b981", borderRadius: "3px", border: "1px solid rgba(16, 185, 129, 0.3)", fontWeight: 700 }}>
+                    INDIAN LHT (DRIVE ON LEFT)
+                  </span>
+                </div>
                 <span style={{ fontSize: "10px", color: "#38bdf8", fontWeight: 600 }}>
                   {currentDetections.length} tracked targets
                 </span>
@@ -1235,15 +1240,15 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                   <line x1="118" y1="15" x2="115" y2="185" stroke="#1e293b" strokeDasharray="3 3" strokeWidth="1.2" />
                   <line x1="202" y1="15" x2="205" y2="185" stroke="#1e293b" strokeDasharray="3 3" strokeWidth="1.2" />
 
-                  {/* Lane Labels */}
-                  <text x="76" y="24" textAnchor="middle" fill="#475569" fontSize="8" fontWeight="600">LEFT ROI</text>
-                  <text x="160" y="24" textAnchor="middle" fill="#475569" fontSize="8" fontWeight="600">CENTRE ROI</text>
-                  <text x="244" y="24" textAnchor="middle" fill="#475569" fontSize="8" fontWeight="600">RIGHT ROI</text>
+                  {/* Lane Labels: Indian Standard (Left: Outbound/Jaane wala ↑, Right: Inbound/Aane wala ↓) */}
+                  <text x="76" y="24" textAnchor="middle" fill="#64748b" fontSize="7" fontWeight="700">LEFT · JAANE WALA ↑</text>
+                  <text x="160" y="24" textAnchor="middle" fill="#475569" fontSize="7" fontWeight="600">MEDIAN / DIVIDER</text>
+                  <text x="244" y="24" textAnchor="middle" fill="#38bdf8" fontSize="7" fontWeight="700">RIGHT · AANE WALA ↓</text>
 
-                  {/* Flow Direction Indicators */}
-                  <path d="M 76,45 L 76,55 M 73,52 L 76,55 L 79,52" stroke="#1e293b" strokeWidth="1.2" fill="none" />
-                  <path d="M 160,45 L 160,55 M 157,52 L 160,55 L 163,52" stroke="#1e293b" strokeWidth="1.2" fill="none" />
-                  <path d="M 244,45 L 244,55 M 241,52 L 244,55 L 247,52" stroke="#1e293b" strokeWidth="1.2" fill="none" />
+                  {/* Flow Direction Indicators (Indian LHT Standard: Left side heads UP ↑ away, Right side heads DOWN ↓ towards) */}
+                  <path d="M 76,55 L 76,43 M 73,46 L 76,43 L 79,46" stroke="#10b981" strokeWidth="1.5" fill="none" />
+                  <path d="M 160,45 L 160,55 M 157,52 L 160,55 L 163,52" stroke="#334155" strokeWidth="1.2" fill="none" />
+                  <path d="M 244,43 L 244,55 M 241,52 L 244,55 L 247,52" stroke="#38bdf8" strokeWidth="1.5" fill="none" />
 
                   {/* Queue Storage Zone */}
                   <polygon points="31,95 289,95 294,165 26,165" fill="rgba(168, 85, 247, 0.10)" stroke="rgba(192, 132, 252, 0.35)" strokeWidth="1" strokeDasharray="2 2" />
@@ -1355,9 +1360,9 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
               </div>
 
               <div className="vision-radar-kpi-bar">
-                <span>Approach: <strong>{currentDetections.filter((d: any) => !d.in_queue && !d.has_crossed).length}</strong></span>
-                <span>In Queue ROI: <strong>{currentDetections.filter((d: any) => d.in_queue).length}</strong></span>
-                <span>Crossed Line: <strong>{displayCrossed}</strong></span>
+                <span>Jaane wala (Outbound ↑): <strong>{currentDetections.filter((d: any) => { const cx = d.centroid ? d.centroid[0] : (d.bbox ? (d.bbox[0] + d.bbox[2]) / 2 : 0.5); return cx < 0.45; }).length}</strong></span>
+                <span>Aane wala (Inbound ↓): <strong>{currentDetections.filter((d: any) => { const cx = d.centroid ? d.centroid[0] : (d.bbox ? (d.bbox[0] + d.bbox[2]) / 2 : 0.5); return cx >= 0.45; }).length}</strong></span>
+                <span>Crossed Gate: <strong>{displayCrossed}</strong></span>
               </div>
             </div>
 
@@ -1367,6 +1372,9 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <Zap size={14} color="#f59e0b" />
                   <span>SENSOR GATE &amp; MICRO-HEADWAYS</span>
+                  <span style={{ fontSize: "9px", padding: "1px 5px", background: "rgba(56, 189, 248, 0.12)", color: "#38bdf8", borderRadius: "3px", border: "1px solid rgba(56, 189, 248, 0.25)", fontWeight: 700 }}>
+                    LHT TRAFFIC
+                  </span>
                 </div>
                 <span style={{ fontSize: "10px", color: crossingPulse ? "#fbbf24" : "#10b981", fontWeight: 700 }}>
                   {crossingPulse ? "PULSE TRIGGER" : "GATE ARMED"}
@@ -1377,7 +1385,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                 <div className="vision-gate-metric-box">
                   <span className="vision-gate-metric-label">Mean Headway</span>
                   <span className="vision-gate-metric-val">
-                    {meanHeadway !== null ? `${meanHeadway.toFixed(1)}s` : "—"}
+                    {meanHeadway !== null ? `${meanHeadway.toFixed(2)}s` : "—"}
                   </span>
                   <span className="vision-gate-metric-sub">Inter-arrival passage gap</span>
                 </div>
@@ -1420,7 +1428,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                         <div className="vision-event-item" key={`ev-${ev.time_s}-${i}`}>
                           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                             <span style={{ fontFamily: "monospace", color: "#38bdf8", fontWeight: 700, fontSize: "10px" }}>
-                              @{ev.time_s.toFixed(1)}s
+                              @{ev.time_s.toFixed(2)}s
                             </span>
                             <span className="vision-event-badge" style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.color}40` }}>
                               {meta.label}
@@ -1430,14 +1438,14 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                             </span>
                           </div>
                           <span style={{ color: "#f59e0b", fontFamily: "monospace", fontWeight: 600, fontSize: "10px" }}>
-                            {ev.headway_s !== null ? `Δt: ${ev.headway_s.toFixed(1)}s` : "First veh"}
+                            {ev.headway_s !== null ? `Δt: ${ev.headway_s.toFixed(2)}s` : "First veh"}
                           </span>
                         </div>
                       );
                     })
                   ) : (
                     <div className="vision-empty-events">
-                      No crossings recorded yet at {mediaTime.toFixed(1)}s · Sensor gate armed
+                      No crossings recorded yet at {mediaTime.toFixed(2)}s · Sensor gate armed
                     </div>
                   )}
                 </div>
@@ -1489,10 +1497,10 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                 <Activity size={16} color="#64b5f6" aria-hidden="true" />
                 Recorded Frame Insights
               </h3>
-              <span style={{ fontSize: "11px", color: "#8da5b8" }}>{mediaTime.toFixed(1)}s</span>
+              <span style={{ fontSize: "11px", color: "#8da5b8" }}>{mediaTime.toFixed(2)}s</span>
             </div>
             <div className="vision-stream-kpis">
-              <div><span>Queue pressure</span><strong>{activeFrameData ? `${(queuePressure * 100).toFixed(0)}%` : "—"}</strong><small>{queuePressureLabel}</small></div>
+              <div><span>Queue pressure</span><strong>{activeFrameData ? `${(queuePressure * 100).toFixed(2)}%` : "—"}</strong><small>{queuePressureLabel}</small></div>
               <div><span>Dominant type</span><strong>{displayVehicleClass(String(dominantClass))}</strong><small>{Number(dominantClassCount)} active tracked</small></div>
               <div><span>Detected classes</span><strong>{activeFrameData ? Object.keys(activeClassCounts).length : "—"}</strong><small>in this camera frame</small></div>
               <div><span>Pedestrians now</span><strong>{activeFrameData ? activeClassCounts.pedestrain ?? 0 : "—"}</strong><small>in this camera frame</small></div>
@@ -1505,9 +1513,9 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
             {currentObservation ? <div className="vision-stream-kpis">
               <div><span>Window</span><strong>{currentObservation.window_start_s}–{currentObservation.window_end_s}s</strong><small>{currentObservation.observation_status}</small></div>
               <div><span>Directional crossings</span><strong>{currentObservation.crossings_veh ?? "—"}</strong><small>{currentObservation.direction_id ?? "unknown direction"}</small></div>
-              <div><span>Flow</span><strong>{currentObservation.observation_status === "valid" ? Number(currentObservation.flow_vpm).toFixed(1) : "—"}</strong><small>veh/min · finalized</small></div>
+              <div><span>Flow</span><strong>{currentObservation.observation_status === "valid" ? Number(currentObservation.flow_vpm).toFixed(2) : "—"}</strong><small>veh/min · finalized</small></div>
             </div> : <p className="vision-roi-note">No completed observation window at this media time. Frame boxes are available only for the analyzed segment.</p>}
-            {currentObservation && <p className="vision-roi-note">Available at source {Number(currentObservation.available_at_source_s).toFixed(1)} s · processing completed {currentObservation.processed_at_utc} · {currentObservation.validation_level || "review level unavailable"}</p>}
+            {currentObservation && <p className="vision-roi-note">Available at source {Number(currentObservation.available_at_source_s).toFixed(2)} s · processing completed {currentObservation.processed_at_utc} · {currentObservation.validation_level || "review level unavailable"}</p>}
             {currentObservation?.derivation && <p className="vision-roi-note">Provenance: derived from cached ITD frame telemetry; per-class crossing counts unavailable.</p>}
           </div>
 
@@ -1581,7 +1589,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                     <td>{lane.label}</td>
                     <td>{activeFrameData ? lane.active : "—"}</td>
                     <td>{activeFrameData ? `${lane.queue} veh` : "—"}</td>
-                    <td>{activeFrameData ? `${(lane.share * 100).toFixed(0)}%` : "—"}</td>
+                    <td>{activeFrameData ? `${(lane.share * 100).toFixed(2)}%` : "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1669,7 +1677,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
           <div className="vision-upstream-box">
             <span className="vision-upstream-box-label">Observed Segment Flow</span>
             <span className="vision-upstream-box-val">
-              {streamFlowRate != null ? `${streamFlowRate.toFixed(1)} vpm` : "—"}
+              {streamFlowRate != null ? `${streamFlowRate.toFixed(2)} vpm` : "—"}
             </span>
             <span className="vision-upstream-box-sub">
               {streamFlowRate != null ? "Throughput over analyzed segment" : "Flow unavailable"}
@@ -1718,11 +1726,11 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
               </div>
               {chartHover ? (
                 <div style={{ background: "#1e293b", border: "1px solid #38bdf8", borderRadius: "6px", padding: "3px 8px", color: "#38bdf8", fontSize: "11px", fontWeight: 600 }}>
-                  @{chartHover.time.toFixed(1)}s: {chartHover.frame.active_count ?? 0} active · {chartHover.frame.queue_count ?? 0} queued · {chartHover.frame.cumulative_crossed ?? 0} crossed
+                  @{chartHover.time.toFixed(2)}s: {chartHover.frame.active_count ?? 0} active · {chartHover.frame.queue_count ?? 0} queued · {chartHover.frame.cumulative_crossed ?? 0} crossed
                 </div>
               ) : (
                 <div style={{ background: "rgba(15, 23, 42, 0.6)", border: "1px solid #334155", borderRadius: "6px", padding: "3px 8px", color: "#94a3b8", fontSize: "11px" }}>
-                  Playhead: <strong style={{ color: "#38bdf8" }}>{mediaTime.toFixed(1)}s</strong>
+                  Playhead: <strong style={{ color: "#38bdf8" }}>{mediaTime.toFixed(2)}s</strong>
                 </div>
               )}
             </div>

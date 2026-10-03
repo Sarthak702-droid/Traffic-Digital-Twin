@@ -114,6 +114,15 @@ export function NetworkCanvas({
           pointerEvents="none"
         />
 
+        {/* Indian Driving Standard Badge (LHT · Drive on Left) */}
+        <g className="traffic-rule-badge" transform="translate(24, 24)" pointerEvents="none">
+          <rect x="0" y="0" width="230" height="22" rx="4" fill="rgba(11, 18, 26, 0.85)" stroke="rgba(16, 185, 129, 0.35)" strokeWidth="1" />
+          <circle cx="11" cy="11" r="3.5" fill="#10b981" />
+          <text x="21" y="14" fill="#94a3b8" fontSize="9.5" fontFamily="-apple-system, BlinkMacSystemFont, sans-serif" fontWeight="600">
+            INDIAN STANDARD: <tspan fill="#34d399" fontWeight="700">LHT (DRIVE ON LEFT)</tspan>
+          </text>
+        </g>
+
         {/* Render Directional Links with Queue, Flow & Speed Overlays */}
         {network.links.map((link) => {
           const from = nodes.get(link.from_node);
@@ -123,7 +132,8 @@ export function NetworkCanvas({
           const length = Math.hypot(to.x - from.x, to.y - from.y);
           const dx = (to.x - from.x) / length;
           const dy = (to.y - from.y) / length;
-          const offset = 11; // separation between opposing directional lanes
+          // LHT (Indian Driving Standard): Drive on Left, separating opposing directional lanes (aane-jaane)
+          const offset = -11;
 
           const x1 = from.x + dx * 36 - dy * offset;
           const y1 = from.y + dy * 36 + dx * offset;
@@ -181,8 +191,8 @@ export function NetworkCanvas({
           // Calculate midpoint for badges
           const midX = (x1 + x2) / 2;
           const midY = (y1 + y2) / 2;
-          // Perpendicular offset for text positioning
-          const labelShift = 14;
+          // Perpendicular offset for text positioning (inverted for Indian LHT outer placement)
+          const labelShift = -14;
           const lx = midX - dy * labelShift;
           const ly = midY + dx * labelShift;
 
@@ -191,7 +201,7 @@ export function NetworkCanvas({
               <title>
                 {link.id}: {link.from_node} → {link.to_node} ({link.length_m}m,{" "}
                 {link.storage_capacity_veh} veh storage)
-                {frame ? ` · Queue estimate: ${linkQueue.toFixed(1)} veh · Speed: ${avgLinkSpeed == null ? "unavailable" : `${avgLinkSpeed.toFixed(1)} km/h`}` : ""}
+                {frame ? ` · Queue estimate: ${linkQueue.toFixed(2)} veh · Speed: ${avgLinkSpeed == null ? "unavailable" : `${avgLinkSpeed.toFixed(2)} km/h`}` : ""}
               </title>
 
               {/* Roadway Base Track */}

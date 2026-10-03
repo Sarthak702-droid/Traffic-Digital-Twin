@@ -655,9 +655,9 @@ export function Workspace() {
                               const projected = analysis?.forecasts.filter((forecast) => forecast.horizon_s === horizon && incoming.some((movement) => movement.id === forecast.movement_id));
                               return <tr key={link.id}>
                                 <th scope="row">{link.from_node} → {link.to_node}</th><td>{link.lanes}</td>
-                                <td>{current ? `${current.inflow_vpm.toFixed(1)} veh/min` : "—"}</td>
-                                <td>{current ? `${current.queued_veh_estimate.toFixed(1)} veh` : "—"}</td>
-                                <td>{projected?.length ? `${projected.reduce((sum, item) => sum + item.queue_veh, 0).toFixed(1)} veh queue` : "—"}</td>
+                                <td>{current ? `${current.inflow_vpm.toFixed(2)} veh/min` : "—"}</td>
+                                <td>{current ? `${current.queued_veh_estimate.toFixed(2)} veh` : "—"}</td>
+                                <td>{projected?.length ? `${projected.reduce((sum, item) => sum + item.queue_veh, 0).toFixed(2)} veh queue` : "—"}</td>
                               </tr>;
                             })}</tbody>
                           </table>
