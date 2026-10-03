@@ -352,7 +352,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     const width = canvas.width;
     const height = canvas.height;
     const video = videoRef.current;
-    const geom = activeTelemetry?.geometry;
+    const geom = activeTelemetry?.geometry || (registeredCamera?.geometry as any);
 
     // 1. Draw Real Video Frame or Dark CCTV Placeholder
     if (video && video.readyState >= 2 && video.videoWidth > 0 && typeof ctx.drawImage === "function") {
@@ -385,7 +385,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
         if (i === 0) ctx.moveTo(rx * width, ry * height);
         else ctx.lineTo(rx * width, ry * height);
       });
-      ctx.closePath();
+      ctx.closePath?.();
       ctx.stroke();
     }
 
@@ -401,8 +401,8 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
           if (i === 0) ctx.moveTo(qx * width, qy * height);
           else ctx.lineTo(qx * width, qy * height);
         });
-        ctx.closePath();
-        ctx.fill();
+        ctx.closePath?.();
+        ctx.fill?.();
         ctx.stroke();
 
         ctx.fillStyle = "#e9d5ff";

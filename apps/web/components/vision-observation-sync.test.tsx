@@ -14,6 +14,7 @@ it("retains fetched authoritative observations when the display rendition arrive
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
     fillRect: vi.fn(), clearRect: vi.fn(), fillText: vi.fn(), beginPath: vi.fn(),
     moveTo: vi.fn(), lineTo: vi.fn(), stroke: vi.fn(), setLineDash: vi.fn(),
+    closePath: vi.fn(), fill: vi.fn(),
   } as any);
   const response = (payload: unknown) => ({ ok: true, json: async () => payload }) as Response;
   let finishRendition!: (response: Response) => void;
