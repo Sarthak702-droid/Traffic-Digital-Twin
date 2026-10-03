@@ -7,7 +7,7 @@ import {
   ChevronRight,
   Clock,
   Gauge,
-  Presentation,
+  LogOut,
   Radio,
   ShieldAlert,
   ShieldCheck,
@@ -19,7 +19,7 @@ import {ProductBrand} from "@/components/product-brand";
 import { Button } from "@/components/ui/button";
 import {inputDisclosure} from "@/lib/input-disclosure";
 import type { TrafficState, HealthState } from "../../../packages/contracts/typescript/events";
-import type { Session } from "./session-panel";
+import { type Session, useLogout } from "./session-panel";
 
 export function TopBar({
   identity,
@@ -68,6 +68,8 @@ export function TopBar({
   const healthKnown=!!health?.timestamp && Date.now()-Date.parse(health.timestamp)<20000 && components.length>0;
   const hasActiveRun = components.find((c) => c.component === "simulation")?.status === "normal";
   const healthStatusText = !healthKnown ? "Unknown" : hasFailure ? "Degraded" : !hasActiveRun ? "Ready to start" : "Normal";
+
+  const logout = useLogout();
 
   return (
     <header className="product-topbar" aria-label="Command center top bar">
@@ -197,25 +199,42 @@ export function TopBar({
           )}
         </button>
 
-        {/* Role Switcher */}
-        <div className="role-switcher" aria-label="User role profile">
-          <label htmlFor="user-role-select" className="sr-only">
-            Active User Role
-          </label>
-          <User size={13} />
-          <span id="user-role-select">{identity ? `${identity.role} · authenticated role` : "Signed out"}</span>
-        </div>
-
-        {/* START DGP DEMONSTRATION Button (PRD §5, §8.1) */}
-        <Button
-          variant="default"
-          className="dgp-launch-button"
-          onClick={() => window.open('/dgp-pitch-deck.html', '_blank')}
-          aria-label="Start DGP demonstration briefing"
-        >
-          <Presentation size={15} />
-          <span>START DGP DEMONSTRATION</span>
-        </Button>
+        {/* Authenticated User Session Profile Widget */}
+        {identity ? (
+          <div className="topbar-user-profile" aria-label="Authenticated session profile">
+            <div className="user-avatar" aria-hidden="true">
+              <User size={13} className="user-avatar-icon" />
+            </div>
+            <div className="user-info">
+              <div className="user-primary-row">
+                <span className="user-actor">{identity.actor}</span>
+                <span className={`role-badge role-${identity.role}`}>
+                  <span id="user-role-select">{identity.role} · authenticated role</span>
+                </span>
+              </div>
+              <span className="session-auth-text">Authenticated session</span>
+            </div>
+            <Button
+              variant="outline"
+              type="button"
+              className="topbar-signout-btn"
+              onClick={() => logout.mutate()}
+              loading={logout.isPending}
+              aria-label="Sign out"
+            >
+              <LogOut size={12} className="signout-icon" aria-hidden="true" />
+              <span>Sign out</span>
+            </Button>
+            {logout.error && (
+              <span role="alert" className="logout-error-tag">Sign-out failed</span>
+            )}
+          </div>
+        ) : (
+          <div className="topbar-user-profile signed-out" aria-label="User role profile">
+            <User size={13} />
+            <span id="user-role-select" className="signed-out-label">Signed out</span>
+          </div>
+        )}
       </div>
     </header>
   );

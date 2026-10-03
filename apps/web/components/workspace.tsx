@@ -47,7 +47,6 @@ import { DgpPresentationModal } from "@/components/dgp-presentation";
 import { IncidentRecoveryPanel } from "@/components/incident-recovery-panel";
 import { EmergencyCorridorPanel } from "@/components/emergency-corridor-panel";
 import { VisionAnalyticsPanel } from "@/components/vision-analytics-panel";
-import { OperatorTimeStatus } from "@/components/operator-time-status";
 import type {
   Network,
   Run,
@@ -491,7 +490,7 @@ export function Workspace() {
         </div>
 
         <main className="product-content">
-          <SessionPanel onReviewFinished={clearRecoveredCommandErrors}/>
+          <SessionPanel onReviewFinished={clearRecoveredCommandErrors} hideActiveCard={true}/>
           {anyCommandPending && <div className="command-progress" role="status" aria-live="polite"><span className="loading-spinner" aria-hidden="true"/>Processing operator request. Waiting for confirmation…</div>}
           {!online&&<p role="alert">Offline. Measurements may be stale; commands are disabled.</p>}
           {network.data?.provenance==="bundled-offline"&&<p role="alert">Bundled offline topology only. This configuration is not a live service response.</p>}
@@ -505,7 +504,6 @@ export function Workspace() {
            {live.frame.simulation_paused&&<span>Resume to let an accepted plan reach its safe activation boundary.</span>}
            {clockControl.isError&&<span role="alert">{clockControl.error.message}</span>}
           </div>}
-          <OperatorTimeStatus frame={live.fresh ? live.frame : null} analysis={analysis} />
           {/* Role-Specific Executive / Supervisor Banner */}
           {activeRole === "viewer" && authenticated && (
             <div className="role-banner viewer-banner" role="status">

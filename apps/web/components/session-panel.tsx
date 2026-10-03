@@ -16,7 +16,30 @@ export function useSession(){
  },retry:false,refetchInterval:30000});
 }
 
-export function SessionPanel({onReviewFinished}:{onReviewFinished?:(commandId:string)=>void}={}){
+export function useLogout(){
+ let client: ReturnType<typeof useQueryClient> | null = null;
+ try {
+  client = useQueryClient();
+ } catch {
+  return {
+   mutate: () => {},
+   isPending: false,
+   error: null,
+  } as unknown as ReturnType<typeof useMutation<{success:boolean}>>;
+ }
+ const setRole=useWorkspace(s=>s.setRole);
+ return useMutation({
+  mutationFn:()=>request<{success:boolean}>("/session/logout",{method:"POST",body:"{}"}),
+  onSuccess:()=>{
+   setRole("viewer");
+   client?.removeQueries({predicate:q=>q.queryKey[0]!=="session"});
+   client?.setQueryData<Session|null>(["session"],null);
+   client?.invalidateQueries({queryKey:["session"]});
+  },
+ });
+}
+
+export function SessionPanel({onReviewFinished,hideActiveCard=false}:{onReviewFinished?:(commandId:string)=>void;hideActiveCard?:boolean}={}){
  const session=useSession();
  const client=useQueryClient();
  const [username,setUsername]=useState("");
@@ -50,15 +73,7 @@ export function SessionPanel({onReviewFinished}:{onReviewFinished?:(commandId:st
    client.invalidateQueries();
   },
  });
- const logout=useMutation({
-  mutationFn:()=>request<{success:boolean}>("/session/logout",{method:"POST",body:"{}"}),
-  onSuccess:()=>{
-   setRole("viewer");
-   client.removeQueries({predicate:q=>q.queryKey[0]!=="session"});
-   client.setQueryData<Session|null>(["session"],null);
-   client.invalidateQueries({queryKey:["session"]});
-  },
- });
+ const logout=useLogout();
 
  const outcome=useQuery({queryKey:["command-outcome",uncertain],queryFn:()=>request<{status:string;response:unknown}>(`/commands/${uncertain}`),enabled:!!uncertain&&session.isSuccess&&!!session.data,refetchInterval:3000,retry:false});
  const identity=session.isSuccess?session.data:null;
@@ -66,9 +81,13 @@ export function SessionPanel({onReviewFinished}:{onReviewFinished?:(commandId:st
  const authError=session.error instanceof ApiError ? session.error : null;
  const submit=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();login.mutate()};
 
+ if(active&&session.data&&hideActiveCard&&!uncertain){
+  return null;
+ }
+
  return <section className="session-panel" aria-label="Session and command recovery">
- {active && session.data ? <div><p>Authenticated session · <strong>{session.data.actor}</strong> · {session.data.role}</p><Button variant="outline" type="button" onClick={()=>logout.mutate()} loading={logout.isPending}>Sign out</Button>{logout.error&&<p role="alert">Sign-out could not be confirmed. Try again before leaving this browser.</p>}</div>
- : <div>
+ {active && session.data && !hideActiveCard ? <div className="session-active-card"><p>Authenticated session · <strong>{session.data.actor}</strong> · {session.data.role}</p><Button variant="outline" type="button" onClick={()=>logout.mutate()} loading={logout.isPending}>Sign out</Button>{logout.error&&<p role="alert">Sign-out could not be confirmed. Try again before leaving this browser.</p>}</div>
+ : !active ? <div>
    {session.isPending ? <LoadingState compact label="Checking session…"/> : <p role="alert">{authError?.status===401?"Sign in to use the operator workspace.":session.isError?"Session service unavailable. Your unsent draft and command ID remain here.":"Sign in to use the operator workspace."}</p>}
    {!session.isPending&&<form onSubmit={submit}>
     <label>Username <input autoComplete="username" value={username} onChange={e=>setUsername(e.target.value)} required/></label>
@@ -83,7 +102,7 @@ export function SessionPanel({onReviewFinished}:{onReviewFinished?:(commandId:st
     <p>After signing in, the network loads. Select Seeded reference scenario to inspect synthetic traffic, then start a virtual scenario. Recorded-video demand requires compatible processed clips for every configured boundary. Run metrics remain unavailable until a run starts.</p>
    </details>}
    {login.error&&<p role="alert">{login.error instanceof ApiError&&login.error.status===401?"Invalid username or password.":"Sign-in unavailable. Try again when the API recovers."}</p>}
-  </div>}
+  </div> : null}
  {uncertain&&<div role="alert"><h2>Previous command needs review</h2><p>Command <code>{uncertain}</code> · {outcome.data?.status||"outcome unavailable"}. Do not repeat an uncertain action.</p>
  <details><summary>Saved outcome</summary><pre>{JSON.stringify(outcome.data?.response??{},null,2)}</pre></details>
  <p>{!active?"Sign in as the same operator to inspect this command. The browser will not submit it again.":outcome.error && (outcome.error as {status?:number}).status===404 ? "This Go API has no durable record of the command, so it was not committed here. Review the current plan and Audit & Health before clearing this stale browser-only record." : "Inspect the current plan and Audit & Health. If the outcome remains unknown, ask a supervisor to reconcile it before further changes."}</p>

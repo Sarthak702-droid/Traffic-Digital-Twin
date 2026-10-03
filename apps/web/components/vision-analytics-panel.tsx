@@ -20,7 +20,6 @@ import {
 import { canvasSize, detectionFrameIndex, sameGeometry, DISPLAY_TELEMETRY_VERSION, displayMediaURL } from "@/lib/video-display";
 import {LoadingState} from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
-import { OperatorTimeStatus } from "@/components/operator-time-status";
 import type { ProcessedClip } from "@/lib/run-input";
 import { observationQuery } from "@/lib/observation-query";
 import { latestDisplayObservation } from "@/lib/observations";
@@ -655,7 +654,6 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
 
   return (
     <div className="vision-container" data-testid="vision-analytics-panel">
-      <OperatorTimeStatus frame={frame} analysis={analysis} displaySourceTimeS={mediaError ? null : replayTimeS} />
       {/* Header Banner & PRD Disclaimers */}
       <section className="vision-header" aria-labelledby="vision-title">
         <div className="vision-header-top">

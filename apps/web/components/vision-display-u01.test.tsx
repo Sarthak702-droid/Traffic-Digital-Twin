@@ -7,7 +7,7 @@ afterEach(cleanup);
 describe("recorded clip display", () => {
   it("loops display playback and keeps only the video transport without a timer", () => {
     render(<VisionAnalyticsPanel />);
-    expect(screen.getByText(/display seek only/i)).toBeInTheDocument();
+    expect(screen.queryByText(/display seek only/i)).not.toBeInTheDocument();
     const video = screen.getByLabelText("Recorded clip display only") as HTMLVideoElement;
     expect(video.loop).toBe(true);
     expect(screen.queryByRole("slider", { name: "Video frame scrubber" })).not.toBeInTheDocument();
