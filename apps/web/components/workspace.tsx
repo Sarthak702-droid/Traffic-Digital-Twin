@@ -50,7 +50,6 @@ import { VisionAnalyticsPanel } from "@/components/vision-analytics-panel";
 import type {
   Network,
   Run,
-  AuditRecord,
   Scenario,
 } from "../../../packages/contracts/typescript/network";
 import type {
@@ -71,7 +70,6 @@ const sections = [
   { id: "vision", label: "Vision Analytics", icon: Video },
   { id: "incidents", label: "Incidents", icon: TrafficCone },
   { id: "emergency", label: "Emergency", icon: Siren },
-  { id: "audit", label: "Audit & Health", icon: ShieldCheck },
 ] as const;
 
 type View = (typeof sections)[number]["id"];
@@ -91,8 +89,6 @@ export function Workspace() {
   const clockControl=useMutation({mutationFn:(paused:boolean)=>request(`/runs/${live.frame?.run_id}/clock`,{method:"POST",body:JSON.stringify({paused})})});
   const [reportError,setReportError]=useState<string|null>(null);
   const reportExport=useMutation({mutationFn:downloadRunReport,onMutate:()=>setReportError(null),onError:(error:Error)=>setReportError(error.message)});
-  const [auditAfter,setAuditAfter]=useState(0);
-  const [auditPages,setAuditPages]=useState<number[]>([]);
   const [view, setViewState] = useState<View>("command");
   const acceptedURL = useRef("");
   const setView=(next:View)=>{if(dirty&&!window.confirm("Discard unsent decision draft and change section?"))return;setDirty(false);setViewState(next);const url=new URL(location.href);url.searchParams.set("view",next);history.pushState(null,"",url);acceptedURL.current=url.href};
@@ -132,13 +128,6 @@ export function Workspace() {
     queryFn: () => request<Run[]>("/runs"),
     refetchInterval: 10000,
     enabled: authenticated,
-  });
-  const audit = useQuery({
-    queryKey: ["audit", auditAfter],
-    queryFn: () =>
-      request<{ events: AuditRecord[]; next_after: number }>(`/audit?limit=50&after=${auditAfter}`),
-    refetchInterval: 5000,
-    enabled: authenticated && view === "audit",
   });
 
   // Real-time analysis query (forecasts, recommendations, comparisons)
@@ -423,14 +412,10 @@ export function Workspace() {
   const refresh = () => {
     client.invalidateQueries();
   };
-  const auditScope = (values: unknown) => {
-    if (!Array.isArray(values)) return [];
-    return [...new Set(values.flatMap((value) => typeof value === "object" && value !== null && "node_id" in value && typeof value.node_id === "string" ? [value.node_id] : []))];
-  };
 
   return (
     <div className="app-shell">
-      {/* Primary Sidebar (Story S08: Only 6 Primary Sections) */}
+      {/* Primary Sidebar */}
       <aside className="app-sidebar">
         <a href="/" className="wordmark">
           <ProductBrand />
@@ -545,9 +530,7 @@ export function Workspace() {
                   ? "COMMAND CENTER / JUNCTION INTELLIGENCE"
                   : view === "network"
                     ? "NETWORK TOPOLOGY & SIMULATION"
-                    : view === "audit"
-                      ? "SYSTEM AUDIT & COMPONENT HEALTH"
-                      : "NETWORK OPERATIONS"}
+                    : "NETWORK OPERATIONS"}
               </div>
               <h1>{sections.find((s) => s.id === view)?.label}</h1>
               <p>
@@ -555,11 +538,9 @@ export function Workspace() {
                   ? "Real-time twin state, forward horizons, predictive alerts, and operator actions."
                   : view === "network"
                     ? "Full connected C1–C6 corridor with before-and-after digital twin rollouts."
-                    : view === "audit"
-                      ? "Durable audit record in PostgreSQL with component availability."
-                      : view === "vision"
-                        ? "Computer vision edge pipeline demonstration."
-                        : "One connected network. Continuous deterministic simulation."}
+                    : view === "vision"
+                      ? "Computer vision edge pipeline demonstration."
+                      : "One connected network. Continuous deterministic simulation."}
               </p>
             </div>
             <Button variant="outline" onClick={refresh}>
@@ -907,102 +888,8 @@ export function Workspace() {
                   </div>
                 )}
 
-                {/* 6. AUDIT & HEALTH VIEW */}
-                {view === "audit" && (
-                  <div className="audit-layout">
-                    <section className="history-panel">
-                      <div className="panel-heading">
-                        <div>
-                          <h2>Durable Audit Trail</h2>
-                          <span>PostgreSQL history · oldest first · pages of 50</span>
-                        </div>
-                        <ShieldCheck size={18} />
-                      </div>
-                      {audit.isPending ? (
-                        <LoadingState compact label="Loading audit history…" />
-                      ) : audit.isError ? (
-                        <p className="panel-message form-error" role="alert">
-                          {audit.error.message}
-                        </p>
-                      ) : audit.data?.events.length ? (
-                        <div className="audit-list" role="feed" aria-label="Sequential Audit Log">
-                          {audit.data.events.map((a) => {
-                            const isApproved = a.safety_result === "accepted_at_safe_boundary";
-                            const isSimulated = a.safety_result === "simulated";
-                            const isRejected = a.safety_result.startsWith("rejected");
-                            const isLock = a.event_type.startsWith("lock.");
-                            const isMode = a.event_type.startsWith("mode.");
-                            return (
-                              <article key={a.id} className="audit-card">
-                                <div className="audit-card-header">
-                                  <span className={`audit-badge ${
-                                    isApproved ? "badge-success" :
-                                    isSimulated ? "badge-info" :
-                                    isRejected ? "badge-danger" :
-                                    isLock ? "badge-warning" : "badge-neutral"
-                                  }`}>
-                                    {a.event_type.toUpperCase()}
-                                  </span>
-                                  <span className="audit-timestamp">
-                                    {new Date(a.created_at).toLocaleString()}
-                                  </span>
-                                </div>
-                                <div className="audit-card-body">
-                                  <h3>{a.reason}</h3>
-                                  <div className="audit-meta-row">
-                                    <span>Actor: <strong>{a.actor}</strong></span>
-                                    <span>Safety Result: <strong className={isApproved ? "text-success" : isRejected ? "text-danger" : ""}>{a.safety_result}</strong></span>
-                                  </div>
-                                  <div className="audit-meta-row">
-                                    <span>Junctions: <strong>{[...auditScope(a.before_values), ...auditScope(a.after_values)].filter((value, index, values) => values.indexOf(value) === index).join(", ") || "Not applicable"}</strong></span>
-                                    <span>Recommendation: <code>{a.recommendation_id || "Not applicable"}</code></span>
-                                  </div>
-                                  <details><summary>Decision evidence</summary><p>Recommendation: {a.recommendation_id || "Not applicable"}</p><pre>Before: {JSON.stringify(a.before_values,null,2)}{"\n"}After: {JSON.stringify(a.after_values,null,2)}</pre></details>
-                                  <div className="audit-run-id">
-                                    <code>Run: {a.run_id}</code>
-                                  </div>
-                                </div>
-                              </article>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <p className="panel-message">
-                          No audit events yet. Prepare or run a scenario to record entries.
-                        </p>
-                      )}
-                    </section>
-
-                    <section className="context-panel">
-                      <h2>Audit pages</h2><p className="panel-message">Page {auditPages.length + 1} · durable cursor {auditAfter}</p><Button disabled={auditPages.length===0} onClick={()=>{const previous=[...auditPages];setAuditAfter(previous.pop()||0);setAuditPages(previous)}}>Previous events</Button><Button disabled={!audit.data||audit.data.events.length<50||audit.data.next_after<=auditAfter} onClick={()=>{setAuditPages([...auditPages,auditAfter]);setAuditAfter(audit.data!.next_after)}}>Next events</Button><Button disabled={auditAfter===0} onClick={()=>{setAuditPages([]);setAuditAfter(0)}}>First page</Button>
-                      <div className="overline">COMPONENT HEALTH</div>
-                      <h2>System Availability</h2>
-                      {health.isError ? (
-                        <p className="form-error">Health API unavailable</p>
-                      ) : health.isPending ? (
-                        <LoadingState compact label="Checking component availability…" />
-                      ) : (
-                        health.data?.components.map((c) => (
-                          <div className="component" key={c.component}>
-                            <div>
-                              <span
-                                className={`status-dot ${c.status === "normal" ? "normal" : c.status === "simulated" ? "simulated" : "unknown"}`}
-                              />
-                              <strong>
-                                {c.component.replaceAll("_", " ")}
-                              </strong>
-                            </div>
-                            <p>{c.message}</p>
-                          </div>
-                        ))
-                      )}
-                      {health.data?.timestamp && <p className="health-observed-at">Last checked {new Date(health.data.timestamp).toLocaleString()}</p>}
-                    </section>
-                  </div>
-                )}
-
-                {/* Run History Table for Command and Audit */}
-                {(view === "command" || view === "audit") && (
+                {/* Run History Table for Command Center */}
+                {view === "command" && (
                   <section className="history-panel run-history">
                     <div className="panel-heading">
                       <div>
@@ -1109,7 +996,7 @@ export function Workspace() {
         analysis={analysis}
         health={health.data}
         activeRun={runs.data?.[0]}
-        auditCount={audit.data?.events?.length}
+        auditCount={undefined}
       />
     </div>
   );

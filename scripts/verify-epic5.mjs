@@ -369,21 +369,8 @@ try {
   await page.getByRole("button", { name: "Confirm Rejection" }).click();
   await page.waitForTimeout(300);
 
-  // 7. Verify Durable Audit Trail View
-  console.log("7. Verifying Durable Sequential Audit Trail View...");
-  await page.getByRole("button", { name: "Audit & Health", exact: true }).click();
-  await page.getByText("Durable Audit Trail").waitFor();
-  await page.getByText("PostgreSQL Sequential Record · Latest 50 events").waitFor();
-
-  // Verify all logged event types appear in the feed
-  await page.getByText("MODE.CHANGED").first().waitFor();
-  await page.getByText("RECOMMENDATION.SIMULATED").waitFor();
-  await page.getByText("RECOMMENDATION.MODIFIED").waitFor();
-  await page.getByText("RECOMMENDATION.REJECTED").waitFor();
-
   // 8. Capture Screenshot Evidence
   console.log("8. Capturing desktop and mobile screenshot evidence for Epic 5...");
-  await page.getByRole("button", { name: "Command Center", exact: true }).click();
   await page.waitForTimeout(300);
 
   await page.screenshot({ path: "test-results/epic5-desktop.png", fullPage: true });

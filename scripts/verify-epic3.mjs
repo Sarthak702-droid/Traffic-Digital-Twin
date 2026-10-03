@@ -57,13 +57,13 @@ try {
   await page.getByText("SYNTHETIC DATA", { exact: true }).waitFor();
   await page.getByText("NO LIVE SIGNAL CONTROL", { exact: true }).waitFor();
 
-  // Verify exactly 6 navigation items
+  // Verify exactly 5 navigation items
   const navItems = page.locator(".app-sidebar nav .nav-item");
-  assert.equal(await navItems.count(), 6);
+  assert.equal(await navItems.count(), 5);
   const navLabels = await navItems.allInnerTexts();
   assert.deepEqual(
     navLabels.map((l) => l.trim()),
-    ["Command Center", "Network / Junction Intelligence", "Vision Analytics", "Incidents", "Emergency", "Audit & Health"],
+    ["Command Center", "Network / Junction Intelligence", "Vision Analytics", "Incidents", "Emergency"],
   );
 
   // 2. Role Switcher Verification

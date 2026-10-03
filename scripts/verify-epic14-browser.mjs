@@ -97,14 +97,13 @@ try {
   console.log("  ✓ Unauthenticated sign-in and command recovery panel rendered");
 
   // Step 4: Verify Navigation across all 6 Screens (S44, S45)
-  console.log("Step 4: Verifying navigation across all 6 screens...");
+  console.log("Step 4: Verifying navigation across all 5 screens...");
   const screens = [
     { name: "Command Center", text: /C1–C6 Network Twin/i },
     { name: "Network / Junction Intelligence", text: /Full Digital Twin/i },
     { name: "Vision Analytics", text: /Sample Video Feed & Traffic State Extraction/i },
     { name: "Incidents", text: /Incident Scenario · C3 Capacity Reduction/i },
     { name: "Emergency", text: /Ambulance Corridor Priority/i },
-    { name: "Audit & Health", text: /Durable Audit Trail/i },
   ];
 
   for (const screen of screens) {
@@ -116,11 +115,11 @@ try {
   }
 
   // Step 5: Test Deep Linking via URL Search Param (S45)
-  console.log("Step 5: Testing deep linking (?view=audit)...");
-  await page.goto(`${UI_URL}/?view=audit`);
+  console.log("Step 5: Testing deep linking (?view=emergency)...");
+  await page.goto(`${UI_URL}/?view=emergency`);
   await page.waitForLoadState("networkidle");
-  await page.getByText(/Durable Audit Trail/i).waitFor({ state: "visible" });
-  console.log("  ✓ Direct deep link to ?view=audit successfully hydrated");
+  await page.getByText(/Ambulance Corridor Priority/i).waitFor({ state: "visible" });
+  console.log("  ✓ Direct deep link to ?view=emergency successfully hydrated");
 
   // Capture Desktop Screenshot
   await page.screenshot({ path: "docs/screenshots/epic14-desktop.png", fullPage: false });

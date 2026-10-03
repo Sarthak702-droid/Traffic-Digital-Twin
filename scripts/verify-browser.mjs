@@ -64,10 +64,6 @@ try {
     path: "test-results/epic1-desktop.png",
     fullPage: true,
   });
-  await page
-    .getByRole("button", { name: "Audit & Health", exact: true })
-    .click();
-  await page.getByText("run.prepared", { exact: true }).first().waitFor();
   await page.getByRole("button", { name: "Emergency", exact: true }).click();
   await page
     .getByRole("heading", { name: "Emergency route configuration" })

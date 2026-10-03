@@ -29,7 +29,7 @@ class ErrorBoundary extends React.Component<
           >
             Retry workspace
           </button>
-          <a href="/?view=audit">Open audit after recovery</a>
+          <a href="/">Open workspace after recovery</a>
         </main>
       );
     }
