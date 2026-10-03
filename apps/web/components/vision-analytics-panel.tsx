@@ -99,6 +99,17 @@ function displayVehicleClass(className: string) {
   return labels[className] || className.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+const ROUTE_CLASS_META: Record<string, { label: string; color: string; bg: string }> = {
+  car: { label: "Cars", color: "#3b82f6", bg: "rgba(59, 130, 246, 0.12)" },
+  two_wheeler: { label: "2-Wheelers", color: "#10b981", bg: "rgba(16, 185, 129, 0.12)" },
+  autorickshaw: { label: "Auto-Rickshaws", color: "#f59e0b", bg: "rgba(245, 158, 11, 0.12)" },
+  bus: { label: "Buses", color: "#ef4444", bg: "rgba(239, 68, 68, 0.12)" },
+  truck: { label: "Trucks", color: "#a855f7", bg: "rgba(168, 85, 247, 0.12)" },
+  lcv: { label: "LCVs", color: "#06b6d4", bg: "rgba(6, 182, 212, 0.12)" },
+  pedestrain: { label: "Pedestrians", color: "#ec4899", bg: "rgba(236, 72, 153, 0.12)" },
+  bicycle: { label: "Bicycles", color: "#84cc16", bg: "rgba(132, 204, 22, 0.12)" },
+};
+
 function getStreamLaneMetrics(frame: any, telemetry: any): StreamLaneMetric[] {
   const detections = frame?.detections || [];
   const bands = [
@@ -187,6 +198,12 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
 
   // 12 Videos & Camera selection
   const [selectedCamera, setSelectedCamera] = useState<string>("CAM-01");
+  const [chartHover, setChartHover] = useState<{
+    frame: any;
+    index: number;
+    time: number;
+    x: number;
+  } | null>(null);
   const processingMode = "cached_observations";
   const [liveObservations, setLiveObservations] = useState<any[]>([]);
   const [observationStatus, setObservationStatus] = useState("missing");
@@ -651,6 +668,101 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
   const peakQueueVehicles = streamFrames?.length
     ? Math.max(...streamFrames.map((frame) => Number(frame?.queue_count ?? 0)))
     : displayQueueVehicles;
+
+  const streamFlowRate = streamFrames?.length
+    ? getObservedFlowVpm(streamFrames, streamFrames.length - 1)
+    : null;
+
+  // Time-series coordinates and SVG path calculation for route traffic dynamics analysis
+  const chartFrames = (streamFrames && streamFrames.length > 0) ? streamFrames : [];
+  const chartMaxTime = Math.max(10, Number(chartFrames[chartFrames.length - 1]?.time_s ?? activeTelemetry?.duration_s ?? 60));
+  const maxActive = chartFrames.length ? Math.max(...chartFrames.map((f: any) => Number(f.active_count || 0))) : 0;
+  const maxQueue = chartFrames.length ? Math.max(...chartFrames.map((f: any) => Number(f.queue_count || 0))) : 0;
+  const maxCrossed = chartFrames.length ? Math.max(...chartFrames.map((f: any) => Number(f.cumulative_crossed || 0))) : 0;
+  const chartMaxVal = Math.max(10, maxActive, maxQueue, maxCrossed);
+  const chartYCeil = Math.ceil(chartMaxVal * 1.15);
+
+  const chartSvgW = 800;
+  const chartSvgH = 200;
+  const chartPadL = 45;
+  const chartPadR = 25;
+  const chartPadT = 25;
+  const chartPadB = 30;
+  const chartPlotW = chartSvgW - chartPadL - chartPadR;
+  const chartPlotH = chartSvgH - chartPadT - chartPadB;
+  const chartMinX = chartPadL;
+  const chartMaxX = chartSvgW - chartPadR;
+  const chartMinY = chartPadT;
+  const chartMaxY = chartSvgH - chartPadB;
+
+  const getChartX = (t: number) => chartMinX + (Math.max(0, Math.min(t, chartMaxTime)) / chartMaxTime) * chartPlotW;
+  const getChartY = (val: number) => chartMaxY - (Math.max(0, Math.min(val, chartYCeil)) / chartYCeil) * chartPlotH;
+
+  const activePoints = chartFrames.map((f: any) => `${getChartX(f.time_s).toFixed(1)},${getChartY(f.active_count || 0).toFixed(1)}`);
+  const activePathD = activePoints.length ? `M ${activePoints.join(" L ")}` : "";
+  const activeAreaD = activePoints.length
+    ? `M ${getChartX(chartFrames[0].time_s).toFixed(1)},${chartMaxY} L ${activePoints.join(" L ")} L ${getChartX(chartFrames[chartFrames.length - 1].time_s).toFixed(1)},${chartMaxY} Z`
+    : "";
+
+  const queuePoints = chartFrames.map((f: any) => `${getChartX(f.time_s).toFixed(1)},${getChartY(f.queue_count || 0).toFixed(1)}`);
+  const queuePathD = queuePoints.length ? `M ${queuePoints.join(" L ")}` : "";
+  const queueAreaD = queuePoints.length
+    ? `M ${getChartX(chartFrames[0].time_s).toFixed(1)},${chartMaxY} L ${queuePoints.join(" L ")} L ${getChartX(chartFrames[chartFrames.length - 1].time_s).toFixed(1)},${chartMaxY} Z`
+    : "";
+
+  const crossedPoints = chartFrames.map((f: any) => `${getChartX(f.time_s).toFixed(1)},${getChartY(f.cumulative_crossed || 0).toFixed(1)}`);
+  const crossedPathD = crossedPoints.length ? `M ${crossedPoints.join(" L ")}` : "";
+
+  const chartYTicks = [0, Math.round(chartYCeil / 3), Math.round((chartYCeil * 2) / 3), chartYCeil];
+  const chartTimeStep = chartMaxTime > 90 ? 30 : chartMaxTime > 40 ? 10 : 5;
+  const chartXTicks: number[] = [];
+  for (let t = 0; t <= chartMaxTime; t += chartTimeStep) {
+    chartXTicks.push(t);
+  }
+  if (chartXTicks[chartXTicks.length - 1] < chartMaxTime - 2) {
+    chartXTicks.push(Math.round(chartMaxTime));
+  }
+
+  const chartPlayheadX = getChartX(mediaTime);
+
+  const handleChartMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!chartFrames.length) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relX = e.clientX - rect.left;
+    const ratio = Math.max(0, Math.min(1, (relX - (chartPadL * rect.width) / chartSvgW) / ((chartPlotW * rect.width) / chartSvgW)));
+    const hoverTime = ratio * chartMaxTime;
+
+    let bestIdx = 0;
+    let minDiff = Infinity;
+    for (let i = 0; i < chartFrames.length; i++) {
+      const diff = Math.abs(chartFrames[i].time_s - hoverTime);
+      if (diff < minDiff) {
+        minDiff = diff;
+        bestIdx = i;
+      }
+    }
+    const f = chartFrames[bestIdx];
+    setChartHover({
+      frame: f,
+      index: bestIdx,
+      time: f.time_s,
+      x: getChartX(f.time_s),
+    });
+  };
+
+  const handleChartClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!chartFrames.length || !videoRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relX = e.clientX - rect.left;
+    const ratio = Math.max(0, Math.min(1, (relX - (chartPadL * rect.width) / chartSvgW) / ((chartPlotW * rect.width) / chartSvgW)));
+    const targetTime = ratio * chartMaxTime;
+    videoRef.current.currentTime = targetTime;
+    syncMediaTime();
+  };
+
+  const classEntries = Object.entries(classBreakdown || {})
+    .filter(([, count]) => (count as number) > 0)
+    .sort(([, a], [, b]) => (b as number) - (a as number));
 
   return (
     <div className="vision-container" data-testid="vision-analytics-panel">
@@ -1129,57 +1241,280 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
         </div>
       </div>
 
-      <section className="vision-upstream-card" aria-label="ITD flow detection by recorded camera">
-        <div className="vision-card-header"><h2>ITD v1.2 flow detection · all recorded cameras</h2></div>
-        <p className="vision-roi-note">Each row summarizes sampled detections from its own recorded clip. Finalized observation windows are queried separately from Go. The clips are independent samples; display loops do not add virtual traffic.</p>
-        <div className="vision-camera-grid">
-          {cameraSlots.map((camera) => {
-            const item = telemetryMap[camera.id];
-            const frames = item?.frames as any[] | undefined;
-            const flow = frames?.length ? getObservedFlowVpm(frames, frames.length - 1) : null;
-            return <button key={camera.id} type="button" className={`vision-camera-card ${selectedCamera === camera.id ? "active" : ""}`} onClick={() => setSelectedCamera(camera.id)}>
-              <strong>{camera.id} · {camera.approach}</strong>
-              <span>{item ? `${item.summary?.total_unique_vehicles ?? 0} detected · ${item.summary?.total_crossed ?? 0} crossings` : "Telemetry unavailable"}</span>
-              <span>{flow == null ? "Flow unavailable" : `${flow.toFixed(1)} veh/min over analyzed segment`}</span>
-              <small>{camera.role === "external_boundary_input" ? "Video-derived boundary input" : camera.role === "internal_link_observation" ? "Internal observation" : "Independent sample"} · View recorded feed</small>
-            </button>;
-          })}
-        </div>
-      </section>
+      {/* Route Flow Detection & Traffic Dynamics Analysis */}
+      <section
+        className="vision-upstream-card"
+        role="region"
+        aria-label="ITD flow detection by recorded camera"
+      >
+        <div className="vision-route-header">
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "4px" }}>
+              <h2 id="upstream-heading" style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "#e5edf5" }}>
+                ITD v1.2 Route Flow &amp; Traffic Dynamics · {selectedCamera}
+              </h2>
+              <span className="vision-badge vision-badge-success">RECORDED LOOP · DISPLAY ONLY</span>
+              <span className="vision-badge vision-badge-primary">
+                {activeCamInfo.role === "external_boundary_input"
+                  ? "BOUNDARY DEMAND INPUT"
+                  : activeCamInfo.role === "internal_link_observation"
+                  ? "INTERNAL CORRIDOR LINK"
+                  : "BENCHMARK SAMPLE"}
+              </span>
+            </div>
+            <p style={{ fontSize: "12px", color: "#8da5b8", margin: 0 }}>
+              {activeCamInfo.approach} · {streamRole.description} Display loops do not add virtual traffic.
+            </p>
+          </div>
 
-      {/* Selected clip summary. All values below are derived from the active
-          stream, so CAM-01 through CAM-12 never inherit another feed's data. */}
-      <section className="vision-upstream-card" aria-labelledby="upstream-heading">
-        <div className="vision-card-header" style={{ marginBottom: "8px" }}>
-          <h2 id="upstream-heading" style={{ fontSize: "16px", fontWeight: 700, margin: 0, color: "#e5edf5" }}>
-            {selectedCamera} Clip Summary
-          </h2>
-          <span className="vision-badge vision-badge-success">RECORDED LOOP · DISPLAY ONLY</span>
+          {/* Route & Camera Selector Dropdown */}
+          <div className="vision-route-select-box">
+            <label htmlFor="itd-route-dropdown" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, color: "#38bdf8", whiteSpace: "nowrap" }}>
+              <Layers size={14} />
+              <span>Route / Camera:</span>
+            </label>
+            <select
+              id="itd-route-dropdown"
+              aria-label="Select camera route for flow detection summary"
+              value={selectedCamera}
+              onChange={(e) => setSelectedCamera(e.target.value)}
+              className="vision-route-dropdown-select"
+            >
+              {cameraSlots.map((camera) => {
+                const item = telemetryMap[camera.id];
+                const count = item?.summary?.total_unique_vehicles ?? 0;
+                const roleTag = camera.role === "external_boundary_input" ? "Boundary" : camera.role === "internal_link_observation" ? "Internal" : "Aux";
+                return (
+                  <option key={camera.id} value={camera.id}>
+                    {camera.id} · {camera.approach} ({roleTag} · {count} veh)
+                  </option>
+                );
+              })}
+            </select>
+          </div>
         </div>
-        <p style={{ fontSize: "12px", color: "#8da5b8", margin: "0 0 12px 0" }}>
-          {selectedCamera} · {activeCamInfo.approach} · Values update from the selected video stream as playback moves.
-        </p>
 
+        {/* Selected Route Record Summary */}
         <div className="vision-upstream-grid">
           <div className="vision-upstream-box">
-            <span className="vision-upstream-box-label">Detection coverage</span>
-            <span className="vision-upstream-box-val">{activeTelemetry ? "Full clip" : "Unavailable"}</span>
-            <span className="vision-upstream-box-sub">Cached sampled inference · display only</span>
+            <span className="vision-upstream-box-label">Monitored Route &amp; Role</span>
+            <span className="vision-upstream-box-val" style={{ fontSize: "16px", lineHeight: "1.3" }}>
+              {activeCamInfo.approach}
+            </span>
+            <span className="vision-upstream-box-sub">
+              {streamRole.networkUse} · {activeCamInfo.resolution}
+            </span>
           </div>
+
           <div className="vision-upstream-box">
-            <span className="vision-upstream-box-label">Peak active vehicles</span>
-            <span className="vision-upstream-box-val">{activeTelemetry ? peakActiveVehicles : "—"}</span>
-            <span className="vision-upstream-box-sub">Highest tracked frame in this clip</span>
+            <span className="vision-upstream-box-label">Observed Unique Vehicles</span>
+            <span className="vision-upstream-box-val">
+              {activeTelemetry ? `${displayTotalVehicles} veh` : "—"}
+            </span>
+            <span className="vision-upstream-box-sub">
+              {activeTelemetry?.summary?.total_crossed ?? 0} confirmed crossings · {activeTelemetry?.summary?.total_unique_pedestrians ?? 0} ped
+            </span>
           </div>
+
           <div className="vision-upstream-box">
-            <span className="vision-upstream-box-label">Peak queue ROI</span>
-            <span className="vision-upstream-box-val">{activeTelemetry ? `${peakQueueVehicles} veh` : "—"}</span>
-            <span className="vision-upstream-box-sub">Highest queue observation in this clip</span>
+            <span className="vision-upstream-box-label">Observed Segment Flow</span>
+            <span className="vision-upstream-box-val">
+              {streamFlowRate != null ? `${streamFlowRate.toFixed(1)} vpm` : "—"}
+            </span>
+            <span className="vision-upstream-box-sub">
+              {streamFlowRate != null ? "Throughput over analyzed segment" : "Flow unavailable"}
+            </span>
           </div>
+
           <div className="vision-upstream-box">
-            <span className="vision-upstream-box-label">Observed unique vehicles</span>
-            <span className="vision-upstream-box-val">{activeTelemetry ? displayTotalVehicles : "—"}</span>
-            <span className="vision-upstream-box-sub">Whole {selectedCamera} video stream</span>
+            <span className="vision-upstream-box-label">Peak Density &amp; Queue</span>
+            <span className="vision-upstream-box-val">
+              {activeTelemetry ? `${peakActiveVehicles} / ${peakQueueVehicles}` : "—"}
+            </span>
+            <span className="vision-upstream-box-sub">
+              Peak active / peak queue in ROI
+            </span>
+          </div>
+        </div>
+
+        {/* Route-Specific Traffic Dynamics & Detection Summary Graph */}
+        <div className="vision-chart-container" role="region" aria-label={`Traffic analysis time series for ${selectedCamera}`}>
+          <div className="vision-chart-topbar">
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Activity size={15} color="#38bdf8" />
+                <h3 style={{ fontSize: "14px", fontWeight: 700, margin: 0, color: "#f1f5f9" }}>
+                  {selectedCamera} Corridor Dynamics &amp; Vehicle Accumulation Profile
+                </h3>
+              </div>
+              <span style={{ fontSize: "11px", color: "#64748b" }}>
+                Continuous time-series analysis (density, queue formation &amp; throughput) · Click chart to scrub video
+              </span>
+            </div>
+
+            {/* Legend & Hover / Playhead Status */}
+            <div className="vision-chart-legend">
+              <div className="vision-chart-legend-item">
+                <span className="vision-chart-legend-dot" style={{ background: "#10b981" }} />
+                <span>Active Density</span>
+              </div>
+              <div className="vision-chart-legend-item">
+                <span className="vision-chart-legend-dot" style={{ background: "#c084fc" }} />
+                <span>Queue ROI Build-up</span>
+              </div>
+              <div className="vision-chart-legend-item">
+                <span className="vision-chart-legend-dash" />
+                <span>Line Crossings</span>
+              </div>
+              {chartHover ? (
+                <div style={{ background: "#1e293b", border: "1px solid #38bdf8", borderRadius: "6px", padding: "3px 8px", color: "#38bdf8", fontSize: "11px", fontWeight: 600 }}>
+                  @{chartHover.time.toFixed(1)}s: {chartHover.frame.active_count ?? 0} active · {chartHover.frame.queue_count ?? 0} queued · {chartHover.frame.cumulative_crossed ?? 0} crossed
+                </div>
+              ) : (
+                <div style={{ background: "rgba(15, 23, 42, 0.6)", border: "1px solid #334155", borderRadius: "6px", padding: "3px 8px", color: "#94a3b8", fontSize: "11px" }}>
+                  Playhead: <strong style={{ color: "#38bdf8" }}>{mediaTime.toFixed(1)}s</strong>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* SVG Traffic Graph */}
+          <div className="vision-chart-svg-wrap">
+            <svg
+              viewBox="0 0 800 200"
+              width="100%"
+              height="200"
+              style={{ display: "block", overflow: "visible" }}
+              onMouseMove={handleChartMouseMove}
+              onMouseLeave={() => setChartHover(null)}
+              onClick={handleChartClick}
+            >
+              <defs>
+                <linearGradient id="chart-grad-active" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                </linearGradient>
+                <linearGradient id="chart-grad-queue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#c084fc" stopOpacity="0.35" />
+                  <stop offset="100%" stopColor="#c084fc" stopOpacity="0.0" />
+                </linearGradient>
+              </defs>
+
+              {/* Background gridlines & Y-axis labels */}
+              {chartYTicks.map((tickVal) => {
+                const y = getChartY(tickVal);
+                return (
+                  <g key={`ytick-${tickVal}`}>
+                    <line x1={chartMinX} y1={y} x2={chartMaxX} y2={y} stroke="rgba(255, 255, 255, 0.07)" strokeDasharray="3 3" />
+                    <text x={chartMinX - 8} y={y + 3} textAnchor="end" fill="#64748b" fontSize="10" fontFamily="monospace">
+                      {tickVal}
+                    </text>
+                  </g>
+                );
+              })}
+              <text x={chartMinX - 8} y={chartMinY - 8} textAnchor="end" fill="#94a3b8" fontSize="10" fontWeight="600">
+                veh
+              </text>
+
+              {/* X-axis time ticks */}
+              {chartXTicks.map((t) => {
+                const x = getChartX(t);
+                return (
+                  <g key={`xtick-${t}`}>
+                    <line x1={x} y1={chartMinY} x2={x} y2={chartMaxY} stroke="rgba(255, 255, 255, 0.04)" />
+                    <line x1={x} y1={chartMaxY} x2={x} y2={chartMaxY + 5} stroke="rgba(255, 255, 255, 0.2)" />
+                    <text x={x} y={chartMaxY + 16} textAnchor="middle" fill="#64748b" fontSize="10" fontFamily="monospace">
+                      {t}s
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Area & Line for Active Density */}
+              {activeAreaD && <path d={activeAreaD} fill="url(#chart-grad-active)" />}
+              {activePathD && <path d={activePathD} fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />}
+
+              {/* Area & Line for Queue Build-Up */}
+              {queueAreaD && <path d={queueAreaD} fill="url(#chart-grad-queue)" />}
+              {queuePathD && <path d={queuePathD} fill="none" stroke="#c084fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />}
+
+              {/* Line for Cumulative Crossings */}
+              {crossedPathD && <path d={crossedPathD} fill="none" stroke="#f59e0b" strokeWidth="2" strokeDasharray="4 3" />}
+
+              {/* Real-time Video Playback Cursor Head */}
+              {mediaReady && (
+                <g>
+                  <line
+                    x1={chartPlayheadX}
+                    y1={chartMinY - 4}
+                    x2={chartPlayheadX}
+                    y2={chartMaxY}
+                    stroke="#38bdf8"
+                    strokeWidth="2"
+                    strokeDasharray="none"
+                  />
+                  <polygon
+                    points={`${chartPlayheadX - 5},${chartMinY - 6} ${chartPlayheadX + 5},${chartMinY - 6} ${chartPlayheadX},${chartMinY}`}
+                    fill="#38bdf8"
+                  />
+                </g>
+              )}
+
+              {/* Hover Guide & Tooltip Cursor */}
+              {chartHover && (
+                <g>
+                  <line
+                    x1={chartHover.x}
+                    y1={chartMinY}
+                    x2={chartHover.x}
+                    y2={chartMaxY}
+                    stroke="#e2e8f0"
+                    strokeWidth="1.5"
+                    strokeDasharray="2 2"
+                  />
+                  <circle cx={chartHover.x} cy={getChartY(chartHover.frame.active_count || 0)} r="4" fill="#10b981" stroke="#0b1118" strokeWidth="2" />
+                  <circle cx={chartHover.x} cy={getChartY(chartHover.frame.queue_count || 0)} r="4" fill="#c084fc" stroke="#0b1118" strokeWidth="2" />
+                  <circle cx={chartHover.x} cy={getChartY(chartHover.frame.cumulative_crossed || 0)} r="4" fill="#f59e0b" stroke="#0b1118" strokeWidth="2" />
+                </g>
+              )}
+
+              {/* Interactive Scrubbing Click & Hover Capture Overlay */}
+              <rect
+                x={chartMinX}
+                y={chartMinY}
+                width={chartPlotW}
+                height={chartPlotH}
+                fill="transparent"
+                style={{ cursor: "crosshair" }}
+              />
+            </svg>
+          </div>
+
+          {/* Fleet Modal Split / Class Composition Breakdown */}
+          <div className="vision-fleet-strip">
+            <span style={{ fontSize: "11px", fontWeight: 600, color: "#8da5b8", alignSelf: "center", marginRight: "4px" }}>
+              Route Fleet Split:
+            </span>
+            {classEntries.length > 0 ? (
+              classEntries.map(([cls, count]) => {
+                const meta = ROUTE_CLASS_META[cls] || { label: cls.replace(/_/g, " "), color: "#94a3b8", bg: "rgba(148, 163, 184, 0.1)" };
+                const pct = displayTotalVehicles > 0 && cls !== "pedestrain"
+                  ? Math.round(((count as number) / displayTotalVehicles) * 100)
+                  : null;
+                return (
+                  <span
+                    key={cls}
+                    className="vision-fleet-pill"
+                    style={{ background: meta.bg, borderColor: `${meta.color}40`, color: meta.color }}
+                  >
+                    <strong>{meta.label}:</strong> {count as number}
+                    {pct !== null ? ` (${pct}%)` : ""}
+                  </span>
+                );
+              })
+            ) : (
+              <span style={{ fontSize: "11px", color: "#64748b" }}>Fleet breakdown loading…</span>
+            )}
           </div>
         </div>
       </section>
