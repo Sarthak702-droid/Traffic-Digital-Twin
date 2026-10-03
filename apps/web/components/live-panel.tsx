@@ -1,6 +1,11 @@
 "use client";
 import type { TrafficState } from "../../../packages/contracts/typescript/events";
 import type { Network } from "../../../packages/contracts/typescript/network";
+function formatVehicleCount(n: number): string | number {
+  if (!Number.isFinite(n)) return "0";
+  return Number.isInteger(n) ? n : n.toFixed(1);
+}
+
 export function LiveSummary({
   live,
 }: {
@@ -47,14 +52,16 @@ export function LiveSummary({
             <div>
               <span>IN NETWORK</span>
               <strong>
-                {f.vehicles_in_network}
+                {formatVehicleCount(f.vehicles_in_network)}
                 <small>vehicles</small>
               </strong>
             </div>
             <div>
               <span>QUEUED</span>
               <strong>
-                {f.movements.reduce((n, m) => n + m.queue_veh, 0)}
+                {formatVehicleCount(
+                  f.movements.reduce((n, m) => n + m.queue_veh, 0),
+                )}
                 <small>vehicles</small>
               </strong>
             </div>
@@ -145,7 +152,7 @@ export function JunctionLive({
                   <dl>
                     <div>
                       <dt>Queue</dt>
-                      <dd>{m.queue_veh} veh</dd>
+                      <dd>{formatVehicleCount(m.queue_veh)} veh</dd>
                     </div>
                     <div>
                       <dt>Speed</dt>
