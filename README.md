@@ -1,12 +1,43 @@
-> **Architecture alignment — 2026-09-18:** The supplied backend and API-concepts specifications are authoritative: Go exposes the public REST/WebSocket gateway and owns persistence; Python is private gRPC compute. This is a synthetic MVP and is not approved for live traffic control.
+> **Architecture alignment — 2026-09-18:** Go is the public REST/WebSocket control plane and persistence owner; Python services are private gRPC compute services. This repository is a synthetic engineering prototype and is **not** approved for live traffic control.
 
 # Traffic Digital Twin
 
-Local virtual traffic demonstration with recorded ITD v1.2 video analytics, aggregate network flow, forecasts and operator-reviewed signal plans. **No live CCTV or physical signal control.** The 12 clips are independent samples; four selected boundary profiles can drive the C1-C6 model.
+Traffic Digital Twin is a local operator-focused prototype for evaluating **virtual traffic signal plans** using:
+- Recorded video-derived boundary demand
+- Aggregate finite-capacity traffic simulation
+- Forecasting and candidate plan comparison
+- Audited operator approval/reject workflows
 
-## Start
+It does **not** connect to live CCTV and does **not** actuate physical traffic controllers.
 
-Requirements: Node.js 22+, Go 1.25+, Python 3.12+, Docker Compose. Install dependencies while online; startup uses no external APIs, fonts or maps.
+## Key capabilities
+
+- Authenticated operator workflows with role-based control actions
+- Recorded-video observation ingestion for demand inputs
+- Forecast horizons at 30/60/120/300 seconds (when eligible)
+- Baseline vs candidate virtual plan scoring from the same snapshot
+- Safe-boundary virtual plan application with durable audit trail
+- Support for both:
+  - original two-controlled-junction graph
+  - synthetic three-controlled-junction graph
+
+## Tech stack
+
+- **Web UI:** React + TypeScript + Vite (`apps/web`)
+- **Public API / Control plane:** Go + PostgreSQL (`apps/api`, `db`)
+- **Compute services:** Python gRPC (`services/simulation`, `services/intelligence`, `services/vision`)
+- **Shared contracts/config:** protobuf + JSON/TS packages (`packages/contracts`, `packages/scenario-config`, `packages/camera-config`)
+
+## Prerequisites
+
+- Node.js 22+
+- Go 1.25+
+- Python 3.12+
+- Docker Compose
+
+Install all dependencies while online; runtime is intended to work without external APIs/fonts/maps.
+
+## Quick start
 
 ```sh
 npm ci
@@ -16,7 +47,7 @@ go mod download
 docker compose up -d --wait postgres
 ```
 
-Start the local Go-control-plane stack:
+Start local services:
 
 ```sh
 python3 scripts/bootstrap-local.py
@@ -25,27 +56,31 @@ npm run build
 npm start
 ```
 
-The account command prompts for a password and stores its verifier in the ignored `.runtime` directory. The Go API requires this file; signing in and changing virtual controls use a server session.
+Open the UI at **http://127.0.0.1:3100**.
 
-Bootstrap preserves an existing environment and keeps generated compute credentials in ignored `.runtime` files. Open **http://127.0.0.1:3100**. Public Go API: **8081**; private Python simulation and intelligence gRPC services: **50051** and **50052**; PostgreSQL: **5433**. Go performs migrations and durable writes through its persistence modules. These are development startup instructions; full-stack acceptance and production deployment remain pending.
+Default local ports:
+- Go API: `8081`
+- Python simulation gRPC: `50051`
+- Python intelligence gRPC: `50052`
+- PostgreSQL: `5433`
 
-The initial screen is signed out: enter the username and password you provisioned to load the network. There is no default password. If you forgot it, repeat the account command above to choose a new password; previous sessions for that account are revoked. After login, explicitly select **Seeded reference scenario** for synthetic traffic and start a virtual scenario, or configure all required processed clips for video demand. Run times and forecasts remain unavailable before a run starts. The launcher checks account setup before starting services.
+## Authentication notes
 
-`API_ORIGIN` controls the Vite proxy. Keep private services on loopback. Local HTTP does not establish a production transport-security pass.
+- There is **no default password**.
+- Create users via `scripts/create-gateway-user.py`; credentials are stored in ignored `.runtime` files.
+- Session and role enforcement is owned by the Go control plane.
 
-The existing delivery dashboard is separate: `node server.mjs` from the repository root, or `npm run dashboard`. It reads `docs/backlog.json` (the versioned copy of the original independent planning project) and repository completion evidence in `docs/delivery-status.json`. The legacy `docs/planning-dashboard` checkout remains untouched and is not required to run this project.
+## Operator workflow (prototype)
 
-## Epic 1 workflow
-
-1. Inspect the graph and select any node by click or keyboard.
-2. Inspect configured lengths, storage and protected phase bounds.
-3. Choose a scenario and deterministic seed; prepare a run.
-4. Check the saved run and its audit entry in Audit & Health.
-5. Restart Go and refresh: records remain in PostgreSQL.
-
-Starting a run with **ITD v1.2 recorded-video counts** supplies four boundary inputs from finalized observation windows. The model propagates this mass through the configured links and compares virtual signal plans; approved timing applies only at a safe phase boundary. Select **Seeded reference scenario** when testing independent synthetic demand.
+1. Sign in and select a scenario type (peak/incident/emergency) or video-backed demand path.
+2. Start a virtual run and inspect finalized observations.
+3. Compare baseline vs bounded candidate plans.
+4. Approve/modify/reject with explicit reason handling.
+5. Apply approved plan at safe boundary; review audit records.
 
 ## Verification
+
+Run core checks:
 
 ```sh
 go test -race ./apps/api/... ./db/...
@@ -55,47 +90,37 @@ npm run typecheck
 npm run build
 ```
 
-Full integration, with local PostgreSQL and the Python contract endpoint running:
+Browser acceptance (with Go + UI running):
 
 ```sh
-TWIN_ENGINE=aggregate PYTHONPATH=.:packages/contracts/gen/python .venv/bin/python -m services.shared.server simulation --port 50051
-# In another terminal:
-TEST_DATABASE_URL='postgres://traffic:traffic_demo@127.0.0.1:5433/traffic?sslmode=disable' \
-SIMULATION_GRPC_ADDR=127.0.0.1:50051 \
-go test -race -count=1 ./apps/api/... ./db/...
+npx playwright install chromium
+node scripts/verify-browser.mjs
 ```
 
-The PostgreSQL integration test uses a uniquely named schema and removes only its own fixtures. It tests migrations, immutable configuration, connection restart durability, append-only audit and transaction rollback when audit insertion fails. Tests without these environment variables explicitly skip the two external integrations.
-
-Browser acceptance: install Chromium once with `npx playwright install chromium`; with production UI and Go running, `node scripts/verify-browser.mjs`. It saves screenshots under `test-results/`, checks desktop/mobile layout, keyboard inspection, all three run types, persistence on reload and audit visibility. It creates real local demo run records.
-
-## Repository Structure
+## Repository layout
 
 ```text
-├── apps/                    # Frontend and backend application code
-│   ├── api/                 # Go API gateway, orchestrator, and PostgreSQL store
-│   └── web/                 # React/Vite operator dashboard, network canvas, and UI panels
-├── dashboard/               # Delivery tracking dashboard server and client (npm run dashboard)
-├── db/                      # PostgreSQL migrations and sqlc query definitions
-├── docs/                    # Architecture guides, PRDs, and delivery plans
-│   ├── epics/               # Verification reports and status for Epics 1 through 14
-│   ├── prd_pack/            # Versioned PRD package with Word, PDF, and companion files
-│   └── screenshots/         # Test evidence and layout verification captures
-├── packages/                # Shared contracts, scenarios, and test fixtures
-│   ├── camera-config/       # Camera metadata and junction geometry configurations
-│   ├── contracts/           # Protobuf, OpenAPI, JSON schemas, and TypeScript definitions
-│   ├── replay/              # Seeded scenarios and recorded observation replays
-│   └── scenario-config/     # C1–C6 network topology configurations
-├── reports/                 # 29 verification audits, benchmarks, test reports, and manifests
-├── scripts/                 # Development, verification, testing, and lifecycle automation
-├── services/                # Private Python gRPC compute services
-│   ├── intelligence/        # Demand forecasting and signal alternative optimization
-│   ├── shared/              # Common contracts, gRPC server runner, and validation logic
-│   ├── simulation/          # Aggregate finite-capacity cell-flow engine
-│   └── vision/              # ITD v1.2 video inference, tracking, and observation extraction
-└── tests/                   # End-to-end integration test suites
+apps/        # Go API and React/Vite web app
+db/          # PostgreSQL migrations and sqlc queries
+docs/        # Architecture, plans, PRD and acceptance evidence
+packages/    # Shared contracts, topology, camera/scenario configs
+reports/     # Verification and benchmark artifacts
+scripts/     # Bootstrap, validation and utility scripts
+services/    # Python gRPC simulation/intelligence/vision services
+tests/       # Integration and end-to-end tests
 ```
 
-## Design and scope
+## Scope and constraints
 
-See [architecture](docs/architecture.md), [API and architecture alignment](docs/API-ARCHITECTURE-SPEC-ALIGNMENT.md), [contracts](packages/contracts/README.md), [PRD](docs/PRD.md), [contracts plan](docs/contracts-plan.md), and [Epic 1 acceptance evidence](docs/epics/epic1-acceptance.md).
+- Prototype-only: no production deployment guarantees
+- Recorded clips are immutable evidence; virtual plans do not alter source footage
+- No live RTSP ingestion in this milestone
+- Physical controller integration is intentionally out of scope
+
+## Additional references
+
+- [Implementation Plan](docs/IMPLEMENTATION-PLAN.md)
+- [Worktree Execution Plan](docs/WORKTREE-EXECUTION-PLAN.md)
+- [API & Architecture Alignment](docs/API-ARCHITECTURE-SPEC-ALIGNMENT.md)
+- [Contracts Plan](docs/contracts-plan.md)
+- [Architecture Overview](docs/architecture.md)
