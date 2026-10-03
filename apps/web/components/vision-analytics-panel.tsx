@@ -16,6 +16,9 @@ import {
   Activity,
   Compass,
   Layers,
+  Radio,
+  Zap,
+  Gauge,
 } from "lucide-react";
 import { canvasSize, detectionFrameIndex, sameGeometry, DISPLAY_TELEMETRY_VERSION, displayMediaURL } from "@/lib/video-display";
 import {LoadingState} from "@/components/ui/loading";
@@ -108,6 +111,17 @@ const ROUTE_CLASS_META: Record<string, { label: string; color: string; bg: strin
   lcv: { label: "LCVs", color: "#06b6d4", bg: "rgba(6, 182, 212, 0.12)" },
   pedestrain: { label: "Pedestrians", color: "#ec4899", bg: "rgba(236, 72, 153, 0.12)" },
   bicycle: { label: "Bicycles", color: "#84cc16", bg: "rgba(132, 204, 22, 0.12)" },
+};
+
+const RADAR_CLASS_COLORS: Record<string, string> = {
+  car: "#3b82f6",
+  two_wheeler: "#10b981",
+  autorickshaw: "#f59e0b",
+  bus: "#ef4444",
+  truck: "#a855f7",
+  pedestrain: "#ec4899",
+  lcv: "#06b6d4",
+  bicycle: "#84cc16",
 };
 
 function getStreamLaneMetrics(frame: any, telemetry: any): StreamLaneMetric[] {
@@ -764,6 +778,71 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     .filter(([, count]) => (count as number) > 0)
     .sort(([, a], [, b]) => (b as number) - (a as number));
 
+  // Corridor Radar and Virtual Sensor Gate Calculations
+  const crossingEvents: Array<{
+    time_s: number;
+    cumulative: number;
+    headway_s: number | null;
+    active_count: number;
+    dominantClass: string;
+    laneBand: string;
+  }> = [];
+  if (chartFrames && chartFrames.length > 0) {
+    let prevCrossed = 0;
+    let prevTime: number | null = null;
+
+    for (let i = 0; i < chartFrames.length; i++) {
+      const f = chartFrames[i];
+      const crossed = Number(f.cumulative_crossed || 0);
+      if (crossed > prevCrossed) {
+        const time = Number(f.time_s || 0);
+        const headway = prevTime !== null ? Math.max(0.5, time - prevTime) : null;
+        const classCounts = f.class_counts || {};
+        const dom = Object.entries(classCounts).sort(([, a], [, b]) => Number(b) - Number(a))[0]?.[0] || "car";
+
+        const dets = f.detections || [];
+        const crossingDet = dets.find((d: any) => d.has_crossed) || dets[0];
+        let lane = "Centre Band";
+        if (crossingDet) {
+          const cx = crossingDet.centroid ? crossingDet.centroid[0] : (crossingDet.bbox?.[0] ?? 0.5);
+          lane = cx < 1 / 3 ? "Left Band" : cx < 2 / 3 ? "Centre Band" : "Right Band";
+        }
+
+        crossingEvents.push({
+          time_s: time,
+          cumulative: crossed,
+          headway_s: headway,
+          active_count: Number(f.active_count || 0),
+          dominantClass: dom,
+          laneBand: lane,
+        });
+        prevCrossed = crossed;
+        prevTime = time;
+      }
+    }
+  }
+
+  const pastEvents = crossingEvents.filter((ev) => ev.time_s <= mediaTime + 0.1);
+
+  const recentEvents = pastEvents.slice(-4).reverse();
+
+  const validHeadways = pastEvents.map((e) => e.headway_s).filter((h): h is number => h !== null);
+  const meanHeadway = validHeadways.length > 0
+    ? validHeadways.reduce((a, b) => a + b, 0) / validHeadways.length
+    : null;
+
+  const platoonMode = meanHeadway === null
+    ? "Awaiting Data"
+    : meanHeadway < 2.5
+    ? "Platoon Clustered"
+    : meanHeadway < 5.0
+    ? "Steady Flow"
+    : "Dispersed Arrival";
+
+  const dominantLane = [...laneMetrics].sort((a, b) => b.active - a.active)[0]?.label || "Centre ROI band";
+
+  const currentDetections = activeFrameData?.detections || [];
+
   return (
     <div className="vision-container" data-testid="vision-analytics-panel">
       {/* Header Banner & PRD Disclaimers */}
@@ -944,8 +1023,9 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
 
       {/* Main Grid: Video Player on Left, Metrics on Right */}
       <div className="vision-main-grid">
-        {/* LEFT: Video Player Card with Canvas Overlays */}
-        <section className="vision-video-panel" aria-label="Camera Video Viewport">
+        {/* LEFT COLUMN: Video Viewport & Corridor Radar */}
+        <div className="vision-video-col">
+          <section className="vision-video-panel" aria-label="Camera Video Viewport">
           <div className="vision-video-header">
             <div className="vision-video-header-title">
               <Video size={16} color="#64b5f6" aria-hidden="true" />
@@ -1114,8 +1194,278 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
           </div>
         </section>
 
-        {/* RIGHT: Realtime Aggregates Column */}
-        <div className="vision-metrics-col">
+        {/* Corridor Micro-Radar & Virtual Sensor Gate */}
+        <section className="vision-card vision-radar-panel" role="region" aria-label="Corridor Micro-Radar and Sensor Gate">
+          <div className="vision-card-header" style={{ marginBottom: "4px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Radio size={16} color="#38bdf8" />
+              <h3 style={{ fontSize: "15px", fontWeight: 700, margin: 0, color: "#f8fafc" }}>
+                {selectedCamera} Corridor Micro-Radar &amp; Sensor Gate
+              </h3>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span className={`vision-badge ${crossingPulse ? "vision-badge-warning" : "vision-badge-success"}`} style={{ fontSize: "10px" }}>
+                {crossingPulse ? "● SENSOR EVENT DETECTED" : "● GATE ARMED (Passage Active)"}
+              </span>
+              <span className="vision-badge vision-badge-primary" style={{ fontSize: "10px" }}>
+                LIVE 2D ORTHOGRAPHIC
+              </span>
+            </div>
+          </div>
+          <p style={{ fontSize: "11px", color: "#8da5b8", margin: "0 0 4px 0" }}>
+            Top-down orthographic road radar and virtual counting line gate synchronized in real-time with camera frame detections.
+          </p>
+
+          <div className="vision-radar-grid">
+            {/* SUB-COLUMN 1: TOP-DOWN ORTHOGRAPHIC RADAR */}
+            <div className="vision-radar-subcol">
+              <div className="vision-radar-subcol-title">
+                <span>CORRIDOR ORTHOGRAPHIC RADAR</span>
+                <span style={{ fontSize: "10px", color: "#38bdf8", fontWeight: 600 }}>
+                  {currentDetections.length} tracked targets
+                </span>
+              </div>
+
+              <div className="vision-radar-svg-wrap">
+                <svg viewBox="0 0 320 200" width="100%" height="100%" style={{ display: "block" }}>
+                  {/* Road Surface */}
+                  <polygon points="35,15 285,15 295,185 25,185" fill="#0b121a" stroke="#1e2c3d" strokeWidth="1.5" />
+
+                  {/* Lane Divider Lines */}
+                  <line x1="118" y1="15" x2="115" y2="185" stroke="#1e293b" strokeDasharray="3 3" strokeWidth="1.2" />
+                  <line x1="202" y1="15" x2="205" y2="185" stroke="#1e293b" strokeDasharray="3 3" strokeWidth="1.2" />
+
+                  {/* Lane Labels */}
+                  <text x="76" y="24" textAnchor="middle" fill="#475569" fontSize="8" fontWeight="600">LEFT ROI</text>
+                  <text x="160" y="24" textAnchor="middle" fill="#475569" fontSize="8" fontWeight="600">CENTRE ROI</text>
+                  <text x="244" y="24" textAnchor="middle" fill="#475569" fontSize="8" fontWeight="600">RIGHT ROI</text>
+
+                  {/* Flow Direction Indicators */}
+                  <path d="M 76,45 L 76,55 M 73,52 L 76,55 L 79,52" stroke="#1e293b" strokeWidth="1.2" fill="none" />
+                  <path d="M 160,45 L 160,55 M 157,52 L 160,55 L 163,52" stroke="#1e293b" strokeWidth="1.2" fill="none" />
+                  <path d="M 244,45 L 244,55 M 241,52 L 244,55 L 247,52" stroke="#1e293b" strokeWidth="1.2" fill="none" />
+
+                  {/* Queue Storage Zone */}
+                  <polygon points="31,95 289,95 294,165 26,165" fill="rgba(168, 85, 247, 0.10)" stroke="rgba(192, 132, 252, 0.35)" strokeWidth="1" strokeDasharray="2 2" />
+                  <text x="34" y="107" fill="#c084fc" fontSize="8" fontWeight="600" opacity="0.9">QUEUE ROI ZONE</text>
+
+                  {/* Virtual Counting Gate Line */}
+                  <line
+                    x1="25"
+                    y1="168"
+                    x2="295"
+                    y2="168"
+                    stroke={crossingPulse ? "#fbbf24" : "#f59e0b"}
+                    strokeWidth={crossingPulse ? 3.5 : 2}
+                  />
+                  <circle cx="25" cy="168" r="3" fill="#f59e0b" />
+                  <circle cx="295" cy="168" r="3" fill="#f59e0b" />
+                  <text x="160" y="179" textAnchor="middle" fill="#f59e0b" fontSize="8" fontWeight="700">
+                    COUNTING LINE GATE ↓
+                  </text>
+
+                  {/* Real-time Scanning Radar Sweep Line */}
+                  <line
+                    x1="20"
+                    y1={(mediaTime * 30) % 165 + 15}
+                    x2="300"
+                    y2={(mediaTime * 30) % 165 + 15}
+                    stroke="rgba(56, 189, 248, 0.22)"
+                    strokeWidth="1.5"
+                  />
+
+                  {/* Active Tracked Vehicles Plotted on Radar */}
+                  {currentDetections.map((det: any, idx: number) => {
+                    const cx = det.centroid ? det.centroid[0] : (det.bbox ? (det.bbox[0] + det.bbox[2]) / 2 : 0.5);
+                    const cy = det.centroid ? det.centroid[1] : (det.bbox ? (det.bbox[1] + det.bbox[3]) / 2 : 0.5);
+                    const vx = 35 + cx * 250;
+                    const vy = 20 + cy * 145;
+                    const color = RADAR_CLASS_COLORS[det.class] || "#3b82f6";
+                    const isBike = det.class === "two_wheeler" || det.class === "bicycle";
+                    const isHeavy = det.class === "bus" || det.class === "truck";
+                    const vw = isBike ? 6 : isHeavy ? 12 : 9;
+                    const vh = isBike ? 10 : isHeavy ? 17 : 13;
+
+                    return (
+                      <g key={`det-${idx}-${det.id ?? idx}`}>
+                        {/* Motion Trail */}
+                        {det.trail && det.trail.length > 1 && (
+                          <polyline
+                            points={det.trail.map(([tx, ty]: [number, number]) => `${(35 + tx * 250).toFixed(1)},${(20 + ty * 145).toFixed(1)}`).join(" ")}
+                            fill="none"
+                            stroke={color}
+                            strokeWidth="1.2"
+                            strokeDasharray="2 2"
+                            opacity="0.5"
+                          />
+                        )}
+
+                        {/* Queue Pulse Halo */}
+                        {det.in_queue && (
+                          <circle
+                            cx={vx}
+                            cy={vy}
+                            r={Math.max(vw, vh) * 0.85}
+                            fill="none"
+                            stroke="#c084fc"
+                            strokeWidth="1.5"
+                            strokeDasharray="2 2"
+                          />
+                        )}
+
+                        {/* Crossed Glow Halo */}
+                        {det.has_crossed && (
+                          <circle
+                            cx={vx}
+                            cy={vy}
+                            r={Math.max(vw, vh) * 0.9}
+                            fill="none"
+                            stroke="#f59e0b"
+                            strokeWidth="1.5"
+                          />
+                        )}
+
+                        {/* Vehicle Body Blip */}
+                        <rect
+                          x={vx - vw / 2}
+                          y={vy - vh / 2}
+                          width={vw}
+                          height={vh}
+                          rx="2"
+                          fill={color}
+                          stroke="#06090e"
+                          strokeWidth="1.5"
+                        />
+
+                        {/* Class Mini Label */}
+                        <text
+                          x={vx + vw / 2 + 3}
+                          y={vy + 3}
+                          fill="#cbd5e1"
+                          fontSize="7"
+                          fontFamily="monospace"
+                          fontWeight="600"
+                        >
+                          {displayVehicleClass(det.class).slice(0, 4).toUpperCase()}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+
+              <div className="vision-radar-kpi-bar">
+                <span>Approach: <strong>{currentDetections.filter((d: any) => !d.in_queue && !d.has_crossed).length}</strong></span>
+                <span>In Queue ROI: <strong>{currentDetections.filter((d: any) => d.in_queue).length}</strong></span>
+                <span>Crossed Line: <strong>{displayCrossed}</strong></span>
+              </div>
+            </div>
+
+            {/* SUB-COLUMN 2: VIRTUAL SENSOR GATE & MICRO-HEADWAY LOG */}
+            <div className="vision-radar-subcol">
+              <div className="vision-radar-subcol-title">
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Zap size={14} color="#f59e0b" />
+                  <span>SENSOR GATE &amp; MICRO-HEADWAYS</span>
+                </div>
+                <span style={{ fontSize: "10px", color: crossingPulse ? "#fbbf24" : "#10b981", fontWeight: 700 }}>
+                  {crossingPulse ? "PULSE TRIGGER" : "GATE ARMED"}
+                </span>
+              </div>
+
+              <div className="vision-gate-metrics-grid">
+                <div className="vision-gate-metric-box">
+                  <span className="vision-gate-metric-label">Mean Headway</span>
+                  <span className="vision-gate-metric-val">
+                    {meanHeadway !== null ? `${meanHeadway.toFixed(1)}s` : "—"}
+                  </span>
+                  <span className="vision-gate-metric-sub">Inter-arrival passage gap</span>
+                </div>
+
+                <div className="vision-gate-metric-box">
+                  <span className="vision-gate-metric-label">Platoon Mode</span>
+                  <span className="vision-gate-metric-val" style={{ fontSize: "13px", color: "#38bdf8" }}>
+                    {platoonMode}
+                  </span>
+                  <span className="vision-gate-metric-sub">Arrival compression</span>
+                </div>
+
+                <div className="vision-gate-metric-box">
+                  <span className="vision-gate-metric-label">Gate Crossings</span>
+                  <span className="vision-gate-metric-val" style={{ color: "#f59e0b" }}>
+                    {displayCrossed} veh
+                  </span>
+                  <span className="vision-gate-metric-sub">Serviced past line</span>
+                </div>
+
+                <div className="vision-gate-metric-box">
+                  <span className="vision-gate-metric-label">Dominant Lane</span>
+                  <span className="vision-gate-metric-val" style={{ fontSize: "13px" }}>
+                    {dominantLane.replace(" ROI band", "")}
+                  </span>
+                  <span className="vision-gate-metric-sub">Highest corridor load</span>
+                </div>
+              </div>
+
+              {/* Recent Crossings Chronological Ticker */}
+              <div style={{ marginTop: "4px" }}>
+                <span style={{ fontSize: "10px", fontWeight: 700, color: "#8da5b8", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  Recent Gate Passage Events:
+                </span>
+                <div className="vision-events-log-container">
+                  {recentEvents.length > 0 ? (
+                    recentEvents.map((ev, i) => {
+                      const meta = ROUTE_CLASS_META[ev.dominantClass] || { label: ev.dominantClass, color: "#94a3b8", bg: "rgba(148, 163, 184, 0.1)" };
+                      return (
+                        <div className="vision-event-item" key={`ev-${ev.time_s}-${i}`}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <span style={{ fontFamily: "monospace", color: "#38bdf8", fontWeight: 700, fontSize: "10px" }}>
+                              @{ev.time_s.toFixed(1)}s
+                            </span>
+                            <span className="vision-event-badge" style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.color}40` }}>
+                              {meta.label}
+                            </span>
+                            <span style={{ color: "#94a3b8", fontSize: "10px" }}>
+                              {ev.laneBand}
+                            </span>
+                          </div>
+                          <span style={{ color: "#f59e0b", fontFamily: "monospace", fontWeight: 600, fontSize: "10px" }}>
+                            {ev.headway_s !== null ? `Δt: ${ev.headway_s.toFixed(1)}s` : "First veh"}
+                          </span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="vision-empty-events">
+                      No crossings recorded yet at {mediaTime.toFixed(1)}s · Sensor gate armed
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Diagnostic & Optical Geometry Ribbon */}
+          <div className="vision-radar-diag-ribbon">
+            <div className="vision-radar-diag-item">
+              <Gauge size={12} color="#64748b" />
+              <span>Sensor: <strong>{selectedCamera}-VIRT-GATE</strong></span>
+            </div>
+            <div className="vision-radar-diag-item">
+              <span>Model: <strong>ITD v1.2 YOLOv8 + ByteTrack</strong></span>
+            </div>
+            <div className="vision-radar-diag-item">
+              <span>Sampling: <strong>2.0 Hz (0.5s intervals)</strong></span>
+            </div>
+            <div className="vision-radar-diag-item">
+              <span>Calibration: <strong>Corridor ROI Polygon</strong></span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* RIGHT: Realtime Aggregates Column */}
+      <div className="vision-metrics-col">
           {/* Selected-stream dashboard — changes with every camera switch. */}
           <div className="vision-card vision-stream-dashboard" role="region" aria-label={`${selectedCamera} stream dashboard`}>
             <div className="vision-card-header">
