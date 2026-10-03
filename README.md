@@ -1,36 +1,64 @@
+<a id="readme-top"></a>
+
 <div align="center">
 
-# Traffic Digital Twin
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
 
-Local virtual traffic demonstration with recorded ITD v1.2 video analytics, aggregate network flow, forecasts, and operator-reviewed virtual signal plans.
+<h1 align="center">Traffic Digital Twin</h1>
 
-**No live CCTV or physical signal control.**
-
+<p align="center">
+Local virtual traffic demonstration using recorded ITD v1.2 observations, aggregate simulation, forecasts, and operator-reviewed virtual signal plans.
+<br />
+<strong>No live CCTV or physical signal control.</strong>
+<br /><br />
+<a href="docs/architecture.md"><strong>Explore the docs »</strong></a>
+<br /><br />
+<a href="#getting-started">View Setup</a>
+·
+<a href="https://github.com/Sarthak702-droid/Traffic-Digital-Twin/issues">Report Bug</a>
+·
+<a href="https://github.com/Sarthak702-droid/Traffic-Digital-Twin/issues">Request Feature</a>
+</p>
 </div>
 
-## Table of Contents
-
-- [About The Project](#about-the-project)
-- [Built With](#built-with)
-- [Getting Started](#getting-started)
-- [Verification](#verification)
-- [Repository Structure](#repository-structure)
-- [Design and Scope](#design-and-scope)
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li><a href="#about-the-project">About The Project</a></li>
+    <li><a href="#built-with">Built With</a></li>
+    <li>
+      <a href="#getting-started">Getting Started</a>
+      <ul>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#installation">Installation</a></li>
+      </ul>
+    </li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#verification">Verification</a></li>
+    <li><a href="#repository-structure">Repository Structure</a></li>
+    <li><a href="#design-and-scope">Design and Scope</a></li>
+  </ol>
+</details>
 
 ## About The Project
 
 Traffic Digital Twin is a synthetic MVP for corridor operations research and operator workflow prototyping.
 
-It supports:
+Key capabilities:
+- Recorded video-derived boundary demand from finalized ITD v1.2 windows
+- Aggregate finite-capacity simulation and forecasting
+- Candidate timing comparison with operator decision support
+- Virtual-only plan approval with auditable workflow
 
-- Recorded video-derived boundary inputs (ITD v1.2 finalized windows)
-- Aggregate finite-capacity simulation
-- Forecast generation and candidate timing comparison
-- Operator-reviewed virtual plan approval with auditability
+Out of scope for this milestone:
+- Live camera ingestion
+- Physical controller actuation
+- Production deployment claims
 
-It does **not** support live traffic actuation, physical controller control, or production deployment.
-
-<p align="right">(<a href="#table-of-contents">back to top</a>)</p>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Built With
 
@@ -43,7 +71,7 @@ It does **not** support live traffic actuation, physical controller control, or 
 - [gRPC](https://grpc.io/)
 - [Tailwind CSS](https://tailwindcss.com/)
 
-<p align="right">(<a href="#table-of-contents">back to top</a>)</p>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Getting Started
 
@@ -66,7 +94,7 @@ go mod download
 docker compose up -d --wait postgres
 ```
 
-Start the local Go control-plane stack:
+Start local stack:
 
 ```sh
 python3 scripts/bootstrap-local.py
@@ -75,24 +103,26 @@ npm run build
 npm start
 ```
 
-Open http://127.0.0.1:3100.
+Open **http://127.0.0.1:3100**.
 
-Default local ports:
-
+Default ports:
 - Web app: `3100`
-- Go public API: `8081`
+- Go API: `8081`
 - Python simulation gRPC: `50051`
 - Python intelligence gRPC: `50052`
 - PostgreSQL: `5433`
 
-### Epic 1 Operator Flow
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-1. Sign in using the provisioned local gateway account.
-2. Select synthetic seeded scenario or configure required processed clip inputs.
+## Usage
+
+Typical local workflow:
+1. Sign in with the provisioned local gateway account.
+2. Select seeded synthetic scenario or configure required processed clip inputs.
 3. Start a virtual run and inspect outcomes in Audit & Health.
-4. Restart Go and refresh to verify persistence in PostgreSQL.
+4. Restart services and refresh to verify persistence in PostgreSQL.
 
-<p align="right">(<a href="#table-of-contents">back to top</a>)</p>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Verification
 
@@ -104,7 +134,7 @@ npm run typecheck
 npm run build
 ```
 
-Full integration with local PostgreSQL and Python contract endpoint:
+Integration run with local PostgreSQL + contract endpoint:
 
 ```sh
 TWIN_ENGINE=aggregate PYTHONPATH=.:packages/contracts/gen/python .venv/bin/python -m services.shared.server simulation --port 50051
@@ -121,7 +151,7 @@ npx playwright install chromium
 node scripts/verify-browser.mjs
 ```
 
-<p align="right">(<a href="#table-of-contents">back to top</a>)</p>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Repository Structure
 
@@ -139,11 +169,9 @@ node scripts/verify-browser.mjs
 └── tests/                   # End-to-end integration test suites
 ```
 
-<p align="right">(<a href="#table-of-contents">back to top</a>)</p>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Design and Scope
-
-See:
 
 - [Architecture](docs/architecture.md)
 - [API and Architecture Alignment](docs/API-ARCHITECTURE-SPEC-ALIGNMENT.md)
@@ -152,4 +180,14 @@ See:
 - [Contracts Plan](docs/contracts-plan.md)
 - [Epic 1 Acceptance Evidence](docs/epics/epic1-acceptance.md)
 
-<p align="right">(<a href="#table-of-contents">back to top</a>)</p>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- MARKDOWN LINKS & IMAGES -->
+[contributors-shield]: https://img.shields.io/github/contributors/Sarthak702-droid/Traffic-Digital-Twin.svg?style=for-the-badge
+[contributors-url]: https://github.com/Sarthak702-droid/Traffic-Digital-Twin/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/Sarthak702-droid/Traffic-Digital-Twin.svg?style=for-the-badge
+[forks-url]: https://github.com/Sarthak702-droid/Traffic-Digital-Twin/network/members
+[stars-shield]: https://img.shields.io/github/stars/Sarthak702-droid/Traffic-Digital-Twin.svg?style=for-the-badge
+[stars-url]: https://github.com/Sarthak702-droid/Traffic-Digital-Twin/stargazers
+[issues-shield]: https://img.shields.io/github/issues/Sarthak702-droid/Traffic-Digital-Twin.svg?style=for-the-badge
+[issues-url]: https://github.com/Sarthak702-droid/Traffic-Digital-Twin/issues
