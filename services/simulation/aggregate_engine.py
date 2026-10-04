@@ -259,7 +259,7 @@ class AggregateEngine:
             if command.input_session_id!=self.latest.input_session_id:
                 raise ValueError('Authoritative input session changed')
             self.paused=command.paused
-            self.latest.simulation_paused=self.paused
+            self.latest=self._snapshot()
             self.version+=1;self.changed.notify_all()
             return self.copy_state()
     def start_clock(self):

@@ -64,4 +64,7 @@ it("selects the registered camera from a non-twelve inventory", async () => {
   await waitFor(()=>expect(screen.getByLabelText("Recorded clip display only")).toHaveAttribute("src","/api/v1/clips/CAM-99/media"));
   expect(screen.queryByRole("option",{name:/CAM-01/})).not.toBeInTheDocument();
   expect(screen.getAllByRole("option",{name:/CAM-99/}).length).toBeGreaterThan(0);
+  expect(screen.queryByText(/0 tracked targets/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/0 detector-estimated crossings/)).not.toBeInTheDocument();
+  expect(screen.getAllByRole("option",{name:/CAM-99.*— veh/}).length).toBeGreaterThan(0);
 });

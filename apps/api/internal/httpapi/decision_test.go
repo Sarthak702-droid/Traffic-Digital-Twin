@@ -429,3 +429,31 @@ func TestResolveDecisionValidation(t *testing.T) {
 		t.Errorf("expected 503 when db is unavailable, got %d", w.Code)
 	}
 }
+
+func TestHeldClockFramesCannotRegressAuthorityOrSnapshot(t *testing.T) {
+	s := app(t)
+	s.sim = &simulationLink{command: &pb.RunCommand{RunId: "current"}, subscribers: map[chan *pb.TrafficState]struct{}{}}
+	frame := &pb.TrafficState{Movements: []*pb.MovementState{{MovementId: "C6-C3-C1", CurrentPhaseId: "C3-FROM-C6"}}, SchemaVersion: "1.0", RunId: "current", Timestamp: time.Now().UTC().Format(time.RFC3339Nano), Source: "synthetic", SimulationTimeS: 16, SnapshotSequence: 25, ControlEpoch: 4, ControlMode: "manual", LockedTargets: []string{"C1-FROM-C2"}, SimulationPaused: true}
+	if err := s.acceptFrame(frame); err != nil {
+		t.Fatal(err)
+	}
+	old := proto.Clone(frame).(*pb.TrafficState)
+	old.ControlEpoch = 3
+	old.ControlMode = "recommend"
+	old.LockedTargets = nil
+	if err := s.acceptFrame(old); err != nil {
+		t.Fatal(err)
+	}
+	if s.state.ControlEpoch != 4 || len(s.state.LockedTargets) != 1 {
+		t.Fatal("older held-clock authority overwrote acknowledgement")
+	}
+	old = proto.Clone(frame).(*pb.TrafficState)
+	old.SnapshotSequence = 24
+	old.SimulationPaused = false
+	if err := s.acceptFrame(old); err != nil {
+		t.Fatal(err)
+	}
+	if s.state.SnapshotSequence != 25 || !s.state.SimulationPaused {
+		t.Fatal("older held-clock snapshot overwrote acknowledgement")
+	}
+}

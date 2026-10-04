@@ -216,7 +216,7 @@ func (s *Server) acceptFrame(frame *pb.TrafficState) error {
 	// Database work must not hold the subscriber/state mutex.
 	s.mu.RLock()
 	eligible := s.sim != nil && s.sim.command != nil && frame.RunId == s.sim.command.RunId &&
-		(s.state == nil || s.state.RunId != frame.RunId || s.state.SimulationTimeS <= frame.SimulationTimeS)
+		(s.state == nil || s.state.RunId != frame.RunId || s.state.SimulationTimeS <= frame.SimulationTimeS && s.state.ControlEpoch <= frame.ControlEpoch && s.state.SnapshotSequence <= frame.SnapshotSequence)
 	epoch := s.activeInputSessionID
 	s.mu.RUnlock()
 	if !eligible {
@@ -249,7 +249,7 @@ func (s *Server) acceptFrame(frame *pb.TrafficState) error {
 	if s.sim == nil || s.sim.command == nil || frame.RunId != s.sim.command.RunId {
 		return nil
 	}
-	if s.state != nil && s.state.RunId == frame.RunId && s.state.SimulationTimeS > frame.SimulationTimeS {
+	if s.state != nil && s.state.RunId == frame.RunId && (s.state.SimulationTimeS > frame.SimulationTimeS || s.state.ControlEpoch > frame.ControlEpoch || s.state.SnapshotSequence > frame.SnapshotSequence) {
 		return nil
 	}
 	if frame.InputSessionId != "" && frame.InputSessionId != s.activeInputSessionID {

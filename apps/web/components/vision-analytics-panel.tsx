@@ -656,7 +656,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
   // Each selected video owns the numbers in its dashboard. The C3 fallback is
   // used only until the selected clip's telemetry has loaded.
   const displayTotalVehicles = activeTelemetry?.summary?.total_unique_vehicles ?? 0;
-  const displayCrossed = activeFrameData?.cumulative_crossed ?? 0;
+  const displayCrossed = activeFrameData?.cumulative_crossed ?? "—";
   const displayActiveVehicles = activeFrameData?.active_count ?? 0;
   const displayQueueVehicles = activeFrameData?.queue_count ?? null;
   const classBreakdown = activeTelemetry?.summary?.class_breakdown || {};
@@ -1169,7 +1169,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                   </span>
                 </div>
                 <span style={{ fontSize: "10px", color: "#38bdf8", fontWeight: 600 }}>
-                  {currentDetections.length} tracked targets
+                  Individual positions unavailable
                 </span>
               </div>
 
@@ -1302,8 +1302,8 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
               </div>
 
               <div className="vision-radar-kpi-bar">
-                <span>Jaane wala (Outbound ↑): <strong>{currentDetections.filter((d: any) => { const cx = d.centroid ? d.centroid[0] : (d.bbox ? (d.bbox[0] + d.bbox[2]) / 2 : 0.5); return cx < 0.45; }).length}</strong></span>
-                <span>Aane wala (Inbound ↓): <strong>{currentDetections.filter((d: any) => { const cx = d.centroid ? d.centroid[0] : (d.bbox ? (d.bbox[0] + d.bbox[2]) / 2 : 0.5); return cx >= 0.45; }).length}</strong></span>
+                <span>Outbound positions: <strong>Unavailable</strong></span>
+                <span>Inbound positions: <strong>Unavailable</strong></span>
                 <span>Crossed Gate: <strong>{displayCrossed}</strong></span>
               </div>
             </div>
@@ -1443,7 +1443,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
             </div>
             <div className="vision-stream-kpis">
               <div><span>Queue pressure</span><strong>{displayQueueVehicles !== null ? `${(queuePressure * 100).toFixed(2)}%` : "—"}</strong><small>{queuePressureLabel}</small></div>
-              <div><span>Dominant type</span><strong>{displayVehicleClass(String(dominantClass))}</strong><small>{Number(dominantClassCount)} active tracked</small></div>
+              <div><span>Dominant type</span><strong>{displayVehicleClass(String(dominantClass))}</strong><small>{activeFrameData ? Number(dominantClassCount) : "—"} aggregate class count</small></div>
               <div><span>Detected classes</span><strong>{activeFrameData ? Object.keys(activeClassCounts).length : "—"}</strong><small>in this camera frame</small></div>
               <div><span>Pedestrians now</span><strong>{activeFrameData ? activeClassCounts.pedestrain ?? 0 : "—"}</strong><small>in this camera frame</small></div>
             </div>
@@ -1582,7 +1582,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
             >
               {cameraSlots.map((camera) => {
                 const item = telemetryMap[camera.id];
-                const count = item?.summary?.total_unique_vehicles ?? 0;
+                const count = item?.summary?.total_unique_vehicles ?? "—";
                 const roleTag = camera.role === "external_boundary_input" ? "Boundary" : camera.role === "internal_link_observation" ? "Internal" : "Aux";
                 return (
                   <option key={camera.id} value={camera.id}>
@@ -1612,7 +1612,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
               {activeTelemetry ? `${displayTotalVehicles} veh` : "—"}
             </span>
             <span className="vision-upstream-box-sub">
-              {activeTelemetry?.summary?.total_crossed ?? 0} detector-estimated crossings · {activeTelemetry?.summary?.total_unique_pedestrians ?? 0} ped
+              {activeTelemetry?.summary?.total_crossed ?? "—"} detector-estimated crossings · {activeTelemetry?.summary?.total_unique_pedestrians ?? "—"} ped
             </span>
           </div>
 

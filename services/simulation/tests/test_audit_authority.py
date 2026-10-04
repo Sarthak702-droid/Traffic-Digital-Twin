@@ -72,3 +72,13 @@ def test_degraded_input_cancels_pending_approval_and_recovery_cannot_revive_it(t
         assert engine.pending_command is None
         assert engine.receipts.status(command)=='rejected'
     finally:engine.close()
+
+def test_clock_acknowledgement_has_a_new_snapshot_sequence(tmp_path):
+    engine=AggregateEngine(directory=tmp_path)
+    try:
+        state=engine.reset(pb.RunCommand(schema_version='1.0',scenario_type='peak_surge',seed=1101,mode='recommend',run_id='clock-sequence'))
+        held=engine.set_clock(pb.ClockCommand(run_id=state.run_id,paused=True))
+        assert held.snapshot_sequence>state.snapshot_sequence
+        resumed=engine.set_clock(pb.ClockCommand(run_id=state.run_id,paused=False))
+        assert resumed.snapshot_sequence>held.snapshot_sequence
+    finally:engine.close()
