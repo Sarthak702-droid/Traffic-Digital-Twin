@@ -19,20 +19,24 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Simulation_SetClock_FullMethodName       = "/traffic.v1.Simulation/SetClock"
-	Simulation_GetPlanOutcome_FullMethodName = "/traffic.v1.Simulation/GetPlanOutcome"
-	Simulation_ApplyPlan_FullMethodName      = "/traffic.v1.Simulation/ApplyPlan"
-	Simulation_ValidateState_FullMethodName  = "/traffic.v1.Simulation/ValidateState"
-	Simulation_Reset_FullMethodName          = "/traffic.v1.Simulation/Reset"
-	Simulation_GetState_FullMethodName       = "/traffic.v1.Simulation/GetState"
-	Simulation_StreamState_FullMethodName    = "/traffic.v1.Simulation/StreamState"
-	Simulation_Stop_FullMethodName           = "/traffic.v1.Simulation/Stop"
+	Simulation_UpdateAuthority_FullMethodName = "/traffic.v1.Simulation/UpdateAuthority"
+	Simulation_CancelPlan_FullMethodName      = "/traffic.v1.Simulation/CancelPlan"
+	Simulation_SetClock_FullMethodName        = "/traffic.v1.Simulation/SetClock"
+	Simulation_GetPlanOutcome_FullMethodName  = "/traffic.v1.Simulation/GetPlanOutcome"
+	Simulation_ApplyPlan_FullMethodName       = "/traffic.v1.Simulation/ApplyPlan"
+	Simulation_ValidateState_FullMethodName   = "/traffic.v1.Simulation/ValidateState"
+	Simulation_Reset_FullMethodName           = "/traffic.v1.Simulation/Reset"
+	Simulation_GetState_FullMethodName        = "/traffic.v1.Simulation/GetState"
+	Simulation_StreamState_FullMethodName     = "/traffic.v1.Simulation/StreamState"
+	Simulation_Stop_FullMethodName            = "/traffic.v1.Simulation/Stop"
 )
 
 // SimulationClient is the client API for Simulation service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SimulationClient interface {
+	UpdateAuthority(ctx context.Context, in *AuthorityCommand, opts ...grpc.CallOption) (*TrafficState, error)
+	CancelPlan(ctx context.Context, in *PlanCommand, opts ...grpc.CallOption) (*PlanOutcome, error)
 	SetClock(ctx context.Context, in *ClockCommand, opts ...grpc.CallOption) (*TrafficState, error)
 	GetPlanOutcome(ctx context.Context, in *PlanCommand, opts ...grpc.CallOption) (*PlanOutcome, error)
 	ApplyPlan(ctx context.Context, in *PlanCommand, opts ...grpc.CallOption) (*ValidationResult, error)
@@ -49,6 +53,26 @@ type simulationClient struct {
 
 func NewSimulationClient(cc grpc.ClientConnInterface) SimulationClient {
 	return &simulationClient{cc}
+}
+
+func (c *simulationClient) UpdateAuthority(ctx context.Context, in *AuthorityCommand, opts ...grpc.CallOption) (*TrafficState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TrafficState)
+	err := c.cc.Invoke(ctx, Simulation_UpdateAuthority_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *simulationClient) CancelPlan(ctx context.Context, in *PlanCommand, opts ...grpc.CallOption) (*PlanOutcome, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PlanOutcome)
+	err := c.cc.Invoke(ctx, Simulation_CancelPlan_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *simulationClient) SetClock(ctx context.Context, in *ClockCommand, opts ...grpc.CallOption) (*TrafficState, error) {
@@ -144,6 +168,8 @@ func (c *simulationClient) Stop(ctx context.Context, in *RunRequest, opts ...grp
 // All implementations must embed UnimplementedSimulationServer
 // for forward compatibility.
 type SimulationServer interface {
+	UpdateAuthority(context.Context, *AuthorityCommand) (*TrafficState, error)
+	CancelPlan(context.Context, *PlanCommand) (*PlanOutcome, error)
 	SetClock(context.Context, *ClockCommand) (*TrafficState, error)
 	GetPlanOutcome(context.Context, *PlanCommand) (*PlanOutcome, error)
 	ApplyPlan(context.Context, *PlanCommand) (*ValidationResult, error)
@@ -162,6 +188,12 @@ type SimulationServer interface {
 // pointer dereference when methods are called.
 type UnimplementedSimulationServer struct{}
 
+func (UnimplementedSimulationServer) UpdateAuthority(context.Context, *AuthorityCommand) (*TrafficState, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateAuthority not implemented")
+}
+func (UnimplementedSimulationServer) CancelPlan(context.Context, *PlanCommand) (*PlanOutcome, error) {
+	return nil, status.Error(codes.Unimplemented, "method CancelPlan not implemented")
+}
 func (UnimplementedSimulationServer) SetClock(context.Context, *ClockCommand) (*TrafficState, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetClock not implemented")
 }
@@ -205,6 +237,42 @@ func RegisterSimulationServer(s grpc.ServiceRegistrar, srv SimulationServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&Simulation_ServiceDesc, srv)
+}
+
+func _Simulation_UpdateAuthority_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthorityCommand)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SimulationServer).UpdateAuthority(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Simulation_UpdateAuthority_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SimulationServer).UpdateAuthority(ctx, req.(*AuthorityCommand))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Simulation_CancelPlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PlanCommand)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SimulationServer).CancelPlan(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Simulation_CancelPlan_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SimulationServer).CancelPlan(ctx, req.(*PlanCommand))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Simulation_SetClock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -351,6 +419,14 @@ var Simulation_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "traffic.v1.Simulation",
 	HandlerType: (*SimulationServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "UpdateAuthority",
+			Handler:    _Simulation_UpdateAuthority_Handler,
+		},
+		{
+			MethodName: "CancelPlan",
+			Handler:    _Simulation_CancelPlan_Handler,
+		},
 		{
 			MethodName: "SetClock",
 			Handler:    _Simulation_SetClock_Handler,

@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 import os
 import time
+import hashlib
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -131,38 +133,23 @@ def execute_t14_annotation_review(model_path: str = ".runtime/models/itd-v1.2/be
 
     provenance = {
         "schema_version": "annotation-provenance-v1",
-        "generated_at": "2026-09-22T14:24:00+05:30",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "detector_model": "best_xl_ITD_v1.2.pt",
-        "detector_sha256": "06006ecb5fe52a348ceed805bf0aa6b32af7e24e689d09a6582f6d53159d6b00",
+        "detector_sha256": hashlib.sha256(Path(model_path).read_bytes()).hexdigest(),
         "annotation_format": "yolo_v8_txt",
         "coordinate_system": "normalized_center_xywh_0_1",
-        "review_policy": "agent_reviewed_provisional_engineering_demo",
+        "review_policy": "provisional_unreviewed",
         "independent_ground_truth_claim": False,
         "exported_clips": all_exports
     }
 
     quality_report = {
-        "schema_version": "reference-quality-report-v1",
-        "evaluated_at": "2026-09-22T14:24:00+05:30",
-        "review_level": "agent_accepted_demo",
-        "accuracy_statement": "Provisional evaluation against sample video footage. Not an independent municipal ground-truth validation.",
-        "sample_evaluations": [
-            {
-                "clip": "14828714_1080_1920_30fps.mp4",
-                "traffic_condition": "dense_multi_modal_intersection",
-                "detected_classes": ["two_wheeler", "car", "autorickshaw", "bus", "pedestrain"],
-                "false_positive_estimate": "low (bounded by confidence threshold 0.30)",
-                "occlusion_handling": "ByteTrack second-stage association successfully preserves tracks across partial occlusion"
-            },
-            {
-                "clip": "12937197_3840_2160_30fps.mp4",
-                "traffic_condition": "4k_elevated_arterial",
-                "detected_classes": ["car", "two_wheeler", "lcv", "bus"],
-                "false_positive_estimate": "minimal",
-                "occlusion_handling": "consistent trajectory across counting line"
-            }
-        ],
-        "readiness_status": "READY_FOR_DEMO"
+        "schema_version": "reference-quality-report-v2",
+        "evaluated_at": datetime.now(timezone.utc).isoformat(),
+        "review_level": "provisional_unreviewed",
+        "accuracy_statement": "Unavailable: detector predictions are not independently reviewed references.",
+        "sample_evaluations": [],
+        "readiness_status": "INDEPENDENT_REVIEW_REQUIRED"
     }
 
     out_dir = "reports" if os.path.isdir("reports") else "."

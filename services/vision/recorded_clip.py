@@ -15,10 +15,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from services.vision.resource_probe import ProcessResourceProbe
+from services.shared.privacy import reject_private_fields
 from services.shared.network_config import config_hash, load_config
 
 OBSERVATION_SCHEMA = 'camera-observation-v1'
-DETECTOR_VERSION = 'itd-v1.2-yolo-vehicle-counts-v2'
+DETECTOR_VERSION = 'itd-v1.2-yolo-vehicle-counts-v3'
 TRACKER_VERSION = 'bytetrack-ultralytics-8.4.129'
 EXPECTED_ITD_SHA256 = '06006ecb5fe52a348ceed805bf0aa6b32af7e24e689d09a6582f6d53159d6b00'
 
@@ -57,6 +58,8 @@ def _validate_geometry(geometry: dict) -> None:
     queue = geometry.get('queue_roi')
     if queue is not None and (not isinstance(queue, list) or len(queue) < 3 or not all(point(value) for value in queue)):
         raise ValueError('Configured queue region must contain normalized polygon points')
+    threshold=geometry.get('queue_motion_threshold_normalized_per_s',0.005)
+    if not isinstance(threshold,(int,float)) or isinstance(threshold,bool) or not math.isfinite(threshold) or threshold<=0:raise ValueError('Invalid normalized queue motion threshold')
     if geometry.get('primary_direction') not in ('approaching', 'departing'):
         raise ValueError('Configured primary direction is invalid')
 
@@ -126,7 +129,7 @@ class RecordedClipProcessor:
             return self._process_locked(current, max_duration_s, identity_fields)
 
     def _process_locked(self, current: dict, max_duration_s, identity_fields: tuple[str, ...]) -> dict:
-        key = _hash_json({name: current[name] for name in identity_fields} | {'max_duration_s': max_duration_s})
+        key = _hash_json({name: current[name] for name in identity_fields} | {'max_duration_s': max_duration_s, 'processor_version':'coverage-v2'})
         directory = self.output_dir / current['camera_id'] / key
         directory.mkdir(parents=True, exist_ok=True)
         manifest_path = directory / 'manifest.json'
@@ -165,6 +168,7 @@ class RecordedClipProcessor:
             with temporary.open('w') as destination:
                 for observation in session.process_stream(max_duration_s=max_duration_s):
                     row = asdict(observation) if is_dataclass(observation) else dict(observation)
+                    reject_private_fields(row)
                     start = float(row['window_start_s'])
                     end = float(row['window_end_s'])
                     available = float(row['available_at_source_s'])
@@ -199,10 +203,13 @@ class RecordedClipProcessor:
                     count += 1
             if not count:
                 raise ValueError('No finalized observation windows were produced')
+            coverage=getattr(session,'coverage',None)
+            if (not coverage or coverage.get('status')!='complete' or type(coverage.get('requested_frames')) is not int or coverage['requested_frames']<=0 or type(coverage.get('decoded_frames')) is not int or coverage['decoded_frames']<coverage['requested_frames'] or not isinstance(coverage.get('source_fps'),(int,float)) or not math.isfinite(coverage['source_fps']) or coverage['source_fps']<=0 or not isinstance(coverage.get('decoded_until_source_s'),(int,float)) or not math.isfinite(coverage['decoded_until_source_s']) or coverage['decoded_until_source_s']<coverage['requested_frames']/coverage['source_fps'] or previous_end>coverage['decoded_until_source_s']):
+                raise ValueError('incomplete_decode: verified source coverage required')
             os.replace(temporary, observations_path)
             manifest = {key: value for key, value in current.items() if key not in ('geometry',)}
             manifest.update(status='complete', cache_key=key, source_session_id=source_session_id,
-                            window_count=count, observations_path=str(observations_path),
+                            window_count=count, observations_path=str(observations_path), coverage=coverage,
                             observations_sha256=_hash_file(observations_path),
                             processing_mode='online_inference',
                             resource_measurements=probe.result(getattr(session,'inference_frames_total',None)))
@@ -211,7 +218,7 @@ class RecordedClipProcessor:
         except Exception as error:
             temporary.unlink(missing_ok=True)
             observations_path.unlink(missing_ok=True)
-            _write_json(manifest_path, {'status': 'failed', 'cache_key': key, 'error': str(error)})
+            _write_json(manifest_path, {'status': 'incomplete_decode' if 'incomplete_decode' in str(error) else 'failed', 'cache_key': key, 'error': str(error)})
             raise
         finally:
             probe.close()

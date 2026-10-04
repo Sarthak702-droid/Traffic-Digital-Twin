@@ -26,7 +26,8 @@ func writeProcessedFixture(t *testing.T, root, camera, session string, rows []st
 	}
 	digest := sha256.Sum256(data)
 	manifest := map[string]any{
-		"status": "complete", "camera_id": camera, "source_session_id": session,
+		"coverage": map[string]any{"status": "complete", "requested_frames": 60, "decoded_frames": 60, "source_fps": 1, "decoded_until_source_s": 60},
+		"status":   "complete", "camera_id": camera, "source_session_id": session,
 		"clip_sha256": strings.Repeat("a", 64), "geometry_sha256": strings.Repeat("b", 64),
 		"model_sha256": strings.Repeat("d", 64), "config_hash": strings.Repeat("c", 64),
 		"detector_version": "itd-v1.2-yolo", "tracker_version": "bytetrack-ultralytics-8.4.129",
@@ -254,5 +255,38 @@ func TestFailedProcessingManifestIsVisibleWithoutPrivateError(t *testing.T) {
 	s.Handler().ServeHTTP(w, testRequest("GET", "/api/v1/vision/clips", nil))
 	if w.Code != 200 || !strings.Contains(w.Body.String(), `"status":"degraded"`) || !strings.Contains(w.Body.String(), `"camera_id":"CAM-01"`) || strings.Contains(w.Body.String(), "/home/user") {
 		t.Fatalf("failed job status hidden or private path leaked: %d %s", w.Code, w.Body.String())
+	}
+}
+
+func TestAuditUnprovenCoverageAndPrivateRowsNeverAdmitCache(t *testing.T) {
+	for _, failure := range []string{"missing_coverage", "outside_decoded_coverage", "private_details"} {
+		t.Run(failure, func(t *testing.T) {
+			root := t.TempDir()
+			row := observationFixture("audit-source", 0, 5, 5, 0)
+			if failure == "private_details" {
+				var data map[string]any
+				json.Unmarshal([]byte(row), &data)
+				data["tracking"] = map[string]any{"trackId": 7}
+				b, _ := json.Marshal(data)
+				row = string(b)
+			}
+			writeProcessedFixture(t, root, "CAM-01", "audit-source", []string{row})
+			path := filepath.Join(root, "CAM-01", "cache-key", "manifest.json")
+			b, _ := os.ReadFile(path)
+			var manifest map[string]any
+			json.Unmarshal(b, &manifest)
+			if failure == "missing_coverage" {
+				delete(manifest, "coverage")
+			}
+			if failure == "outside_decoded_coverage" {
+				manifest["coverage"] = map[string]any{"status": "complete", "requested_frames": 3, "decoded_frames": 3, "source_fps": 1, "decoded_until_source_s": 3}
+			}
+			b, _ = json.Marshal(manifest)
+			os.WriteFile(path, b, 0600)
+			entry := readProcessedEntry(path)
+			if entry.Status == "cached_valid" || len(entry.Rows) > 0 {
+				t.Fatalf("unsafe %s admitted: %+v", failure, entry)
+			}
+		})
 	}
 }

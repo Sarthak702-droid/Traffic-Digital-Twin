@@ -20,7 +20,7 @@ import {
   Zap,
   Gauge,
 } from "lucide-react";
-import { canvasSize, detectionFrameIndex, sameGeometry, DISPLAY_TELEMETRY_VERSION, displayMediaURL } from "@/lib/video-display";
+import { canvasSize, detectionFrameIndex, sameGeometry, isAggregateTelemetry, DISPLAY_TELEMETRY_VERSION, displayMediaURL } from "@/lib/video-display";
 import {LoadingState} from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
 import type { ProcessedClip } from "@/lib/run-input";
@@ -276,13 +276,14 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
         if (!asset || !camera.assigned_video || asset.filename !== camera.assigned_video) return null;
         return { id, label: id, approach: camera.virtual_direction || id, videoFile: camera.assigned_video, role: camera.network_role === "internal_link_sample_analytics" ? "internal_link_observation" : camera.network_role, resolution: asset.resolution || "unknown", fps: Number(asset.fps || 0), clipSha256: asset.sha256, geometry: camera.geometry } as CameraSlot;
       }).filter((slot): slot is CameraSlot => slot !== null).sort((a, b) => a.id.localeCompare(b.id));
-      if (slots.length !== 12) { setCameraRegistryError(true); return; }
+      if (slots.length === 0) { setCameraRegistryError(true); return; }
       setCameraSlots(slots);
+      setSelectedCamera(current => slots.some(slot => slot.id === current) ? current : slots[0].id);
       setCameraRegistryReady(true);
     }).catch(() => setCameraRegistryError(true));
   }, []);
 
-  const observationURL = observationQuery(selectedCamera, processingMode, frame, boundaryMapping, sourceSessions);
+  const observationURL = observationQuery(selectedCamera, processingMode, frame, boundaryMapping, sourceSessions, Math.floor(mediaTime));
 
   // Fetch live vision state or real observations from Go API gateway
   useEffect(() => {
@@ -336,7 +337,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
   const totalFrames = telemetryMap[selectedCamera]?.frames?.length || 100;
   const registeredCamera = cameraSlots.find((camera) => camera.id === selectedCamera);
   const cachedTelemetry = telemetryMap[selectedCamera];
-  const activeTelemetry = cachedTelemetry?.schema_version === DISPLAY_TELEMETRY_VERSION && cachedTelemetry?.video_file === registeredCamera?.videoFile
+  const activeTelemetry = isAggregateTelemetry(cachedTelemetry) && cachedTelemetry?.video_file === registeredCamera?.videoFile
     && (!registeredCamera?.clipSha256 || cachedTelemetry?.source_identity?.clip_sha256 === registeredCamera.clipSha256)
     && (!registeredCamera?.geometry || sameGeometry(cachedTelemetry?.geometry, registeredCamera.geometry))
     ? cachedTelemetry : undefined;
@@ -657,19 +658,19 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
   const displayTotalVehicles = activeTelemetry?.summary?.total_unique_vehicles ?? 0;
   const displayCrossed = activeFrameData?.cumulative_crossed ?? 0;
   const displayActiveVehicles = activeFrameData?.active_count ?? 0;
-  const displayQueueVehicles = activeFrameData?.queue_count ?? 0;
+  const displayQueueVehicles = activeFrameData?.queue_count ?? null;
   const classBreakdown = activeTelemetry?.summary?.class_breakdown || {};
   const laneMetrics = getStreamLaneMetrics(activeFrameData, activeTelemetry);
   const replayTimeS = mediaTime;
   const currentObservation = latestDisplayObservation(liveObservations, replayTimeS);
   const observedFlowVpm = currentObservation?.observation_status === "valid" ? Number(currentObservation.flow_vpm) : null;
-  const coverageLabel = activeTelemetry ? `${Number(activeTelemetry.duration_s).toFixed(2)}s analyzed · cached detections sampled at ${(1 / activeTelemetry.sample_interval_s).toFixed(2)} FPS · ${activeCamInfo.resolution}` : "Detection cache unavailable; process this registered clip";
+  const coverageLabel = activeTelemetry ? `${Number(activeTelemetry.duration_s).toFixed(2)}s analyzed · cached aggregates sampled at ${(1 / activeTelemetry.sample_interval_s).toFixed(2)} FPS · ${activeCamInfo.resolution}` : "Detection cache unavailable; process this registered clip";
   const activeClassCounts = activeFrameData?.class_counts || {};
   const [dominantClass, dominantClassCount] = Object.entries(activeClassCounts)
     .sort(([, left], [, right]) => Number(right) - Number(left))[0] || ["—", 0];
 
-  const queuePressure = displayActiveVehicles > 0 ? displayQueueVehicles / displayActiveVehicles : 0;
-  const queuePressureLabel = !activeFrameData ? "Detection unavailable" : displayActiveVehicles === 0
+  const queuePressure = displayActiveVehicles > 0 ? (displayQueueVehicles ?? 0) / displayActiveVehicles : 0;
+  const queuePressureLabel = displayQueueVehicles === null ? "Queue estimate unavailable" : !activeFrameData ? "Detection unavailable" : displayActiveVehicles === 0
     ? "No vehicles in frame"
     : queuePressure >= 0.6
     ? "High queue pressure"
@@ -679,9 +680,8 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
   const peakActiveVehicles = streamFrames?.length
     ? Math.max(...streamFrames.map((frame) => Number(frame?.active_count ?? 0)))
     : displayActiveVehicles;
-  const peakQueueVehicles = streamFrames?.length
-    ? Math.max(...streamFrames.map((frame) => Number(frame?.queue_count ?? 0)))
-    : displayQueueVehicles;
+  const knownQueues = streamFrames?.filter(frame=>frame.queue_count != null).map(frame=>Number(frame.queue_count)) ?? [];
+  const peakQueueVehicles = knownQueues.length ? Math.max(...knownQueues) : null;
 
   const streamFlowRate = streamFrames?.length
     ? getObservedFlowVpm(streamFrames, streamFrames.length - 1)
@@ -718,7 +718,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     ? `M ${getChartX(chartFrames[0].time_s).toFixed(1)},${chartMaxY} L ${activePoints.join(" L ")} L ${getChartX(chartFrames[chartFrames.length - 1].time_s).toFixed(1)},${chartMaxY} Z`
     : "";
 
-  const queuePoints = chartFrames.map((f: any) => `${getChartX(f.time_s).toFixed(1)},${getChartY(f.queue_count || 0).toFixed(1)}`);
+  const queuePoints = chartFrames.filter((f: any) => f.queue_count != null).map((f: any) => `${getChartX(f.time_s).toFixed(1)},${getChartY(f.queue_count || 0).toFixed(1)}`);
   const queuePathD = queuePoints.length ? `M ${queuePoints.join(" L ")}` : "";
   const queueAreaD = queuePoints.length
     ? `M ${getChartX(chartFrames[0].time_s).toFixed(1)},${chartMaxY} L ${queuePoints.join(" L ")} L ${getChartX(chartFrames[chartFrames.length - 1].time_s).toFixed(1)},${chartMaxY} Z`
@@ -778,68 +778,10 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     .filter(([, count]) => (count as number) > 0)
     .sort(([, a], [, b]) => (b as number) - (a as number));
 
-  // Corridor Radar and Virtual Sensor Gate Calculations
-  const crossingEvents: Array<{
-    time_s: number;
-    cumulative: number;
-    headway_s: number | null;
-    active_count: number;
-    dominantClass: string;
-    laneBand: string;
-  }> = [];
-  if (chartFrames && chartFrames.length > 0) {
-    let prevCrossed = 0;
-    let prevTime: number | null = null;
-
-    for (let i = 0; i < chartFrames.length; i++) {
-      const f = chartFrames[i];
-      const crossed = Number(f.cumulative_crossed || 0);
-      if (crossed > prevCrossed) {
-        const time = Number(f.time_s || 0);
-        const headway = prevTime !== null ? Math.max(0.5, time - prevTime) : null;
-        const classCounts = f.class_counts || {};
-        const dom = Object.entries(classCounts).sort(([, a], [, b]) => Number(b) - Number(a))[0]?.[0] || "car";
-
-        const dets = f.detections || [];
-        const crossingDet = dets.find((d: any) => d.has_crossed) || dets[0];
-        let lane = "Centre Band";
-        if (crossingDet) {
-          const cx = crossingDet.centroid ? crossingDet.centroid[0] : (crossingDet.bbox?.[0] ?? 0.5);
-          lane = cx < 1 / 3 ? "Left Band" : cx < 2 / 3 ? "Centre Band" : "Right Band";
-        }
-
-        crossingEvents.push({
-          time_s: time,
-          cumulative: crossed,
-          headway_s: headway,
-          active_count: Number(f.active_count || 0),
-          dominantClass: dom,
-          laneBand: lane,
-        });
-        prevCrossed = crossed;
-        prevTime = time;
-      }
-    }
-  }
-
-  const pastEvents = crossingEvents.filter((ev) => ev.time_s <= mediaTime + 0.1);
-
-  const recentEvents = pastEvents.slice(-4).reverse();
-
-  const validHeadways = pastEvents.map((e) => e.headway_s).filter((h): h is number => h !== null);
-  const meanHeadway = validHeadways.length > 0
-    ? validHeadways.reduce((a, b) => a + b, 0) / validHeadways.length
-    : null;
-
-  const platoonMode = meanHeadway === null
-    ? "Awaiting Data"
-    : meanHeadway < 2.5
-    ? "Platoon Clustered"
-    : meanHeadway < 5.0
-    ? "Steady Flow"
-    : "Dispersed Arrival";
-
-  const dominantLane = [...laneMetrics].sort((a, b) => b.active - a.active)[0]?.label || "Centre ROI band";
+  // Sampled aggregate increments do not establish individual passage times.
+  const recentEvents: Array<{time_s:number;cumulative:number;headway_s:null;active_count:number;dominantClass:string;laneBand:string}>=[];
+  const dominantLane="Unavailable";
+  const platoonMode="Unavailable";
 
   const currentDetections = activeFrameData?.detections || [];
 
@@ -886,7 +828,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
             <AlertTriangle size={12} /> NON-ODISHA SAMPLE VIDEO FEED
           </span>
           <span className="vision-badge vision-badge-primary">
-            <ShieldCheck size={12} /> AGGREGATES ONLY · NO IDS / TRAJECTORIES / ANPR / FACES
+            <ShieldCheck size={12} /> AGGREGATES ONLY · NO PERSISTED TRACK IDENTITIES
           </span>
           <span className="vision-badge vision-badge-primary">
             <Compass size={12} /> CORE SCENARIOS OPERATE INDEPENDENTLY
@@ -920,11 +862,11 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
               whiteSpace: "nowrap",
             }}
           >
-            Select analyzed video segment (12 recorded cameras):
+            Select analyzed video segment (registered cameras):
           </label>
           <select
             id="video-feed-select"
-            aria-label="Select analyzed video segment (12 recorded cameras)"
+            aria-label="Select analyzed video segment (registered cameras)"
             value={selectedCamera}
             onChange={(e) => setSelectedCamera(e.target.value)}
             style={{
@@ -1205,7 +1147,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span className={`vision-badge ${crossingPulse ? "vision-badge-warning" : "vision-badge-success"}`} style={{ fontSize: "10px" }}>
-                {crossingPulse ? "● SENSOR EVENT DETECTED" : "● GATE ARMED (Passage Active)"}
+                {crossingPulse ? "● AGGREGATE COUNT UPDATED" : "● INDIVIDUAL PASSAGES UNAVAILABLE"}
               </span>
               <span className="vision-badge vision-badge-primary" style={{ fontSize: "10px" }}>
                 LIVE 2D ORTHOGRAPHIC
@@ -1213,7 +1155,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
             </div>
           </div>
           <p style={{ fontSize: "11px", color: "#8da5b8", margin: "0 0 4px 0" }}>
-            Top-down orthographic road radar and virtual counting line gate synchronized in real-time with camera frame detections.
+            Schematic aggregate display only. Calibrated road positions and individual passage times are unavailable.
           </p>
 
           <div className="vision-radar-grid">
@@ -1371,23 +1313,23 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
               <div className="vision-radar-subcol-title">
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <Zap size={14} color="#f59e0b" />
-                  <span>SENSOR GATE &amp; MICRO-HEADWAYS</span>
+                  <span>FINALIZED COUNT AGGREGATES</span>
                   <span style={{ fontSize: "9px", padding: "1px 5px", background: "rgba(56, 189, 248, 0.12)", color: "#38bdf8", borderRadius: "3px", border: "1px solid rgba(56, 189, 248, 0.25)", fontWeight: 700 }}>
                     LHT TRAFFIC
                   </span>
                 </div>
                 <span style={{ fontSize: "10px", color: crossingPulse ? "#fbbf24" : "#10b981", fontWeight: 700 }}>
-                  {crossingPulse ? "PULSE TRIGGER" : "GATE ARMED"}
+                  {crossingPulse ? "AGGREGATE UPDATE" : "AGGREGATE DISPLAY"}
                 </span>
               </div>
 
               <div className="vision-gate-metrics-grid">
                 <div className="vision-gate-metric-box">
-                  <span className="vision-gate-metric-label">Mean Headway</span>
+                  <span className="vision-gate-metric-label">Individual headway unavailable</span>
                   <span className="vision-gate-metric-val">
-                    {meanHeadway !== null ? `${meanHeadway.toFixed(2)}s` : "—"}
+                    {"—"}
                   </span>
-                  <span className="vision-gate-metric-sub">Inter-arrival passage gap</span>
+                  <span className="vision-gate-metric-sub">Sampled aggregates cannot establish passage gaps</span>
                 </div>
 
                 <div className="vision-gate-metric-box">
@@ -1395,7 +1337,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                   <span className="vision-gate-metric-val" style={{ fontSize: "13px", color: "#38bdf8" }}>
                     {platoonMode}
                   </span>
-                  <span className="vision-gate-metric-sub">Arrival compression</span>
+                  <span className="vision-gate-metric-sub">Individual passage timing unavailable</span>
                 </div>
 
                 <div className="vision-gate-metric-box">
@@ -1418,7 +1360,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
               {/* Recent Crossings Chronological Ticker */}
               <div style={{ marginTop: "4px" }}>
                 <span style={{ fontSize: "10px", fontWeight: 700, color: "#8da5b8", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                  Recent Gate Passage Events:
+                  Individual passage records unavailable:
                 </span>
                 <div className="vision-events-log-container">
                   {recentEvents.length > 0 ? (
@@ -1438,14 +1380,14 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                             </span>
                           </div>
                           <span style={{ color: "#f59e0b", fontFamily: "monospace", fontWeight: 600, fontSize: "10px" }}>
-                            {ev.headway_s !== null ? `Δt: ${ev.headway_s.toFixed(2)}s` : "First veh"}
+                            {"Individual timing unavailable"}
                           </span>
                         </div>
                       );
                     })
                   ) : (
                     <div className="vision-empty-events">
-                      No crossings recorded yet at {mediaTime.toFixed(2)}s · Sensor gate armed
+                      Individual passage events unavailable · aggregate window counts only
                     </div>
                   )}
                 </div>
@@ -1485,7 +1427,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
             </div>
             <div className="vision-stream-kpis">
               <div><span>Active vehicles</span><strong>{activeFrameData ? displayActiveVehicles : "—"}</strong><small>tracked in frame</small></div>
-              <div><span>Queue ROI</span><strong>{activeFrameData ? displayQueueVehicles : "—"}</strong><small>observed vehicles</small></div>
+              <div><span>Queue ROI</span><strong>{displayQueueVehicles ?? "—"}</strong><small>observed vehicles</small></div>
               <div><span>Line flow</span><strong>{observedFlowVpm == null ? "—" : observedFlowVpm.toFixed(1)}</strong><small>{observedFlowVpm == null ? "window not ready" : "vpm · observed"}</small></div>
             </div>
             <p className="vision-stream-coverage">{coverageLabel} · {activeCamInfo.fps} source FPS · {displayURL ? "15 FPS display copy; original preserved · " : ""}{activeCamInfo.videoFile}</p>
@@ -1500,7 +1442,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
               <span style={{ fontSize: "11px", color: "#8da5b8" }}>{mediaTime.toFixed(2)}s</span>
             </div>
             <div className="vision-stream-kpis">
-              <div><span>Queue pressure</span><strong>{activeFrameData ? `${(queuePressure * 100).toFixed(2)}%` : "—"}</strong><small>{queuePressureLabel}</small></div>
+              <div><span>Queue pressure</span><strong>{displayQueueVehicles !== null ? `${(queuePressure * 100).toFixed(2)}%` : "—"}</strong><small>{queuePressureLabel}</small></div>
               <div><span>Dominant type</span><strong>{displayVehicleClass(String(dominantClass))}</strong><small>{Number(dominantClassCount)} active tracked</small></div>
               <div><span>Detected classes</span><strong>{activeFrameData ? Object.keys(activeClassCounts).length : "—"}</strong><small>in this camera frame</small></div>
               <div><span>Pedestrians now</span><strong>{activeFrameData ? activeClassCounts.pedestrain ?? 0 : "—"}</strong><small>in this camera frame</small></div>
@@ -1587,9 +1529,9 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
                 {laneMetrics.map((lane) => (
                   <tr key={lane.id}>
                     <td>{lane.label}</td>
-                    <td>{activeFrameData ? lane.active : "—"}</td>
-                    <td>{activeFrameData ? `${lane.queue} veh` : "—"}</td>
-                    <td>{activeFrameData ? `${(lane.share * 100).toFixed(2)}%` : "—"}</td>
+                    <td>{activeFrameData && activeFrameData.detections ? lane.active : "—"}</td>
+                    <td>{activeFrameData && activeFrameData.detections ? `${lane.queue} veh` : "—"}</td>
+                    <td>{activeFrameData && activeFrameData.detections ? `${(lane.share * 100).toFixed(2)}%` : "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1670,7 +1612,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
               {activeTelemetry ? `${displayTotalVehicles} veh` : "—"}
             </span>
             <span className="vision-upstream-box-sub">
-              {activeTelemetry?.summary?.total_crossed ?? 0} confirmed crossings · {activeTelemetry?.summary?.total_unique_pedestrians ?? 0} ped
+              {activeTelemetry?.summary?.total_crossed ?? 0} detector-estimated crossings · {activeTelemetry?.summary?.total_unique_pedestrians ?? 0} ped
             </span>
           </div>
 
@@ -1687,7 +1629,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
           <div className="vision-upstream-box">
             <span className="vision-upstream-box-label">Peak Density &amp; Queue</span>
             <span className="vision-upstream-box-val">
-              {activeTelemetry ? `${peakActiveVehicles} / ${peakQueueVehicles}` : "—"}
+              {activeTelemetry ? `${peakActiveVehicles} / ${peakQueueVehicles ?? "—"}` : "—"}
             </span>
             <span className="vision-upstream-box-sub">
               Peak active / peak queue in ROI
@@ -1726,7 +1668,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
               </div>
               {chartHover ? (
                 <div style={{ background: "#1e293b", border: "1px solid #38bdf8", borderRadius: "6px", padding: "3px 8px", color: "#38bdf8", fontSize: "11px", fontWeight: 600 }}>
-                  @{chartHover.time.toFixed(2)}s: {chartHover.frame.active_count ?? 0} active · {chartHover.frame.queue_count ?? 0} queued · {chartHover.frame.cumulative_crossed ?? 0} crossed
+                  @{chartHover.time.toFixed(2)}s: {chartHover.frame.active_count ?? 0} active · {chartHover.frame.queue_count ?? "unavailable"} queued · {chartHover.frame.cumulative_crossed ?? 0} crossed
                 </div>
               ) : (
                 <div style={{ background: "rgba(15, 23, 42, 0.6)", border: "1px solid #334155", borderRadius: "6px", padding: "3px 8px", color: "#94a3b8", fontSize: "11px" }}>

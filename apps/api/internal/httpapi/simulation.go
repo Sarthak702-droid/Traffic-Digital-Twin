@@ -408,6 +408,12 @@ func (s *Server) startScenario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	command := &pb.RunCommand{SchemaVersion: "1.0", ScenarioType: scenario, Seed: body.Seed, Mode: body.Mode, DemandSource: body.DemandSource}
+	for target, locked := range s.refreshLocks(r.Context()) {
+		if locked {
+			command.LockedTargets = append(command.LockedTargets, target)
+		}
+	}
+	sort.Strings(command.LockedTargets)
 	reason := "Started an aggregate-flow scenario with " + body.DemandSource + " demand"
 	if body.Incident != nil {
 		if body.Incident.Kind != "capacity_reduction" || body.Incident.CapacityRatio < 0.1 || body.Incident.CapacityRatio > 0.9 {

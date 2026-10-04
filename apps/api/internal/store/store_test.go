@@ -124,10 +124,47 @@ func TestPostgresDurabilityAndAtomicAudit(t *testing.T) {
 	changed := command
 	changed.Hash = strings.Repeat("b", 64)
 	assertCommand("command.reserve", "conflict", changed, "operator")
+	for _, field := range []string{"route", "method", "version"} {
+		changed = command
+		switch field {
+		case "route":
+			changed.Route = "/different-operation"
+		case "method":
+			changed.Method = "DELETE"
+		case "version":
+			changed.EnvelopeVersion = "command-v3"
+		}
+		assertCommand("command.reserve", "conflict", changed, "operator")
+	}
 	command.HTTPStatus = 200
 	command.Response = json.RawMessage(`{"confirmed":true}`)
 	assertCommand("command.finish", "completed", command, "operator")
 	assertCommand("command.reserve", "completed", command, "operator")
+	terminalCtx := WithActor(ctx, "operator")
+	terminalTx, err := s.Pool.Begin(terminalCtx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = completeCommand(terminalCtx, terminalTx, command.ID, map[string]any{"applied": true}); err != nil {
+		t.Fatal(err)
+	}
+	if err = terminalTx.Commit(terminalCtx); err != nil {
+		t.Fatal(err)
+	}
+	originalReceipt, err := s.Command(terminalCtx, "command.reserve", command)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(originalReceipt.(map[string]any)["response"].(json.RawMessage)), "confirmed") {
+		t.Fatal("original acknowledgement changed during application recovery")
+	}
+	currentReceipt, err := s.Command(terminalCtx, "command.get", command)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(currentReceipt.(map[string]any)["response"].(json.RawMessage)), "applied") {
+		t.Fatal("terminal recovery proof unavailable")
+	}
 
 	// An interrupted scenario/replay reservation must become reviewable rather
 	// than blocking every future browser mutation forever. It is never replayed.

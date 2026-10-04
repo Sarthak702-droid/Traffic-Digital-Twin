@@ -181,6 +181,12 @@ export interface TrafficState {
   observation_history?: FinalizedObservation[];
   input_quality?: "" | "fresh" | "cached_valid" | "synthetic" | "missing" | "stale" | "degraded" | "out_of_order" | "duplicate" | "replay";
   simulation_paused?: boolean;
+  control_epoch?: string;
+  control_mode?: string;
+  locked_targets?: string[];
+  snapshot_source_available_s?: number;
+  demand_commitments?: DemandCommitment[];
+  source_time_mapping?: SourceTimeMapping | null;
 }
 
 export interface Forecast {
@@ -235,6 +241,7 @@ export interface Recommendation {
   model_version?: string;
   metrics_version?: string;
   forecast_origin_source_s?: number;
+  control_epoch?: string;
 }
 
 export interface OperatorAction {
@@ -385,6 +392,7 @@ export interface RunCommand {
   demand_source: string;
   input_session_id?: string;
   source_bindings?: BoundSource[];
+  locked_targets?: string[];
 }
 
 export interface ClockCommand {
@@ -409,6 +417,24 @@ export interface PlanCommand {
   activate_not_before_simulation_s?: number;
   expected_input_session_id?: string;
   expected_snapshot_sequence?: string;
+  expected_control_epoch?: string;
+}
+
+export interface AuthorityCommand {
+  run_id: string;
+  command_id: string;
+  expected_control_epoch: string;
+  mode: string;
+  locked_targets: string[];
+}
+
+export interface DemandCommitment {
+  boundary_link_id: string;
+  observation_id: string;
+  release_start_simulation_s: number;
+  release_end_simulation_s: number;
+  remaining_mass_veh: number;
+  rate_vps: number;
 }
 
 export interface PlanOutcome {
@@ -445,6 +471,12 @@ export interface CompareCommand {
   recommendation_id: string;
   horizon_s?: number;
   demand_assumptions_hash?: string;
+}
+
+export interface SourceTimeMapping {
+  source_origin_s: number;
+  simulation_origin_s: number;
+  source_seconds_per_simulation_second: number;
 }
 
 export type LiveEvent =

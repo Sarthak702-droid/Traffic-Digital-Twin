@@ -19,6 +19,7 @@ import cv2
 import numpy as np
 import torch
 from ultralytics import YOLO
+from services.vision.measurement import normalized_motion
 
 # Optimize PyTorch CPU threading
 torch.set_num_threads(min(4, os.cpu_count() or 4))
@@ -160,11 +161,15 @@ class ITDVideoAnalyticsSession:
         if not cap.isOpened():
             raise IOError(f"Failed to open video: {self.video_path}")
 
-        fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+        fps = cap.get(cv2.CAP_PROP_FPS)
         orig_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         orig_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
+        if not math.isfinite(fps) or fps<=0 or total_frames<=0 or orig_w<=0 or orig_h<=0:
+            cap.release();raise IOError('incomplete_decode: invalid source metadata')
+        requested_frames=min(total_frames,math.ceil(max_duration_s*fps)) if max_duration_s else total_frames
+        self.coverage=None
         frame_step = max(1, int(round(fps / self.target_fps)))
 
         # Counting line in pixel coords
@@ -181,6 +186,7 @@ class ITDVideoAnalyticsSession:
 
         track_positions: Dict[int, Tuple[float, float]] = {}
         track_motion: Dict[int, List[float]] = {}
+        track_times = {}
         current_bin_start = 0.0
         current_bin_crossings = 0
         current_bin_classes: Dict[str, int] = {v: 0 for v in ITD_CANONICAL_CLASSES.values()}
@@ -198,6 +204,8 @@ class ITDVideoAnalyticsSession:
         while True:
             ret, frame = cap.read()
             if not ret:
+                if frame_idx<requested_frames:
+                    cap.release();raise IOError(f'incomplete_decode: decoded {frame_idx} of {requested_frames} requested frames')
                 break
 
             source_time_s = frame_idx / fps
@@ -206,7 +214,7 @@ class ITDVideoAnalyticsSession:
 
             while source_time_s >= current_bin_start + self.bin_duration_s:
                 window_end = current_bin_start + self.bin_duration_s
-                avg_q = int(round(sum(queue_samples) / max(1, len(queue_samples)))) if queue_samples else 0
+                avg_q = int(round(sum(queue_samples) / max(1, len(queue_samples)))) if queue_samples else None
                 flow_vpm = (current_bin_crossings * 60.0) / self.bin_duration_s
 
                 obs = CameraObservationRecord(
@@ -222,7 +230,7 @@ class ITDVideoAnalyticsSession:
                     counts_by_class=dict(current_bin_classes),
                     flow_vpm=round(flow_vpm, 2),
                     queue_visible_veh_estimate=avg_q,
-                    queue_status="estimated_visible_region" if queue_pts is not None else "unavailable",
+                    queue_status="estimated_visible_region" if queue_pts is not None and avg_q is not None else "unavailable",
                     speed_kph=None,
                     speed_status="uncalibrated",
                     observation_status="valid",
@@ -254,6 +262,7 @@ class ITDVideoAnalyticsSession:
                 self.inference_frames_total += 1
                 boxes = results[0].boxes
                 active_queued = 0
+                unknown_queue_motion = False
 
                 if boxes is not None and len(boxes) > 0 and boxes.id is not None:
                     for i, box_id_tensor in enumerate(boxes.id):
@@ -271,14 +280,15 @@ class ITDVideoAnalyticsSession:
                         if track_id in track_positions:
                             prev_pt = track_positions[track_id]
                             crossing_dir = counter.check_crossing(track_id, prev_pt, bottom_center)
-                            if crossing_dir == "approaching":
+                            if crossing_dir == self.geometry.get("primary_direction", "approaching"):
                                 if cls_name != "pedestrain":
                                     current_bin_crossings += 1
                                 current_bin_classes[cls_name] = current_bin_classes.get(cls_name, 0) + 1
 
                             dx = bottom_center[0] - prev_pt[0]
                             dy = bottom_center[1] - prev_pt[1]
-                            dist_px = math.hypot(dx, dy)
+                            elapsed=source_time_s-track_times[track_id]
+                            dist_px=normalized_motion(prev_pt,bottom_center,orig_w,orig_h,elapsed) if elapsed>0 else float('inf')
                             if track_id not in track_motion:
                                 track_motion[track_id] = []
                             track_motion[track_id].append(dist_px)
@@ -286,25 +296,30 @@ class ITDVideoAnalyticsSession:
                                 track_motion[track_id].pop(0)
 
                         track_positions[track_id] = bottom_center
+                        track_times[track_id] = source_time_s
 
                         if queue_pts is not None and cls_name != "pedestrain":
                             in_roi = cv2.pointPolygonTest(queue_pts, bottom_center, False) >= 0
                             if in_roi:
-                                recent = track_motion.get(track_id, [0.0])
+                                recent = track_motion.get(track_id, [])
                                 avg_speed = sum(recent) / max(1, len(recent))
-                                if avg_speed < 8.0:
+                                if not recent: unknown_queue_motion = True
+                                if recent and avg_speed < float(self.geometry.get("queue_motion_threshold_normalized_per_s",0.005)):
                                     active_queued += 1
 
-                queue_samples.append(active_queued)
+                if not unknown_queue_motion and queue_pts is not None:
+                    queue_samples.append(active_queued)
 
             frame_idx += 1
 
         cap.release()
+        if frame_idx<requested_frames:raise IOError('incomplete_decode: requested coverage was not reached')
+        self.coverage={'requested_frames':requested_frames,'decoded_frames':frame_idx,'source_fps':fps,'decoded_until_source_s':frame_idx/fps,'inference_fps':self.target_fps,'status':'complete'}
 
         residual = (frame_idx / fps) - current_bin_start
         if residual >= 1.0:
             window_end = current_bin_start + residual
-            avg_q = int(round(sum(queue_samples) / max(1, len(queue_samples)))) if queue_samples else 0
+            avg_q = int(round(sum(queue_samples) / max(1, len(queue_samples)))) if queue_samples else None
             flow_vpm = (current_bin_crossings * 60.0) / residual
             obs = CameraObservationRecord(
                 observation_id=f"{self.camera_id}-win-{int(current_bin_start):04d}",
@@ -319,7 +334,7 @@ class ITDVideoAnalyticsSession:
                 counts_by_class=dict(current_bin_classes),
                 flow_vpm=round(flow_vpm, 2),
                 queue_visible_veh_estimate=avg_q,
-                queue_status="estimated_visible_region" if queue_pts is not None else "unavailable",
+                queue_status="estimated_visible_region" if queue_pts is not None and avg_q is not None else "unavailable",
                 speed_kph=None,
                 speed_status="uncalibrated",
                 observation_status="valid",

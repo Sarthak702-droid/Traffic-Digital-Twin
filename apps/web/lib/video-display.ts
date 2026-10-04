@@ -1,9 +1,21 @@
-export const DISPLAY_TELEMETRY_VERSION = "display-detections-v2";
+export const DISPLAY_TELEMETRY_VERSION = "display-aggregates-v3";
+
+export function isAggregateTelemetry(value: any): boolean {
+  if(value?.schema_version!==DISPLAY_TELEMETRY_VERSION || !Array.isArray(value.frames)) return false;
+  const denied=new Set(["trackid","trackids","trackingid","detections","trail","trails","bbox","bboxhistory","centroid","trajectory","trajectories","rawframe","rawvideo","credentials","password","computetoken"]);
+  const walk=(item:any,depth:number):boolean=>{
+    if(depth>50)return false;
+    if(Array.isArray(item))return item.every(child=>walk(child,depth+1));
+    if(item && typeof item==="object")return Object.entries(item).every(([key,child])=>!denied.has(key.toLowerCase().replace(/[^a-z0-9]/g,"")) && walk(child,depth+1));
+    return true;
+  };
+  return walk(value,0);
+}
 
 // Select only a completed inference sample at or before the displayed source time.
 // Never clamp uncovered video to the final detection frame.
 export function detectionFrameIndex(telemetry: any, time: number): number {
-  if (telemetry?.schema_version !== DISPLAY_TELEMETRY_VERSION || !Number.isFinite(time) || time < 0 || time >= telemetry.duration_s) return -1;
+  if (!isAggregateTelemetry(telemetry) || !Number.isFinite(time) || time < 0 || time >= telemetry.duration_s) return -1;
   const frames = telemetry.frames ?? [];
   let low = 0, high = frames.length;
   while (low < high) {

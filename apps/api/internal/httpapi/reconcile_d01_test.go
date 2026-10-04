@@ -37,3 +37,13 @@ func TestAcceptedReceiptRemainsPendingAndRejectedReceiptIsTerminal(t *testing.T)
 		t.Fatalf("rejection not recorded: rec=%v write=%v", rec, write)
 	}
 }
+
+func TestUnprovenReceiptsCannotSettleDecision(t *testing.T) {
+	for _, status := range []string{"unknown", "not_found", "accepted", "interrupted", "conflict"} {
+		rec := &pb.Recommendation{Status: "approved"}
+		write := &store.DecisionWrite{}
+		if terminalReceipt(rec, write, &pb.PlanOutcome{Status: status}) {
+			t.Fatalf("unproven %s settled", status)
+		}
+	}
+}

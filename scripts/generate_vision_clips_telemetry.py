@@ -15,7 +15,7 @@ import cv2
 import torch
 from ultralytics import YOLO
 
-VERSION = "display-detections-v2"
+VERSION = "display-aggregates-v3"
 ITD_CANONICAL_CLASSES = {0: "two_wheeler", 1: "autorickshaw", 2: "car", 3: "bus", 4: "lcv", 5: "truck", 6: "bicycle", 7: "pedestrain"}
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -118,6 +118,7 @@ def process_video(video_path, cam_cfg, model, sample_fps=2.0, device="cpu", iden
                 result = model.track(resized, persist=True, tracker="bytetrack.yaml", device=device,
                                      imgsz=640, conf=.22, verbose=False)[0]
                 detections, class_counts, queued = [], {}, 0
+                queue_unknown = not bool(queue_roi)
                 boxes = result.boxes
                 if boxes is not None:
                     coordinates = boxes.xyxy.cpu().numpy()
@@ -132,6 +133,7 @@ def process_video(video_path, cam_cfg, model, sample_fps=2.0, device="cpu", iden
                         center = [(bbox[0] + bbox[2]) / 2, bbox[3]]
                         tid = int(track_id) if track_id is not None else None
                         trail = []
+                        previous = None
                         if tid is not None:
                             previous = tracks.get(tid)
                             unique[tid] = name
@@ -142,14 +144,19 @@ def process_video(video_path, cam_cfg, model, sample_fps=2.0, device="cpu", iden
                             trail = (trail + [center])[-6:]
                             tracks[tid] = (time_s, center, trail)
                         in_queue = name != "pedestrain" and bool(queue_roi) and point_in_poly(*center, queue_roi)
-                        queued += int(in_queue)
+                        if in_queue:
+                            if previous is None or time_s <= previous[0]: queue_unknown = True
+                            else:
+                                speed = math.hypot(center[0]-previous[1][0],center[1]-previous[1][1])/(time_s-previous[0])
+                                queued += int(speed < float(geometry.get("queue_motion_threshold_normalized_per_s",0.005)))
                         class_counts[name] = class_counts.get(name, 0) + 1
                         detections.append({"id": tid, "class": name, "conf": float(confidence), "bbox": bbox,
                                            "centroid": center, "trail": trail, "in_queue": in_queue, "has_crossed": tid in crossed})
                 rows.append({"time_s": time_s, "valid_until_s": min(duration, (frame_index + step) / fps),
                              "frame_idx": frame_index, "active_count": sum(v for k, v in class_counts.items() if k != "pedestrain"),
-                             "pedestrian_count": class_counts.get("pedestrain", 0), "queue_count": queued,
-                             "cumulative_crossed": len(crossed), "class_counts": class_counts, "detections": detections})
+                             "pedestrian_count": class_counts.get("pedestrain", 0), "queue_count": None if queue_unknown else queued,
+                             "queue_status": "unavailable" if queue_unknown else "estimated_visible_region",
+                             "cumulative_crossed": len(crossed), "class_counts": class_counts})
                 # Bound association history when a track disappears.
                 tracks = {tid: value for tid, value in tracks.items() if time_s - value[0] <= 2}
                 if len(rows) % 50 == 0:

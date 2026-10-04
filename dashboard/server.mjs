@@ -1,4 +1,5 @@
 import http from 'node:http';
+import {readEvidence} from './evidence.mjs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -26,7 +27,7 @@ const server = http.createServer(async (req,res) => {
       return send(200,JSON.stringify(plan));
     }
     if(path.startsWith('/evidence/')) {
-      const target = decodeURIComponent(path.slice(10));
+      const target = path.slice(10);
       const epicMap = {
         'epic1': 'docs/epics/epic1-acceptance.md', 'e01': 'docs/epics/epic1-acceptance.md',
         'epic2': 'docs/epics/epic2-status.md', 'e02': 'docs/epics/epic2-status.md',
@@ -48,23 +49,18 @@ const server = http.createServer(async (req,res) => {
         'epic18': 'docs/epics/epic18-status.md', 'e18': 'docs/epics/epic18-status.md',
         'epic19': 'docs/epics/epic19-status.md', 'e19': 'docs/epics/epic19-status.md'
       };
-      const candidatePaths = [
-        epicMap[target.toLowerCase()],
-        target,
-        target.replace(/^docs\/epic/, 'docs/epics/epic'),
-        `reports/${target}`,
-        `docs/${target}`,
-        `docs/epics/${target}`,
-        `.runtime/evidence/${target}`
-      ].filter(Boolean);
-
-      for (const rel of candidatePaths) {
-        try {
-          const content = await readFile(resolve(root, rel), 'utf8');
-          const mime = rel.endsWith('.json') ? 'application/json' : 'text/plain';
-          return send(200, content, mime);
-        } catch {}
+      const artifacts={...epicMap};
+      const progress=JSON.parse(await readFile(resolve(root,'docs/delivery-status.json'),'utf8'));
+      for(const record of Object.values(progress.tasks ?? {})) {
+        for(const value of (Array.isArray(record.evidence)?record.evidence:[record.evidence])) {
+          if(typeof value==='string' && /^(reports|docs|\.runtime\/evidence)\//.test(value)) artifacts[value]=value;
+        }
       }
+      try {
+        const artifact=await readEvidence(root,path.slice(10),artifacts);
+        return send(200,artifact.content,artifact.mime);
+      } catch(error) {return send(error.status ?? 404,JSON.stringify({error:'Evidence unavailable or forbidden'}));}
+
     }
     if(path === '/api/git') {
       try {

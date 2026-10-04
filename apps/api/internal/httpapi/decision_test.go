@@ -320,6 +320,9 @@ func TestNoPhysicalActuationEndpoint(t *testing.T) {
 
 func TestModesAndLockEndpoints(t *testing.T) {
 	s := app(t)
+	st, cleanup := setupTestStore(t)
+	defer cleanup()
+	s.Store = st
 	h := s.Handler()
 
 	// Default mode check
@@ -339,6 +342,7 @@ func TestModesAndLockEndpoints(t *testing.T) {
 		t.Fatalf("expected 400 for unknown mode, got %d", w.Code)
 	}
 
+	s.Store = nil // Remaining checks exercise the in-memory display fallback.
 	// Locks endpoints: empty list
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, testRequest("GET", "/api/v1/locks", nil))

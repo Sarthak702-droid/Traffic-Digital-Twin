@@ -75,6 +75,7 @@ def test_processing_finalizes_identity_and_reuses_only_exact_cache(tmp_path):
     def factory(**kwargs):
         calls.append(kwargs)
         class Session:
+            coverage={"status":"complete","requested_frames":10,"decoded_frames":10,"source_fps":1,"decoded_until_source_s":10}
             def process_stream(self, **_):
                 yield Window(0, 5, 5.2, 0)
                 yield Window(5, 10, 10.2, 3, 2, 'estimated_visible_region')
@@ -122,6 +123,7 @@ def test_second_fresh_job_is_rejected_while_inference_slot_is_occupied(tmp_path)
         with pytest.raises(RuntimeError, match='inference slot'):
             second.process(registration)
         class Session:
+            coverage={"status":"complete","requested_frames":5,"decoded_frames":5,"source_fps":1,"decoded_until_source_s":5}
             def process_stream(self, **_):
                 yield Window(0, 5, 5, 1)
         return Session()
@@ -129,6 +131,7 @@ def test_second_fresh_job_is_rejected_while_inference_slot_is_occupied(tmp_path)
     def second_factory(**_):
         calls.append('second entered')
         class Session:
+            coverage={"status":"complete","requested_frames":5,"decoded_frames":5,"source_fps":1,"decoded_until_source_s":5}
             def process_stream(self, **_):
                 yield Window(0, 5, 5, 1)
         return Session()
@@ -145,6 +148,7 @@ def test_second_fresh_job_is_rejected_while_inference_slot_is_occupied(tmp_path)
 @pytest.mark.parametrize('windows', [[], [Window(0, 5, 4, 1)], [Window(0, 5, 5, 1), Window(4, 9, 9, 2)]])
 def test_failed_or_incomplete_processing_never_publishes_cache(tmp_path, windows):
     class Session:
+        coverage={"status":"complete","requested_frames":5,"decoded_frames":5,"source_fps":1,"decoded_until_source_s":5}
         def process_stream(self, **_):
             yield from windows
     processor, clip, _, _ = setup_processor(tmp_path, lambda **_: Session())
@@ -167,6 +171,7 @@ def test_compute_dependency_failure_is_recorded(tmp_path):
 
 def test_changed_clip_or_geometry_invalidates_registration(tmp_path):
     class Session:
+        coverage={"status":"complete","requested_frames":5,"decoded_frames":5,"source_fps":1,"decoded_until_source_s":5}
         def process_stream(self, **_): yield Window(0, 5, 5, 1)
     processor, clip, _, config = setup_processor(tmp_path, lambda **_: Session())
     old = processor.register('CAM-01', clip, 'operator rights record')

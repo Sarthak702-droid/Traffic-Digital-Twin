@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { canvasSize, detectionFrameIndex, sameGeometry } from "./video-display";
+import { canvasSize, detectionFrameIndex, sameGeometry, isAggregateTelemetry } from "./video-display";
 
 describe("source-time display detections", () => {
-  const telemetry = { schema_version: "display-detections-v2", duration_s: 15, frames: [
+  const telemetry = { schema_version: "display-aggregates-v3", duration_s: 15, frames: [
     {time_s: 0, valid_until_s: .1}, {time_s: .1, valid_until_s: .2}, {time_s: 12, valid_until_s: 12.1}
   ]};
   it("does not show future, stale, legacy or uncovered boxes", () => {
@@ -38,4 +38,12 @@ it("uses only a display rendition bound to the registered source", async () => {
   expect(displayMediaURL("CAM-10", "b".repeat(64), manifest)).toBeNull();
   expect(displayMediaURL("CAM-11", hash, manifest)).toBeNull();
   expect(displayMediaURL("CAM-10", hash, {...manifest, cameras: {"CAM-10": {...manifest.cameras['CAM-10'], filename: "https://external.invalid/video.mp4"}}})).toBeNull();
+});
+
+it("rejects nested persisted tracking details in an aggregate display artifact",()=>{
+ for(const key of ["detections","trackId","bbox_history","trails"]){
+  const value={schema_version:"display-aggregates-v3",frames:[{nested:{[key]:[]}}]};
+  expect(isAggregateTelemetry(value)).toBe(false);
+  expect(detectionFrameIndex(value,0)).toBe(-1);
+ }
 });

@@ -3,9 +3,10 @@ package store
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -25,6 +26,14 @@ func Actor(ctx context.Context) string {
 		return s
 	}
 	return ""
+}
+
+func WithAccountVersion(ctx context.Context, version int) context.Context {
+	return context.WithValue(ctx, contextKey("account_version"), version)
+}
+func AccountVersion(ctx context.Context) int {
+	v, _ := ctx.Value(contextKey("account_version")).(int)
+	return v
 }
 
 func WithCommand(ctx context.Context, id string) context.Context {
@@ -78,6 +87,16 @@ func (s *Store) execute(ctx context.Context, op string, b []byte) (any, error) {
 	switch op {
 	case "ping":
 		return map[string]bool{"ready": true}, s.Pool.Ping(ctx)
+	case "control.intent":
+		var v ControlIntent
+		if e := decode(b, &v); e != nil {
+			return nil, e
+		}
+		tag, e := s.Pool.Exec(ctx, "UPDATE command_outcomes SET response=$1 WHERE id=$2 AND actor=$3 AND status='pending'", b, CommandID(ctx), Actor(ctx))
+		if e == nil && tag.RowsAffected() != 1 {
+			e = errors.New("reserved control command required")
+		}
+		return nil, e
 	case "config":
 		var n config.Network
 		if e := decode(b, &n); e != nil {
@@ -163,6 +182,7 @@ type DecisionWrite struct {
 	Result         string          `json:"result"`
 	PlanOutcome    json.RawMessage `json:"plan_outcome,omitempty"`
 	PlanCommand    json.RawMessage `json:"plan_command,omitempty"`
+	Reconciler     string          `json:"reconciler,omitempty"`
 }
 
 func (s *Store) SaveDecision(ctx context.Context, v DecisionWrite) error {
@@ -215,11 +235,25 @@ func (s *Store) SaveDecision(ctx context.Context, v DecisionWrite) error {
 	}
 	auditAfter := v.After
 	if v.CommandID != "" {
-		auditAfter, _ = json.Marshal(map[string]any{"command_id": v.CommandID, "changes": json.RawMessage(v.After), "plan_outcome": v.PlanOutcome})
+		var canonicalReceipt any
+		if len(v.PlanOutcome) > 0 {
+			if err := json.Unmarshal(v.PlanOutcome, &canonicalReceipt); err != nil {
+				return err
+			}
+		}
+		canonicalBytes, _ := json.Marshal(canonicalReceipt)
+		digest := sha256.Sum256(canonicalBytes)
+		auditAfter, _ = json.Marshal(map[string]any{"command_id": v.CommandID, "changes": json.RawMessage(v.After), "plan_outcome": v.PlanOutcome, "receipt_sha256": hex.EncodeToString(digest[:]), "reconciled_by": v.Reconciler})
 	}
 	_, e = tx.Exec(ctx, "INSERT INTO audit_events(id,run_id,recommendation_id,actor,event_type,before_values,after_values,reason,safety_result) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)", UUID(), rec.RunId, rec.Id, Actor(ctx), "recommendation."+v.Action, v.Before, auditAfter, v.Reason, v.Result)
 	if e != nil {
 		return e
+	}
+	if v.Reconciler != "" {
+		_, e = tx.Exec(ctx, "INSERT INTO audit_events(id,run_id,recommendation_id,actor,event_type,before_values,after_values,reason,safety_result) VALUES($1,$2,$3,$4,'decision.reconciled',$5,$6,$7,$8)", UUID(), rec.RunId, rec.Id, v.Reconciler, v.Before, auditAfter, v.Reason, v.Result)
+		if e != nil {
+			return e
+		}
 	}
 	if v.CommandID != "" && ((rec.Status == "approved" && v.Result == "virtual_plan_applied") || rec.Status == "rejected" || rec.Status == "failed") {
 		if _, e = tx.Exec(ctx, "UPDATE decision_intents SET settled=true WHERE command_id=$1", v.CommandID); e != nil {
@@ -240,35 +274,7 @@ type DecisionResolveWrite struct {
 }
 
 func (s *Store) ResolveDecision(ctx context.Context, v DecisionResolveWrite) error {
-	tx, e := s.Pool.Begin(ctx)
-	if e != nil {
-		return e
-	}
-	defer tx.Rollback(ctx)
-	var runID string
-	e = tx.QueryRow(ctx, "SELECT payload->'recommendation'->>'run_id' FROM decision_intents WHERE command_id=$1", v.CommandID).Scan(&runID)
-	if e != nil {
-		return fmt.Errorf("decision intent not found: %w", e)
-	}
-	if _, e = tx.Exec(ctx, "UPDATE decision_intents SET settled=true WHERE command_id=$1", v.CommandID); e != nil {
-		return e
-	}
-	if v.RecommendationID != "" {
-		_, _ = tx.Exec(ctx, "UPDATE recommendations SET status='failed' WHERE id=$1", v.RecommendationID)
-	}
-	after, _ := json.Marshal(map[string]any{"command_id": v.CommandID, "recommendation_id": v.RecommendationID, "resolution": v.Resolution})
-	var runUUID pgtype.UUID
-	_ = runUUID.Scan(runID)
-	reason := v.Reason
-	if reason == "" {
-		reason = "Supervisor manual reconciliation"
-	}
-	_, e = tx.Exec(ctx, "INSERT INTO audit_events(id,run_id,recommendation_id,actor,event_type,before_values,after_values,reason,safety_result) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)", UUID(), runUUID, v.RecommendationID, Actor(ctx), "decision.reconciled", []byte(`{}`), after, reason, "reconciled_by_supervisor")
-	if e != nil {
-		return e
-	}
-	_ = completeCommand(ctx, tx, v.CommandID, map[string]any{"status": "reconciled", "resolution": v.Resolution})
-	return tx.Commit(ctx)
+	return errors.New("manual settlement requires a simulator terminal receipt through the decision workflow")
 }
 
 // Business state, audit and recoverable command result commit together.
@@ -296,6 +302,12 @@ type ControlWrite struct {
 	Mode   string `json:"mode"`
 	Target string `json:"target"`
 	Locked bool   `json:"locked"`
+}
+
+type ControlIntent struct {
+	AuthorityIntent json.RawMessage `json:"authority_intent"`
+	Operation       string          `json:"operation"`
+	Control         ControlWrite    `json:"control"`
 }
 
 func (s *Store) SaveControl(ctx context.Context, op string, v ControlWrite) error {
@@ -374,12 +386,14 @@ func (s *Store) SaveControl(ctx context.Context, op string, v ControlWrite) erro
 }
 
 type CommandWrite struct {
-	Route      string          `json:"route,omitempty"`
-	ID         string          `json:"id"`
-	Hash       string          `json:"hash"`
-	HTTPStatus int             `json:"http_status"`
-	Response   json.RawMessage `json:"response"`
-	Unknown    bool            `json:"unknown"`
+	Route           string          `json:"route,omitempty"`
+	Method          string          `json:"method,omitempty"`
+	EnvelopeVersion string          `json:"envelope_version,omitempty"`
+	ID              string          `json:"id"`
+	Hash            string          `json:"hash"`
+	HTTPStatus      int             `json:"http_status"`
+	Response        json.RawMessage `json:"response"`
+	Unknown         bool            `json:"unknown"`
 }
 
 func (s *Store) Command(ctx context.Context, op string, v CommandWrite) (any, error) {
@@ -390,7 +404,7 @@ func (s *Store) Command(ctx context.Context, op string, v CommandWrite) (any, er
 		if len(v.Hash) != 64 {
 			return nil, errors.New("payload hash required")
 		}
-		tag, e := s.Pool.Exec(ctx, "INSERT INTO command_outcomes(id,actor,payload_hash,status,route) VALUES($1,$2,$3,'pending',$4) ON CONFLICT(id) DO NOTHING", v.ID, Actor(ctx), v.Hash, v.Route)
+		tag, e := s.Pool.Exec(ctx, "INSERT INTO command_outcomes(id,actor,payload_hash,status,route,method,envelope_version) VALUES($1,$2,$3,'pending',$4,$5,$6) ON CONFLICT(id) DO NOTHING", v.ID, Actor(ctx), v.Hash, v.Route, v.Method, v.EnvelopeVersion)
 		if e != nil {
 			return nil, e
 		}
@@ -406,7 +420,7 @@ func (s *Store) Command(ctx context.Context, op string, v CommandWrite) (any, er
 		if len(v.Response) == 0 {
 			v.Response = json.RawMessage(`{}`)
 		}
-		_, e := s.Pool.Exec(ctx, "UPDATE command_outcomes SET status=$1,http_status=$2,response=$3,updated_at=now() WHERE id=$4 AND actor=$5 AND payload_hash=$6 AND status IN ('pending','unknown')", state, v.HTTPStatus, v.Response, v.ID, Actor(ctx), v.Hash)
+		_, e := s.Pool.Exec(ctx, "UPDATE command_outcomes SET status=CASE WHEN status IN ('pending','unknown') THEN $1 ELSE status END,http_status=CASE WHEN status IN ('pending','unknown') THEN $2 ELSE http_status END,response=CASE WHEN status IN ('pending','unknown') THEN $3 ELSE response END,initial_http_status=CASE WHEN $7 THEN initial_http_status ELSE COALESCE(initial_http_status,$2) END,initial_response=CASE WHEN $7 THEN initial_response ELSE COALESCE(initial_response,$3) END,updated_at=now() WHERE id=$4 AND actor=$5 AND payload_hash=$6", state, v.HTTPStatus, v.Response, v.ID, Actor(ctx), v.Hash, v.Unknown)
 		if e != nil {
 			return nil, e
 		}
@@ -414,7 +428,7 @@ func (s *Store) Command(ctx context.Context, op string, v CommandWrite) (any, er
 	if op == "command.get" {
 		// Only decision/control writes have atomic completion with business state.
 		// Expire abandoned reservations after all domain deadlines, never replay them.
-		_, e := s.Pool.Exec(ctx, `UPDATE command_outcomes c SET status='completed',http_status=409,response='{"message":"Command expired without committed decision/control; no action replayed"}'::jsonb,updated_at=now() WHERE id=$1 AND actor=$2 AND status IN ('pending','unknown') AND created_at<now()-interval '30 seconds' AND (route LIKE '/api/v1/recommendations/%' OR route LIKE '/api/v1/mode/%' OR route LIKE '/api/v1/locks/%') AND NOT EXISTS(SELECT 1 FROM decision_intents d WHERE d.command_id=c.id)`, v.ID, Actor(ctx))
+		_, e := s.Pool.Exec(ctx, `UPDATE command_outcomes c SET status='completed',http_status=409,response='{"message":"Command expired without committed decision/control; no action replayed"}'::jsonb,updated_at=now() WHERE id=$1 AND actor=$2 AND status IN ('pending','unknown') AND created_at<now()-interval '30 seconds' AND (route LIKE '/api/v1/recommendations/%' OR route LIKE '/api/v1/mode/%' OR route LIKE '/api/v1/locks/%') AND NOT (COALESCE(c.response,'{}'::jsonb) ? 'authority_intent') AND NOT EXISTS(SELECT 1 FROM decision_intents d WHERE d.command_id=c.id)`, v.ID, Actor(ctx))
 		if e != nil {
 			return nil, e
 		}
@@ -428,15 +442,20 @@ func (s *Store) Command(ctx context.Context, op string, v CommandWrite) (any, er
 			return nil, e
 		}
 	}
-	var actor, hash, status string
+	var actor, hash, status, route, method, envelopeVersion string
 	var code *int
-	var response json.RawMessage
-	e := s.Pool.QueryRow(ctx, "SELECT actor,payload_hash,status,http_status,response FROM command_outcomes WHERE id=$1", v.ID).Scan(&actor, &hash, &status, &code, &response)
+	var response, initialResponse json.RawMessage
+	var initialCode *int
+	e := s.Pool.QueryRow(ctx, "SELECT actor,payload_hash,status,http_status,response,route,method,envelope_version,initial_response,initial_http_status FROM command_outcomes WHERE id=$1", v.ID).Scan(&actor, &hash, &status, &code, &response, &route, &method, &envelopeVersion, &initialResponse, &initialCode)
 	if e != nil {
 		return nil, e
 	}
-	if actor != Actor(ctx) || (v.Hash != "" && hash != v.Hash) {
+	if actor != Actor(ctx) || (v.Hash != "" && hash != v.Hash) || (op == "command.reserve" && (route != v.Route || method != v.Method || envelopeVersion != v.EnvelopeVersion)) {
 		return map[string]any{"id": v.ID, "status": "conflict"}, nil
+	}
+	if op == "command.reserve" && status == "completed" && len(initialResponse) > 0 {
+		response = initialResponse
+		code = initialCode
 	}
 	return map[string]any{"id": v.ID, "status": status, "http_status": code, "response": response}, nil
 }

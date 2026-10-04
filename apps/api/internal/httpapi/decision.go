@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -74,7 +75,7 @@ func recommendationCurrent(rec *pb.Recommendation, analysis *pb.Analysis, state 
 	}
 	if rec == nil || !analysisMatchesState(analysis, state) || rec.Id == "" || rec.Status != "pending" ||
 		rec.RunId != state.RunId || rec.InputSessionId != state.InputSessionId ||
-		rec.SnapshotSequence != state.SnapshotSequence || rec.ConfigHash != state.ConfigHash ||
+		rec.SnapshotSequence != state.SnapshotSequence || rec.ControlEpoch != state.ControlEpoch || rec.ConfigHash != state.ConfigHash ||
 		rec.ModelVersion != analysis.ModelVersion || rec.MetricsVersion != analysis.MetricsVersion ||
 		rec.MetricsVersion != state.MetricsVersion ||
 		rec.ForecastOriginSourceS != analysis.ForecastOriginSourceS {
@@ -416,10 +417,19 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 		problem(w, 409, "Recommendation is stale, unavailable, locked or already decided")
 		return
 	}
+	var unresolvedControl bool
+	if err := s.Store.Pool.QueryRow(r.Context(), "SELECT EXISTS(SELECT 1 FROM command_outcomes WHERE status IN ('pending','unknown') AND response ? 'authority_intent')").Scan(&unresolvedControl); err != nil || unresolvedControl {
+		problem(w, 503, "Control authority change requires reconciliation")
+		return
+	}
 	var unresolved bool
 	var pendingCmdID string
 	var pendingPayloadBytes []byte
 	err := s.Store.Pool.QueryRow(r.Context(), "SELECT command_id, payload FROM decision_intents WHERE NOT settled AND payload->'recommendation'->>'run_id'=$1 LIMIT 1", state.RunId).Scan(&pendingCmdID, &pendingPayloadBytes)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		problem(w, 503, "Decision reconciliation state unavailable; no approval dispatched")
+		return
+	}
 	if err == nil {
 		unresolved = true
 	}
@@ -575,7 +585,7 @@ func decisionPlanCommand(rec *pb.Recommendation, changes []*pb.TimingChange, id 
 	epoch, sequence := rec.InputSessionId, rec.SnapshotSequence
 	return &pb.PlanCommand{RunId: rec.RunId, Changes: changes, CommandId: id,
 		ActivateNotBeforeSimulationS: rec.ActivateNotBeforeSimulationS,
-		ExpectedInputSessionId:       &epoch, ExpectedSnapshotSequence: &sequence}
+		ExpectedInputSessionId:       &epoch, ExpectedSnapshotSequence: &sequence, ExpectedControlEpoch: &rec.ControlEpoch}
 }
 
 func (s *Server) getLocks() map[string]bool {
@@ -662,7 +672,13 @@ func (s *Server) changeLock(w http.ResponseWriter, r *http.Request, locked bool)
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
-	if err := s.Store.Write(ctx, "lock", store.ControlWrite{RunID: runID, Target: id, Locked: locked}, nil); err != nil {
+	locks := s.getLocks()
+	if locked {
+		locks[id] = true
+	} else {
+		delete(locks, id)
+	}
+	if err := s.dispatchAuthority(ctx, "lock", store.ControlWrite{RunID: runID, Target: id, Locked: locked}, "", locks); err != nil {
 		problem(w, 503, "Lock not confirmed; reconcile command before retrying")
 		return
 	}
@@ -754,22 +770,52 @@ func (s *Server) resolveDecision(w http.ResponseWriter, r *http.Request) {
 		problem(w, 400, "Valid command_id and resolution required")
 		return
 	}
-	if req.Reason == "" {
-		req.Reason = "Supervisor manual reconciliation"
+	if !validReason(req.Reason) {
+		problem(w, 400, "A reconciliation reason is required")
+		return
+	}
+	if s.sim == nil {
+		problem(w, 503, "Simulator outcome unavailable")
+		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
-	err := s.Store.Write(ctx, "decision.resolve", req, nil)
-	if err != nil {
-		problem(w, 500, "Failed to resolve decision intent: "+err.Error())
+	var actor string
+	var payload []byte
+	if err := s.Store.Pool.QueryRow(ctx, "SELECT actor,payload FROM decision_intents WHERE command_id=$1 AND NOT settled", req.CommandID).Scan(&actor, &payload); err != nil {
+		problem(w, 404, "Unresolved decision not found")
 		return
 	}
-	send(w, 200, map[string]any{
-		"settled":           true,
-		"command_id":        req.CommandID,
-		"recommendation_id": req.RecommendationID,
-		"resolution":        req.Resolution,
-	})
+	var intent store.DecisionWrite
+	if json.Unmarshal(payload, &intent) != nil {
+		problem(w, 503, "Durable intent invalid")
+		return
+	}
+	rec := new(pb.Recommendation)
+	command := new(pb.PlanCommand)
+	if protojson.Unmarshal(intent.Recommendation, rec) != nil || protojson.Unmarshal(intent.PlanCommand, command) != nil || command.CommandId != req.CommandID || command.RunId != rec.RunId {
+		problem(w, 503, "Durable command identity unavailable")
+		return
+	}
+	s.sim.commands.Lock()
+	defer s.sim.commands.Unlock()
+	outcome, err := s.sim.client.GetPlanOutcome(ctx, command)
+	if err == nil && (outcome.Status == "accepted" || outcome.Status == "not_found") {
+		outcome, err = s.sim.client.CancelPlan(ctx, command)
+	}
+	if err != nil || !terminalReceipt(rec, &intent, outcome) {
+		problem(w, 409, "Outcome remains UNKNOWN or pending; confirmed simulator receipt required")
+		return
+	}
+	intent.Recommendation = jsonProto(rec)
+	intent.Reason = req.Reason
+	intent.Reconciler = store.Actor(r.Context())
+	if err = s.Store.Write(store.WithCommand(store.WithActor(ctx, actor), req.CommandID), "decision", intent, nil); err != nil {
+		problem(w, 503, "Settlement not confirmed")
+		return
+	}
+	send(w, 200, map[string]any{"settled": true, "command_id": req.CommandID, "recommendation_id": rec.Id, "resolution": outcome.Status, "receipt": outcome})
+
 }
 
 func (s *Server) setMode(w http.ResponseWriter, r *http.Request) {
@@ -787,22 +833,26 @@ func (s *Server) setMode(w http.ResponseWriter, r *http.Request) {
 	}
 	s.sim.commands.Lock()
 	defer s.sim.commands.Unlock()
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
 	if s.sim.command == nil {
+		s.mu.RUnlock()
 		problem(w, 409, "Start a scenario first")
 		return
 	}
+	runID := s.sim.command.RunId
+	s.mu.RUnlock()
 	canonicalMode := mode
 	if mode == "recommendation" {
 		canonicalMode = "recommend"
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
-	if e := s.Store.Write(ctx, "mode", store.ControlWrite{RunID: s.sim.command.RunId, Mode: canonicalMode}, nil); e != nil {
+	if e := s.dispatchAuthority(ctx, "mode", store.ControlWrite{RunID: runID, Mode: canonicalMode}, canonicalMode, s.getLocks()); e != nil {
 		problem(w, 503, "Mode change not confirmed; inspect command outcome")
 		return
 	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.manual = canonicalMode == "manual"
 	s.sim.command.Mode = canonicalMode
 	if canonicalMode != "recommend" && s.analysis != nil {

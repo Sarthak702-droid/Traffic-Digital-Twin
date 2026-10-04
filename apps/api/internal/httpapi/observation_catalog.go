@@ -18,7 +18,15 @@ import (
 	"traffic.local/twin/apps/api/internal/store"
 )
 
+type decodeCoverage struct {
+	Status              string  `json:"status"`
+	RequestedFrames     int     `json:"requested_frames"`
+	DecodedFrames       int     `json:"decoded_frames"`
+	SourceFPS           float64 `json:"source_fps"`
+	DecodedUntilSourceS float64 `json:"decoded_until_source_s"`
+}
 type processedManifest struct {
+	Coverage                 *decodeCoverage           `json:"coverage"`
 	ResourceMeasurements     *store.PerceptionResource `json:"resource_measurements,omitempty"`
 	Status                   string                    `json:"status"`
 	CameraID                 string                    `json:"camera_id"`
@@ -117,11 +125,16 @@ func readProcessedEntry(manifestPath string) catalogEntry {
 		entry.Manifest.CameraID = filepath.Base(filepath.Dir(filepath.Dir(manifestPath)))
 	}
 	m := entry.Manifest
+	if m.Status == "complete" && (m.Coverage == nil || m.Coverage.Status != "complete") {
+		entry.Status = "incomplete_decode"
+		entry.Reason = "Requested decoded coverage is unproven; reprocess the clip"
+		return entry
+	}
 	if m.Status == "failed" {
 		entry.Reason = "Clip processing failed"
 		return entry
 	}
-	if m.Status != "complete" || m.CameraID != filepath.Base(filepath.Dir(filepath.Dir(manifestPath))) ||
+	if m.Coverage == nil || m.Coverage.Status != "complete" || m.Coverage.RequestedFrames <= 0 || m.Coverage.DecodedFrames < m.Coverage.RequestedFrames || !finiteSource(m.Coverage.SourceFPS) || m.Coverage.SourceFPS <= 0 || !finiteSource(m.Coverage.DecodedUntilSourceS) || m.Coverage.DecodedUntilSourceS < float64(m.Coverage.RequestedFrames)/m.Coverage.SourceFPS || m.Status != "complete" || m.CameraID != filepath.Base(filepath.Dir(filepath.Dir(manifestPath))) ||
 		m.SourceSessionID == "" || m.WindowCount < 1 || m.ObservationSchemaVersion != "camera-observation-v1" ||
 		!sha256Hex.MatchString(m.ClipSHA256) || !sha256Hex.MatchString(m.GeometrySHA256) ||
 		!sha256Hex.MatchString(m.ModelSHA256) || !sha256Hex.MatchString(m.ConfigHash) ||
@@ -141,8 +154,9 @@ func readProcessedEntry(manifestPath string) catalogEntry {
 	previousEnd := -1.0
 	seen := map[string]bool{}
 	for scanner.Scan() {
+		var artifact any
 		var row publicObservation
-		if json.Unmarshal(scanner.Bytes(), &row) != nil {
+		if json.Unmarshal(scanner.Bytes(), &artifact) != nil || store.RejectPrivateFields(artifact) != nil || json.Unmarshal(scanner.Bytes(), &row) != nil {
 			entry.Rows = nil
 			return entry
 		}
@@ -158,7 +172,7 @@ func readProcessedEntry(manifestPath string) catalogEntry {
 			entry.Rows = nil
 			return entry
 		}
-		if !validProcessedRow(row, m, previousEnd) {
+		if row.WindowEndS > m.Coverage.DecodedUntilSourceS || !validProcessedRow(row, m, previousEnd) {
 			entry.Reason = "Finalized observation identity, ordering or timing is invalid"
 			entry.Rows = nil
 			return entry

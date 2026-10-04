@@ -1398,6 +1398,12 @@ type TrafficState struct {
 	ObservationHistory              []*FinalizedObservation `protobuf:"bytes,35,rep,name=observation_history,json=observationHistory,proto3" json:"observation_history,omitempty"`
 	InputQuality                    string                  `protobuf:"bytes,36,opt,name=input_quality,json=inputQuality,proto3" json:"input_quality,omitempty"`
 	SimulationPaused                bool                    `protobuf:"varint,37,opt,name=simulation_paused,json=simulationPaused,proto3" json:"simulation_paused,omitempty"`
+	ControlEpoch                    uint64                  `protobuf:"varint,38,opt,name=control_epoch,json=controlEpoch,proto3" json:"control_epoch,omitempty"`
+	ControlMode                     string                  `protobuf:"bytes,39,opt,name=control_mode,json=controlMode,proto3" json:"control_mode,omitempty"`
+	LockedTargets                   []string                `protobuf:"bytes,40,rep,name=locked_targets,json=lockedTargets,proto3" json:"locked_targets,omitempty"`
+	SnapshotSourceAvailableS        *float64                `protobuf:"fixed64,41,opt,name=snapshot_source_available_s,json=snapshotSourceAvailableS,proto3,oneof" json:"snapshot_source_available_s,omitempty"`
+	DemandCommitments               []*DemandCommitment     `protobuf:"bytes,42,rep,name=demand_commitments,json=demandCommitments,proto3" json:"demand_commitments,omitempty"`
+	SourceTimeMapping               *SourceTimeMapping      `protobuf:"bytes,43,opt,name=source_time_mapping,json=sourceTimeMapping,proto3" json:"source_time_mapping,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -1693,6 +1699,48 @@ func (x *TrafficState) GetSimulationPaused() bool {
 		return x.SimulationPaused
 	}
 	return false
+}
+
+func (x *TrafficState) GetControlEpoch() uint64 {
+	if x != nil {
+		return x.ControlEpoch
+	}
+	return 0
+}
+
+func (x *TrafficState) GetControlMode() string {
+	if x != nil {
+		return x.ControlMode
+	}
+	return ""
+}
+
+func (x *TrafficState) GetLockedTargets() []string {
+	if x != nil {
+		return x.LockedTargets
+	}
+	return nil
+}
+
+func (x *TrafficState) GetSnapshotSourceAvailableS() float64 {
+	if x != nil && x.SnapshotSourceAvailableS != nil {
+		return *x.SnapshotSourceAvailableS
+	}
+	return 0
+}
+
+func (x *TrafficState) GetDemandCommitments() []*DemandCommitment {
+	if x != nil {
+		return x.DemandCommitments
+	}
+	return nil
+}
+
+func (x *TrafficState) GetSourceTimeMapping() *SourceTimeMapping {
+	if x != nil {
+		return x.SourceTimeMapping
+	}
+	return nil
 }
 
 type Forecast struct {
@@ -2029,6 +2077,7 @@ type Recommendation struct {
 	ModelVersion                 string                 `protobuf:"bytes,14,opt,name=model_version,json=modelVersion,proto3" json:"model_version,omitempty"`
 	MetricsVersion               string                 `protobuf:"bytes,15,opt,name=metrics_version,json=metricsVersion,proto3" json:"metrics_version,omitempty"`
 	ForecastOriginSourceS        float64                `protobuf:"fixed64,16,opt,name=forecast_origin_source_s,json=forecastOriginSourceS,proto3" json:"forecast_origin_source_s,omitempty"`
+	ControlEpoch                 uint64                 `protobuf:"varint,17,opt,name=control_epoch,json=controlEpoch,proto3" json:"control_epoch,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -2171,6 +2220,13 @@ func (x *Recommendation) GetMetricsVersion() string {
 func (x *Recommendation) GetForecastOriginSourceS() float64 {
 	if x != nil {
 		return x.ForecastOriginSourceS
+	}
+	return 0
+}
+
+func (x *Recommendation) GetControlEpoch() uint64 {
+	if x != nil {
+		return x.ControlEpoch
 	}
 	return 0
 }
@@ -3516,6 +3572,7 @@ type RunCommand struct {
 	DemandSource          string                 `protobuf:"bytes,8,opt,name=demand_source,json=demandSource,proto3" json:"demand_source,omitempty"`
 	InputSessionId        string                 `protobuf:"bytes,9,opt,name=input_session_id,json=inputSessionId,proto3" json:"input_session_id,omitempty"`
 	SourceBindings        []*BoundSource         `protobuf:"bytes,10,rep,name=source_bindings,json=sourceBindings,proto3" json:"source_bindings,omitempty"`
+	LockedTargets         []string               `protobuf:"bytes,11,rep,name=locked_targets,json=lockedTargets,proto3" json:"locked_targets,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -3616,6 +3673,13 @@ func (x *RunCommand) GetInputSessionId() string {
 func (x *RunCommand) GetSourceBindings() []*BoundSource {
 	if x != nil {
 		return x.SourceBindings
+	}
+	return nil
+}
+
+func (x *RunCommand) GetLockedTargets() []string {
+	if x != nil {
+		return x.LockedTargets
 	}
 	return nil
 }
@@ -3784,6 +3848,7 @@ type PlanCommand struct {
 	ActivateNotBeforeSimulationS float64                `protobuf:"fixed64,4,opt,name=activate_not_before_simulation_s,json=activateNotBeforeSimulationS,proto3" json:"activate_not_before_simulation_s,omitempty"`
 	ExpectedInputSessionId       *string                `protobuf:"bytes,5,opt,name=expected_input_session_id,json=expectedInputSessionId,proto3,oneof" json:"expected_input_session_id,omitempty"`
 	ExpectedSnapshotSequence     *uint64                `protobuf:"varint,6,opt,name=expected_snapshot_sequence,json=expectedSnapshotSequence,proto3,oneof" json:"expected_snapshot_sequence,omitempty"`
+	ExpectedControlEpoch         *uint64                `protobuf:"varint,7,opt,name=expected_control_epoch,json=expectedControlEpoch,proto3,oneof" json:"expected_control_epoch,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -3860,6 +3925,173 @@ func (x *PlanCommand) GetExpectedSnapshotSequence() uint64 {
 	return 0
 }
 
+func (x *PlanCommand) GetExpectedControlEpoch() uint64 {
+	if x != nil && x.ExpectedControlEpoch != nil {
+		return *x.ExpectedControlEpoch
+	}
+	return 0
+}
+
+type AuthorityCommand struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	RunId                string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	CommandId            string                 `protobuf:"bytes,2,opt,name=command_id,json=commandId,proto3" json:"command_id,omitempty"`
+	ExpectedControlEpoch uint64                 `protobuf:"varint,3,opt,name=expected_control_epoch,json=expectedControlEpoch,proto3" json:"expected_control_epoch,omitempty"`
+	Mode                 string                 `protobuf:"bytes,4,opt,name=mode,proto3" json:"mode,omitempty"`
+	LockedTargets        []string               `protobuf:"bytes,5,rep,name=locked_targets,json=lockedTargets,proto3" json:"locked_targets,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *AuthorityCommand) Reset() {
+	*x = AuthorityCommand{}
+	mi := &file_twin_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuthorityCommand) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuthorityCommand) ProtoMessage() {}
+
+func (x *AuthorityCommand) ProtoReflect() protoreflect.Message {
+	mi := &file_twin_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuthorityCommand.ProtoReflect.Descriptor instead.
+func (*AuthorityCommand) Descriptor() ([]byte, []int) {
+	return file_twin_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *AuthorityCommand) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *AuthorityCommand) GetCommandId() string {
+	if x != nil {
+		return x.CommandId
+	}
+	return ""
+}
+
+func (x *AuthorityCommand) GetExpectedControlEpoch() uint64 {
+	if x != nil {
+		return x.ExpectedControlEpoch
+	}
+	return 0
+}
+
+func (x *AuthorityCommand) GetMode() string {
+	if x != nil {
+		return x.Mode
+	}
+	return ""
+}
+
+func (x *AuthorityCommand) GetLockedTargets() []string {
+	if x != nil {
+		return x.LockedTargets
+	}
+	return nil
+}
+
+type DemandCommitment struct {
+	state                   protoimpl.MessageState `protogen:"open.v1"`
+	BoundaryLinkId          string                 `protobuf:"bytes,1,opt,name=boundary_link_id,json=boundaryLinkId,proto3" json:"boundary_link_id,omitempty"`
+	ObservationId           string                 `protobuf:"bytes,2,opt,name=observation_id,json=observationId,proto3" json:"observation_id,omitempty"`
+	ReleaseStartSimulationS float64                `protobuf:"fixed64,3,opt,name=release_start_simulation_s,json=releaseStartSimulationS,proto3" json:"release_start_simulation_s,omitempty"`
+	ReleaseEndSimulationS   float64                `protobuf:"fixed64,4,opt,name=release_end_simulation_s,json=releaseEndSimulationS,proto3" json:"release_end_simulation_s,omitempty"`
+	RemainingMassVeh        float64                `protobuf:"fixed64,5,opt,name=remaining_mass_veh,json=remainingMassVeh,proto3" json:"remaining_mass_veh,omitempty"`
+	RateVps                 float64                `protobuf:"fixed64,6,opt,name=rate_vps,json=rateVps,proto3" json:"rate_vps,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *DemandCommitment) Reset() {
+	*x = DemandCommitment{}
+	mi := &file_twin_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DemandCommitment) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DemandCommitment) ProtoMessage() {}
+
+func (x *DemandCommitment) ProtoReflect() protoreflect.Message {
+	mi := &file_twin_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DemandCommitment.ProtoReflect.Descriptor instead.
+func (*DemandCommitment) Descriptor() ([]byte, []int) {
+	return file_twin_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *DemandCommitment) GetBoundaryLinkId() string {
+	if x != nil {
+		return x.BoundaryLinkId
+	}
+	return ""
+}
+
+func (x *DemandCommitment) GetObservationId() string {
+	if x != nil {
+		return x.ObservationId
+	}
+	return ""
+}
+
+func (x *DemandCommitment) GetReleaseStartSimulationS() float64 {
+	if x != nil {
+		return x.ReleaseStartSimulationS
+	}
+	return 0
+}
+
+func (x *DemandCommitment) GetReleaseEndSimulationS() float64 {
+	if x != nil {
+		return x.ReleaseEndSimulationS
+	}
+	return 0
+}
+
+func (x *DemandCommitment) GetRemainingMassVeh() float64 {
+	if x != nil {
+		return x.RemainingMassVeh
+	}
+	return 0
+}
+
+func (x *DemandCommitment) GetRateVps() float64 {
+	if x != nil {
+		return x.RateVps
+	}
+	return 0
+}
+
 type PlanOutcome struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	CommandId            string                 `protobuf:"bytes,1,opt,name=command_id,json=commandId,proto3" json:"command_id,omitempty"`
@@ -3874,7 +4106,7 @@ type PlanOutcome struct {
 
 func (x *PlanOutcome) Reset() {
 	*x = PlanOutcome{}
-	mi := &file_twin_proto_msgTypes[36]
+	mi := &file_twin_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3886,7 +4118,7 @@ func (x *PlanOutcome) String() string {
 func (*PlanOutcome) ProtoMessage() {}
 
 func (x *PlanOutcome) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[36]
+	mi := &file_twin_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3899,7 +4131,7 @@ func (x *PlanOutcome) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlanOutcome.ProtoReflect.Descriptor instead.
 func (*PlanOutcome) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{36}
+	return file_twin_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *PlanOutcome) GetCommandId() string {
@@ -3968,7 +4200,7 @@ type Analysis struct {
 
 func (x *Analysis) Reset() {
 	*x = Analysis{}
-	mi := &file_twin_proto_msgTypes[37]
+	mi := &file_twin_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3980,7 +4212,7 @@ func (x *Analysis) String() string {
 func (*Analysis) ProtoMessage() {}
 
 func (x *Analysis) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[37]
+	mi := &file_twin_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3993,7 +4225,7 @@ func (x *Analysis) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Analysis.ProtoReflect.Descriptor instead.
 func (*Analysis) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{37}
+	return file_twin_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *Analysis) GetRunId() string {
@@ -4121,7 +4353,7 @@ type CompareCommand struct {
 
 func (x *CompareCommand) Reset() {
 	*x = CompareCommand{}
-	mi := &file_twin_proto_msgTypes[38]
+	mi := &file_twin_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4133,7 +4365,7 @@ func (x *CompareCommand) String() string {
 func (*CompareCommand) ProtoMessage() {}
 
 func (x *CompareCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_twin_proto_msgTypes[38]
+	mi := &file_twin_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4146,7 +4378,7 @@ func (x *CompareCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompareCommand.ProtoReflect.Descriptor instead.
 func (*CompareCommand) Descriptor() ([]byte, []int) {
-	return file_twin_proto_rawDescGZIP(), []int{38}
+	return file_twin_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *CompareCommand) GetState() *TrafficState {
@@ -4182,6 +4414,67 @@ func (x *CompareCommand) GetDemandAssumptionsHash() string {
 		return x.DemandAssumptionsHash
 	}
 	return ""
+}
+
+// The current recorded adapter declares an identity source/simulation mapping.
+type SourceTimeMapping struct {
+	state                            protoimpl.MessageState `protogen:"open.v1"`
+	SourceOriginS                    float64                `protobuf:"fixed64,1,opt,name=source_origin_s,json=sourceOriginS,proto3" json:"source_origin_s,omitempty"`
+	SimulationOriginS                float64                `protobuf:"fixed64,2,opt,name=simulation_origin_s,json=simulationOriginS,proto3" json:"simulation_origin_s,omitempty"`
+	SourceSecondsPerSimulationSecond float64                `protobuf:"fixed64,3,opt,name=source_seconds_per_simulation_second,json=sourceSecondsPerSimulationSecond,proto3" json:"source_seconds_per_simulation_second,omitempty"`
+	unknownFields                    protoimpl.UnknownFields
+	sizeCache                        protoimpl.SizeCache
+}
+
+func (x *SourceTimeMapping) Reset() {
+	*x = SourceTimeMapping{}
+	mi := &file_twin_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SourceTimeMapping) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SourceTimeMapping) ProtoMessage() {}
+
+func (x *SourceTimeMapping) ProtoReflect() protoreflect.Message {
+	mi := &file_twin_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SourceTimeMapping.ProtoReflect.Descriptor instead.
+func (*SourceTimeMapping) Descriptor() ([]byte, []int) {
+	return file_twin_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *SourceTimeMapping) GetSourceOriginS() float64 {
+	if x != nil {
+		return x.SourceOriginS
+	}
+	return 0
+}
+
+func (x *SourceTimeMapping) GetSimulationOriginS() float64 {
+	if x != nil {
+		return x.SimulationOriginS
+	}
+	return 0
+}
+
+func (x *SourceTimeMapping) GetSourceSecondsPerSimulationSecond() float64 {
+	if x != nil {
+		return x.SourceSecondsPerSimulationSecond
+	}
+	return 0
 }
 
 var File_twin_proto protoreflect.FileDescriptor
@@ -4324,7 +4617,7 @@ const file_twin_proto_rawDesc = "" +
 	"\fqueue_status\x18\f \x01(\tR\vqueueStatus\x12@\n" +
 	"\x1arelease_start_simulation_s\x18\r \x01(\x01H\x01R\x17releaseStartSimulationS\x88\x01\x01B\x1d\n" +
 	"\x1b_queue_visible_veh_estimateB\x1d\n" +
-	"\x1b_release_start_simulation_s\"\xe4\r\n" +
+	"\x1b_release_start_simulation_s\"\xd3\x10\n" +
 	"\fTrafficState\x12%\n" +
 	"\x0eschema_version\x18\x01 \x01(\tR\rschemaVersion\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1c\n" +
@@ -4366,8 +4659,15 @@ const file_twin_proto_rawDesc = "" +
 	"$latest_finalized_window_end_source_s\x18\" \x01(\x01H\x00R\x1flatestFinalizedWindowEndSourceS\x88\x01\x01\x12Q\n" +
 	"\x13observation_history\x18# \x03(\v2 .traffic.v1.FinalizedObservationR\x12observationHistory\x12#\n" +
 	"\rinput_quality\x18$ \x01(\tR\finputQuality\x12+\n" +
-	"\x11simulation_paused\x18% \x01(\bR\x10simulationPausedB'\n" +
-	"%_latest_finalized_window_end_source_s\"\x80\x06\n" +
+	"\x11simulation_paused\x18% \x01(\bR\x10simulationPaused\x12#\n" +
+	"\rcontrol_epoch\x18& \x01(\x04R\fcontrolEpoch\x12!\n" +
+	"\fcontrol_mode\x18' \x01(\tR\vcontrolMode\x12%\n" +
+	"\x0elocked_targets\x18( \x03(\tR\rlockedTargets\x12B\n" +
+	"\x1bsnapshot_source_available_s\x18) \x01(\x01H\x01R\x18snapshotSourceAvailableS\x88\x01\x01\x12K\n" +
+	"\x12demand_commitments\x18* \x03(\v2\x1c.traffic.v1.DemandCommitmentR\x11demandCommitments\x12M\n" +
+	"\x13source_time_mapping\x18+ \x01(\v2\x1d.traffic.v1.SourceTimeMappingR\x11sourceTimeMappingB'\n" +
+	"%_latest_finalized_window_end_source_sB\x1e\n" +
+	"\x1c_snapshot_source_available_s\"\x80\x06\n" +
 	"\bForecast\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1f\n" +
@@ -4402,7 +4702,7 @@ const file_twin_proto_rawDesc = "" +
 	"\bphase_id\x18\x02 \x01(\tR\aphaseId\x12\x17\n" +
 	"\agreen_s\x18\x03 \x01(\x01R\x06greenS\x12\x1e\n" +
 	"\boffset_s\x18\x04 \x01(\x01H\x00R\aoffsetS\x88\x01\x01B\v\n" +
-	"\t_offset_s\"\xee\x04\n" +
+	"\t_offset_s\"\x93\x05\n" +
 	"\x0eRecommendation\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1c\n" +
@@ -4421,7 +4721,8 @@ const file_twin_proto_rawDesc = "" +
 	"configHash\x12#\n" +
 	"\rmodel_version\x18\x0e \x01(\tR\fmodelVersion\x12'\n" +
 	"\x0fmetrics_version\x18\x0f \x01(\tR\x0emetricsVersion\x127\n" +
-	"\x18forecast_origin_source_s\x18\x10 \x01(\x01R\x15forecastOriginSourceS\"\x88\x02\n" +
+	"\x18forecast_origin_source_s\x18\x10 \x01(\x01R\x15forecastOriginSourceS\x12#\n" +
+	"\rcontrol_epoch\x18\x11 \x01(\x04R\fcontrolEpoch\"\x88\x02\n" +
 	"\x0eOperatorAction\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x14\n" +
@@ -4552,7 +4853,7 @@ const file_twin_proto_rawDesc = "" +
 	"\x10detector_version\x18\b \x01(\tR\x0fdetectorVersion\x12'\n" +
 	"\x0ftracker_version\x18\t \x01(\tR\x0etrackerVersion\x12<\n" +
 	"\x1aobservation_schema_version\x18\n" +
-	" \x01(\tR\x18observationSchemaVersion\"\x85\x03\n" +
+	" \x01(\tR\x18observationSchemaVersion\"\xac\x03\n" +
 	"\n" +
 	"RunCommand\x12%\n" +
 	"\x0eschema_version\x18\x01 \x01(\tR\rschemaVersion\x12#\n" +
@@ -4565,7 +4866,8 @@ const file_twin_proto_rawDesc = "" +
 	"\rdemand_source\x18\b \x01(\tR\fdemandSource\x12(\n" +
 	"\x10input_session_id\x18\t \x01(\tR\x0einputSessionId\x12@\n" +
 	"\x0fsource_bindings\x18\n" +
-	" \x03(\v2\x17.traffic.v1.BoundSourceR\x0esourceBindings\"g\n" +
+	" \x03(\v2\x17.traffic.v1.BoundSourceR\x0esourceBindings\x12%\n" +
+	"\x0elocked_targets\x18\v \x03(\tR\rlockedTargets\"g\n" +
 	"\fClockCommand\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12(\n" +
 	"\x10input_session_id\x18\x02 \x01(\tR\x0einputSessionId\x12\x16\n" +
@@ -4575,7 +4877,7 @@ const file_twin_proto_rawDesc = "" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\"@\n" +
 	"\x10ValidationResult\x12\x14\n" +
 	"\x05valid\x18\x01 \x01(\bR\x05valid\x12\x16\n" +
-	"\x06errors\x18\x02 \x03(\tR\x06errors\"\xff\x02\n" +
+	"\x06errors\x18\x02 \x03(\tR\x06errors\"\xd5\x03\n" +
 	"\vPlanCommand\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x122\n" +
 	"\achanges\x18\x02 \x03(\v2\x18.traffic.v1.TimingChangeR\achanges\x12\x1d\n" +
@@ -4583,9 +4885,25 @@ const file_twin_proto_rawDesc = "" +
 	"command_id\x18\x03 \x01(\tR\tcommandId\x12F\n" +
 	" activate_not_before_simulation_s\x18\x04 \x01(\x01R\x1cactivateNotBeforeSimulationS\x12>\n" +
 	"\x19expected_input_session_id\x18\x05 \x01(\tH\x00R\x16expectedInputSessionId\x88\x01\x01\x12A\n" +
-	"\x1aexpected_snapshot_sequence\x18\x06 \x01(\x04H\x01R\x18expectedSnapshotSequence\x88\x01\x01B\x1c\n" +
+	"\x1aexpected_snapshot_sequence\x18\x06 \x01(\x04H\x01R\x18expectedSnapshotSequence\x88\x01\x01\x129\n" +
+	"\x16expected_control_epoch\x18\a \x01(\x04H\x02R\x14expectedControlEpoch\x88\x01\x01B\x1c\n" +
 	"\x1a_expected_input_session_idB\x1d\n" +
-	"\x1b_expected_snapshot_sequence\"\x8d\x02\n" +
+	"\x1b_expected_snapshot_sequenceB\x19\n" +
+	"\x17_expected_control_epoch\"\xb9\x01\n" +
+	"\x10AuthorityCommand\x12\x15\n" +
+	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x1d\n" +
+	"\n" +
+	"command_id\x18\x02 \x01(\tR\tcommandId\x124\n" +
+	"\x16expected_control_epoch\x18\x03 \x01(\x04R\x14expectedControlEpoch\x12\x12\n" +
+	"\x04mode\x18\x04 \x01(\tR\x04mode\x12%\n" +
+	"\x0elocked_targets\x18\x05 \x03(\tR\rlockedTargets\"\xa2\x02\n" +
+	"\x10DemandCommitment\x12(\n" +
+	"\x10boundary_link_id\x18\x01 \x01(\tR\x0eboundaryLinkId\x12%\n" +
+	"\x0eobservation_id\x18\x02 \x01(\tR\robservationId\x12;\n" +
+	"\x1arelease_start_simulation_s\x18\x03 \x01(\x01R\x17releaseStartSimulationS\x127\n" +
+	"\x18release_end_simulation_s\x18\x04 \x01(\x01R\x15releaseEndSimulationS\x12,\n" +
+	"\x12remaining_mass_veh\x18\x05 \x01(\x01R\x10remainingMassVeh\x12\x19\n" +
+	"\brate_vps\x18\x06 \x01(\x01R\arateVps\"\x8d\x02\n" +
 	"\vPlanOutcome\x12\x1d\n" +
 	"\n" +
 	"command_id\x18\x01 \x01(\tR\tcommandId\x12\x16\n" +
@@ -4621,9 +4939,16 @@ const file_twin_proto_rawDesc = "" +
 	"\achanges\x18\x02 \x03(\v2\x18.traffic.v1.TimingChangeR\achanges\x12+\n" +
 	"\x11recommendation_id\x18\x03 \x01(\tR\x10recommendationId\x12\x1b\n" +
 	"\thorizon_s\x18\x04 \x01(\rR\bhorizonS\x126\n" +
-	"\x17demand_assumptions_hash\x18\x05 \x01(\tR\x15demandAssumptionsHash2\x97\x04\n" +
+	"\x17demand_assumptions_hash\x18\x05 \x01(\tR\x15demandAssumptionsHash\"\xbb\x01\n" +
+	"\x11SourceTimeMapping\x12&\n" +
+	"\x0fsource_origin_s\x18\x01 \x01(\x01R\rsourceOriginS\x12.\n" +
+	"\x13simulation_origin_s\x18\x02 \x01(\x01R\x11simulationOriginS\x12N\n" +
+	"$source_seconds_per_simulation_second\x18\x03 \x01(\x01R sourceSecondsPerSimulationSecond2\xa2\x05\n" +
 	"\n" +
-	"Simulation\x12>\n" +
+	"Simulation\x12I\n" +
+	"\x0fUpdateAuthority\x12\x1c.traffic.v1.AuthorityCommand\x1a\x18.traffic.v1.TrafficState\x12>\n" +
+	"\n" +
+	"CancelPlan\x12\x17.traffic.v1.PlanCommand\x1a\x17.traffic.v1.PlanOutcome\x12>\n" +
 	"\bSetClock\x12\x18.traffic.v1.ClockCommand\x1a\x18.traffic.v1.TrafficState\x12B\n" +
 	"\x0eGetPlanOutcome\x12\x17.traffic.v1.PlanCommand\x1a\x17.traffic.v1.PlanOutcome\x12B\n" +
 	"\tApplyPlan\x12\x17.traffic.v1.PlanCommand\x1a\x1c.traffic.v1.ValidationResult\x12G\n" +
@@ -4650,7 +4975,7 @@ func file_twin_proto_rawDescGZIP() []byte {
 	return file_twin_proto_rawDescData
 }
 
-var file_twin_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
+var file_twin_proto_msgTypes = make([]protoimpl.MessageInfo, 42)
 var file_twin_proto_goTypes = []any{
 	(*Node)(nil),                 // 0: traffic.v1.Node
 	(*Link)(nil),                 // 1: traffic.v1.Link
@@ -4688,9 +5013,12 @@ var file_twin_proto_goTypes = []any{
 	(*RunRequest)(nil),           // 33: traffic.v1.RunRequest
 	(*ValidationResult)(nil),     // 34: traffic.v1.ValidationResult
 	(*PlanCommand)(nil),          // 35: traffic.v1.PlanCommand
-	(*PlanOutcome)(nil),          // 36: traffic.v1.PlanOutcome
-	(*Analysis)(nil),             // 37: traffic.v1.Analysis
-	(*CompareCommand)(nil),       // 38: traffic.v1.CompareCommand
+	(*AuthorityCommand)(nil),     // 36: traffic.v1.AuthorityCommand
+	(*DemandCommitment)(nil),     // 37: traffic.v1.DemandCommitment
+	(*PlanOutcome)(nil),          // 38: traffic.v1.PlanOutcome
+	(*Analysis)(nil),             // 39: traffic.v1.Analysis
+	(*CompareCommand)(nil),       // 40: traffic.v1.CompareCommand
+	(*SourceTimeMapping)(nil),    // 41: traffic.v1.SourceTimeMapping
 }
 var file_twin_proto_depIdxs = []int32{
 	18, // 0: traffic.v1.SchedulerSnapshot.pending_plan:type_name -> traffic.v1.TimingChange
@@ -4709,58 +5037,64 @@ var file_twin_proto_depIdxs = []int32{
 	11, // 13: traffic.v1.TrafficState.cells:type_name -> traffic.v1.CellStock
 	12, // 14: traffic.v1.TrafficState.boundary_demand:type_name -> traffic.v1.BoundaryDemandState
 	14, // 15: traffic.v1.TrafficState.observation_history:type_name -> traffic.v1.FinalizedObservation
-	18, // 16: traffic.v1.Recommendation.changes:type_name -> traffic.v1.TimingChange
-	18, // 17: traffic.v1.OperatorAction.modifications:type_name -> traffic.v1.TimingChange
-	23, // 18: traffic.v1.HealthState.components:type_name -> traffic.v1.ComponentHealth
-	18, // 19: traffic.v1.AuditEvent.before:type_name -> traffic.v1.TimingChange
-	18, // 20: traffic.v1.AuditEvent.after:type_name -> traffic.v1.TimingChange
-	15, // 21: traffic.v1.EventEnvelope.network_state:type_name -> traffic.v1.TrafficState
-	27, // 22: traffic.v1.EventEnvelope.junction_state:type_name -> traffic.v1.SignalState
-	16, // 23: traffic.v1.EventEnvelope.forecast_updated:type_name -> traffic.v1.Forecast
-	19, // 24: traffic.v1.EventEnvelope.recommendation_created:type_name -> traffic.v1.Recommendation
-	19, // 25: traffic.v1.EventEnvelope.recommendation_updated:type_name -> traffic.v1.Recommendation
-	21, // 26: traffic.v1.EventEnvelope.incident_updated:type_name -> traffic.v1.Incident
-	22, // 27: traffic.v1.EventEnvelope.emergency_updated:type_name -> traffic.v1.EmergencyEvent
-	24, // 28: traffic.v1.EventEnvelope.health_updated:type_name -> traffic.v1.HealthState
-	25, // 29: traffic.v1.EventEnvelope.audit_appended:type_name -> traffic.v1.AuditEvent
-	30, // 30: traffic.v1.RunCommand.source_bindings:type_name -> traffic.v1.BoundSource
-	18, // 31: traffic.v1.PlanCommand.changes:type_name -> traffic.v1.TimingChange
-	16, // 32: traffic.v1.Analysis.forecasts:type_name -> traffic.v1.Forecast
-	19, // 33: traffic.v1.Analysis.recommendation:type_name -> traffic.v1.Recommendation
-	28, // 34: traffic.v1.Analysis.comparison:type_name -> traffic.v1.ComparisonResult
-	19, // 35: traffic.v1.Analysis.alternatives:type_name -> traffic.v1.Recommendation
-	17, // 36: traffic.v1.Analysis.horizon_availability:type_name -> traffic.v1.HorizonAvailability
-	15, // 37: traffic.v1.CompareCommand.state:type_name -> traffic.v1.TrafficState
-	18, // 38: traffic.v1.CompareCommand.changes:type_name -> traffic.v1.TimingChange
-	32, // 39: traffic.v1.Simulation.SetClock:input_type -> traffic.v1.ClockCommand
-	35, // 40: traffic.v1.Simulation.GetPlanOutcome:input_type -> traffic.v1.PlanCommand
-	35, // 41: traffic.v1.Simulation.ApplyPlan:input_type -> traffic.v1.PlanCommand
-	15, // 42: traffic.v1.Simulation.ValidateState:input_type -> traffic.v1.TrafficState
-	31, // 43: traffic.v1.Simulation.Reset:input_type -> traffic.v1.RunCommand
-	33, // 44: traffic.v1.Simulation.GetState:input_type -> traffic.v1.RunRequest
-	33, // 45: traffic.v1.Simulation.StreamState:input_type -> traffic.v1.RunRequest
-	33, // 46: traffic.v1.Simulation.Stop:input_type -> traffic.v1.RunRequest
-	15, // 47: traffic.v1.Intelligence.ValidateState:input_type -> traffic.v1.TrafficState
-	15, // 48: traffic.v1.Intelligence.Predict:input_type -> traffic.v1.TrafficState
-	15, // 49: traffic.v1.Intelligence.Analyze:input_type -> traffic.v1.TrafficState
-	38, // 50: traffic.v1.Intelligence.Compare:input_type -> traffic.v1.CompareCommand
-	15, // 51: traffic.v1.Simulation.SetClock:output_type -> traffic.v1.TrafficState
-	36, // 52: traffic.v1.Simulation.GetPlanOutcome:output_type -> traffic.v1.PlanOutcome
-	34, // 53: traffic.v1.Simulation.ApplyPlan:output_type -> traffic.v1.ValidationResult
-	34, // 54: traffic.v1.Simulation.ValidateState:output_type -> traffic.v1.ValidationResult
-	15, // 55: traffic.v1.Simulation.Reset:output_type -> traffic.v1.TrafficState
-	15, // 56: traffic.v1.Simulation.GetState:output_type -> traffic.v1.TrafficState
-	15, // 57: traffic.v1.Simulation.StreamState:output_type -> traffic.v1.TrafficState
-	34, // 58: traffic.v1.Simulation.Stop:output_type -> traffic.v1.ValidationResult
-	34, // 59: traffic.v1.Intelligence.ValidateState:output_type -> traffic.v1.ValidationResult
-	16, // 60: traffic.v1.Intelligence.Predict:output_type -> traffic.v1.Forecast
-	37, // 61: traffic.v1.Intelligence.Analyze:output_type -> traffic.v1.Analysis
-	28, // 62: traffic.v1.Intelligence.Compare:output_type -> traffic.v1.ComparisonResult
-	51, // [51:63] is the sub-list for method output_type
-	39, // [39:51] is the sub-list for method input_type
-	39, // [39:39] is the sub-list for extension type_name
-	39, // [39:39] is the sub-list for extension extendee
-	0,  // [0:39] is the sub-list for field type_name
+	37, // 16: traffic.v1.TrafficState.demand_commitments:type_name -> traffic.v1.DemandCommitment
+	41, // 17: traffic.v1.TrafficState.source_time_mapping:type_name -> traffic.v1.SourceTimeMapping
+	18, // 18: traffic.v1.Recommendation.changes:type_name -> traffic.v1.TimingChange
+	18, // 19: traffic.v1.OperatorAction.modifications:type_name -> traffic.v1.TimingChange
+	23, // 20: traffic.v1.HealthState.components:type_name -> traffic.v1.ComponentHealth
+	18, // 21: traffic.v1.AuditEvent.before:type_name -> traffic.v1.TimingChange
+	18, // 22: traffic.v1.AuditEvent.after:type_name -> traffic.v1.TimingChange
+	15, // 23: traffic.v1.EventEnvelope.network_state:type_name -> traffic.v1.TrafficState
+	27, // 24: traffic.v1.EventEnvelope.junction_state:type_name -> traffic.v1.SignalState
+	16, // 25: traffic.v1.EventEnvelope.forecast_updated:type_name -> traffic.v1.Forecast
+	19, // 26: traffic.v1.EventEnvelope.recommendation_created:type_name -> traffic.v1.Recommendation
+	19, // 27: traffic.v1.EventEnvelope.recommendation_updated:type_name -> traffic.v1.Recommendation
+	21, // 28: traffic.v1.EventEnvelope.incident_updated:type_name -> traffic.v1.Incident
+	22, // 29: traffic.v1.EventEnvelope.emergency_updated:type_name -> traffic.v1.EmergencyEvent
+	24, // 30: traffic.v1.EventEnvelope.health_updated:type_name -> traffic.v1.HealthState
+	25, // 31: traffic.v1.EventEnvelope.audit_appended:type_name -> traffic.v1.AuditEvent
+	30, // 32: traffic.v1.RunCommand.source_bindings:type_name -> traffic.v1.BoundSource
+	18, // 33: traffic.v1.PlanCommand.changes:type_name -> traffic.v1.TimingChange
+	16, // 34: traffic.v1.Analysis.forecasts:type_name -> traffic.v1.Forecast
+	19, // 35: traffic.v1.Analysis.recommendation:type_name -> traffic.v1.Recommendation
+	28, // 36: traffic.v1.Analysis.comparison:type_name -> traffic.v1.ComparisonResult
+	19, // 37: traffic.v1.Analysis.alternatives:type_name -> traffic.v1.Recommendation
+	17, // 38: traffic.v1.Analysis.horizon_availability:type_name -> traffic.v1.HorizonAvailability
+	15, // 39: traffic.v1.CompareCommand.state:type_name -> traffic.v1.TrafficState
+	18, // 40: traffic.v1.CompareCommand.changes:type_name -> traffic.v1.TimingChange
+	36, // 41: traffic.v1.Simulation.UpdateAuthority:input_type -> traffic.v1.AuthorityCommand
+	35, // 42: traffic.v1.Simulation.CancelPlan:input_type -> traffic.v1.PlanCommand
+	32, // 43: traffic.v1.Simulation.SetClock:input_type -> traffic.v1.ClockCommand
+	35, // 44: traffic.v1.Simulation.GetPlanOutcome:input_type -> traffic.v1.PlanCommand
+	35, // 45: traffic.v1.Simulation.ApplyPlan:input_type -> traffic.v1.PlanCommand
+	15, // 46: traffic.v1.Simulation.ValidateState:input_type -> traffic.v1.TrafficState
+	31, // 47: traffic.v1.Simulation.Reset:input_type -> traffic.v1.RunCommand
+	33, // 48: traffic.v1.Simulation.GetState:input_type -> traffic.v1.RunRequest
+	33, // 49: traffic.v1.Simulation.StreamState:input_type -> traffic.v1.RunRequest
+	33, // 50: traffic.v1.Simulation.Stop:input_type -> traffic.v1.RunRequest
+	15, // 51: traffic.v1.Intelligence.ValidateState:input_type -> traffic.v1.TrafficState
+	15, // 52: traffic.v1.Intelligence.Predict:input_type -> traffic.v1.TrafficState
+	15, // 53: traffic.v1.Intelligence.Analyze:input_type -> traffic.v1.TrafficState
+	40, // 54: traffic.v1.Intelligence.Compare:input_type -> traffic.v1.CompareCommand
+	15, // 55: traffic.v1.Simulation.UpdateAuthority:output_type -> traffic.v1.TrafficState
+	38, // 56: traffic.v1.Simulation.CancelPlan:output_type -> traffic.v1.PlanOutcome
+	15, // 57: traffic.v1.Simulation.SetClock:output_type -> traffic.v1.TrafficState
+	38, // 58: traffic.v1.Simulation.GetPlanOutcome:output_type -> traffic.v1.PlanOutcome
+	34, // 59: traffic.v1.Simulation.ApplyPlan:output_type -> traffic.v1.ValidationResult
+	34, // 60: traffic.v1.Simulation.ValidateState:output_type -> traffic.v1.ValidationResult
+	15, // 61: traffic.v1.Simulation.Reset:output_type -> traffic.v1.TrafficState
+	15, // 62: traffic.v1.Simulation.GetState:output_type -> traffic.v1.TrafficState
+	15, // 63: traffic.v1.Simulation.StreamState:output_type -> traffic.v1.TrafficState
+	34, // 64: traffic.v1.Simulation.Stop:output_type -> traffic.v1.ValidationResult
+	34, // 65: traffic.v1.Intelligence.ValidateState:output_type -> traffic.v1.ValidationResult
+	16, // 66: traffic.v1.Intelligence.Predict:output_type -> traffic.v1.Forecast
+	39, // 67: traffic.v1.Intelligence.Analyze:output_type -> traffic.v1.Analysis
+	28, // 68: traffic.v1.Intelligence.Compare:output_type -> traffic.v1.ComparisonResult
+	55, // [55:69] is the sub-list for method output_type
+	41, // [41:55] is the sub-list for method input_type
+	41, // [41:41] is the sub-list for extension type_name
+	41, // [41:41] is the sub-list for extension extendee
+	0,  // [0:41] is the sub-list for field type_name
 }
 
 func init() { file_twin_proto_init() }
@@ -4786,14 +5120,14 @@ func file_twin_proto_init() {
 		(*EventEnvelope_AuditAppended)(nil),
 	}
 	file_twin_proto_msgTypes[35].OneofWrappers = []any{}
-	file_twin_proto_msgTypes[36].OneofWrappers = []any{}
+	file_twin_proto_msgTypes[38].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_twin_proto_rawDesc), len(file_twin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   39,
+			NumMessages:   42,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

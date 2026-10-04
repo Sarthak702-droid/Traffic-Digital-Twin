@@ -70,7 +70,7 @@ func (s *Server) access(next http.Handler) http.Handler {
 			problem(w, http.StatusForbidden, "Viewer cannot change the digital twin")
 			return
 		}
-		ctx := store.WithRole(store.WithCommand(store.WithActor(r.Context(), session.Username), r.Header.Get("Idempotency-Key")), account.Role)
+		ctx := store.WithAccountVersion(store.WithRole(store.WithCommand(store.WithActor(r.Context(), session.Username), r.Header.Get("Idempotency-Key")), account.Role), account.Version)
 		if path != "/ws/v1/live" {
 			var cancel context.CancelFunc
 			ctx, cancel = context.WithTimeout(ctx, 8*time.Second)

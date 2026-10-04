@@ -71,15 +71,15 @@
       notice.style.background='#c0ed7812';
       const icon=notice.querySelector('.notice-icon');
       if(icon){icon.textContent='✓';icon.style.background='var(--lime)';icon.style.color='#121810';}
-      notice.querySelector('strong').textContent='All 45 tasks & 20 audit gaps fully verified';
-      notice.querySelector('p').textContent='Production-ready: all 14 epics and 20 audit findings (A01–A20) are closed with verified repository acceptance evidence.';
+      notice.querySelector('strong').textContent='Implementation tasks recorded; acceptance remains open';
+      notice.querySelector('p').textContent='NOT ACCEPTED · functional prototype. Task closure does not establish current acceptance or deployment readiness.';
       const btn=notice.querySelector('#review-gaps');
       if(btn){btn.textContent='View gap resolutions ↗';btn.style.color='var(--lime)';}
     } else {
       notice.querySelector('strong').textContent=verified?'Repository completion recorded':'Start with the foundation';
-      notice.querySelector('p').textContent=verified?`${verified} tasks completed with repository acceptance evidence. Other task changes are personal tracking.`:'Unverified stories remain proposed. Personal tracking does not verify implementation.';
+      notice.querySelector('p').textContent=verified?`${verified} implementation tasks recorded. Acceptance gates require separate current evidence; deployment readiness is deferred.`:'Unverified stories remain proposed. Personal tracking does not verify implementation.';
     }
-    document.querySelector('.readiness-foot').textContent=`${verified} repository-verified · personal tracking on this browser`;
+    document.querySelector('.readiness-foot').textContent=`${verified} implementation records · acceptance separate · production deployment deferred`;
     const completed=count('completed'),pct=Math.round(completed/tasks.length*100)||0;
     $('percent').innerHTML=`${pct}<span>%</span>`;$('complete-label').textContent=`${completed} of ${tasks.length} tasks completed`;$('progress').style.width=pct+'%';
     const next=tasks.find(t=>status(t)!=='completed'&&t.dependencies.every(id=>tasks.some(d=>d.id===id&&status(d)==='completed')));
@@ -104,8 +104,8 @@
     const openCount=plan.risks.filter(r=>!isGapClosed(r)).length;
     $('result-count').textContent=isTasks?list.length:state.view==='gaps'?`${plan.risks.length-openCount}/${plan.risks.length} resolved`:'';
     $('view-title').firstChild.textContent=state.view==='tasks'?(selectedEpic?epicLabel(selectedEpic.id)+' tasks':state.filter==='all'?'All tasks':statuses[state.filter].label)+' ':state.view==='gaps'?(openCount===0?'All 20 Audit Gaps Resolved & Closed ':openCount+' Open Gaps '):curViews[state.view][1]+' ';
-    $('view-kicker').textContent={tasks:'THE EXECUTION PLAN',kanban:'WORK IN MOTION',epics:'THE BIG PICTURE',gaps:openCount===0?'AUDIT REMEDIATION COMPLETE':'DECISIONS BEFORE DELIVERY',git:'REPOSITORY SNAPSHOT'}[state.view];
-    $('view-caption').textContent=isTasks?`${list.length} of ${selectedEpic?selectedEpic.stories.length:tasks.length} tasks · ${state.priority==='all'?'All priorities':priorityLabels[state.priority]}`:state.view==='gaps'?(openCount===0?'All 20 audit findings (A01–A20) closed and verified by delivery gates':'Risks from the delivery plan'):'Read-only · on refresh';
+    $('view-kicker').textContent={tasks:'THE EXECUTION PLAN',kanban:'WORK IN MOTION',epics:'THE BIG PICTURE',gaps:openCount===0?'IMPLEMENTATION RECORDS':'DECISIONS BEFORE DELIVERY',git:'REPOSITORY SNAPSHOT'}[state.view];
+    $('view-caption').textContent=isTasks?`${list.length} of ${selectedEpic?selectedEpic.stories.length:tasks.length} tasks · ${state.priority==='all'?'All priorities':priorityLabels[state.priority]}`:state.view==='gaps'?(openCount===0?'Task records do not establish current acceptance; inspect audit remediation evidence':'Risks from the delivery plan'):'Read-only · on refresh';
     if(state.view==='tasks')$('content').innerHTML=list.length?`<div class="task-grid">${list.map(card).join('')}</div>`:empty();
     if(state.view==='kanban')$('content').innerHTML=`<div class="board">${Object.entries(statuses).map(([key,s])=>{const items=list.filter(t=>status(t)===key);return `<section class="column" style="--tone:${s.color}"><h3>${s.icon} &nbsp; ${s.label} <span class="subtle">${items.length}</span></h3>${items.length?items.map(card).join(''):'<div class="empty">No tasks here</div>'}</section>`;}).join('')}</div>`;
     if(state.view==='epics'){
@@ -115,23 +115,23 @@
     if(state.view==='gaps')$('content').innerHTML=`
       <div style="margin-bottom:20px;padding:16px 20px;border-radius:12px;background:${openCount===0?'#c0ed7812':'#efc77614'};border:1px solid ${openCount===0?'#4d6237':'#8d703c'};display:flex;align-items:center;justify-content:space-between">
         <div>
-          <strong style="color:${openCount===0?'var(--lime)':'var(--amber)'};font-size:15px">${openCount===0?'✓ 20 of 20 Audit Gaps Closed & Verified':'Warning: '+openCount+' Open Planning Risks'}</strong>
-          <p style="margin:4px 0 0;font-size:13px;color:var(--muted)">${openCount===0?'Every Critical, High, and Medium finding from UX-PRODUCTION-AUDIT.md has been closed with auditable acceptance tests in main.':'Some audit findings still have pending gate verification.'}</p>
+          <strong style="color:${openCount===0?'var(--lime)':'var(--amber)'};font-size:15px">${openCount===0?'Tracked planning work complete; acceptance remains open':'Warning: '+openCount+' Open Planning Risks'}</strong>
+          <p style="margin:4px 0 0;font-size:13px;color:var(--muted)">${openCount===0?'Tracked UX work is marked complete. Current acceptance requires separate evidence.':'Some audit findings still have pending gate verification.'}</p>
         </div>
-        <span class="badge" style="--tone:${openCount===0?'#c0ed78':'#efc776'};font-size:12px">${openCount===0?'100% RESOLVED':'INCOMPLETE'}</span>
+        <span class="badge" style="--tone:${openCount===0?'#c0ed78':'#efc776'};font-size:12px">${openCount===0?'NOT ACCEPTED':'INCOMPLETE'}</span>
       </div>
       <div class="gap-grid">${plan.risks.map((r,i)=>{
         const closed = isGapClosed(r);
         return `<article class="gap-card" style="border-color:${closed?'#3a4831':'var(--line)'};background:${closed?'linear-gradient(145deg,#131911,#0e130d)':'#161c13'}">
           <div class="card-meta">
-            <span class="eyebrow" style="color:${closed?'var(--lime)':'var(--amber)'}">GAP-${String(i+1).padStart(3,'0')} / ${closed?'RESOLVED AUDIT FINDING':'PLANNING RISK'}</span>
+            <span class="eyebrow" style="color:${closed?'var(--lime)':'var(--amber)'}">GAP-${String(i+1).padStart(3,'0')} / ${closed?'IMPLEMENTATION RECORD':'PLANNING RISK'}</span>
             <span class="badge" style="--tone:${closed?'#c0ed78':'#efc776'}">${closed?'CLOSED':'OPEN RISK'}</span>
           </div>
           <h3 style="margin:14px 0 10px">${esc(r.title)}</h3>
           <p>${esc(r.mitigation)}</p>
           <div style="margin-top:auto;padding-top:14px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between">
             <span class="subtle">${esc(r.owner)}</span>
-            <span class="badge" style="--tone:${closed?'#c0ed78':'#8dbfea'}">${closed?'✓ Verified Gate: ':'Gate: '}${esc(r.gate)}</span>
+            <span class="badge" style="--tone:${closed?'#c0ed78':'#8dbfea'}">${closed?'Required gate: ':'Gate: '}${esc(r.gate)}</span>
           </div>
         </article>`;
       }).join('')}</div>
@@ -147,7 +147,7 @@
   function openTask(id){
     const t=tasks.find(t=>t.id===id);if(!t)return;dialogId=id;
     const blocked=t.dependencies.filter(id=>!tasks.some(d=>d.id===id&&status(d)==='completed'));
-    $('dialog-content').innerHTML=`<div class="dialog-top"><div class="card-meta"><span class="task-id">${esc(t.id)} / ${epicLabel(t.epicId)} · Task ${t.epicTaskIndex} of ${t.epicTaskCount}</span> ${badge(t)}</div><button class="icon-button" data-close aria-label="Close task details">×</button></div><div class="dialog-body"><h2 id="dialog-title">${esc(t.title)}</h2><div class="detail-meta">${priorityBadge(t.priority)}<span class="tag">${esc(t.owner)}</span><span class="tag">Days ${t.days.join('–')}</span></div><h3>OBJECTIVE</h3><p>${esc(t.userStory)}</p><h3>ACCEPTANCE CRITERIA</h3><ol>${t.acceptance.map(a=>`<li>${esc(a)}</li>`).join('')}</ol><h3>DEPENDENCIES</h3>${t.dependencies.length?t.dependencies.map(id=>`<button class="dependency" data-task="${esc(id)}">${esc(id)} · ${esc(statuses[status({id})].label)} ↗</button>`).join(''):'<p>No prerequisite stories. This task can start the foundation.</p>'}${blocked.length?`<p>${blocked.length} prerequisite(s) are not yet tracked as completed.</p>`:''}<h3>REQUIREMENT SOURCES</h3><ul>${t.sources.map(s=>`<li>${esc(s)}</li>`).join('')}</ul><div class="detail-controls"><label for="task-status">${t.evidence?'Repository-verified completion':'Personal task status'}<small>${t.evidence?'Accepted against the recorded implementation checks.':'Saved on this device. Does not modify repository evidence.'}</small></label><select id="task-status" ${t.evidence?'disabled':''}>${Object.entries(statuses).map(([key,s])=>`<option value="${key}" ${status(t)===key?'selected':''}>${s.label}</option>`).join('')}</select></div>${t.evidence?`<p><a href="/evidence/${esc(t.epicId.toLowerCase())}" target="_blank" rel="noopener">Read ${esc(epicLabel(t.epicId))} acceptance evidence ↗</a></p>`:''}<details><summary>View source record</summary><pre class="source-text">${esc(JSON.stringify(plan.epics.find(e=>e.id===t.epicId).stories.find(s=>s.id===id),null,2))}</pre></details></div>`;
+    $('dialog-content').innerHTML=`<div class="dialog-top"><div class="card-meta"><span class="task-id">${esc(t.id)} / ${epicLabel(t.epicId)} · Task ${t.epicTaskIndex} of ${t.epicTaskCount}</span> ${badge(t)}</div><button class="icon-button" data-close aria-label="Close task details">×</button></div><div class="dialog-body"><h2 id="dialog-title">${esc(t.title)}</h2><div class="detail-meta">${priorityBadge(t.priority)}<span class="tag">${esc(t.owner)}</span><span class="tag">Days ${t.days.join('–')}</span></div><h3>OBJECTIVE</h3><p>${esc(t.userStory)}</p><h3>ACCEPTANCE CRITERIA</h3><ol>${t.acceptance.map(a=>`<li>${esc(a)}</li>`).join('')}</ol><h3>DEPENDENCIES</h3>${t.dependencies.length?t.dependencies.map(id=>`<button class="dependency" data-task="${esc(id)}">${esc(id)} · ${esc(statuses[status({id})].label)} ↗</button>`).join(''):'<p>No prerequisite stories. This task can start the foundation.</p>'}${blocked.length?`<p>${blocked.length} prerequisite(s) are not yet tracked as completed.</p>`:''}<h3>REQUIREMENT SOURCES</h3><ul>${t.sources.map(s=>`<li>${esc(s)}</li>`).join('')}</ul><div class="detail-controls"><label for="task-status">${t.evidence?'Recorded implementation status':'Personal task status'}<small>${t.evidence?'Historical implementation evidence; current acceptance is separate.':'Saved on this device. Does not modify repository evidence.'}</small></label><select id="task-status" ${t.evidence?'disabled':''}>${Object.entries(statuses).map(([key,s])=>`<option value="${key}" ${status(t)===key?'selected':''}>${s.label}</option>`).join('')}</select></div>${t.evidence?`<p><a href="/evidence/${esc(t.epicId.toLowerCase())}" target="_blank" rel="noopener">Read ${esc(epicLabel(t.epicId))} implementation evidence ↗</a></p>`:''}<details><summary>View source record</summary><pre class="source-text">${esc(JSON.stringify(plan.epics.find(e=>e.id===t.epicId).stories.find(s=>s.id===id),null,2))}</pre></details></div>`;
     if(!$('task-dialog').open)$('task-dialog').showModal();
     $('dialog-content').querySelector('[data-close]').focus();
   }

@@ -93,3 +93,36 @@ def test_finished_clip_history_becomes_stale_at_later_simulation_time():
     state.simulation_time_s = 25
     with pytest.raises(ValueError, match="stale"):
         boundary_forecast_rates(state, model.index)
+
+@pytest.mark.parametrize('delay',[0,1,8])
+def test_audit_delayed_available_window_uses_availability_watermark(delay):
+    model=Model();state=video_state(model,[2])
+    state.snapshot_source_available_s=5+delay
+    for row in state.observation_history:row.available_at_source_s=5+delay
+    rates,_=boundary_forecast_rates(state,model.index)
+    assert all(rate==2/5 for rate in rates.values())
+    state.snapshot_source_available_s=4+delay
+    with pytest.raises(ValueError,match='missing'):boundary_forecast_rates(state,model.index)
+
+def test_audit_committed_mass_precedes_forecast_and_changes_identity():
+    model=Model();state=video_state(model,[2]);state.simulation_time_s=6;state.snapshot_source_available_s=6
+    original=model._evaluation_input(state)['demand_hash']
+    for link in model.index.boundary_inputs:
+        state.demand_commitments.add(boundary_link_id=link,release_start_simulation_s=5,release_end_simulation_s=10,remaining_mass_veh=9,rate_vps=3)
+    evaluation=model._evaluation_input(state)
+    assert evaluation['demand_hash']!=original
+    result=model.rollout(state,default_plan(model.config),horizon=3,evaluation=evaluation)
+    assert result['offered_external_veh']==pytest.approx(9*len(model.index.boundary_inputs))
+    assert result['mass_residual_veh']==pytest.approx(0,abs=1e-8)
+    longer=model.rollout(state,default_plan(model.config),horizon=4,evaluation=evaluation)
+    assert longer['offered_external_veh']==pytest.approx((9+.4)*len(model.index.boundary_inputs))
+
+def test_declared_source_mapping_and_availability_are_validated():
+    model=Model();state=video_state(model,[1])
+    state.simulation_time_s=8;state.snapshot_source_available_s=8
+    state.source_time_mapping.CopyFrom(pb.SourceTimeMapping(source_seconds_per_simulation_second=1))
+    assert all(rate==.2 for rate in boundary_forecast_rates(state,model.index)[0].values())
+    state.source_time_mapping.source_origin_s=10
+    with pytest.raises(ValueError,match='mapping'):boundary_forecast_rates(state,model.index)
+    state.source_time_mapping.source_origin_s=0;state.snapshot_source_available_s=9
+    with pytest.raises(ValueError,match='mapped snapshot'):boundary_forecast_rates(state,model.index)

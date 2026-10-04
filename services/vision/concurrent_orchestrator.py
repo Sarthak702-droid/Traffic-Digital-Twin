@@ -15,6 +15,7 @@ import os
 import queue
 import threading
 import time
+import math
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -72,6 +73,8 @@ class CameraSessionWorker:
         self.bin_duration_s = bin_duration_s
 
         self.stopped = False
+        self.orig_shape = None
+        self.decode_status = "not_processed"
         self.frames_decoded = 0
         self.frames_dropped_backpressure = 0
         self.observations: List[CameraObservationRecord] = []
@@ -94,9 +97,13 @@ class CameraSessionWorker:
         if not cap.isOpened():
             return
 
-        fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+        fps = cap.get(cv2.CAP_PROP_FPS)
         orig_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         orig_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        if not fps or min(orig_w,orig_h)<=0:
+            cap.release();self.decode_status="incomplete_decode";return
+        self.orig_shape=(orig_w,orig_h)
+        expected=min(int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),int(math.ceil(max_duration_s*fps))) if max_duration_s else int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         frame_step = max(1, int(round(fps / self.target_fps)))
 
         # Initialize counter in pixel space
@@ -140,6 +147,7 @@ class CameraSessionWorker:
             frame_idx += 1
 
         cap.release()
+        self.decode_status="complete" if expected>0 and frame_idx>=expected else "incomplete_decode"
 
     def handle_detection(self, det: DetectionResultPacket):
         """Processes detections from central inference worker."""
@@ -147,11 +155,14 @@ class CameraSessionWorker:
             return
 
         scale_x, scale_y = 1.0, 1.0
-        orig_w, orig_h = 3840, 2160
+        if self.orig_shape is None:return
+        orig_w, orig_h = self.orig_shape
         queue_roi = self.geometry.get("queue_roi")
         queue_pts = np.array([[int(p[0] * orig_w), int(p[1] * orig_h)] for p in queue_roi], np.int32) if queue_roi else None
 
         active_queued = 0
+        # This diagnostic batch path does not estimate stationary queues.
+        # The authoritative recorded processor performs source-time motion analysis.
         if det.track_ids is not None and len(det.track_ids) > 0:
             for i, tid in enumerate(det.track_ids):
                 track_id = int(tid)
@@ -164,8 +175,8 @@ class CameraSessionWorker:
                 if track_id in self.track_positions:
                     prev_pt = self.track_positions[track_id]
                     crossing_dir = self.counter.check_crossing(track_id, prev_pt, bottom_center)
-                    if crossing_dir == "approaching":
-                        self.current_bin_crossings += 1
+                    if crossing_dir == self.geometry.get("primary_direction", "approaching"):
+                        if cls_name != "pedestrain":self.current_bin_crossings += 1
                         self.current_bin_classes[cls_name] = self.current_bin_classes.get(cls_name, 0) + 1
 
                 self.track_positions[track_id] = bottom_center
@@ -194,11 +205,11 @@ class CameraSessionWorker:
                 crossings_veh=self.current_bin_crossings,
                 counts_by_class=dict(self.current_bin_classes),
                 flow_vpm=round(flow_vpm, 2),
-                queue_visible_veh_estimate=avg_q,
-                queue_status="estimated_visible_region" if queue_pts is not None else "unavailable",
+                queue_visible_veh_estimate=None,
+                queue_status="unavailable_diagnostic_batch",
                 speed_kph=None,
                 speed_status="uncalibrated",
-                observation_status="valid",
+                observation_status="degraded_diagnostic_batch",
                 validation_level="provisional_unreviewed",
                 media_source="recorded_video",
                 processing_mode="online_inference"

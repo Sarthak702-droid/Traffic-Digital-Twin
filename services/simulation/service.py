@@ -47,6 +47,16 @@ class Simulation(rpc.SimulationServicer):
                 outcome.input_session_id=self.engine.latest.input_session_id
                 outcome.snapshot_sequence=self.engine.latest.snapshot_sequence
             return outcome
+    def UpdateAuthority(self,request,context):
+        try:
+            with self.engine.lock:
+                if not context.is_active():context.abort(grpc.StatusCode.CANCELLED,'Authority command expired')
+                return self.engine.update_authority(request)
+        except ValueError as error:context.abort(grpc.StatusCode.FAILED_PRECONDITION,str(error))
+    def CancelPlan(self,request,context):
+        try:self.engine.cancel_plan(request)
+        except ValueError as error:context.abort(grpc.StatusCode.FAILED_PRECONDITION,str(error))
+        return self.GetPlanOutcome(request,context)
     def ApplyPlan(self,request,context):
         try:
             with self.engine.lock:

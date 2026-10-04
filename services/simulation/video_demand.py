@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from services.shared.network_config import load_config
 import twin_pb2 as pb
+from services.shared.privacy import reject_private_fields
 
 
 CAMERA_TO_BOUNDARY_LINK = load_config()["camera_boundary_links"]
@@ -151,6 +152,9 @@ class VideoProfileDemandProvider:
             if len(matches) != 1:
                 raise ValueError(f'Missing or ambiguous bound source identity for {camera}')
             manifest_path, manifest = matches[0]
+            coverage=manifest.get('coverage') or {}
+            if (coverage.get('status')!='complete' or type(coverage.get('requested_frames')) is not int or coverage['requested_frames']<=0 or type(coverage.get('decoded_frames')) is not int or coverage['decoded_frames']<coverage['requested_frames'] or not isinstance(coverage.get('source_fps'),(int,float)) or not math.isfinite(coverage['source_fps']) or coverage['source_fps']<=0 or not isinstance(coverage.get('decoded_until_source_s'),(int,float)) or not math.isfinite(coverage['decoded_until_source_s']) or coverage['decoded_until_source_s']<coverage['requested_frames']/coverage['source_fps']):
+                raise ValueError(f'Bound source decode coverage is incomplete for {camera}')
             identity = {
                 'camera_id': selected.camera_id, 'source_session_id': selected.source_session_id,
                 'clip_sha256': selected.clip_sha256, 'geometry_sha256': selected.geometry_sha256,
@@ -177,6 +181,7 @@ class VideoProfileDemandProvider:
             previous_end = -1.0
             seen = set()
             for row in rows:
+                reject_private_fields(row)
                 start, end, available = (row.get(k) for k in ('window_start_s','window_end_s','available_at_source_s'))
                 crossings = row.get('crossings_veh')
                 source = row.get('source_identity') or {}
@@ -185,7 +190,7 @@ class VideoProfileDemandProvider:
                     row.get('observation_status') != 'valid' or
                     any(source.get(k) != v for k, v in identity.items() if k not in ('camera_id','model_sha256','observations_sha256')) or
                     not all(isinstance(v, (int,float)) and math.isfinite(v) for v in (start,end,available)) or
-                    start < 0 or start < previous_end or end <= start or available < end or
+                    start < 0 or start < previous_end or end <= start or end > coverage["decoded_until_source_s"] or available < end or
                     type(crossings) is not int or crossings < 0 or
                     not isinstance(row.get('observation_id'), str) or not row['observation_id'] or
                     row['observation_id'] in seen):
@@ -223,6 +228,19 @@ class VideoProfileDemandProvider:
         for row in eligible:
             by_link.setdefault(row.boundary_link_id, []).append(row)
         return [row for rows in by_link.values() for row in rows[-max_bins:]]
+
+    def eligible_commitments(self, source_s):
+        # Only evidence already available at this snapshot enters prediction.
+        # Zero-mass commitments still establish known coverage.
+        rows=[]
+        for link,commitments in self.commitments_by_link.items():
+            for c in commitments:
+                if c.available_at_s<=source_s and c.release_window_end_s>source_s+1:
+                    rows.append(pb.DemandCommitment(boundary_link_id=link,
+                        release_start_simulation_s=c.release_window_start_s,
+                        release_end_simulation_s=c.release_window_end_s,
+                        remaining_mass_veh=max(0,c.total_mass_veh-c.released_mass_veh),rate_vps=c.rate_vps))
+        return rows
 
     def next(self, simulation_time_s: int, dt: float = 1.0) -> Dict[str, float]:
         """

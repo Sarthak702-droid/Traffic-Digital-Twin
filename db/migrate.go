@@ -34,6 +34,12 @@ var runInputBinding string
 //go:embed migrations/009_run_report_evidence.sql
 var runReportEvidence string
 
+//go:embed migrations/010_command_envelope.sql
+var commandEnvelope string
+
+//go:embed migrations/011_original_command_receipt.sql
+var originalCommandReceipt string
+
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	tx, e := pool.Begin(ctx)
 	if e != nil {
@@ -125,6 +131,22 @@ func applyControl(ctx context.Context, tx pgx.Tx) error {
 	}
 	if !done {
 		if _, err := tx.Exec(ctx, runReportEvidence); err != nil {
+			return err
+		}
+	}
+	if err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=10)").Scan(&done); err != nil {
+		return err
+	}
+	if !done {
+		if _, err := tx.Exec(ctx, commandEnvelope); err != nil {
+			return err
+		}
+	}
+	if err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=11)").Scan(&done); err != nil {
+		return err
+	}
+	if !done {
+		if _, err := tx.Exec(ctx, originalCommandReceipt); err != nil {
 			return err
 		}
 	}

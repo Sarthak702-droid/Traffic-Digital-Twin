@@ -106,7 +106,7 @@ export function KpiStrip({
           className={`kpi-value ${criticalNodesCount > 0 ? "warning" : "healthy"}`}
         >
           {f ? criticalNodesCount : "—"}
-          <small className="kpi-unit">of 2 controlled</small>
+          <small className="kpi-unit">of {new Set(f?.signals.map(signal => signal.node_id) ?? []).size || "—"} controlled</small>
         </strong>
         <span className="kpi-subtext">
           {criticalNodesCount > 0

@@ -7,7 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 import stat
-from datetime import datetime
+from datetime import datetime, timezone
 from math import isfinite
 
 from services.intelligence.forecast_demand import CausalForecaster
@@ -19,18 +19,23 @@ def _identity(row):
             source.get("geometry_sha256"), source.get("source_session_id"))
 
 
-def measurement_score(observation, review, protocol):
+def measurement_score(observation, review, protocol, expected_split=None):
     """Score only an adjudicated, identity-matched source window."""
     if (review is None or review.get("status") != "independently_reviewed" or
             not review.get("first_reviewer") or not review.get("second_reviewer") or
             review["first_reviewer"] == review["second_reviewer"] or
             not all(review.get(key) for key in ("adjudicated_at_utc", "rights_reference",
                     "annotation_method_version", "first_reviewed_at_utc",
-                    "second_reviewed_at_utc"))):
+                    "second_reviewed_at_utc", "source_session_id", "split", "split_protocol_version"))):
         return {"status": "unavailable", "reason": "independent_review_missing"}
+    try:
+        times=[datetime.fromisoformat(review[key].replace('Z','+00:00')) for key in ('first_reviewed_at_utc','second_reviewed_at_utc','adjudicated_at_utc')]
+        if any(t.tzinfo is None for t in times) or max(times[:2])>times[2] or max(times)>datetime.now(timezone.utc) or review['split'] not in ('tuning','reserved','held_out') or (expected_split is not None and review['split']!=expected_split) or review['split_protocol_version']!=protocol.get('version'):raise ValueError('Invalid review times')
+    except (TypeError,ValueError):
+        return {"status":"unavailable","reason":"independent_review_metadata_invalid"}
     source_id = _identity(observation)
     reference_id = (review.get("camera_id"), review.get("clip_sha256"),
-                    review.get("geometry_sha256"), review.get("source_session_id", source_id[3]))
+                    review.get("geometry_sha256"), review.get("source_session_id"))
     if source_id != reference_id or any(
         observation.get(key) != review.get(key)
         for key in ("window_start_s", "window_end_s")
@@ -190,7 +195,7 @@ def build_recorded_report(protocol, candidates, observations, reviews):
         if len(matched) > 1:
             raise ValueError(f"Ambiguous source session for {window['id']}")
         result = ({"status": "unavailable", "reason": "processed_observation_missing"}
-                  if not matched else measurement_score(matched[0], reviews.get(window["id"]), protocol))
+                  if not matched else measurement_score(matched[0], reviews.get(window["id"]), protocol, expected_split=window["evaluation_split"]))
         measurement.append({"window_id": window["id"], "split": window["evaluation_split"], **result})
     return {"protocol_version": protocol["version"], "measurement": measurement,
             "forecast": forecast_scores(observations, protocol,
@@ -374,11 +379,12 @@ def sample_virtual_origin(engine, model, horizon_s, protocol, condition="peak"):
         local = current
     coordinated = ({change.phase_id: change.green_s for change in analysis.recommendation.changes}
                    if analysis.outcome == "recommend" else current)
+    coordinated_offsets=({c.node_id:c.offset_s for c in analysis.recommendation.changes} if analysis.outcome=='recommend' else {})
     plans = {}
     for name, plan in (("fixed_timing", current), ("local_adaptive", local),
                        ("coordinated", coordinated)):
         try:
-            score = model.rollout(state, plan, horizon_s, evaluation)
+            score = model.rollout(state, plan, horizon_s, evaluation, offsets=coordinated_offsets if name=="coordinated" else None)
             plans[name] = {"status": "available", "demand_trace_sha256": trace_hash,
                            "queue_delay_veh_s": score["queue_delay"],
                            "boundary_exits_veh": score["throughput"],

@@ -1635,6 +1635,38 @@
           },
           "simulation_paused": {
             "type": "boolean"
+          },
+          "control_epoch": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "control_mode": {
+            "type": "string"
+          },
+          "locked_targets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "snapshot_source_available_s": {
+            "type": "number"
+          },
+          "demand_commitments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DemandCommitment"
+            }
+          },
+          "source_time_mapping": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceTimeMapping"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -1846,6 +1878,10 @@
           },
           "forecast_origin_source_s": {
             "type": "number"
+          },
+          "control_epoch": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
           }
         },
         "additionalProperties": false,
@@ -2421,6 +2457,12 @@
             "items": {
               "$ref": "#/components/schemas/BoundSource"
             }
+          },
+          "locked_targets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "additionalProperties": false,
@@ -2701,6 +2743,10 @@
             "type": "string"
           },
           "expected_snapshot_sequence": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "expected_control_epoch": {
             "type": "string",
             "pattern": "^[0-9]+$"
           }
@@ -3717,6 +3763,13 @@
           },
           "reason": {
             "type": "string"
+          },
+          "receipt_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "receipt": {
+            "type": "object"
           }
         }
       },
@@ -4192,6 +4245,95 @@
             }
           }
         }
+      },
+      "AuthorityCommand": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "command_id": {
+            "type": "string"
+          },
+          "expected_control_epoch": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "locked_targets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "run_id",
+          "command_id",
+          "expected_control_epoch",
+          "mode",
+          "locked_targets"
+        ]
+      },
+      "DemandCommitment": {
+        "type": "object",
+        "properties": {
+          "boundary_link_id": {
+            "type": "string"
+          },
+          "observation_id": {
+            "type": "string"
+          },
+          "release_start_simulation_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "release_end_simulation_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "remaining_mass_veh": {
+            "type": "number",
+            "minimum": 0
+          },
+          "rate_vps": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "boundary_link_id",
+          "observation_id",
+          "release_start_simulation_s",
+          "release_end_simulation_s",
+          "remaining_mass_veh",
+          "rate_vps"
+        ]
+      },
+      "SourceTimeMapping": {
+        "type": "object",
+        "properties": {
+          "source_origin_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "simulation_origin_s": {
+            "type": "number",
+            "minimum": 0
+          },
+          "source_seconds_per_simulation_second": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "source_origin_s",
+          "simulation_origin_s",
+          "source_seconds_per_simulation_second"
+        ]
       }
     },
     "securitySchemes": {
