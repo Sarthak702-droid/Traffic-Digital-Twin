@@ -202,3 +202,20 @@ def test_locked_green_or_offset_changes_are_not_admissible():
     assert model._authority_admissible(state,plan,{})
     state.control_mode='manual'
     assert not model._authority_admissible(state,plan,{})
+
+def test_terminal_cancellation_diagnostic_does_not_prevent_fresh_safe_analysis(tmp_path):
+    from services.simulation.aggregate_engine import AggregateEngine
+    engine=AggregateEngine(directory=tmp_path)
+    try:
+        state=engine.reset(pb.RunCommand(schema_version='1.0',run_id='cancel-recover',scenario_type='peak_surge',seed=1101,mode='recommend'))
+        for _ in range(16):state=engine.step()
+        command=pb.PlanCommand(run_id=state.run_id,command_id='cancel-recover-plan',changes=state.active_plan,expected_input_session_id='',expected_snapshot_sequence=state.snapshot_sequence,expected_control_epoch=0)
+        engine.apply_plan(command);engine.cancel_plan(command)
+        # Publish fresh authoritative state while retaining the terminal receipt.
+        state=engine.update_authority(pb.AuthorityCommand(run_id=state.run_id,command_id='fresh-authority',expected_control_epoch=0,mode='recommend'))
+        assert state.scheduler.rejected_reason
+        result=Model().analyze(state)
+        assert result.outcome in ('recommend','no_action')
+        assert result.forecasts
+        assert engine.receipts.status(command)=='rejected'
+    finally:engine.close()

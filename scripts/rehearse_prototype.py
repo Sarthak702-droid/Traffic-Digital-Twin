@@ -159,6 +159,11 @@ def main():
                     if actual!=expected:raise RuntimeError('Receipt claims applied but virtual timing differs')
                     if after['simulation_time_s']<=state['simulation_time_s']:raise RuntimeError('Applied receipt has no later virtual state')
                 result['virtual_application']=event
+                result['application_verification']={'approved_changes':approved['changes'],'later_active_plan':after['active_plan'],'later_scheduler_offsets':after['scheduler']['offsets'],'later_signals':after['signals'],'later_simulation_time_s':after['simulation_time_s']}
+                if event['status']=='applied':
+                    expected_offsets={change['node_id']:change.get('offset_s',0) for change in approved['changes']}
+                    actual_offsets={entry['node_id']:entry['offset_s'] for entry in after['scheduler']['offsets']}
+                    if actual_offsets!=expected_offsets:raise RuntimeError('Applied virtual offsets differ from approved plan')
                 client.require('/runs/'+rid+'/clock',{'paused':True})
                 report=client.require('/runs/'+rid+'/report')
                 (args.output_dir/(rid+'.json')).write_text(json.dumps(report,indent=2)+'\n')

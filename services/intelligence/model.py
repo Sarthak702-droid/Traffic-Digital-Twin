@@ -70,7 +70,10 @@ class Model:
             scheduler.waiting=set(state.scheduler.waiting_node_ids)
             scheduler.requested_at=state.scheduler.requested_at_tick if state.scheduler.HasField('requested_at_tick') else None
             scheduler.applied_at=state.scheduler.applied_at_tick if state.scheduler.HasField('applied_at_tick') else None
-            scheduler.rejected_reason=state.scheduler.rejected_reason or None
+            # A terminal receipt is historical evidence, not a pending-plan
+            # failure in this new rollout. Fresh activation failures below
+            # remain fatal and retain all safety constraints.
+            scheduler.rejected_reason=(state.scheduler.rejected_reason or None) if scheduler.requested_at is not None else None
         if plan != scheduler.plan or offsets and any(offsets.values()):
             scheduler.apply(plan,offsets=offsets)
         return scheduler
