@@ -14,6 +14,24 @@ import tempfile
 ROOT=Path(__file__).resolve().parents[1]
 MODEL_HASH='06006ecb5fe52a348ceed805bf0aa6b32af7e24e689d09a6582f6d53159d6b00'
 
+def frontend_dependencies_match(root):
+    # npm validates required/peer dependency resolution for the active workspace
+    # graph. Lockfiles also contain uninstalled platform-specific or inactive
+    # historical entries; their absence is not a missing runtime dependency.
+    try:
+        packages=json.loads((root/'package-lock.json').read_text())['packages']
+        graph=subprocess.run(['npm','ls','--all','--parseable'],cwd=root,capture_output=True,text=True)
+        if graph.returncode:return False
+        for entry in graph.stdout.splitlines():
+            relative=Path(entry).relative_to(root).as_posix()
+            if 'node_modules/' not in relative:continue
+            locked=packages.get(relative)
+            if not locked:return False
+            if locked.get('link'):continue
+            if json.loads((Path(entry)/'package.json').read_text()).get('version')!=locked.get('version'):return False
+        return True
+    except (OSError,ValueError,KeyError):return False
+
 def doctor(model,media_root):
     checks=[]
     def record(name,ok,detail):checks.append({'check':name,'status':'passed' if ok else 'blocked','detail':detail})
@@ -25,11 +43,7 @@ def doctor(model,media_root):
             ok=int(version)>=minimum if name=='node' else tuple(map(int,version.split('.')[:2]))>=(1,25)
             record(name,ok,value)
         except (OSError,ValueError,subprocess.CalledProcessError):record(name,False,'Required runtime unavailable')
-    try:
-        packages=json.loads((ROOT/'package-lock.json').read_text())['packages']
-        installed=all((ROOT/path/'package.json').is_file() and json.loads((ROOT/path/'package.json').read_text()).get('version')==value['version'] for path,value in packages.items() if path.startswith('node_modules/') and not value.get('link') and value.get('version'))
-        record('frontend_dependencies',installed,'Installed package versions must match the committed npm lock')
-    except (OSError,ValueError,KeyError):record('frontend_dependencies',False,'Run canonical npm ci bootstrap')
+    record('frontend_dependencies',frontend_dependencies_match(ROOT),'Active npm workspace graph must resolve and installed versions must match the committed lock')
     for line in (ROOT/'services/runtime-requirements.lock').read_text().splitlines():
         if '==' not in line:continue
         name,want=line.split('==',1)
