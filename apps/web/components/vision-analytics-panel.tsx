@@ -279,6 +279,208 @@ function LiveQueueChart({ frames, currentFrameIdx, mediaTime }: { frames: any[] 
   );
 }
 
+function LiveClassTimelineChart({ frames, currentFrameIdx }: { frames: any[] | undefined, currentFrameIdx: number }) {
+  if (!frames || frames.length === 0) {
+    return null;
+  }
+
+  const width = 1000;
+  const height = 120;
+  const paddingX = 0;
+  const paddingY = 10;
+  
+  const chartW = width - paddingX * 2;
+  const chartH = height - paddingY * 2;
+
+  const maxTime = frames[frames.length - 1].time_s || 1;
+  const duration = Math.max(maxTime, 1);
+  const validIdx = Math.max(0, Math.min(currentFrameIdx, frames.length - 1));
+
+  let maxActive = 1;
+  for (const f of frames) {
+    if (f.active_count > maxActive) maxActive = f.active_count;
+  }
+
+  const yMax = Math.max(maxActive, 5);
+
+  const classes = ["car", "two_wheeler", "autorickshaw", "bus", "truck", "lcv"];
+  const colors: Record<string, string> = {
+    car: "#3b82f6",
+    two_wheeler: "#10b981",
+    autorickshaw: "#f59e0b",
+    bus: "#ef4444",
+    truck: "#a855f7",
+    lcv: "#06b6d4",
+  };
+
+  const labels: Record<string, string> = {
+    car: "Car",
+    two_wheeler: "Bike",
+    autorickshaw: "Auto",
+    bus: "Bus",
+    truck: "Truck",
+    lcv: "LCV",
+  };
+
+  const polygons = [];
+  let prevBottom = Array(validIdx + 1).fill(height - paddingY);
+
+  for (const cls of classes) {
+    const pts = [];
+    const currentBottom = [];
+    
+    for (let i = 0; i <= validIdx && i < frames.length; i++) {
+      const f = frames[i];
+      const x = paddingX + (f.time_s / duration) * chartW;
+      const count = f.class_counts?.[cls] || 0;
+      const h = (count / yMax) * chartH;
+      const yTop = prevBottom[i] - h;
+      pts.push(`${x},${yTop}`);
+      currentBottom.push(yTop);
+    }
+    
+    const polyPts = [...pts];
+    for (let i = validIdx; i >= 0; i--) {
+      const f = frames[i];
+      if(!f) continue;
+      const x = paddingX + (f.time_s / duration) * chartW;
+      polyPts.push(`${x},${prevBottom[i]}`);
+    }
+    
+    if (polyPts.length > 0) {
+      polygons.push({ cls, d: `M ${polyPts.join(" L ")} Z` });
+    }
+    prevBottom = currentBottom;
+  }
+
+  const currentF = frames[validIdx];
+  const currentX = currentF ? paddingX + (currentF.time_s / duration) * chartW : paddingX;
+
+  return (
+    <div style={{ marginTop: "12px", background: "#0f172a", borderRadius: "8px", border: "1px solid #1e293b", padding: "12px", position: "relative", display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+        <h3 style={{ fontSize: "12px", fontWeight: 600, color: "#f8fafc", margin: 0, display: "flex", alignItems: "center", gap: "6px" }}>
+          <Car size={14} color="#3b82f6" /> Live Class Composition
+        </h3>
+        <div style={{ display: "flex", gap: "8px", fontSize: "10px", flexWrap: "wrap" }}>
+          {classes.map(c => (
+            <span key={c} style={{ display: "flex", alignItems: "center", gap: "4px", color: colors[c] }}>
+              <span style={{ width: "8px", height: "8px", borderRadius: "2px", background: colors[c] }}></span> {labels[c]}
+            </span>
+          ))}
+        </div>
+      </div>
+      
+      <div style={{ width: "100%", height: "120px", position: "relative" }}>
+        <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ width: "100%", height: "100%", display: "block", overflow: "visible" }}>
+          <line x1={0} y1={paddingY} x2={width} y2={paddingY} stroke="#1e293b" strokeWidth="1" strokeDasharray="4,4" />
+          <line x1={0} y1={height/2} x2={width} y2={height/2} stroke="#1e293b" strokeWidth="1" strokeDasharray="4,4" />
+          <line x1={0} y1={height - paddingY} x2={width} y2={height - paddingY} stroke="#1e293b" strokeWidth="1" strokeDasharray="4,4" />
+          
+          {polygons.map(({ cls, d }) => (
+            <path key={cls} d={d} fill={colors[cls]} opacity="0.6" stroke={colors[cls]} strokeWidth="1" strokeLinejoin="round" />
+          ))}
+          
+          {currentF && (
+            <line x1={currentX} y1={0} x2={currentX} y2={height} stroke="#e2e8f0" strokeWidth="1.5" strokeDasharray="2,2" />
+          )}
+        </svg>
+      </div>
+      
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px", fontSize: "10px", color: "#64748b", fontFamily: "monospace" }}>
+        <span>0.0s</span>
+        <span>{(duration / 2).toFixed(1)}s</span>
+        <span>{duration.toFixed(1)}s</span>
+      </div>
+    </div>
+  );
+}
+
+function LiveCumulativeFlowChart({ frames, currentFrameIdx }: { frames: any[] | undefined, currentFrameIdx: number }) {
+  if (!frames || frames.length === 0) {
+    return null;
+  }
+
+  const width = 1000;
+  const height = 120;
+  const paddingX = 0;
+  const paddingY = 10;
+  
+  const chartW = width - paddingX * 2;
+  const chartH = height - paddingY * 2;
+
+  const maxTime = frames[frames.length - 1].time_s || 1;
+  const duration = Math.max(maxTime, 1);
+  const validIdx = Math.max(0, Math.min(currentFrameIdx, frames.length - 1));
+
+  let maxFlow = 1;
+  for (const f of frames) {
+    if (f.cumulative_crossed > maxFlow) maxFlow = f.cumulative_crossed;
+  }
+
+  const yMax = Math.max(maxFlow, 5);
+  const points = [];
+
+  for (let i = 0; i <= validIdx && i < frames.length; i++) {
+    const f = frames[i];
+    const x = paddingX + (f.time_s / duration) * chartW;
+    const y = height - paddingY - (f.cumulative_crossed / yMax) * chartH;
+    points.push(`${x},${y}`);
+  }
+
+  const path = points.length > 0 ? `M ${points.join(" L ")}` : "";
+  const currentF = frames[validIdx];
+  const currentX = currentF ? paddingX + (currentF.time_s / duration) * chartW : paddingX;
+  const fillPath = points.length > 0 ? `${path} L ${currentX},${height - paddingY} L ${paddingX},${height - paddingY} Z` : "";
+
+  return (
+    <div style={{ marginTop: "12px", background: "#0f172a", borderRadius: "8px", border: "1px solid #1e293b", padding: "12px", position: "relative", display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+        <h3 style={{ fontSize: "12px", fontWeight: 600, color: "#f8fafc", margin: 0, display: "flex", alignItems: "center", gap: "6px" }}>
+          <Activity size={14} color="#f59e0b" /> Cumulative Flow (Crossings)
+        </h3>
+        <div style={{ display: "flex", gap: "12px", fontSize: "11px" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "#f59e0b" }}>
+            <span style={{ width: "8px", height: "8px", borderRadius: "2px", background: "#f59e0b" }}></span> Total Crossed: {currentF?.cumulative_crossed || 0}
+          </span>
+        </div>
+      </div>
+      
+      <div style={{ width: "100%", height: "120px", position: "relative" }}>
+        <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ width: "100%", height: "100%", display: "block", overflow: "visible" }}>
+          <line x1={0} y1={paddingY} x2={width} y2={paddingY} stroke="#1e293b" strokeWidth="1" strokeDasharray="4,4" />
+          <line x1={0} y1={height/2} x2={width} y2={height/2} stroke="#1e293b" strokeWidth="1" strokeDasharray="4,4" />
+          <line x1={0} y1={height - paddingY} x2={width} y2={height - paddingY} stroke="#1e293b" strokeWidth="1" strokeDasharray="4,4" />
+          
+          {fillPath && <path d={fillPath} fill="url(#gradFlow)" opacity="0.2" />}
+          {path && <path d={path} fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinejoin="round" />}
+          
+          {currentF && (
+            <>
+              <line x1={currentX} y1={0} x2={currentX} y2={height} stroke="#fbbf24" strokeWidth="1.5" strokeDasharray="2,2" />
+              <circle cx={currentX} cy={height - paddingY - (currentF.cumulative_crossed / yMax) * chartH} r="4" fill="#f59e0b" stroke="#0f172a" strokeWidth="1.5" />
+            </>
+          )}
+          
+          <defs>
+            <linearGradient id="gradFlow" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#f59e0b" stopOpacity="1" />
+              <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px", fontSize: "10px", color: "#64748b", fontFamily: "monospace" }}>
+        <span>0.0s</span>
+        <span>{(duration / 2).toFixed(1)}s</span>
+        <span>{duration.toFixed(1)}s</span>
+      </div>
+    </div>
+  );
+}
+
+
 function activeCameraResolution(camera: string, slots: CameraSlot[]): [number, number] {
   const match = slots.find((slot) => slot.id === camera)?.resolution.match(/(\d+)x(\d+)/);
   return match ? [Number(match[1]), Number(match[2])] : [16, 9];
@@ -1118,6 +1320,17 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
             currentFrameIdx={currentFrameIdx} 
             mediaTime={mediaTime} 
           />
+          
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", width: "100%" }}>
+            <LiveClassTimelineChart 
+              frames={streamFrames} 
+              currentFrameIdx={currentFrameIdx} 
+            />
+            <LiveCumulativeFlowChart 
+              frames={streamFrames} 
+              currentFrameIdx={currentFrameIdx} 
+            />
+          </div>
         </section>
 
         {/* RIGHT: Realtime Aggregates Column */}
