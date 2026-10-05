@@ -265,3 +265,28 @@ def test_every_offered_alternative_exceeds_minimum_benefit():
                               120, evaluation,
                               offsets={c.node_id: c.offset_s for c in rec.changes})
         assert current['cost'] - score['cost'] > model.scoring['minimum_benefit_points']
+
+
+def test_small_gain_alternative_is_not_offered_alongside_beneficial_plan(monkeypatch):
+    model = Model()
+    state = empty_state(model)
+    current = model.plan(state)
+    phases = next(iter(model.index.phases_by_node.values()))
+    local, small_gain = dict(current), dict(current)
+    for plan, delta in ((local, 8), (small_gain, 4)):
+        plan[phases[0]['id']] += delta
+        plan[phases[1]['id']] -= delta
+    monkeypatch.setattr(model, 'allocate', lambda state: local)
+    monkeypatch.setattr(model, '_generate_candidates', lambda *args: [current, local, small_gain])
+    monkeypatch.setattr(model, '_candidate_offsets', lambda *args: {})
+    original = model.rollout
+    def controlled_cost(snapshot, plan, *args, **kwargs):
+        # Isolate ranking from traffic dynamics; all regression metrics match.
+        result = original(snapshot, current, *args, **kwargs)
+        result['cost'] = 100 if plan == current else 70 if plan == local else 95
+        return result
+    monkeypatch.setattr(model, 'rollout', controlled_cost)
+    result = model.analyze(state)
+    assert result.outcome == 'recommend'
+    assert {c.phase_id: c.green_s for c in result.recommendation.changes} == local
+    assert not result.alternatives  # Five points cannot meet the ten-point gate.
