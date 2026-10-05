@@ -168,6 +168,117 @@ function safePauseVideo(video: HTMLVideoElement | null) {
   }
 }
 
+function LiveQueueChart({ frames, currentFrameIdx, mediaTime }: { frames: any[] | undefined, currentFrameIdx: number, mediaTime: number }) {
+  if (!frames || frames.length === 0) {
+    return (
+      <div className="vision-chart-placeholder" style={{ height: "140px", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0f16", borderRadius: "8px", border: "1px solid #1e293b", marginTop: "12px", color: "#64748b", fontSize: "12px", flexDirection: "column", gap: "8px" }}>
+        <Activity size={24} opacity={0.5} />
+        <span>Telemetry timeline unavailable</span>
+      </div>
+    );
+  }
+
+  let maxActive = 1;
+  let maxQueue = 1;
+  for (const f of frames) {
+    if (f.active_count > maxActive) maxActive = f.active_count;
+    if (f.queue_count > maxQueue) maxQueue = f.queue_count;
+  }
+  
+  const yMax = Math.max(maxActive, maxQueue, 5);
+  
+  const width = 1000;
+  const height = 120;
+  const paddingX = 0;
+  const paddingY = 10;
+  
+  const chartW = width - paddingX * 2;
+  const chartH = height - paddingY * 2;
+  
+  const pointsActive = [];
+  const pointsQueue = [];
+  
+  const maxTime = frames[frames.length - 1].time_s || 1;
+  const duration = Math.max(maxTime, 1);
+  
+  const validIdx = Math.max(0, Math.min(currentFrameIdx, frames.length - 1));
+  
+  for (let i = 0; i <= validIdx && i < frames.length; i++) {
+    const f = frames[i];
+    const x = paddingX + (f.time_s / duration) * chartW;
+    const yActive = height - paddingY - (f.active_count / yMax) * chartH;
+    pointsActive.push(`${x},${yActive}`);
+    const yQueue = height - paddingY - (f.queue_count / yMax) * chartH;
+    pointsQueue.push(`${x},${yQueue}`);
+  }
+  
+  const activePath = pointsActive.length > 0 ? `M ${pointsActive.join(" L ")}` : "";
+  const queuePath = pointsQueue.length > 0 ? `M ${pointsQueue.join(" L ")}` : "";
+  
+  const currentF = frames[validIdx];
+  const currentX = currentF ? paddingX + (currentF.time_s / duration) * chartW : paddingX;
+
+  const activeFillPath = pointsActive.length > 0 ? `${activePath} L ${currentX},${height - paddingY} L ${paddingX},${height - paddingY} Z` : "";
+  const queueFillPath = pointsQueue.length > 0 ? `${queuePath} L ${currentX},${height - paddingY} L ${paddingX},${height - paddingY} Z` : "";
+  
+  return (
+    <div style={{ marginTop: "12px", background: "#0f172a", borderRadius: "8px", border: "1px solid #1e293b", padding: "12px", position: "relative", display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+        <h3 style={{ fontSize: "12px", fontWeight: 600, color: "#f8fafc", margin: 0, display: "flex", alignItems: "center", gap: "6px" }}>
+          <Activity size={14} color="#38bdf8" /> Live Stream Telemetry
+        </h3>
+        <div style={{ display: "flex", gap: "12px", fontSize: "11px" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "#10b981" }}>
+            <span style={{ width: "8px", height: "8px", borderRadius: "2px", background: "#10b981" }}></span> Active Vehicles
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "#a855f7" }}>
+            <span style={{ width: "8px", height: "8px", borderRadius: "2px", background: "#a855f7" }}></span> Queue Count
+          </span>
+        </div>
+      </div>
+      
+      <div style={{ width: "100%", height: "120px", position: "relative" }}>
+        <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ width: "100%", height: "100%", display: "block", overflow: "visible" }}>
+          <line x1={0} y1={paddingY} x2={width} y2={paddingY} stroke="#1e293b" strokeWidth="1" strokeDasharray="4,4" />
+          <line x1={0} y1={height/2} x2={width} y2={height/2} stroke="#1e293b" strokeWidth="1" strokeDasharray="4,4" />
+          <line x1={0} y1={height - paddingY} x2={width} y2={height - paddingY} stroke="#1e293b" strokeWidth="1" strokeDasharray="4,4" />
+          
+          {activeFillPath && <path d={activeFillPath} fill="url(#gradActive)" opacity="0.2" />}
+          {queueFillPath && <path d={queueFillPath} fill="url(#gradQueue)" opacity="0.2" />}
+          
+          {activePath && <path d={activePath} fill="none" stroke="#10b981" strokeWidth="2" strokeLinejoin="round" />}
+          {queuePath && <path d={queuePath} fill="none" stroke="#a855f7" strokeWidth="2" strokeLinejoin="round" />}
+          
+          {currentF && (
+            <>
+              <line x1={currentX} y1={0} x2={currentX} y2={height} stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="2,2" />
+              <circle cx={currentX} cy={height - paddingY - (currentF.active_count / yMax) * chartH} r="4" fill="#10b981" stroke="#0f172a" strokeWidth="1.5" />
+              <circle cx={currentX} cy={height - paddingY - (currentF.queue_count / yMax) * chartH} r="4" fill="#a855f7" stroke="#0f172a" strokeWidth="1.5" />
+            </>
+          )}
+          
+          <defs>
+            <linearGradient id="gradActive" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#10b981" stopOpacity="1" />
+              <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="gradQueue" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#a855f7" stopOpacity="1" />
+              <stop offset="100%" stopColor="#a855f7" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px", fontSize: "10px", color: "#64748b", fontFamily: "monospace" }}>
+        <span>0.0s</span>
+        <span>{(duration / 2).toFixed(1)}s</span>
+        <span>{duration.toFixed(1)}s</span>
+      </div>
+    </div>
+  );
+}
+
 function activeCameraResolution(camera: string, slots: CameraSlot[]): [number, number] {
   const match = slots.find((slot) => slot.id === camera)?.resolution.match(/(\d+)x(\d+)/);
   return match ? [Number(match[1]), Number(match[2])] : [16, 9];
@@ -1001,6 +1112,12 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
               </div>
             </div>
           </div>
+          
+          <LiveQueueChart 
+            frames={streamFrames} 
+            currentFrameIdx={currentFrameIdx} 
+            mediaTime={mediaTime} 
+          />
         </section>
 
         {/* RIGHT: Realtime Aggregates Column */}
