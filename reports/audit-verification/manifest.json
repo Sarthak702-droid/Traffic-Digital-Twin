@@ -1,0 +1,189 @@
+{
+  "source_revision": "13d3405fb94304803c1db1355dd4fdd5e32fb23c",
+  "reviewed_revision": "e2afd45bb0de58c6dbec5c0a1a3b9478848e2689",
+  "recorded_at_utc": "2026-10-05T02:30:40.804041+00:00",
+  "acceptance": "not_verified",
+  "checks": [
+    {
+      "check": "Go/PostgreSQL/race",
+      "command": "TEST_DATABASE_URL=\"$AUDIT_TEST_DATABASE_URL\" GOCACHE=/tmp/traffic-audit-go-cache ./scripts/run-go.sh test -race ./...",
+      "status": "passed",
+      "artifact": "go-race.log",
+      "scope": "Disposable audit database, migrations, durable recovery/store/API/concurrency/security suites; DSN credentials excluded"
+    },
+    {
+      "check": "Real Python",
+      "command": ".venv/bin/python -m pytest services scripts/tests tests packages -q",
+      "status": "passed",
+      "tests": 274,
+      "artifact": "python-real.log",
+      "scope": "Real installed grpc/protobuf/OpenCV dependencies, including services, scripts, integration, contracts and configuration; not the mock wrapper"
+    },
+    {
+      "check": "Frontend",
+      "command": "npm run test:ui",
+      "status": "passed",
+      "tests": 159,
+      "files": 35,
+      "artifact": "frontend-tests.log"
+    },
+    {
+      "check": "Frontend typecheck/build",
+      "commands": [
+        "npm run typecheck",
+        "npm run build"
+      ],
+      "status": "passed",
+      "artifacts": [
+        "frontend-typecheck.log",
+        "frontend-build.log"
+      ],
+      "remaining": "Build retains the existing large-chunk warning"
+    },
+    {
+      "check": "Dashboard traversal/readiness",
+      "command": "node --test dashboard/evidence.test.mjs dashboard/readiness.test.mjs",
+      "status": "passed",
+      "artifact": "dashboard-security.log"
+    },
+    {
+      "check": "Contracts",
+      "commands": [
+        "./scripts/generate-contracts.sh",
+        ".venv/bin/python scripts/verify-contracts.py"
+      ],
+      "status": "passed",
+      "scope": "All checked-in bindings regenerated together; temporary regeneration checked by doctor; protobuf numbering preserved"
+    },
+    {
+      "check": "Canonical bootstrap",
+      "command": ".venv/bin/python scripts/bootstrap-prototype.py",
+      "status": "passed",
+      "scope": "Actually provisioned locked local dependencies, PostgreSQL, generators and frontend build; no private model/media downloaded"
+    },
+    {
+      "check": "Doctor",
+      "command": "GATEWAY_USERS_FILE=\"$AUDIT_USERS_FILE\" .venv/bin/python scripts/bootstrap-prototype.py --doctor --model \"$AUTHORIZED_MODEL\" --authorized-root \"$AUTHORIZED_MEDIA_ROOT\"",
+      "status": "ready_for_local_rehearsal",
+      "artifact": "doctor.json",
+      "acceptance": "not_verified"
+    },
+    {
+      "check": "Fresh recorded processing",
+      "command": "NETWORK_CONFIG=\"$ACTIVE_GRAPH\" .venv/bin/python scripts/process-recorded-clip.py --camera \"$REGISTERED_CAMERA\" --clip \"$AUTHORIZED_CLIP\" --authorized-root \"$AUTHORIZED_MEDIA_ROOT\" --authorization-reference audit-developer-rehearsal --model \"$AUTHORIZED_MODEL\" --max-duration-s \"$DECLARED_PREFIX_S\" --output-dir \"$PRIVATE_PROCESSED_DIR\"",
+      "status": "passed",
+      "artifact": "fresh-processing.json",
+      "scope": "Four configured boundary cameras, newly processed 15-second prefixes for both graphs and 45-second prefixes for the three-junction graph; private media paths excluded; later operation used validated aggregate cache"
+    },
+    {
+      "check": "Real full stack",
+      "command": ".venv/bin/python scripts/rehearse_prototype.py --api http://127.0.0.1:18881 --origin http://127.0.0.1:3100 --username audit_operator --network-config \"$ACTIVE_GRAPH\" --output-dir \"$PRIVATE_REPORT_DIR\" --exercise-decisions",
+      "status": "passed",
+      "cases": 6,
+      "artifact": "stack-summary.json",
+      "scope": "Developer-run isolated Go/PostgreSQL/real Python gRPC workflow, both graphs/all scenarios. Manual cancellation acknowledged; short inputs rejected before activation; longer three-junction peak/incident plans applied at tick 35 with later timing/offset equality. Emergency correctly no_action. Not independent operator acceptance."
+    },
+    {
+      "check": "Report schema/privacy/receipt hashes",
+      "status": "passed",
+      "reports": 6,
+      "scope": "Current API re-exported persisted developer runs after restart; validated strict run-report-v2 schema, recursive private-field denylist and canonical SHA256 terminal receipts",
+      "artifact": "run-reports"
+    },
+    {
+      "check": "Browser",
+      "status": "partially_verified",
+      "scope": "Authenticated developer sign-in, command center, missing-data/dependency-loss display, three configured controlled nodes, restart without resurrected input and one-action report downloads observed",
+      "blocked": "Browser recheck after final export serialization fix blocked by automatic approval review: workspace out of credits. Earlier download exposed the schema bug; final REST exports pass, final browser content validation is not claimed. Earlier browser proof remains diagnostic only."
+    },
+    {
+      "check": "Fresh synthetic held-out control",
+      "status": "failed",
+      "artifact": "../audit-heldout-results-v5.json",
+      "freeze": "../audit-holdout-freeze-v5.json",
+      "declared_cases": 72,
+      "eligible_origins": 144,
+      "improved_origins": 0,
+      "gate_pass": false,
+      "scope": "New seeds frozen before execution with unchanged thresholds; exact frozen computational source hashes still match. Old v1-v4 results preserved; v2-v4 superseded only by required safety/recovery corrections, never tuned on held-out failures."
+    },
+    {
+      "check": "Local compute resources",
+      "commands": [
+        ".venv/bin/python scripts/benchmark_compute.py --mode simulation --protocol packages/scenario-config/prototype-resource-budget-audit-v2.json --output reports/audit-resource-simulation.json",
+        ".venv/bin/python scripts/benchmark_compute.py --mode candidate_evaluation --protocol packages/scenario-config/prototype-resource-budget-audit-v2.json --output reports/audit-resource-candidates.json"
+      ],
+      "status": "within_local_diagnostic_budget",
+      "scope": "Serialized separate real processes; Intel i7-1065G7 exposed by runtime. Original Core Ultra 9 target-machine acceptance remains blocked; no supported concurrency claim from camera count."
+    }
+  ],
+  "failed_or_superseded_checks": [
+    "Baseline Go DB verification unavailable before PostgreSQL was provisioned; superseded by real passing DB/race suites.",
+    "Mock Python wrapper is unit evidence only; superseded for dependency verification by real Python tests.",
+    "Early full-stack account fixture used incorrect salt encoding and received 401; corrected to the actual credential contract.",
+    "Integrated recovery timed out because a terminal cancellation diagnostic was retained as an active rollout failure; pinned and fixed without changing activation safety.",
+    "Repeated integrated lock acknowledgement exposed a same-time older-frame authority race; pinned and fixed with epoch/sequence ordering and versioned clock acknowledgements.",
+    "Initial rejected report export failed strict schema because unavailable application timestamp was null; omitted without weakening schema, with PostgreSQL regression.",
+    "A final export attempt ran a stale binary before its build completed; rejected its report shape, then rebuilt synchronously and re-exported through current Go. Only validated current exports are included.",
+    "New report-test fixture initially omitted mandatory before_values; fixed fixture, retained database constraint and reran full Go suite.",
+    "Final browser approval review could not execute due to exhausted workspace credits; no alternative browser automation bypass used.",
+    "Execution environment reset stopped PostgreSQL during the final archival rerun; connection-refused failure preserved in go-environment-reset-failure.log. Existing disposable database retained; service restarted and suite rerun. No code/test change to bypass failure."
+  ],
+  "remaining_gates": [
+    {
+      "gate": "Authenticated access and accurate claims",
+      "status": "open",
+      "scope": "Code/security regressions and developer browser smoke verified; comprehensive independent browser/operator acceptance incomplete"
+    },
+    {
+      "gate": "Integrated causal forecast",
+      "status": "open",
+      "scope": "Real causal operating path verified; new independently reviewed recorded holdout/long-horizon accuracy still unavailable"
+    },
+    {
+      "gate": "Bounded safe evaluation and virtual actuation",
+      "status": "open",
+      "scope": "Developer cancellation and applied scheduler proof verified; broader independent acceptance incomplete"
+    },
+    {
+      "gate": "Real recorded-video input",
+      "status": "open",
+      "scope": "Fresh real processing and coverage verified; reserved independent reference review incomplete"
+    },
+    {
+      "gate": "Predefined measurement/control benchmarks",
+      "status": "failed",
+      "scope": "Control benefit 0/144; measurement/recorded holdout blocked by genuine review/input dependencies"
+    },
+    {
+      "gate": "Reproducible package and full-stack operation",
+      "status": "open",
+      "scope": "Local canonical bootstrap/doctor and six developer stack cases verified; clean-machine, target host, continuous p95 and non-implementer operator acceptance unavailable"
+    }
+  ],
+  "privacy": "No credentials, private source/model paths, media, tracking identities or trajectories included in this evidence bundle",
+  "deployment": "Physical actuation disabled; field benefit and production readiness deferred",
+  "artifacts_sha256": {
+    "go-race.log": "4d390e577790b72671db3572091bab34115cf7b33558dbadf32bfa678a3d65d0",
+    "doctor.json": "158528922c345b7dab252d7848a8ace26c79892b07874f19cf3a2a93f0b9b751",
+    "stack-summary.json": "834fa2d17831da28f65d0d24566b75c5ce5a42792c3327fc244a4857b33b3a87",
+    "frontend-typecheck.log": "bc9bb10b7ed285bf479f3ad33cc5fdd3a7b549201d30abd9254b77a2ebd57608",
+    "frontend-build.log": "e300ed3444cccdae19ab0d2a943526889d5007b4e5373275ff47affb43e43a78",
+    "fresh-processing.json": "29ddfc4940670b1b9e903ac90eb65a53eefff5d64520a13797d4714d3b23ecfa",
+    "go-environment-reset-failure.log": "8a112d326535e6e149aec9646adebdd00c436797efd99668de3ca772bc2b10c0",
+    "python-real.log": "7ee5145f8deedb8e1a0acf2d83d537973f2c85533bd823b5d10b457bab583b44",
+    "frontend-tests.log": "0c8c8c7d1022c93e0dca4b8a80abf7e36397e7b075b37a54ac15c1d53777db14",
+    "dashboard-security.log": "4839552329edf97c7ad54d58abcde0aeef2d7761161e27f66e231c5f90009135",
+    "run-reports/0eccee1e-6c5c-44e4-ad13-07143ee70353.json": "30a8144545bab012d5da6fa0bbdc7e99a3dfae21cc26fca1c122b6163e979c7f",
+    "run-reports/b0a0ec7f-9b04-4001-aa52-e3b41a364e56.json": "82896eeb4da1d6084f71a3aaee3e70bf77a7a1a1cf892030fbfd895e23aab465",
+    "run-reports/6a4f37e2-4bfd-4b08-a284-b3abcb66a876.json": "6885bb638a1c44a6a3c8e4b9687c3319847554212b7a6d7a1c83520d74a10291",
+    "run-reports/7fb23e94-ba9d-4534-a3aa-ccb51045f26e.json": "c307ad40a08ddf222deed0556f6dce29d7a40e5a054eb6b7b23e8fe5adcc467f",
+    "run-reports/3539ad1c-7dc8-43e2-bd7e-ddc421bcdb2a.json": "73278727aeefe6b5ae10ae6fe0ba27f9ef5d2b0ceb6aa510e4edf8bfda418260",
+    "run-reports/feb35f8c-5511-4977-8434-eac95b5e1c20.json": "5dcfd8b5b6fd4526b5343b4dfd796864f2934504a52ffc8be1cc918ea292c8d9"
+  },
+  "authoritative_audit_document": {
+    "filename": "Traffic_Digital_Twin_Engineering_Audit_Remediation_Report.docx",
+    "sha256": "7982c77be2ae8ef11189e7fcdfe3d8f0c77facad050c63f2355d10321eb00c59",
+    "scope": "All 20 findings read completely and checked against the reviewed source before remediation"
+  }
+}

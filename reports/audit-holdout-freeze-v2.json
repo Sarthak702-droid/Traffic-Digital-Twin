@@ -1,0 +1,22 @@
+{
+  "frozen_at_utc": "2026-10-04T17:02:40.707921+00:00",
+  "reviewed_base_revision": "e2afd45bb0de58c6dbec5c0a1a3b9478848e2689",
+  "implementation_scope": "uncommitted remediation identified by source hashes; no held-out tuning afterward",
+  "synthetic_seeds": [
+    99107,
+    99209,
+    99317
+  ],
+  "source_sha256": {
+    "services/intelligence/model.py": "afa167aa58e51037912d8232d3ce02e52a32b258a2e1f266473a4f9cc347ab81",
+    "services/intelligence/forecast_demand.py": "9745af2851b9e0ab9f9905c13cb111fc9e8deef33c714b388001d7d76a4c401b",
+    "services/simulation/aggregate_engine.py": "78ebe30a221658f5ae955e17497428d012c07531d2db292e20bd349fe38f4c4a",
+    "services/simulation/safety.py": "c43d39b4306c6bf96bad3ddf83c34e1f0690199e505ad86dfa34e0164d42b637",
+    "services/simulation/flow_kernel.py": "29c893d28b00e7bd22fd41233299fca4cd174f054cf731c220c09c4501c6b86c",
+    "scripts/prototype_evaluation.py": "9c690112c8f27f53e123504efbd6512c4c63dcec92bf099959ae4014cfb9492a",
+    "packages/scenario-config/comparison-scoring-v1.json": "edc1a6fe78b5fee5df2ccfe014451ef1fc01188a8630a1d3dc52efd31870009c",
+    "packages/scenario-config/prototype-evaluation-audit-v2.json": "2d42076b42f85976ba8aff327db7d09be8aec1961e3dc534def18a7c99a8203e"
+  },
+  "thresholds": "unchanged from prototype-evaluation-v1",
+  "recorded_holdout": "blocked; old viewed clips are diagnostic only"
+}

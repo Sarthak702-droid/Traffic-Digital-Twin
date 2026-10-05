@@ -1,0 +1,405 @@
+{
+  "reviewed_revision": "e2afd45bb0de58c6dbec5c0a1a3b9478848e2689",
+  "source_revision": "13d3405fb94304803c1db1355dd4fdd5e32fb23c",
+  "scope": "Functional virtual-only engineering prototype; statuses describe code remediation, not acceptance",
+  "items": [
+    {
+      "audit_item": "01 Control benefit",
+      "priority": "P0",
+      "status": "Partially Fixed",
+      "root_cause": "Uncoordinated alternatives were ranked without hard displacement constraints and failed the frozen benefit gate.",
+      "files_changed": [
+        "services/intelligence/model.py",
+        "scripts/prototype_evaluation.py",
+        "services/intelligence/tests/test_bounded_recommendations_s03.py"
+      ],
+      "exact_fix": "Added bounded coordinated green/offset alternatives, actual offset rollouts and regression admissibility against current/local baselines before ranking. Retained minimum benefit and safe no_action/cannot_evaluate behavior.",
+      "tests_added_or_updated": [
+        "services/intelligence/tests/test_bounded_recommendations_s03.py",
+        "services/intelligence/tests/test_epic6.py",
+        "scripts/tests/test_prototype_evaluation.py"
+      ],
+      "verification_result": "Frozen v5: 72 cases executed, 144 eligible origins, 0 improvement-qualified origins; benefit gate FAILED. Candidate/safety regression tests pass. Prior v1-v4 failures preserved.",
+      "remaining_risk_or_dependency": "Benefit gate remains failed; no physical benefit or controller acceptance claim. New independent recorded holdout and successful untouched benchmark are still required."
+    },
+    {
+      "audit_item": "02 Pending-plan authority",
+      "priority": "P0",
+      "status": "Fixed",
+      "root_cause": "Go authority mutations did not invalidate simulator-owned pending intent.",
+      "files_changed": [
+        "packages/contracts/proto/twin.proto",
+        "packages/contracts/gen/go/twin.pb.go",
+        "packages/contracts/gen/go/twin_grpc.pb.go",
+        "packages/contracts/gen/python/twin_pb2.py",
+        "packages/contracts/gen/python/twin_pb2_grpc.py",
+        "packages/contracts/typescript/events.ts",
+        "packages/contracts/events.schema.json",
+        "packages/contracts/openapi.json",
+        "apps/api/internal/httpapi/control_authority.go",
+        "apps/api/internal/httpapi/decision.go",
+        "services/simulation/aggregate_engine.py",
+        "services/simulation/service.py",
+        "apps/api/internal/httpapi/simulation.go"
+      ],
+      "exact_fix": "Added simulator epoch, mode/lock identity, idempotent UpdateAuthority and durable CancelPlan; persisted Go intent before dispatch, blocked uncertain authority, cancelled pending plans and restored offsets on mutation/degradation, rechecked authority/locks/safety at activation, preserved locks on reset. Rejected older same-time stream frames by authority epoch/snapshot sequence and assigned a new sequence to clock acknowledgements.",
+      "tests_added_or_updated": [
+        "services/simulation/tests/test_audit_authority.py",
+        "apps/api/internal/httpapi/decision_test.go",
+        "apps/api/internal/httpapi/reconcile_d01_test.go"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Real developer stack: cancellation proof on both graphs; three-junction peak/incident plans applied at safe tick 35; short-coverage approvals rejected when input degraded. Old approval remains rejected after recovery.",
+      "remaining_risk_or_dependency": "Unproven/interrupted outcomes remain blocked until simulator evidence exists; no guessed settlement or automatic replay. Independent operator/field acceptance remains deferred."
+    },
+    {
+      "audit_item": "03 Reconciliation",
+      "priority": "P0",
+      "status": "Fixed",
+      "root_cause": "Manual/aged recovery could settle without exact simulator terminal proof.",
+      "files_changed": [
+        "apps/api/internal/httpapi/reconcile.go",
+        "apps/api/internal/httpapi/decision.go",
+        "apps/api/internal/store/writer.go",
+        "apps/api/internal/store/run_report.go",
+        "packages/contracts/run-report-v2.schema.json"
+      ],
+      "exact_fix": "Derived exact command/recommendation/actor from durable intent; only applied/rejected proof settles transactionally with audit and receipt hash. Cancellation fences not-found late dispatch. Unknown/interrupted stays unresolved; store lookup failure blocks approval. Omitted unavailable application timestamps for rejected outcomes, preserving the strict public schema.",
+      "tests_added_or_updated": [
+        "apps/api/internal/httpapi/reconcile_d01_test.go",
+        "apps/api/internal/store/store_test.go",
+        "apps/api/internal/store/report_evidence_test.go"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Six current API reports pass JSON Schema, recursive privacy validation and canonical receipt-hash verification.",
+      "remaining_risk_or_dependency": "Receipt durability requires functioning PostgreSQL and simulator receipt storage; unresolved uncertainty correctly blocks approval."
+    },
+    {
+      "audit_item": "04 Mandatory idempotency",
+      "priority": "P0",
+      "status": "Fixed",
+      "root_cause": "Invalid keys or absent storage bypassed reservation.",
+      "files_changed": [
+        "apps/api/internal/httpapi/idempotency.go",
+        "apps/api/internal/httpapi/server.go"
+      ],
+      "exact_fix": "Domain mutations require valid keys; 400 invalid/missing, 503 unavailable/unexpected reservation, 409 conflict. Credential/session lifecycle explicitly exempt. No reservation means no dispatch.",
+      "tests_added_or_updated": [
+        "apps/api/internal/httpapi/idempotency_audit_test.go",
+        "apps/api/internal/httpapi/server_test.go"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions."
+    },
+    {
+      "audit_item": "06 Forecast timing",
+      "priority": "P0",
+      "status": "Fixed",
+      "root_cause": "Availability was compared to evidence end, conflating causal clocks.",
+      "files_changed": [
+        "packages/contracts/proto/twin.proto",
+        "services/intelligence/forecast_demand.py",
+        "services/simulation/aggregate_engine.py",
+        "services/simulation/video_demand.py"
+      ],
+      "exact_fix": "Separated evidence and source-availability watermarks, declared source-to-simulation mapping, required actual processing completion before snapshot wall time, origin at latest eligible evidence end and separate processing age. Unsupported mappings fail closed.",
+      "tests_added_or_updated": [
+        "services/intelligence/tests/test_bound_history_forecast.py",
+        "services/intelligence/tests/test_causal_forecast.py",
+        "services/simulation/tests/test_bound_video_demand.py"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "remaining_risk_or_dependency": "Operating recorded adapter supports explicit identity mapping only; other mappings require a validated adapter."
+    },
+    {
+      "audit_item": "07 Evidence traversal",
+      "priority": "P0",
+      "status": "Fixed",
+      "root_cause": "Evidence API resolved caller-selected paths against repository root.",
+      "files_changed": [
+        "dashboard/evidence.mjs",
+        "dashboard/server.mjs"
+      ],
+      "exact_fix": "Registered artifact identifiers/aliases only, canonical realpath containment, rejection of absolute/traversal/encoded/backslash/symlink escapes before reads.",
+      "tests_added_or_updated": [
+        "dashboard/evidence.test.mjs"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions."
+    },
+    {
+      "audit_item": "17 Reference claims",
+      "priority": "P0",
+      "status": "Partially Fixed",
+      "root_cause": "Generated detector predictions asserted unsupported reviewed/quality provenance.",
+      "files_changed": [
+        "services/vision/auto_annotation.py",
+        "services/vision/measurement.py",
+        "scripts/prototype_evaluation.py",
+        "reports/annotation-provenance.json",
+        "reports/reference-quality-report.json"
+      ],
+      "exact_fix": "Generated predictions explicitly provisional; removed invented accuracy claims. Strict scorer requires two distinct real reviewers, timestamps, method/rights, immutable identity, adjudication and matching frozen split metadata. Historical unreviewed reports reclassified without fabricated scores.",
+      "tests_added_or_updated": [
+        "services/vision/tests/test_audit_measurement.py",
+        "scripts/tests/test_prototype_evaluation.py"
+      ],
+      "verification_result": "Strict provenance rejection regressions pass; genuine independently reviewed recorded accuracy remains unavailable. Prepared human handoff without signatures/results.",
+      "remaining_risk_or_dependency": "No genuine independent review records or unseen reserved recorded input available. Prepared handoff; human measurement gate Blocked."
+    },
+    {
+      "audit_item": "05 Command identity",
+      "priority": "P1",
+      "status": "Fixed",
+      "root_cause": "Body-only hashes omitted operation identity and route comparison.",
+      "files_changed": [
+        "apps/api/internal/httpapi/idempotency.go",
+        "apps/api/internal/store/writer.go",
+        "db/migrate.go",
+        "db/migrations/010_command_envelope.sql",
+        "db/migrations/011_original_command_receipt.sql"
+      ],
+      "exact_fix": "Versioned canonical actor/account/method/route/concrete parameters/query/JSON envelope; reserve compares identity. Preserved original HTTP acknowledgement separately from later terminal recovery evidence across re-login.",
+      "tests_added_or_updated": [
+        "apps/api/internal/httpapi/idempotency_audit_test.go",
+        "apps/api/internal/store/store_test.go"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions."
+    },
+    {
+      "audit_item": "08 Direction counts",
+      "priority": "P1",
+      "status": "Fixed",
+      "root_cause": "Aggregation only admitted approaching crossings.",
+      "files_changed": [
+        "services/vision/itd_pipeline.py"
+      ],
+      "exact_fix": "Computed crossing direction independently of configured label; aggregate only when it matches primary approaching/departing direction, preserve class/lane aggregation and exclude pedestrians from vehicle demand.",
+      "tests_added_or_updated": [
+        "services/vision/tests/test_itd_finalization.py"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions."
+    },
+    {
+      "audit_item": "09 Decode completeness",
+      "priority": "P1",
+      "status": "Fixed",
+      "root_cause": "Read failure was treated as successful end-of-input and reusable complete cache.",
+      "files_changed": [
+        "services/vision/itd_pipeline.py",
+        "services/vision/recorded_clip.py",
+        "services/simulation/video_demand.py",
+        "apps/api/internal/httpapi/observation_catalog.go",
+        "scripts/generate_vision_clips_telemetry.py"
+      ],
+      "exact_fix": "Required actual requested-frame coverage and valid metadata, recorded decoded/sampling proof, versioned cache identity; all processors/providers/catalogs reject incomplete or unproven artifacts. Valid EOF and requested subrange preserved.",
+      "tests_added_or_updated": [
+        "services/vision/tests/test_itd_finalization.py",
+        "services/vision/tests/test_recorded_clip.py",
+        "services/simulation/tests/test_bound_video_demand.py",
+        "apps/api/internal/httpapi/observations_v03_test.go"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions."
+    },
+    {
+      "audit_item": "10 Queue estimate",
+      "priority": "P1",
+      "status": "Fixed",
+      "root_cause": "Fixed pixel displacement depended on resolution and sampling interval; insufficient history looked stationary.",
+      "files_changed": [
+        "services/vision/itd_pipeline.py",
+        "services/vision/measurement.py",
+        "scripts/generate_vision_clips_telemetry.py",
+        "services/vision/concurrent_orchestrator.py"
+      ],
+      "exact_fix": "Normalized displacement by dimensions and elapsed source seconds using versioned geometry thresholds; insufficient history unavailable, uncalibrated diagnostics degraded.",
+      "tests_added_or_updated": [
+        "services/vision/tests/test_audit_measurement.py",
+        "services/vision/tests/test_itd_finalization.py"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "remaining_risk_or_dependency": "Visible queue remains an estimate; no calibrated speed or physical queue acceptance is implied."
+    },
+    {
+      "audit_item": "11 Committed demand",
+      "priority": "P1",
+      "status": "Fixed",
+      "root_cause": "Known eligible unreleased mass was omitted from operating snapshots and rollouts.",
+      "files_changed": [
+        "services/simulation/video_demand.py",
+        "services/simulation/aggregate_engine.py",
+        "services/intelligence/model.py",
+        "packages/contracts/proto/twin.proto"
+      ],
+      "exact_fix": "Snapshot eligible remaining commitments/release intervals; reproduce their release before unknown forecast demand; include commitment identity/assumptions in comparison hash and retain offered mass/backlog conservation.",
+      "tests_added_or_updated": [
+        "services/simulation/tests/test_bound_video_demand.py",
+        "services/intelligence/tests/test_bound_history_forecast.py"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions."
+    },
+    {
+      "audit_item": "12 Compute admission",
+      "priority": "P1",
+      "status": "Fixed",
+      "root_cause": "Compare/Predict bypassed Analyze concurrency budget and cancellation.",
+      "files_changed": [
+        "services/intelligence/model.py",
+        "services/intelligence/service.py"
+      ],
+      "exact_fix": "One fail-fast per-model admission/deadline budget for Analyze/Compare/Predict, nested acquisition avoidance, rollout cancellation/deadline checks and exception-safe release; retained five candidates and 1.5-second deadline.",
+      "tests_added_or_updated": [
+        "services/intelligence/tests/test_bounded_recommendations_s03.py"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "remaining_risk_or_dependency": "Local serialized compute diagnostics do not prove original target-machine or continuous full-stack latency acceptance."
+    },
+    {
+      "audit_item": "13 WebSocket sessions",
+      "priority": "P1",
+      "status": "Fixed",
+      "root_cause": "Authentication was checked only at upgrade.",
+      "files_changed": [
+        "apps/api/internal/httpapi/access.go",
+        "apps/api/internal/httpapi/session.go",
+        "apps/api/internal/httpapi/server.go"
+      ],
+      "exact_fix": "Bound verified session identity/expiry/account version; validate before delivery plus 250ms checks with bounded timeout; close expiry/revocation/identity drift or unavailable validation within one second.",
+      "tests_added_or_updated": [
+        "apps/api/internal/httpapi/session_audit_test.go"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions."
+    },
+    {
+      "audit_item": "14 Stale vision display",
+      "priority": "P1",
+      "status": "Fixed",
+      "root_cause": "Latest observation had no display cutoff/maximum-age eligibility.",
+      "files_changed": [
+        "apps/web/lib/observation-query.ts",
+        "apps/web/lib/observations.ts",
+        "apps/web/lib/video-display.ts",
+        "apps/web/components/vision-analytics-panel.tsx"
+      ],
+      "exact_fix": "Send current display source cutoff, prevent future/coverage extrapolation and show stale/unavailable flow/queue beyond maximum age; preserve historical seeks inside coverage.",
+      "tests_added_or_updated": [
+        "apps/web/components/vision-observation-sync.test.tsx",
+        "apps/web/lib/observations-u01.test.tsx",
+        "apps/web/lib/video-display.test.tsx"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions. Final browser recheck after the report serialization correction is unavailable because approval review exhausted workspace credits; earlier authenticated developer UI/download observations are diagnostic, not full acceptance."
+    },
+    {
+      "audit_item": "15 Headway/passages",
+      "priority": "P1",
+      "status": "Fixed",
+      "root_cause": "Cumulative sampled aggregates were reconstructed as individual vehicle passages/headways.",
+      "files_changed": [
+        "apps/web/lib/video-display.ts",
+        "apps/web/components/vision-analytics-panel.tsx",
+        "apps/web/components/kpi-strip.tsx"
+      ],
+      "exact_fix": "Removed individual event/headway/platoon claims; show supported aggregate pulses and unavailable individual metrics/uncalibrated positions instead of fabricated precision.",
+      "tests_added_or_updated": [
+        "apps/web/lib/video-display.test.tsx",
+        "apps/web/lib/observations-u01.test.tsx"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions. Final browser recheck after the report serialization correction is unavailable because approval review exhausted workspace credits; earlier authenticated developer UI/download observations are diagnostic, not full acceptance."
+    },
+    {
+      "audit_item": "16 Privacy boundary",
+      "priority": "P1",
+      "status": "Fixed",
+      "root_cause": "Public telemetry persisted tracking IDs, bounding-box histories and trajectories.",
+      "files_changed": [
+        "apps/web/public/vision_clips_data.json",
+        "scripts/generate_vision_clips_telemetry.py",
+        "services/shared/privacy.py",
+        "apps/api/internal/store/privacy.go",
+        "apps/api/internal/store/run_report.go",
+        "apps/web/lib/video-display.ts"
+      ],
+      "exact_fix": "Scrubbed checked-in telemetry to aggregates, invalidated old display schema, kept association state transient and applied recursive normalized-key/depth privacy denylist at artifact/export/display boundaries.",
+      "tests_added_or_updated": [
+        "services/shared/test_privacy.py",
+        "apps/api/internal/store/privacy_test.go",
+        "services/vision/tests/test_display_telemetry.py",
+        "apps/web/lib/video-display.test.tsx"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "remaining_risk_or_dependency": "The historical git revision still contains old telemetry; this remediation removes it from the current tree and operating/public outputs, not repository history. Final browser recheck after the report serialization correction is unavailable because approval review exhausted workspace credits; earlier authenticated developer UI/download observations are diagnostic, not full acceptance."
+    },
+    {
+      "audit_item": "20 Installation",
+      "priority": "P1",
+      "status": "Fixed",
+      "root_cause": "Bootstrap only wrote settings; complete dependency/workflow checks were absent.",
+      "files_changed": [
+        "scripts/bootstrap-prototype.py",
+        "services/runtime-requirements.lock",
+        "README.md",
+        ".gitignore"
+      ],
+      "exact_fix": "Canonical locked bootstrap provisions Python/OpenCV/gRPC, npm, Go tools/modules and PostgreSQL; non-mutating doctor checks versions/locks/generated contracts/DB/authorized roots/model hash/protected account provisioning and distinguishes rehearsal readiness from acceptance.",
+      "tests_added_or_updated": [
+        "scripts/tests/test_rehearse_prototype.py",
+        "scripts/tests/test_bootstrap_doctor.py"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "remaining_risk_or_dependency": "Executed bootstrap/doctor on this local machine; fresh-machine and non-implementer acceptance remain external dependencies."
+    },
+    {
+      "audit_item": "18 Configuration assumptions",
+      "priority": "P2",
+      "status": "Fixed",
+      "root_cause": "Presentation and legacy processing assumed fixed junction/camera inventories.",
+      "files_changed": [
+        "apps/web/components/vision-analytics-panel.tsx",
+        "apps/web/components/kpi-strip.tsx",
+        "services/vision/pipeline.py",
+        "apps/api/internal/httpapi/server.go"
+      ],
+      "exact_fix": "Inventory/controlled-node presentation from active validated configuration; non-12-camera inventory supported, legacy fixed-camera demo isolated behind explicit deprecated replay request with truthful scope.",
+      "tests_added_or_updated": [
+        "apps/web/lib/observations-u01.test.tsx",
+        "apps/api/internal/httpapi/server_test.go"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "remaining_risk_or_dependency": "Legacy diagnostic replay is explicitly labelled and cannot substitute for operating recorded-input inference."
+    },
+    {
+      "audit_item": "19 Readiness claims",
+      "priority": "P2",
+      "status": "Fixed",
+      "root_cause": "Task closure/percentages were presented as deployment or acceptance readiness.",
+      "files_changed": [
+        "dashboard/app.js",
+        "dashboard/index.html",
+        "dashboard/readiness.test.mjs"
+      ],
+      "exact_fix": "Separated implementation tracking from verification/acceptance/deployment, removed task-derived production/verified claims, all gates remain unverified until current-revision evidence establishes them.",
+      "tests_added_or_updated": [
+        "dashboard/readiness.test.mjs"
+      ],
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "remaining_risk_or_dependency": "Production/field readiness remains deferred; the six prototype gates are not inferred from these 20 remediation statuses."
+    }
+  ],
+  "summary": {
+    "fixed": 18,
+    "partially_fixed": 2,
+    "acceptance": "incomplete",
+    "failed_gate": "Control benefit: 0/144 eligible origins in frozen v5",
+    "blocked_dependencies": [
+      "Genuine independent reviewers and new unseen recorded holdout",
+      "Non-implementing operator acceptance",
+      "Original target workstation and continuous full-stack p95",
+      "Final browser recheck after serialization fix: workspace credits exhausted"
+    ]
+  }
+}

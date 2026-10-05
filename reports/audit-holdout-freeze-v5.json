@@ -1,0 +1,26 @@
+{
+  "frozen_at_utc": "2026-10-04T18:07:26.995126+00:00",
+  "source_revision": "31a594e13ad0139d9fdd643a1770c57deafd521c",
+  "synthetic_seeds": [
+    65111,
+    65213,
+    65327
+  ],
+  "source_sha256": {
+    "services/intelligence/model.py": "9aed12fcb895152da860f4854abb27f90fe718a0f2b2e448388f83326f00d18e",
+    "services/intelligence/forecast_demand.py": "a07681d8c731aa074bdb18f9cadf08c0cad9c8b6983bc14c93b97c0e8fc194a8",
+    "services/simulation/aggregate_engine.py": "b6c56cd1c1b79f1ec2fa40d4c4020369fc05aac5c5c9c4c0f87e9788a0e033cc",
+    "services/simulation/video_demand.py": "b5649d773455676e53bdd6a4e7336f46382b3f3c515b8deb838029b9326669af",
+    "services/simulation/safety.py": "c43d39b4306c6bf96bad3ddf83c34e1f0690199e505ad86dfa34e0164d42b637",
+    "services/simulation/flow_kernel.py": "29c893d28b00e7bd22fd41233299fca4cd174f054cf731c220c09c4501c6b86c",
+    "scripts/prototype_evaluation.py": "5da296a7d52c046f4686d01d035e9b27b898553c94928f58cd9f5ee80c8c3ea2",
+    "packages/contracts/proto/twin.proto": "463ae4144759810480721642448125d43f3d3bc1787a7a6b57b7bcb639b9f566",
+    "packages/scenario-config/comparison-scoring-v1.json": "edc1a6fe78b5fee5df2ccfe014451ef1fc01188a8630a1d3dc52efd31870009c",
+    "packages/scenario-config/prototype-evaluation-audit-v5.json": "e27470df8acd13a3071d3dba865fe81f3aada7ea1924bcb48cc626ac95fd290d"
+  },
+  "thresholds": "unchanged from prototype-evaluation-v1",
+  "v2_scope": "preserved failure; superseded by required causal/authority corrections, never tuned on held-out failures",
+  "recorded_holdout": "blocked; new unseen authorized input and independent review required",
+  "v3_scope": "Preserved failure; superseded by terminal cancellation recovery correction discovered in integrated rehearsal. No held-out tuning.",
+  "v4_scope": "Preserved failure; superseded by held-clock authority race fix discovered in real workflow. No held-out tuning."
+}
