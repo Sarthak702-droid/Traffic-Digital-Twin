@@ -1,0 +1,643 @@
+TRAFFIC DIGITAL TWIN
+Engineering Audit & Remediation Report
+Source review against supplied engineering feedback
+Repository: Sarthak702-droid/Traffic-Digital-Twin
+Reviewed revision: main @ e2afd45
+Assessment type: source + checked-in evidence review
+No repository files, configuration, database records, or application state modified during review
+DECISION SUMMARY  
+The platform has progressed beyond a scripted demo, but acceptance is not closed. The most consequential blockers are operator-authority safety, evidence truthfulness, security hardening, measurement validity, and the failed coordinated-control benefit benchmark.
+1. Executive Summary
+Status legend: 
+● Critical / confirmed   
+● High / confirmed   
+● Needs verification   
+● Aligned / corrected   
+Risk labels: 
+ SECURITY 
+ SAFETY 
+ CONTROL 
+ DATA QUALITY 
+ PRIVACY 
+ FORECAST 
+ EVIDENCE 
+ OPERATIONS 
+ UI 
+Central acceptance failure  
+Checked-in acceptance evidence reports 72 completed cases and 0/144 eligible normal origins meeting the predefined improvement criteria. The architecture can demonstrate a virtual decision workflow, but the repository does not substantiate the promised corridor-control benefit.
+#
+Finding
+Severity
+Risk label
+Review status
+Priority
+01
+Control benefit benchmark failed
+● 
+Critical
+CONTROL / EVIDENCE
+Confirmed
+P0
+02
+Pending approved plan survives manual takeover / new lock
+● 
+Critical
+SAFETY / CONTROL
+Confirmed
+P0
+03
+Manual decision resolution can settle without proven simulator outcome
+● 
+Critical
+SAFETY / AUDIT
+Confirmed
+P0
+04
+Idempotency key can be omitted/malformed and mutation still executes
+● 
+Critical
+SECURITY / RELIABILITY
+Confirmed
+P0
+05
+Command identity is not strongly bound to method + route + body
+● 
+High
+SECURITY
+Partially confirmed
+P1
+06
+Forecast availability time is filtered against finalized-window end
+● 
+Critical
+FORECAST / DATA QUALITY
+Confirmed
+P0
+07
+Delivery dashboard evidence handler permits path traversal
+● 
+Critical
+SECURITY
+Confirmed
+P0
+08
+Departing-direction count semantics can be wrong/mislabeled
+● 
+High
+DATA QUALITY / VISION
+Needs regression proof
+P1
+09
+Decode failure can be treated as clean EOF / complete processing
+● 
+High
+DATA QUALITY
+Confirmed pattern
+P1
+10
+Queue estimator is pixel/sample-rate dependent
+● 
+High
+VISION / DATA QUALITY
+Confirmed design weakness
+P1
+11
+Rollout can replace known unreleased demand with forecast rates
+● 
+High
+FORECAST / MODEL
+Architectural mismatch
+P1
+12
+Compare path bypasses shared admission/concurrency controls
+● 
+High
+RELIABILITY / CONTROL
+Confirmed
+P1
+13
+Established WebSocket does not recheck expiry/revocation
+● 
+High
+SECURITY
+Confirmed design gap
+P1
+14
+Old flow can remain displayed after evidence coverage ends
+● 
+High
+UI / EVIDENCE
+Confirmed/likely
+P1
+15
+Mean headway / individual passage reconstruction is not defensible
+● 
+High
+DATA QUALITY
+Confirmed methodology issue
+P1
+16
+Tracking IDs/trails persisted despite aggregate-only privacy claim
+● 
+High
+PRIVACY / EVIDENCE
+Confirmed contradiction
+P1
+17
+Reference-quality claims are emitted without independent review
+● 
+Critical
+EVIDENCE / DATA QUALITY
+Confirmed concern
+P0
+18
+Presentation paths retain 12-camera / two-junction / C1-C3 assumptions
+● 
+Medium
+UI / CONFIG
+Confirmed
+P2
+19
+Completion/readiness messaging can contradict open acceptance
+● 
+Medium
+EVIDENCE / OPERATIONS
+Partly corrected
+P2
+20
+Fresh installation path does not fully cover vision dependencies
+● 
+High
+OPERATIONS
+Confirmed
+P1
+2. Supplied Review & Feedback - Complete Baseline
+The following section preserves the substance of the review supplied for this audit. It is the baseline against which the repository findings and remediation plan are organized.
+The application broadly follows the revised engineering-prototype architecture, but it has not fulfilled the original promise of demonstrably better corridor prediction and control. Concrete safety, data-quality, security, reporting and evidence deviations remain. The review was performed against main at e2afd45 without changing files, configuration, database records or application state. The application stack was not running, so this is not a fresh full-stack acceptance.
+Approved scope changes versus the original documents include: real corridor to configured virtual networks; independent recorded clips as declared virtual demand rather than measured physical-junction flow; SUMO/TraCI to finite-capacity aggregate road cells; Go control plane + PostgreSQL + private Python gRPC computation; Next.js to React/Vite; live RTSP, municipal ATCS comparison, physical integration and field calibration deferred; journey time, individual stops, calibrated speed and uncertainty unavailable until defensible estimators/reference data exist; and twelve registered cameras not being evidence of twelve-stream processing capacity.
+The important consequence is that the application can demonstrate a virtual decision workflow, but cannot yet substantiate the original real-corridor effectiveness claims.
+Highest-priority findings: the required control benefit has failed its predefined benchmark; manual takeover or a new lock can leave an already approved plan scheduled to apply; manual reconciliation can settle a pending decision without establishing actual outcome; command identity is optional and does not robustly distinguish operations; forecasting confuses finalized-window end with availability time; and the delivery dashboard can read outside its evidence directory.
+Other deviations: configured departing counts are incorrect or insufficiently validated; corrupt/truncated decoding can be reported as successful; queue estimation depends on pixels per sampled frame rather than elapsed source time; operating prediction snapshots omit known unreleased demand commitments; comparison computation bypasses analysis admission/deadline controls; established WebSocket connections do not recheck expired/revoked sessions.
+UI, privacy and evidence drift: old recorded flow can remain displayed after coverage ends; Mean Headway and individual passage events are reconstructed from sample changes and are not defensible individual measurements; tracking IDs/trails are persisted despite the aggregate-only privacy boundary; reference-quality claims are generated from literals rather than independent review; presentation-specific assumptions remain (exactly twelve cameras, two controlled junctions, C3/C1 legacy assumptions); completion claims can contradict current readiness; and clean installation instructions omit vision-specific dependencies.
+The core architecture, server-derived identity, aggregate backlog preservation, configured graphs, matched comparisons, explicit replay, virtual scheduler application and authenticated durable report export are present. However, six acceptance gates remain open or failed: access/claims; forecasts; safe control; recorded measurements; benchmarks; and packaging/operation. The most consequential remaining work is safe operator authority, truthful evidence and proof that coordinated control actually helps.
+3. Scope Changes That Are Not Defects
+Real physical corridor -> configured virtual networks. Independent clips provide declared demand, not measured inter-junction flow.
+SUMO/TraCI -> finite-capacity aggregate road-cell simulation.
+Public Python API concept -> Go public control plane, PostgreSQL persistence, private Python gRPC compute.
+Next.js -> React/Vite frontend.
+Live RTSP, municipal ATCS comparison, physical-controller integration and field calibration -> later phase.
+Journey time, individual stops, calibrated speed and uncertainty -> intentionally unavailable until defensible.
+Twelve-camera registry -> inventory only; it does not prove twelve-stream real-time capacity.
+Interpretation rule  
+Do not file the approved architecture changes above as defects. File defects only where the implementation violates the revised authoritative plan, safety/evidence boundaries, or acceptance criteria.
+4. Detailed Findings and Exact Remediation
+01. Control benefit benchmark failed
+● CRITICAL
+ CONTROL 
+ EVIDENCE 
+WHERE
+docs/handoffs/Q01-acceptance-repair.md; docs/prototype-evaluation.md
+EVIDENCE / ISSUE
+Checked-in handoff states: 72 cases completed, zero harness failures, 0/144 eligible normal origins met the improvement criteria; gate false.
+WHY IT MATTERS
+The central value proposition is unproven. A controller can be safe and functional yet still make traffic no better or shift congestion elsewhere.
+EXACT FIX
+Redesign candidate generation/scoring. Keep current plan as a candidate; add hard regression constraints before ranking; use fixed and local-adaptive baselines on identical snapshots/demand; separate emergency objectives; require minimum benefit before recommend, otherwise no_action.
+DONE / ACCEPTANCE TEST
+Run the frozen untouched evaluation. At least the declared fraction of eligible held-out cases must meet every improvement/regression threshold, with zero safety violations. Publish every regression, not only wins.
+02. Manual takeover / lock does not invalidate a pending plan
+● CRITICAL
+ SAFETY 
+ CONTROL 
+WHERE
+apps/api/internal/httpapi/decision.go; mode/lock handlers; simulator scheduler/activation guard
+EVIDENCE / ISSUE
+Approval can dispatch a plan that waits for a safe boundary. Mode/lock changes update Go/PostgreSQL state, but no authoritative cancellation/revision is propagated to invalidate the pending simulator plan.
+WHY IT MATTERS
+Operator intent can be overridden after manual takeover or after a phase is locked. This is a control-authority violation.
+EXACT FIX
+Introduce a simulator-owned control authority revision (control_epoch / lock_revision). Bind every PlanCommand to expected authority, mode and lock revision. Increment revision on manual takeover or lock mutation; cancel pending plans or fail activation if revisions differ. Activation guard must recheck current mode/locks under the simulator lock.
+DONE / ACCEPTANCE TEST
+Regression: approve plan -> before activation switch to manual or add conflicting lock -> advance through activation boundary -> plan must not apply; durable audit must record cancelled/invalidated outcome.
+approve plan -> accepted_pending_safe_boundary
+operator switches MANUAL / adds lock
+old plan reaches activation boundary
+REQUIRED: authority revision mismatch -> cancel / reject activation
+03. Manual reconciliation can settle without actual outcome
+● CRITICAL
+ SAFETY 
+ AUDIT 
+WHERE
+apps/api/internal/httpapi/decision.go; apps/api/internal/httpapi/reconcile.go; decision_intents persistence
+EVIDENCE / ISSUE
+Manual resolve can mark an intent settled without requiring a simulator receipt, current scheduler-state proof, or cancellation acknowledgement. Browser-supplied recommendation identity is also accepted.
+WHY IT MATTERS
+A plan may later apply after the intent was removed from automatic reconciliation, breaking terminal audit/recovery guarantees.
+EXACT FIX
+Make server derive recommendation/run identity from the durable intent. Permit terminal settlement only as CONFIRMED_APPLIED or CONFIRMED_NOT_APPLIED with evidence. Keep UNKNOWN unresolved. Add explicit CancelPlan/QueryCommandOutcome semantics or prove current scheduler state before settlement.
+DONE / ACCEPTANCE TEST
+Create uncertain ApplyPlan outcome; call resolve without receipt -> must remain unresolved. After simulator confirms applied/not-applied -> settlement succeeds and report contains evidence link/receipt hash.
+04. Idempotency key is optional in practice
+● CRITICAL
+ SECURITY 
+ RELIABILITY 
+WHERE
+apps/api/internal/httpapi/idempotency.go
+EVIDENCE / ISSUE
+Missing, too-short or too-long Idempotency-Key falls through to next handler instead of rejecting the state-changing command.
+WHY IT MATTERS
+Retries, double clicks and uncertain network outcomes can create duplicate or ambiguous mutations despite the API claiming idempotent commands.
+EXACT FIX
+For every mutating route require a valid key. Missing/malformed -> 400; reservation store unavailable -> 503. Never execute a protected mutation outside reservation. Define a canonical command envelope and retain command lookup across session expiry/re-login.
+DONE / ACCEPTANCE TEST
+For each mutating endpoint: no key, malformed key, duplicate valid key, same key/different payload, reservation-store outage. Only first valid identical command may execute.
+05. Command identity is not strongly operation-bound
+● HIGH
+ SECURITY 
+WHERE
+apps/api/internal/httpapi/idempotency.go; command_outcomes store/writer
+EVIDENCE / ISSUE
+Middleware hashes body bytes; route is passed separately and method is not visibly cryptographically bound into the hash. Exact mismatch handling therefore depends on persistence semantics.
+WHY IT MATTERS
+Cross-operation key reuse can become ambiguous and is harder to reason about/audit.
+EXACT FIX
+Hash canonical envelope: actor/session scope + HTTP method + normalized route template + canonical body + API command version. Store and compare all identity fields. Reuse with any mismatch -> 409 conflict.
+DONE / ACCEPTANCE TEST
+Reuse same key across POST mode, DELETE lock, and same route with changed body. Every non-identical operation must be rejected; exact retry must return original receipt.
+06. Forecast watermark uses wrong time semantic
+● CRITICAL
+ FORECAST 
+ DATA QUALITY 
+WHERE
+services/intelligence/forecast_demand.py; traffic-state snapshot construction
+EVIDENCE / ISSUE
+Forecaster compares observation available_at_source_s against latest_finalized_window_end_source_s. A [0,5) window becoming available at source second 6 can be rejected at a second-6 snapshot because 6 > 5.
+WHY IT MATTERS
+Valid delayed observations disappear from forecasting; forecasts can become missing or lag behind actual available evidence.
+EXACT FIX
+Carry separate finalized evidence watermark and availability/snapshot watermark. Eligibility should require window_end <= finalized boundary and available_at <= snapshot availability time. Add explicit processing-age field and cached/fresh semantics.
+DONE / ACCEPTANCE TEST
+Unit cases: available exactly at end, one second late, much later, and future availability. Late-but-available evidence must be accepted; look-ahead must remain impossible.
+window = [0,5)
+available_at_source_s = 6
+snapshot_source_s = 6
+WRONG: available_at(6) > finalized_window_end(5) => discard
+RIGHT: window_end <= finalized watermark AND available_at <= snapshot availability watermark
+07. Evidence endpoint path traversal
+● CRITICAL
+ SECURITY 
+WHERE
+dashboard/server.mjs /evidence handler
+EVIDENCE / ISSUE
+User-controlled decoded relative path is resolved against repository root and read without proving the resolved path remains inside the evidence directory.
+WHY IT MATTERS
+A local user/process able to access the loopback dashboard can request unintended repository/local files.
+EXACT FIX
+Prefer artifact-ID allowlist -> exact known file. If path-based access remains, canonicalize once, reject absolute paths/symlinks/.., resolve against fixed evidence root and enforce realpath containment before read. Return 403 outside root.
+DONE / ACCEPTANCE TEST
+Test plain ../, percent-encoded traversal, double encoding, absolute path, symlink escape, sibling prefix collision. None may read outside evidence root.
+resolved = realpath(join(EVIDENCE_ROOT, requested))
+if resolved is not inside realpath(EVIDENCE_ROOT):
+    return 403
+# Prefer artifact_id -> allowlisted exact path instead of arbitrary paths
+08. Departing-direction counts are not proven correct
+● HIGH
+ DATA QUALITY 
+ VISION 
+WHERE
+services/vision/itd_pipeline.py; services/vision/recorded_clip.py; camera geometry/config tests
+EVIDENCE / ISSUE
+The data model/config supports approaching/departing, but the authoritative event acceptance/output semantics are not backed by a complete direction inversion regression matrix. Review identified risk of accepting only one crossing sense while labelling output with configured direction.
+WHY IT MATTERS
+Departing cameras can produce wrong-direction counts or false zeros, corrupting boundary demand.
+EXACT FIX
+Make crossing direction an explicit computed value independent of label. Compare computed direction to configured primary_direction before aggregation. Add mirrored synthetic trajectories and real reviewed samples for both directions.
+DONE / ACCEPTANCE TEST
+Four mandatory tests: approaching->approaching count; approaching->departing zero; departing->departing count; departing->approaching zero. Verify class and lane aggregation too.
+09. Truncated/corrupt decode can be published complete
+● HIGH
+ DATA QUALITY 
+ EVIDENCE 
+WHERE
+services/vision/itd_pipeline.py; services/vision/recorded_clip.py; compare scripts/prepare-reference-review.py
+EVIDENCE / ISSUE
+Authoritative loop treats cap.read() failure as break/EOF. A separate review script correctly raises when a clip ends early, showing the stronger pattern already exists.
+WHY IT MATTERS
+Partial evidence can be cached and treated as complete, creating silent data loss and misleading provenance.
+EXACT FIX
+Track requested source interval, expected duration/frame count, last decoded source timestamp and decoder errors. Publish complete only when requested coverage is reached within tolerance. Otherwise incomplete_decode/error and never eligible for authoritative cache reuse.
+DONE / ACCEPTANCE TEST
+Use truncated file, corrupt middle frames, zero-frame file, valid EOF, requested sub-range. Only valid full coverage may publish complete manifest.
+10. Queue estimator depends on pixels/sample cadence
+● HIGH
+ VISION 
+ DATA QUALITY 
+WHERE
+services/vision/itd_pipeline.py queue/motion logic; camera geometry
+EVIDENCE / ISSUE
+Fixed pixel motion thresholds change meaning with resolution, perspective, source FPS and inference sampling interval.
+WHY IT MATTERS
+Same traffic can be classified differently after resize or sampling changes; queue values are not stable measurements.
+EXACT FIX
+Use normalized displacement divided by elapsed source time; normalize by frame dimension and, where available, perspective/ROI scale. Keep metric explicitly visible-region estimate. Calibrate thresholds per geometry and preserve sampling metadata.
+DONE / ACCEPTANCE TEST
+Replay same reviewed segment at multiple inference FPS/resolutions. Queue classification should remain within declared tolerance and must not change solely because sampling interval changes.
+11. Prediction snapshot omits known unreleased demand commitments
+● HIGH
+ FORECAST 
+ MODEL 
+WHERE
+simulation/intelligence snapshot and rollout demand construction
+EVIDENCE / ISSUE
+For remaining mass of already available bins, rollout can substitute forecast rates instead of preserving known commitments from the complete snapshot.
+WHY IT MATTERS
+Projection semantics diverge from the authoritative state even if candidate comparisons remain internally matched.
+EXACT FIX
+Represent known committed-but-unreleased demand separately from unknown future demand. Consume committed mass first; forecast begins only after known evidence horizon. Include both in demand-assumptions hash.
+DONE / ACCEPTANCE TEST
+Construct snapshot with partially consumed finalized bin. Baseline/candidate rollouts must release exactly the remaining committed mass before forecast mass.
+12. Compare bypasses analysis admission/concurrency controls
+● HIGH
+ RELIABILITY 
+ CONTROL 
+WHERE
+services/intelligence/service.py Compare; shared analysis admission/deadline mechanism
+EVIDENCE / ISSUE
+Compare directly calls model.comparison while Analyze is the path associated with bounded analysis controls. Caller timeout alone is not server admission control.
+WHY IT MATTERS
+Repeated simulations/modify/approval rechecks can exceed declared compute budget and degrade control responsiveness.
+EXACT FIX
+Create one shared admission controller for Analyze, Compare and any expensive Predict path: semaphore/queue, per-request deadline, candidate/horizon budget and cancellation propagation. Return RESOURCE_EXHAUSTED/DEADLINE_EXCEEDED with no actionable recommendation.
+DONE / ACCEPTANCE TEST
+Saturate configured concurrency then issue Compare. Excess request must be rejected/queued per policy, not execute unbounded. Verify cancellation stops work.
+13. WebSocket sessions are authenticated only at upgrade
+● HIGH
+ SECURITY 
+WHERE
+Go WebSocket upgrade/stream loop; session store
+EVIDENCE / ISSUE
+REST can revalidate each request, but an already-upgraded stream can continue after session expiry/revocation unless the connection loop checks it.
+WHY IT MATTERS
+Logged-out/revoked users can continue receiving operational telemetry.
+EXACT FIX
+Bind stream to session ID + expiry. Close at expiry and periodically check revocation/version. Password reset/session revoke should actively or promptly terminate associated streams. Use explicit close code/reason.
+DONE / ACCEPTANCE TEST
+Open stream, revoke session, verify stream closes within bounded interval and no later events arrive. Repeat for natural expiry and account reset.
+14. Vision UI can display stale recorded flow as current
+● HIGH
+ UI 
+ EVIDENCE 
+WHERE
+apps/web/components/vision-analytics-panel.tsx and observation selection/request parameters
+EVIDENCE / ISSUE
+Display can retain last finalized observation after authoritative coverage ends; request path may omit the source-time cutoff needed for stale checking.
+WHY IT MATTERS
+Operator can visually interpret old flow as current evidence even if approval logic separately fails safe.
+EXACT FIX
+Propagate display source time/cutoff to observation query. When display time exceeds evidence coverage or max age, clear measurement or mark STALE/NO COVERAGE prominently; never silently hold last value.
+DONE / ACCEPTANCE TEST
+Advance display beyond last finalized window and stale threshold. Flow/headway/queue must become unavailable/stale, while historical seek inside coverage still shows the correct window.
+15. Mean Headway and individual passage events are reconstructed
+● HIGH
+ DATA QUALITY 
+ EVIDENCE 
+WHERE
+display/telemetry event construction and Vision UI
+EVIDENCE / ISSUE
+Multiple crossings between sampled frames can collapse into a synthetic event; class/lane can be borrowed from frame-level or previous-track state.
+WHY IT MATTERS
+Individual-event/headway claims exceed what sampled aggregate evidence can support.
+EXACT FIX
+Remove individual passage/headway from authoritative UI/report unless event timestamps come directly from validated crossing events at sufficient temporal resolution. Prefer window flow/count/class aggregates. If kept as display-only estimate, label it estimated and exclude from acceptance evidence.
+DONE / ACCEPTANCE TEST
+Ground-truth reviewed passage timestamps on reserved clips. Do not expose mean headway as measured until error bounds meet a declared criterion.
+16. Tracking IDs/trails cross the aggregate-only persistence boundary
+● HIGH
+ PRIVACY 
+ EVIDENCE 
+WHERE
+services/vision event/trail serialization; generated public telemetry; UI privacy claim
+EVIDENCE / ISSUE
+Camera-local track IDs are needed transiently for tracking, but persisted/checked-in telemetry containing IDs/trails contradicts NO IDS / TRAJECTORIES and report exclusion requirements.
+WHY IT MATTERS
+Privacy statement and actual data handling diverge; evidence exports can contain more granular data than promised.
+EXACT FIX
+Define a hard aggregation boundary. IDs/trails remain memory-only or restricted ephemeral debug artifacts with TTL and gitignore. Persistent observations/reports contain only aggregates. Add schema denylist for track_id, trail, bbox histories and raw frames.
+DONE / ACCEPTANCE TEST
+Repository scan and report-export test must find zero prohibited identity/trajectory fields. Debug mode must be opt-in, non-exportable and excluded from version control.
+17. Reference-quality labels/claims are not independently established
+● CRITICAL
+ EVIDENCE 
+ DATA QUALITY 
+WHERE
+reference preparation / pre-annotation emitter; reference fixtures/docs
+EVIDENCE / ISSUE
+Review identified generated reviewed/accepted labels and positive quality assertions without an actual independent human review workflow.
+WHY IT MATTERS
+Accuracy claims become circular: model-generated evidence can certify the model that produced it.
+EXACT FIX
+Separate predictions from reference annotations physically and schematically. Require reviewer identity/time/method, second-review status, immutable source hash and reserved-vs-tuning split. Generator may create candidate annotations only as provisional_unreviewed.
+DONE / ACCEPTANCE TEST
+No accuracy gate may consume a record lacking required human-review metadata. Random sample audit must trace each accepted label to source frame/window and reviewer action.
+18. Presentation-specific assumptions remain in generic UI paths
+● MEDIUM
+ UI 
+ CONFIG 
+WHERE
+apps/web/components/kpi-strip.tsx; Vision registry checks; legacy endpoints/config paths
+EVIDENCE / ISSUE
+KPI literally shows “of 2 controlled”; review also identified exact-12-camera validation and legacy C3->C1 assumptions. Revised plan requires both two- and three-controlled-junction graphs and configuration-driven topology.
+WHY IT MATTERS
+Generic product UI can display false totals or reject valid alternate configurations.
+EXACT FIX
+Derive controlled-junction count, camera inventory and routes from active validated configuration. Keep demo-specific inventory constraints in a named profile validator, not core UI/service logic. Remove legacy hard-coded route assumptions or isolate/deprecate endpoint.
+DONE / ACCEPTANCE TEST
+Run full UI/API suites against two-controlled and three-controlled graphs plus non-12-camera test registry. No hard-coded C1/C3 or count should leak into generic paths.
+19. Completion messaging can overstate readiness
+● MEDIUM
+ EVIDENCE 
+ OPERATIONS 
+WHERE
+dashboard readiness/gap closure; README and handoff documents
+EVIDENCE / ISSUE
+Historical task completion can drive “Production-ready” style messaging while current acceptance explicitly remains open. Top-level README has improved, but all surfaces must agree.
+WHY IT MATTERS
+Stakeholders can confuse implementation completion with validated acceptance/production readiness.
+EXACT FIX
+Use separate dimensions: implementation status, verification status, acceptance gate, deployment readiness. Production-ready may render only when all mandatory gates are passed by current evidence revision.
+DONE / ACCEPTANCE TEST
+Force one gate failed and verify every dashboard/report/readme-generated status remains NOT ACCEPTED / prototype. No task-count heuristic may override gate state.
+20. Clean installation does not fully provision vision processing
+● HIGH
+ OPERATIONS 
+WHERE
+README.md install sequence; vision-specific Python dependencies/model setup
+EVIDENCE / ISSUE
+Base install path covers services requirements but fresh recorded-video processing needs additional vision runtime dependencies/model assets and verification.
+WHY IT MATTERS
+A clean machine can start part of stack but fail the documented fresh-processing workflow.
+EXACT FIX
+Create one canonical bootstrap/doctor workflow that installs locked compute + vision dependencies, verifies Python/Go/Node/Postgres versions, model checkpoint hashes, generated contracts, media authorization root and account provisioning. README should call only this supported path.
+DONE / ACCEPTANCE TEST
+Fresh VM/container rehearsal from clone to one processed clip, one seeded run, one authenticated comparison and report export. Record commands, wall time and failures.
+5. Acceptance Gates - Current Position and Closure Criteria
+Gate
+Area
+Status
+Closure requirement
+A
+Access & claims
+OPEN
+Complete expiry/revocation behavior for WebSocket; uncertain-command rehearsal; prove command identity and idempotent recovery.
+B
+Forecasts
+OPEN / FAILED
+Fix availability semantics; freeze predefined accuracy evaluation; define cached processing age and horizon availability.
+C
+Safe control
+OPEN / FAILED
+Authority revision/cancellation; activation-time lock/manual checks; complete safety/failure matrix; zero unsafe applied plans.
+D
+Recorded measurements
+OPEN
+Independent reviewed counts and supported queue labels; second reviewer; no generated self-certifying reference claims.
+E
+Benchmarks
+FAILED
+Redesign controller, then rerun untouched held-out evaluation. Must beat both fixed and local adaptive under declared regression limits.
+F
+Packaging & operations
+OPEN
+Clean install rehearsal; continuous actionable latency/capacity evidence; operator runbook rehearsal without implementer intervention.
+6. Prioritized Engineering Remediation Plan
+P0-A - Stop unsafe authority outcomes
+Scope: 
+Issues 02, 03
+Add authority/control revision; cancel/invalidate pending plans on manual/lock changes; evidence-backed reconciliation.
+Exit criterion: 
+No plan can apply after authority changes. Unknown command outcomes remain unresolved until proven.
+P0-B - Close immediate security defects
+Scope: 
+Issues 04, 05, 07, 13
+Mandatory idempotency; canonical operation identity; evidence-root containment; session-aware WebSocket lifetime.
+Exit criterion: 
+Mutation identity is deterministic; traversal tests fail closed; revoked streams terminate.
+P0-C - Restore evidence truthfulness
+Scope: 
+Issues 06, 09, 16, 17
+Correct time semantics; incomplete-decode states; aggregate-only persistence; independent reference review.
+Exit criterion: 
+No invalid evidence can be accepted as complete/reviewed.
+P0-D - Redesign control benefit
+Scope: 
+Issue 01 + 11/12 dependencies
+Improve candidate generation, constraints, admission controls and known-demand semantics; rerun untouched benchmark.
+Exit criterion: 
+Declared held-out benefit gate passes without unacceptable regressions.
+P1 - Measurement and UI integrity
+Scope: 
+Issues 08, 10, 14, 15, 18
+Direction regression matrix; time-normalized queue; stale-state UI; remove unsupported headway; configuration-driven presentation.
+Exit criterion: 
+Same evidence produces stable/defensible metrics and UI never overstates freshness/topology.
+P1/P2 - Packaging and claims
+Scope: 
+Issues 19, 20
+Single readiness model; canonical bootstrap/doctor; clean-machine operator rehearsal.
+Exit criterion: 
+A new operator can install, run, process, compare and export using documented steps; readiness wording matches gates.
+7. Required Regression & Acceptance Test Matrix
+Area
+Test
+Required result
+Authority
+Approved pending plan + manual takeover
+Plan cancelled/rejected before activation; audit terminal outcome.
+Authority
+Approved pending plan + new phase lock
+Activation guard rejects plan using current lock revision.
+Recovery
+Uncertain ApplyPlan + manual resolve without receipt
+Intent remains UNKNOWN/unsettled.
+Idempotency
+Missing/malformed key on every mutation
+400; handler does not execute.
+Idempotency
+Same key, different route/method/body
+409 conflict; original receipt preserved.
+Forecast
+Late-available finalized window
+Accepted when available by snapshot; future evidence rejected.
+Security
+Encoded/symlink evidence traversal
+403; no bytes outside evidence root.
+Vision
+Truncated/corrupt clip
+incomplete_decode/error; never complete cache.
+Vision
+Approaching/departing mirrored trajectories
+Correct direction-specific counts; opposite direction zero.
+Queue
+Same segment at multiple FPS/resolutions
+Queue estimate within declared tolerance.
+Compute
+Concurrent Analyze + Compare saturation
+Shared admission budget enforced; bounded fallback.
+Session
+WebSocket revoke/expiry
+Connection closes within bounded interval.
+Privacy
+Report/public telemetry scan
+No track IDs, trails, bbox history, raw frames or secrets.
+Evidence
+Reference record without reviewer metadata
+Rejected from accuracy evaluation.
+UI
+Evidence coverage ends
+Metrics become STALE/UNAVAILABLE; no indefinite last-value display.
+Config
+Three-controlled-junction + non-12-camera profile
+UI/API operate without hard-coded totals/routes.
+Benchmark
+Frozen held-out suite
+Control benefit gate passes declared thresholds with zero unsafe plans.
+Packaging
+Clean machine rehearsal
+Clone -> bootstrap -> process clip -> run -> compare -> export succeeds.
+8. What Is Aligned and Should Be Preserved
+Go remains the public command/control plane; Python compute remains private behind gRPC.
+Server-derived authenticated identity and durable PostgreSQL audit/persistence are present.
+Finite-capacity aggregate road-cell simulation is consistent with the revised prototype scope.
+Configured graphs, aggregate backlog preservation and matched baseline/candidate comparisons are present.
+Explicit replay, virtual safe-boundary scheduler application and authenticated durable report export are valuable foundations.
+Physical actuation remains disabled; independent clips are not represented as a measured physical corridor in the revised architecture.
+Top-level documentation increasingly distinguishes prototype evidence from production acceptance; preserve and complete that correction.
+9. Engineering Decision: Definition of Done for the Next Milestone
+NEXT MILESTONE  
+An operator-approved coordinated plan must never execute after control authority changes, and on a frozen untouched benchmark the coordinated controller must demonstrably outperform both fixed and local-adaptive baselines without shifting unacceptable congestion, backlog, spillback or service debt elsewhere.
+This milestone deliberately combines the two highest-value dimensions: safe operator authority and demonstrated control benefit. UI expansion, additional presentation features, and broader camera inventory should not take precedence over these gates.
+10. Recommended Ownership Split
+Workstream
+Findings
+Primary owner
+Control/Safety
+02, 03, 11
+Go API + simulator/scheduler owners
+Security/Platform
+04, 05, 07, 13
+Go API + dashboard/platform owner
+Forecast/Intelligence
+01, 06, 11, 12
+Intelligence/model owner
+Vision/Data Quality
+08, 09, 10, 15, 17
+Vision owner + independent QA reviewer
+Privacy/Evidence
+16, 17, 19
+QA/evidence owner; not the model implementer alone
+Frontend/Config
+14, 18
+UI owner
+Release/Operations
+20 + Gate F
+Release owner + non-implementing operator

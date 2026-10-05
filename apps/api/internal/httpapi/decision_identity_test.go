@@ -76,6 +76,7 @@ func TestActiveRecommendationDropsOldEpoch(t *testing.T) {
 	s.sim = &simulationLink{received: time.Now(), command: &pb.RunCommand{RunId: "run-1", Mode: "recommend"}}
 	s.recommendationTime = 10
 	request := httptest.NewRequest(http.MethodGet, "/recommendation", nil)
+	request.Header.Set("Idempotency-Key", "test-key-487b7eea-9ad9-4544-a3a8-99c1ea312eb8")
 	response := httptest.NewRecorder()
 	s.activeRecommendation(response, request)
 	if response.Code != http.StatusOK {
@@ -119,6 +120,7 @@ func TestDecisionsRejectHeldRecommendationAfterSourceChange(t *testing.T) {
 		route.URLParams.Add("id", "rec-1")
 		route.URLParams.Add("action", action)
 		request := httptest.NewRequest(http.MethodPost, "/api/v1/recommendations/rec-1/"+action, strings.NewReader(body))
+		request.Header.Set("Idempotency-Key", "test-key-501e3922-edfb-4be5-92b2-8f0383641131")
 		request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, route))
 		response := httptest.NewRecorder()
 		s.decision(response, request)

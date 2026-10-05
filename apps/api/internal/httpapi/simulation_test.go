@@ -95,6 +95,7 @@ func TestResetScenarioPreconditions(t *testing.T) {
 
 	// 2. Sim configured but no active command
 	s.sim = &simulationLink{subscribers: map[chan *pb.TrafficState]struct{}{}}
+	s.Store = nil // ensure store is nil to test 503 behavior
 	w = httptest.NewRecorder()
 	s.Handler().ServeHTTP(w, testRequest("POST", "/api/v1/scenarios/reset", strings.NewReader(`{}`)))
 	if w.Code != 503 {

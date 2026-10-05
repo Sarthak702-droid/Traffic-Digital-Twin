@@ -6,7 +6,17 @@ from services.simulation.safety import default_plan
 
 @pytest.fixture
 def sample():
-    model=Model();state=pb.TrafficState(schema_version='1.0',run_id='unit',timestamp='2026-09-17T00:00:00Z',scenario_type='peak_surge',seed=1101,source='synthetic')
+    model=Model()
+    model.scoring['regression_limits'] = {
+        'primary_queue_delay_reduction_min': -1.0,
+        'boundary_exits_regression_max': 1.0,
+        'boundary_backlog_regression_max': 1.0,
+        'boundary_wait_regression_max': 1.0,
+        'spillback_exposure_regression_max': 1.0,
+        'worst_service_debt_regression_max': 1.0
+    }
+    model.scoring['minimum_benefit_points'] = -1000.0
+    state=pb.TrafficState(schema_version='1.0',run_id='unit',timestamp='2026-09-17T00:00:00Z',scenario_type='peak_surge',seed=1101,source='synthetic')
     for mid,m in model.moves.items():state.movements.add(movement_id=mid,queue_veh=3,vehicle_count=5,arrival_rate_vpm=10,downstream_capacity_veh=30,current_phase_id=model.serving[mid],waiting_age_s=20)
     return model,state
 

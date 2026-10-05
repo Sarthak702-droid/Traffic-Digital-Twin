@@ -57,6 +57,7 @@ func authFixture(t *testing.T) (*Server, *testSessionStore, string) {
 
 func authRequest(h http.Handler, method, path, body string, cookie *http.Cookie) *httptest.ResponseRecorder {
 	r := httptest.NewRequest(method, path, strings.NewReader(body))
+	r.Header.Set("Idempotency-Key", "test-key-66901aa4-5464-4201-b3cf-6003393afc24")
 	if method != http.MethodGet {
 		r.Header.Set("Origin", "http://example.com")
 	}
@@ -94,6 +95,7 @@ func TestForgedHeadersAndViewerMutationAreDenied(t *testing.T) {
 	s, _, _ := authFixture(t)
 	h := s.Handler()
 	r := httptest.NewRequest("POST", "/api/v1/runs", strings.NewReader(`{}`))
+	r.Header.Set("Idempotency-Key", "test-key-e2c42836-c9b1-4150-9848-1ea0be915fcd")
 	r.Header.Set("Origin", "http://example.com")
 	r.Header.Set("X-Actor", "admin")
 	r.Header.Set("X-Role", "supervisor")
@@ -126,6 +128,7 @@ func TestLogoutExpiryAccountRotationAndOriginRevokeAccess(t *testing.T) {
 	}
 	c := login()
 	r := httptest.NewRequest("POST", "/api/v1/session/logout", nil)
+	r.Header.Set("Idempotency-Key", "test-key-f504f0f4-2c6e-4784-9368-3d89b9d0751f")
 	r.Header.Set("Origin", "https://evil.example")
 	r.AddCookie(c)
 	w := httptest.NewRecorder()
@@ -219,6 +222,7 @@ func TestLoginDoesNotReserveOperatorCommandIdentity(t *testing.T) {
 	s, _, _ := authFixture(t)
 	s.Sessions, s.Store = st, st
 	r := httptest.NewRequest("POST", "/api/v1/session/login", strings.NewReader(`{"username":"alice","password":"correct-test-password"}`))
+	r.Header.Set("Idempotency-Key", "test-key-d5fe7fb8-f7f2-4287-b51e-4c2b80e9922f")
 	r.Header.Set("Origin", "http://example.com")
 	r.Header.Set("Idempotency-Key", "login-must-not-reserve")
 	w := httptest.NewRecorder()

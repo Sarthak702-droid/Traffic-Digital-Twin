@@ -1033,6 +1033,10 @@
         },
         "simulation_paused": {
           "type": "boolean"
+        },
+        "control_revision": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
         }
       },
       "additionalProperties": false,
@@ -1981,6 +1985,10 @@
           "type": "string"
         },
         "expected_snapshot_sequence": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "expected_control_revision": {
           "type": "string",
           "pattern": "^[0-9]+$"
         }

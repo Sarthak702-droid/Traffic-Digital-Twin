@@ -1,0 +1,11 @@
+--- decision_test.go
++++ decision_test.go
+@@ -416,7 +416,7 @@
+ 	w = httptest.NewRecorder()
+ 	h.ServeHTTP(w, testRequest("POST", "/api/v1/decisions/resolve", strings.NewReader(`{"command_id":"test","resolution":"CONFIRMED_APPLIED"}`)))
+ 	if w.Code != 503 {
+-		t.Fatalf("expected 503 when db is unavailable, got %d", w.Code)
++		t.Fatalf("expected 503 when db is unavailable, got %d: %s", w.Code, w.Body.String())
+ 	}
+ 
+ 	s.Store = storeWithDB

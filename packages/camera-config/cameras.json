@@ -61,8 +61,8 @@
           ]
         ]
       },
-      "status": "agent_accepted_demo",
-      "review_status": "ACCEPTED_WITH_EVIDENCE"
+      "status": "provisional_unreviewed",
+      "review_status": "PROVISIONAL_UNREVIEWED"
     },
     "CAM-07": {
       "camera_id": "CAM-07",
@@ -123,8 +123,8 @@
           ]
         ]
       },
-      "status": "agent_accepted_demo",
-      "review_status": "ACCEPTED_WITH_EVIDENCE"
+      "status": "provisional_unreviewed",
+      "review_status": "PROVISIONAL_UNREVIEWED"
     },
     "CAM-02": {
       "camera_id": "CAM-02",
@@ -186,8 +186,8 @@
           ]
         ]
       },
-      "status": "agent_accepted_demo",
-      "review_status": "ACCEPTED_WITH_EVIDENCE"
+      "status": "provisional_unreviewed",
+      "review_status": "PROVISIONAL_UNREVIEWED"
     },
     "CAM-03": {
       "camera_id": "CAM-03",
@@ -249,8 +249,8 @@
           ]
         ]
       },
-      "status": "agent_accepted_demo",
-      "review_status": "ACCEPTED_WITH_EVIDENCE"
+      "status": "provisional_unreviewed",
+      "review_status": "PROVISIONAL_UNREVIEWED"
     },
     "CAM-04": {
       "camera_id": "CAM-04",
@@ -311,8 +311,8 @@
           ]
         ]
       },
-      "status": "agent_accepted_demo",
-      "review_status": "ACCEPTED_WITH_EVIDENCE"
+      "status": "provisional_unreviewed",
+      "review_status": "PROVISIONAL_UNREVIEWED"
     },
     "CAM-06": {
       "camera_id": "CAM-06",
@@ -374,8 +374,8 @@
           ]
         ]
       },
-      "status": "agent_accepted_demo",
-      "review_status": "ACCEPTED_WITH_EVIDENCE"
+      "status": "provisional_unreviewed",
+      "review_status": "PROVISIONAL_UNREVIEWED"
     },
     "CAM-05": {
       "camera_id": "CAM-05",
@@ -436,8 +436,8 @@
           ]
         ]
       },
-      "status": "agent_accepted_demo",
-      "review_status": "ACCEPTED_WITH_EVIDENCE"
+      "status": "provisional_unreviewed",
+      "review_status": "PROVISIONAL_UNREVIEWED"
     },
     "CAM-08": {
       "camera_id": "CAM-08",
@@ -498,8 +498,8 @@
           ]
         ]
       },
-      "status": "agent_accepted_demo",
-      "review_status": "ACCEPTED_WITH_EVIDENCE"
+      "status": "provisional_unreviewed",
+      "review_status": "PROVISIONAL_UNREVIEWED"
     },
     "CAM-09": {
       "camera_id": "CAM-09",
@@ -560,8 +560,8 @@
           ]
         ]
       },
-      "status": "agent_accepted_demo",
-      "review_status": "ACCEPTED_WITH_EVIDENCE"
+      "status": "provisional_unreviewed",
+      "review_status": "PROVISIONAL_UNREVIEWED"
     },
     "CAM-10": {
       "camera_id": "CAM-10",
@@ -622,8 +622,8 @@
           ]
         ]
       },
-      "status": "agent_accepted_demo",
-      "review_status": "ACCEPTED_WITH_EVIDENCE"
+      "status": "provisional_unreviewed",
+      "review_status": "PROVISIONAL_UNREVIEWED"
     },
     "CAM-11": {
       "camera_id": "CAM-11",
@@ -684,8 +684,8 @@
           ]
         ]
       },
-      "status": "agent_accepted_demo",
-      "review_status": "ACCEPTED_WITH_EVIDENCE"
+      "status": "provisional_unreviewed",
+      "review_status": "PROVISIONAL_UNREVIEWED"
     },
     "CAM-12": {
       "camera_id": "CAM-12",
@@ -746,8 +746,8 @@
           ]
         ]
       },
-      "status": "agent_accepted_demo",
-      "review_status": "ACCEPTED_WITH_EVIDENCE"
+      "status": "provisional_unreviewed",
+      "review_status": "PROVISIONAL_UNREVIEWED"
     }
   }
 }

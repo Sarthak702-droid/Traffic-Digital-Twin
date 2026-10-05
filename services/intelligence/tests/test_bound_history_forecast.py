@@ -12,7 +12,7 @@ from services.simulation.safety import default_plan
 
 def video_state(model, counts, session="source-one", run="run-one"):
     state = pb.TrafficState(schema_version="1.1", run_id=run, source="synthetic",
-                            timestamp=datetime.now(timezone.utc).isoformat(),
+                            timestamp=datetime.now(timezone.utc).isoformat(), simulation_time_s=len(counts)*5,
                             scenario_type="peak_surge", seed=11, demand_source="video_profile",
                             input_session_id="epoch-one", input_quality="cached_valid", config_hash=config_hash(model.config))
     for node, phases in model.index.phases_by_node.items():

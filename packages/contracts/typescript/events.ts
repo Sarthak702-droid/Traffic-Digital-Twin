@@ -181,6 +181,7 @@ export interface TrafficState {
   observation_history?: FinalizedObservation[];
   input_quality?: "" | "fresh" | "cached_valid" | "synthetic" | "missing" | "stale" | "degraded" | "out_of_order" | "duplicate" | "replay";
   simulation_paused?: boolean;
+  control_revision?: string;
 }
 
 export interface Forecast {
@@ -409,6 +410,7 @@ export interface PlanCommand {
   activate_not_before_simulation_s?: number;
   expected_input_session_id?: string;
   expected_snapshot_sequence?: string;
+  expected_control_revision?: string;
 }
 
 export interface PlanOutcome {

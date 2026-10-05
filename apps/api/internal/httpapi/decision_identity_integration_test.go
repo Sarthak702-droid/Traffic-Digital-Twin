@@ -130,6 +130,7 @@ func TestApprovalRechecksLatestSimulatorEpochBeforeActuation(t *testing.T) {
 	route.URLParams.Add("id", "rec-1")
 	route.URLParams.Add("action", "approve")
 	request := httptest.NewRequest(http.MethodPost, "/api/v1/recommendations/rec-1/approve", strings.NewReader("{}"))
+	request.Header.Set("Idempotency-Key", "test-key-44a3d3fc-5f70-4463-9b26-320dd75a6c91")
 	request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, route))
 	response := httptest.NewRecorder()
 	s.decision(response, request)
@@ -166,6 +167,7 @@ func TestApprovalRechecksLatestSimulatorEpochBeforeActuation(t *testing.T) {
 	route.URLParams.Add("id", rec.Id)
 	route.URLParams.Add("action", "approve")
 	request = httptest.NewRequest(http.MethodPost, "/api/v1/recommendations/"+rec.Id+"/approve", strings.NewReader("{}"))
+	request.Header.Set("Idempotency-Key", "test-key-71262eac-473a-4e3b-a298-6a3d568c1d6e")
 	request = request.WithContext(context.WithValue(store.WithCommand(store.WithActor(request.Context(), actor), forwardID), chi.RouteCtxKey, route))
 	response = httptest.NewRecorder()
 	compute.unavailable = true
@@ -175,6 +177,7 @@ func TestApprovalRechecksLatestSimulatorEpochBeforeActuation(t *testing.T) {
 	}
 	compute.unavailable = false
 	request = httptest.NewRequest(http.MethodPost, "/api/v1/recommendations/"+rec.Id+"/approve", strings.NewReader("{}"))
+	request.Header.Set("Idempotency-Key", "test-key-2e3f61be-d0f0-401e-855e-589f1c327614")
 	request = request.WithContext(context.WithValue(store.WithCommand(store.WithActor(request.Context(), actor), forwardID), chi.RouteCtxKey, route))
 	response = httptest.NewRecorder()
 	s.decision(response, request)

@@ -1398,6 +1398,7 @@ type TrafficState struct {
 	ObservationHistory              []*FinalizedObservation `protobuf:"bytes,35,rep,name=observation_history,json=observationHistory,proto3" json:"observation_history,omitempty"`
 	InputQuality                    string                  `protobuf:"bytes,36,opt,name=input_quality,json=inputQuality,proto3" json:"input_quality,omitempty"`
 	SimulationPaused                bool                    `protobuf:"varint,37,opt,name=simulation_paused,json=simulationPaused,proto3" json:"simulation_paused,omitempty"`
+	ControlRevision                 uint64                  `protobuf:"varint,38,opt,name=control_revision,json=controlRevision,proto3" json:"control_revision,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -1693,6 +1694,13 @@ func (x *TrafficState) GetSimulationPaused() bool {
 		return x.SimulationPaused
 	}
 	return false
+}
+
+func (x *TrafficState) GetControlRevision() uint64 {
+	if x != nil {
+		return x.ControlRevision
+	}
+	return 0
 }
 
 type Forecast struct {
@@ -3784,6 +3792,7 @@ type PlanCommand struct {
 	ActivateNotBeforeSimulationS float64                `protobuf:"fixed64,4,opt,name=activate_not_before_simulation_s,json=activateNotBeforeSimulationS,proto3" json:"activate_not_before_simulation_s,omitempty"`
 	ExpectedInputSessionId       *string                `protobuf:"bytes,5,opt,name=expected_input_session_id,json=expectedInputSessionId,proto3,oneof" json:"expected_input_session_id,omitempty"`
 	ExpectedSnapshotSequence     *uint64                `protobuf:"varint,6,opt,name=expected_snapshot_sequence,json=expectedSnapshotSequence,proto3,oneof" json:"expected_snapshot_sequence,omitempty"`
+	ExpectedControlRevision      uint64                 `protobuf:"varint,7,opt,name=expected_control_revision,json=expectedControlRevision,proto3" json:"expected_control_revision,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -3856,6 +3865,13 @@ func (x *PlanCommand) GetExpectedInputSessionId() string {
 func (x *PlanCommand) GetExpectedSnapshotSequence() uint64 {
 	if x != nil && x.ExpectedSnapshotSequence != nil {
 		return *x.ExpectedSnapshotSequence
+	}
+	return 0
+}
+
+func (x *PlanCommand) GetExpectedControlRevision() uint64 {
+	if x != nil {
+		return x.ExpectedControlRevision
 	}
 	return 0
 }
@@ -4324,7 +4340,7 @@ const file_twin_proto_rawDesc = "" +
 	"\fqueue_status\x18\f \x01(\tR\vqueueStatus\x12@\n" +
 	"\x1arelease_start_simulation_s\x18\r \x01(\x01H\x01R\x17releaseStartSimulationS\x88\x01\x01B\x1d\n" +
 	"\x1b_queue_visible_veh_estimateB\x1d\n" +
-	"\x1b_release_start_simulation_s\"\xe4\r\n" +
+	"\x1b_release_start_simulation_s\"\x8f\x0e\n" +
 	"\fTrafficState\x12%\n" +
 	"\x0eschema_version\x18\x01 \x01(\tR\rschemaVersion\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1c\n" +
@@ -4366,7 +4382,8 @@ const file_twin_proto_rawDesc = "" +
 	"$latest_finalized_window_end_source_s\x18\" \x01(\x01H\x00R\x1flatestFinalizedWindowEndSourceS\x88\x01\x01\x12Q\n" +
 	"\x13observation_history\x18# \x03(\v2 .traffic.v1.FinalizedObservationR\x12observationHistory\x12#\n" +
 	"\rinput_quality\x18$ \x01(\tR\finputQuality\x12+\n" +
-	"\x11simulation_paused\x18% \x01(\bR\x10simulationPausedB'\n" +
+	"\x11simulation_paused\x18% \x01(\bR\x10simulationPaused\x12)\n" +
+	"\x10control_revision\x18& \x01(\x04R\x0fcontrolRevisionB'\n" +
 	"%_latest_finalized_window_end_source_s\"\x80\x06\n" +
 	"\bForecast\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x15\n" +
@@ -4575,7 +4592,7 @@ const file_twin_proto_rawDesc = "" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\"@\n" +
 	"\x10ValidationResult\x12\x14\n" +
 	"\x05valid\x18\x01 \x01(\bR\x05valid\x12\x16\n" +
-	"\x06errors\x18\x02 \x03(\tR\x06errors\"\xff\x02\n" +
+	"\x06errors\x18\x02 \x03(\tR\x06errors\"\xbb\x03\n" +
 	"\vPlanCommand\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x122\n" +
 	"\achanges\x18\x02 \x03(\v2\x18.traffic.v1.TimingChangeR\achanges\x12\x1d\n" +
@@ -4583,7 +4600,8 @@ const file_twin_proto_rawDesc = "" +
 	"command_id\x18\x03 \x01(\tR\tcommandId\x12F\n" +
 	" activate_not_before_simulation_s\x18\x04 \x01(\x01R\x1cactivateNotBeforeSimulationS\x12>\n" +
 	"\x19expected_input_session_id\x18\x05 \x01(\tH\x00R\x16expectedInputSessionId\x88\x01\x01\x12A\n" +
-	"\x1aexpected_snapshot_sequence\x18\x06 \x01(\x04H\x01R\x18expectedSnapshotSequence\x88\x01\x01B\x1c\n" +
+	"\x1aexpected_snapshot_sequence\x18\x06 \x01(\x04H\x01R\x18expectedSnapshotSequence\x88\x01\x01\x12:\n" +
+	"\x19expected_control_revision\x18\a \x01(\x04R\x17expectedControlRevisionB\x1c\n" +
 	"\x1a_expected_input_session_idB\x1d\n" +
 	"\x1b_expected_snapshot_sequence\"\x8d\x02\n" +
 	"\vPlanOutcome\x12\x1d\n" +

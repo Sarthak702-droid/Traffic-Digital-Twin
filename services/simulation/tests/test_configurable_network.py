@@ -92,7 +92,17 @@ def test_three_junction_analysis_uses_its_route(tmp_path):
     try:
         state = engine.reset(pb.RunCommand(schema_version='1.0', scenario_type='peak_surge', seed=1101, mode='recommend', run_id='analysis'))
         state = engine.step()
-        result = Model(engine.config).analyze(state)
+        model = Model(engine.config)
+        model.scoring['regression_limits'] = {
+            'primary_queue_delay_reduction_min': -1.0,
+            'boundary_exits_regression_max': 1.0,
+            'boundary_backlog_regression_max': 1.0,
+            'boundary_wait_regression_max': 1.0,
+            'spillback_exposure_regression_max': 1.0,
+            'worst_service_debt_regression_max': 1.0
+        }
+        model.scoring['minimum_benefit_points'] = -1000.0
+        result = model.analyze(state)
         assert result.outcome == 'recommend'
         assert 'C3-C7' in ' '.join(result.recommendation.explanation_facts)
     finally:

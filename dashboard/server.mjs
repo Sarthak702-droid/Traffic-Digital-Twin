@@ -1,5 +1,5 @@
 import http from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, realpath } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { execFile } from 'node:child_process';
@@ -60,11 +60,23 @@ const server = http.createServer(async (req,res) => {
 
       for (const rel of candidatePaths) {
         try {
-          const content = await readFile(resolve(root, rel), 'utf8');
-          const mime = rel.endsWith('.json') ? 'application/json' : 'text/plain';
+          // Prevent directory traversal and symlink escapes
+          const targetPath = resolve(root, rel);
+          const resolvedPath = await realpath(targetPath);
+          const allowedRoots = [
+            resolve(root, 'docs'),
+            resolve(root, 'reports'),
+            resolve(root, '.runtime/evidence')
+          ];
+          if (!allowedRoots.some(allowed => resolvedPath === allowed || resolvedPath.startsWith(allowed + '/'))) {
+            continue;
+          }
+          const content = await readFile(resolvedPath, 'utf8');
+          const mime = resolvedPath.endsWith('.json') ? 'application/json' : 'text/plain';
           return send(200, content, mime);
         } catch {}
       }
+      return send(403, JSON.stringify({error: 'Access denied or not found'}));
     }
     if(path === '/api/git') {
       try {

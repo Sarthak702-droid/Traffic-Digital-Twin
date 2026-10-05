@@ -271,17 +271,19 @@ class ITDVideoAnalyticsSession:
                         if track_id in track_positions:
                             prev_pt = track_positions[track_id]
                             crossing_dir = counter.check_crossing(track_id, prev_pt, bottom_center)
-                            if crossing_dir == "approaching":
+                            expected_dir = self.geometry.get("primary_direction", "approaching")
+                            if crossing_dir == expected_dir:
                                 if cls_name != "pedestrain":
                                     current_bin_crossings += 1
                                 current_bin_classes[cls_name] = current_bin_classes.get(cls_name, 0) + 1
 
-                            dx = bottom_center[0] - prev_pt[0]
-                            dy = bottom_center[1] - prev_pt[1]
-                            dist_px = math.hypot(dx, dy)
+                            dx = (bottom_center[0] - prev_pt[0]) / orig_w
+                            dy = (bottom_center[1] - prev_pt[1]) / orig_h
+                            dt = frame_step / fps
+                            speed_norm_per_s = math.hypot(dx, dy) / max(1e-3, dt)
                             if track_id not in track_motion:
                                 track_motion[track_id] = []
-                            track_motion[track_id].append(dist_px)
+                            track_motion[track_id].append(speed_norm_per_s)
                             if len(track_motion[track_id]) > 8:
                                 track_motion[track_id].pop(0)
 
@@ -292,7 +294,8 @@ class ITDVideoAnalyticsSession:
                             if in_roi:
                                 recent = track_motion.get(track_id, [0.0])
                                 avg_speed = sum(recent) / max(1, len(recent))
-                                if avg_speed < 8.0:
+                                threshold = self.geometry.get("queue_speed_threshold_norm", 0.02)
+                                if avg_speed < threshold:
                                     active_queued += 1
 
                 queue_samples.append(active_queued)

@@ -428,6 +428,9 @@ export function Workspace() {
     return [...new Set(values.flatMap((value) => typeof value === "object" && value !== null && "node_id" in value && typeof value.node_id === "string" ? [value.node_id] : []))];
   };
 
+  const coverageEnded = live.fresh && live.frame?.demand_source === "video_profile" && (live.frame.simulation_time_s - (live.frame.latest_finalized_window_end_source_s ?? 0)) > 5;
+
+
   return (
     <div className="app-shell">
       {/* Primary Sidebar (Story S08: Only 6 Primary Sections) */}
@@ -654,17 +657,20 @@ export function Workspace() {
                         </div>
 
                         {/* Interactive Data-Driven Canvas (Story S09, S11, S12) */}
-                        <NetworkCanvas
-                          network={data}
-                          frame={live.fresh ? live.frame : null}
-                          onSelect={selectNode}
-                          route={[]}
-                          forecasts={analysis?.forecasts}
-                          horizon={selectedHorizon}
-                        />
-                        <div className="network-flow-table-wrap" role="region" aria-label="Directional link flow and forecast">
-                          <h3>Directional link flow · {data.links.length} modeled links</h3>
-                          <p>ITD video counts feed the four boundary approaches when video demand is selected. Internal movement and future values are aggregate model estimates.</p>
+                        <div style={{ position: "relative", opacity: coverageEnded ? 0.4 : 1, transition: "opacity 0.3s" }}>
+                          {coverageEnded && <div className="coverage-ended-label" style={{ position: "absolute", top: "40%", left: "50%", transform: "translate(-50%, -50%)", background: "#f87171", color: "white", padding: "12px 24px", borderRadius: "8px", fontWeight: "bold", zIndex: 10, fontSize: "1.2rem" }} role="alert">Coverage Ended</div>}
+                          <NetworkCanvas
+                            network={data}
+                            frame={live.fresh && !coverageEnded ? live.frame : null}
+                            onSelect={selectNode}
+                            route={[]}
+                            forecasts={analysis?.forecasts}
+                            horizon={selectedHorizon}
+                          />
+                          <div className="network-flow-table-wrap" role="region" aria-label="Directional link flow and forecast">
+                            <h3>Directional link flow · {data.links.length} modeled links</h3>
+                            <p>ITD video counts feed the four boundary approaches when video demand is selected. Internal movement and future values are aggregate model estimates.</p>
+
                           <table>
                             <thead><tr><th>Direction</th><th>Lanes</th><th>Current flow</th><th>Queue</th><th>Forecast {selectedHorizon || 30}s</th></tr></thead>
                             <tbody>{data.links.map((link) => {
@@ -680,6 +686,7 @@ export function Workspace() {
                               </tr>;
                             })}</tbody>
                           </table>
+                        </div>
                         </div>
 
                         {/* Node Shortcuts */}

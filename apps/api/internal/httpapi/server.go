@@ -45,6 +45,7 @@ type Server struct {
 	state                *pb.TrafficState
 	sim                  *simulationLink
 	Lease                *LeaseManager
+	controlRevision      uint64
 }
 type apiError struct {
 	Code    string `json:"code"`
@@ -435,8 +436,22 @@ func (s *Server) live(w http.ResponseWriter, r *http.Request) {
 	}
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
+	var sessionToken string
+	if cookie, err := r.Cookie(sessionCookieName); err == nil {
+		sessionToken = digestToken(cookie.Value)
+	}
+	authTicker := time.NewTicker(5 * time.Minute)
+	defer authTicker.Stop()
 	for {
 		select {
+		case <-authTicker.C:
+			if sessionToken != "" && s.Sessions != nil {
+				session, err := s.Sessions.LookupSession(ctx, sessionToken)
+				if err != nil || session.Revoked || !time.Now().Before(session.ExpiresAt) {
+					c.Close(websocket.StatusNormalClosure, "Session expired or revoked")
+					return
+				}
+			}
 		case <-ctx.Done():
 			return
 		case frame := <-frames:

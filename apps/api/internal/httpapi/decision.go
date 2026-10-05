@@ -367,8 +367,9 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Reason  string             `json:"reason"`
-		Changes []*pb.TimingChange `json:"changes"`
+		Reason          string             `json:"reason"`
+		Changes         []*pb.TimingChange `json:"changes"`
+		ControlRevision *uint64             `json:"control_revision"`
 	}
 	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16384))
 	decoder.DisallowUnknownFields()
@@ -388,6 +389,12 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 	s.sim.commands.Lock()
 	defer s.sim.commands.Unlock()
 	s.mu.RLock()
+	if body.ControlRevision != nil && *body.ControlRevision != s.controlRevision {
+		s.mu.RUnlock()
+		problem(w, 409, "Control authority (mode or locks) has been revised since this plan was evaluated")
+		return
+	}
+	rev := s.controlRevision
 	var rec *pb.Recommendation
 	var state *pb.TrafficState
 	var analysisSnapshot *pb.Analysis
@@ -441,7 +448,7 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 	}
 	if action != "reject" {
 		if e := validateChanges(s.Network, state, changes, s.refreshLocks(r.Context())); e != nil {
-			if err := s.auditDecision(r.Context(), rec, state, action, body.Reason, "rejected: "+e.Error(), changes); err != nil {
+			if err := s.auditDecision(r.Context(), rec, state, action, body.Reason, "rejected: "+e.Error(), changes, rev); err != nil {
 				problem(w, 503, "Unsafe plan refused; audit write not confirmed")
 				return
 			}
@@ -466,7 +473,7 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 			s.analysis.Comparison = proto.Clone(result).(*pb.ComparisonResult)
 		}
 		s.mu.Unlock()
-		if e = s.auditDecision(ctx, rec, state, action, body.Reason, "simulated", changes); e != nil {
+		if e = s.auditDecision(ctx, rec, state, action, body.Reason, "simulated", changes, rev); e != nil {
 			problem(w, 503, "Comparison audit failed")
 			return
 		}
@@ -482,7 +489,7 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 	}
 	if action == "reject" {
 		rec.Status = "rejected"
-		if e := s.auditDecision(ctx, rec, state, action, body.Reason, "rejected_by_operator", changes); e != nil {
+		if e := s.auditDecision(ctx, rec, state, action, body.Reason, "rejected_by_operator", changes, rev); e != nil {
 			problem(w, 503, "Decision could not be persisted")
 			return
 		}
@@ -501,7 +508,7 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err = validateChanges(s.Network, latest, changes, s.refreshLocks(ctx)); err != nil {
-			if auditErr := s.auditDecision(ctx, rec, latest, action, body.Reason, "rejected: "+err.Error(), changes); auditErr != nil {
+			if auditErr := s.auditDecision(ctx, rec, latest, action, body.Reason, "rejected: "+err.Error(), changes, rev); auditErr != nil {
 				problem(w, 503, "Plan refused; audit unavailable")
 				return
 			}
@@ -514,15 +521,15 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 		}
 		state = latest
 		// Durable intent precedes virtual actuation; ambiguous RPC failure is never reported as success.
-		if e := s.auditDecision(ctx, rec, state, action, body.Reason, "validated_pending_application", changes); e != nil {
+		if e := s.auditDecision(ctx, rec, state, action, body.Reason, "validated_pending_application", changes, rev); e != nil {
 			problem(w, 503, "Decision could not be persisted; nothing applied")
 			return
 		}
-		result, e := s.sim.client.ApplyPlan(ctx, decisionPlanCommand(rec, changes, commandID(r.Context(), rec.Id)))
+		result, e := s.sim.client.ApplyPlan(ctx, decisionPlanCommand(rec, changes, commandID(r.Context(), rec.Id), rev))
 		if e != nil || !result.Valid {
 			auditCtx, auditCancel := context.WithTimeout(context.Background(), time.Second)
 			auditCtx = store.WithCommand(store.WithActor(auditCtx, store.Actor(r.Context())), store.CommandID(r.Context()))
-			auditErr := s.auditDecision(auditCtx, rec, state, action, body.Reason, "application_failed_or_unconfirmed", changes)
+			auditErr := s.auditDecision(auditCtx, rec, state, action, body.Reason, "application_failed_or_unconfirmed", changes, rev)
 			auditCancel()
 			if auditErr != nil {
 				problem(w, 503, "Application and audit outcome unknown; reconcile command before retrying")
@@ -534,7 +541,7 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 		rec.Status = "approved"
 		rec.Changes = changes
 		rec.SafetyStatus = "accepted_pending_safe_boundary"
-		if e := s.auditDecision(ctx, rec, state, action, body.Reason, "accepted_pending_safe_boundary", changes); e != nil {
+		if e := s.auditDecision(ctx, rec, state, action, body.Reason, "accepted_pending_safe_boundary", changes, rev); e != nil {
 			problem(w, 503, "Virtual plan accepted but final audit failed; durable intent exists")
 			return
 		}
@@ -559,23 +566,24 @@ func (s *Server) decision(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonProto(rec))
 }
-func (s *Server) auditDecision(ctx context.Context, rec *pb.Recommendation, state *pb.TrafficState, action, reason, result string, changes []*pb.TimingChange) error {
+func (s *Server) auditDecision(ctx context.Context, rec *pb.Recommendation, state *pb.TrafficState, action, reason, result string, changes []*pb.TimingChange, rev uint64) error {
 	before, _ := json.Marshal(state.ActivePlan)
 	after, _ := json.Marshal(changes)
 	write := store.DecisionWrite{CommandID: store.CommandID(ctx), Recommendation: jsonProto(rec), Before: before, After: after, Action: action, Reason: reason, Result: result}
 	if action == "approve" || action == "modify" {
-		write.PlanCommand = jsonProto(decisionPlanCommand(rec, changes, commandID(ctx, rec.Id)))
+		write.PlanCommand = jsonProto(decisionPlanCommand(rec, changes, commandID(ctx, rec.Id), rev))
 	}
 	return s.Store.Write(ctx, "decision", write, nil)
 }
 
 // The simulator compares this reviewed identity under its engine lock. The
 // exact payload is also stored with the intent for hash-bound receipt recovery.
-func decisionPlanCommand(rec *pb.Recommendation, changes []*pb.TimingChange, id string) *pb.PlanCommand {
+func decisionPlanCommand(rec *pb.Recommendation, changes []*pb.TimingChange, id string, rev uint64) *pb.PlanCommand {
 	epoch, sequence := rec.InputSessionId, rec.SnapshotSequence
 	return &pb.PlanCommand{RunId: rec.RunId, Changes: changes, CommandId: id,
 		ActivateNotBeforeSimulationS: rec.ActivateNotBeforeSimulationS,
-		ExpectedInputSessionId:       &epoch, ExpectedSnapshotSequence: &sequence}
+		ExpectedInputSessionId:       &epoch, ExpectedSnapshotSequence: &sequence,
+		ExpectedControlRevision: rev}
 }
 
 func (s *Server) getLocks() map[string]bool {
@@ -667,6 +675,7 @@ func (s *Server) changeLock(w http.ResponseWriter, r *http.Request, locked bool)
 		return
 	}
 	s.mu.Lock()
+	s.controlRevision++
 	if s.locks == nil {
 		s.locks = map[string]bool{}
 	}
@@ -745,13 +754,16 @@ func (s *Server) resolveDecision(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		CommandID        string `json:"command_id"`
-		RecommendationID string `json:"recommendation_id"`
-		Resolution       string `json:"resolution"`
-		Reason           string `json:"reason"`
+		CommandID  string `json:"command_id"`
+		Resolution string `json:"resolution"`
+		Reason     string `json:"reason"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.CommandID == "" {
 		problem(w, 400, "Valid command_id and resolution required")
+		return
+	}
+	if req.Resolution != "CONFIRMED_APPLIED" && req.Resolution != "CONFIRMED_NOT_APPLIED" {
+		problem(w, 400, "Only terminal resolutions CONFIRMED_APPLIED or CONFIRMED_NOT_APPLIED are permitted. UNKNOWN cannot settle.")
 		return
 	}
 	if req.Reason == "" {
@@ -759,7 +771,56 @@ func (s *Server) resolveDecision(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
-	err := s.Store.Write(ctx, "decision.resolve", req, nil)
+
+	// Derive recommendation and run identity from durable intent
+	var recID, payloadStr string
+	err := s.Store.Pool.QueryRow(ctx, "SELECT recommendation_id, payload FROM decision_intents WHERE command_id=$1 AND NOT settled", req.CommandID).Scan(&recID, &payloadStr)
+	if err != nil {
+		problem(w, 404, "Unresolved intent not found")
+		return
+	}
+	var payload struct {
+		Recommendation struct {
+			RunId string `json:"run_id"`
+		} `json:"recommendation"`
+	}
+	json.Unmarshal([]byte(payloadStr), &payload)
+
+	// Verify against simulator
+	s.mu.RLock()
+	sim := s.sim
+	s.mu.RUnlock()
+	if sim != nil {
+		outcome, simErr := sim.client.GetPlanOutcome(ctx, &pb.PlanCommand{CommandId: req.CommandID, RunId: payload.Recommendation.RunId})
+		if simErr == nil {
+			if outcome.Status == "applied" && req.Resolution != "CONFIRMED_APPLIED" {
+				problem(w, 409, "Simulator reports plan was applied; conflicting resolution rejected")
+				return
+			}
+			if (outcome.Status == "rejected" || outcome.Status == "cancelled" || outcome.Status == "not_found") && req.Resolution != "CONFIRMED_NOT_APPLIED" {
+				problem(w, 409, "Simulator reports plan was not applied; conflicting resolution rejected")
+				return
+			}
+			if outcome.Status == "pending" || outcome.Status == "accepted" || outcome.Status == "unknown" || outcome.Status == "interrupted" {
+				problem(w, 409, "Simulator reports plan is still pending. Cannot settle yet.")
+				return
+			}
+		} else {
+			problem(w, 503, "Cannot prove simulator outcome to settle decision. Check simulator connection or explicitly cancel.")
+			return
+		}
+	} else {
+		problem(w, 503, "Cannot verify simulator outcome")
+		return
+	}
+
+	err = s.Store.Write(ctx, "decision.resolve", map[string]any{
+		"command_id":        req.CommandID,
+		"recommendation_id": recID,
+		"resolution":        req.Resolution,
+		"reason":            req.Reason,
+	}, nil)
+	
 	if err != nil {
 		problem(w, 500, "Failed to resolve decision intent: "+err.Error())
 		return
@@ -767,7 +828,7 @@ func (s *Server) resolveDecision(w http.ResponseWriter, r *http.Request) {
 	send(w, 200, map[string]any{
 		"settled":           true,
 		"command_id":        req.CommandID,
-		"recommendation_id": req.RecommendationID,
+		"recommendation_id": recID,
 		"resolution":        req.Resolution,
 	})
 }
@@ -803,6 +864,7 @@ func (s *Server) setMode(w http.ResponseWriter, r *http.Request) {
 		problem(w, 503, "Mode change not confirmed; inspect command outcome")
 		return
 	}
+	s.controlRevision++
 	s.manual = canonicalMode == "manual"
 	s.sim.command.Mode = canonicalMode
 	if canonicalMode != "recommend" && s.analysis != nil {

@@ -7,6 +7,15 @@ from services.simulation.safety import default_plan
 @pytest.fixture
 def model_and_state():
     model = Model()
+    model.scoring['regression_limits'] = {
+        'primary_queue_delay_reduction_min': -1.0,
+        'boundary_exits_regression_max': 1.0,
+        'boundary_backlog_regression_max': 1.0,
+        'boundary_wait_regression_max': 1.0,
+        'spillback_exposure_regression_max': 1.0,
+        'worst_service_debt_regression_max': 1.0
+    }
+    model.scoring['minimum_benefit_points'] = -1000.0
     state = pb.TrafficState(
         schema_version="1.0",
         run_id="epic6-test-run",
@@ -99,15 +108,15 @@ def test_s17_coordinated_candidates_generation(model_and_state):
     # Must generate multiple coordinated candidate plans
     assert len(candidates) >= 3
     # Every candidate must be a valid plan with safe bounds and safe phases
-    for cand in candidates:
-        assert set(cand.keys()) == set(model.phases.keys())
-        for pid, g in cand.items():
+    for plan, offsets in candidates:
+        assert set(plan.keys()) == set(model.phases.keys())
+        for pid, g in plan.items():
             assert model.phases[pid]["min_green_s"] <= g <= model.phases[pid]["max_green_s"]
         # Preserves cycle budget per controlled junction
         for node_id in ("C1", "C3"):
             node_phases = [p["id"] for p in model.phases.values() if p["node_id"] == node_id]
             expected_sum = sum(agda[p] for p in node_phases)
-            actual_sum = sum(cand[p] for p in node_phases)
+            actual_sum = sum(plan[p] for p in node_phases)
             assert actual_sum == expected_sum
 
 # --- Story S18: Simulate and score PN-MPC candidates ---

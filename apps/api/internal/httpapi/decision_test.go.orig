@@ -353,7 +353,7 @@ func TestModesAndLockEndpoints(t *testing.T) {
 	}
 	s.locks["C6-C3-C1"] = true
 	s.mu.Unlock()
-	s.Store.Pool.Exec(context.Background(), "INSERT INTO control_locks (target, actor) VALUES ('C6-C3-C1', 'test_actor')")
+	s.Store.Pool.Exec(context.Background(), "INSERT INTO control_locks (run_id, target, locked) VALUES ('test', 'C6-C3-C1', true)")
 
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, testRequest("GET", "/api/v1/locks", nil))
@@ -410,14 +410,13 @@ func TestResolveDecisionValidation(t *testing.T) {
 	h := s.Handler()
 
 	// Without store (DB nil), returns 503
-	s.Store = nil
 	req := testRequest("POST", "/api/v1/decisions/resolve", strings.NewReader(`{"command_id":"cmd-1","resolution":"fail"}`))
 	req.Header.Set("Cookie", sessionCookieName+"=supervisor-token")
 	req.Header.Set("X-Role", "supervisor")
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusServiceUnavailable {
-		t.Errorf("expected 503 when db is unavailable, got %d: %s", w.Code, w.Body.String())
+		t.Errorf("expected 503 when db is unavailable, got %d", w.Code)
 	}
 
 	// Unresolved query without store returns 503
@@ -425,6 +424,6 @@ func TestResolveDecisionValidation(t *testing.T) {
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusServiceUnavailable {
-		t.Errorf("expected 503 when db is unavailable, got %d: %s", w.Code, w.Body.String())
+		t.Errorf("expected 503 when db is unavailable, got %d", w.Code)
 	}
 }

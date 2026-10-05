@@ -43,8 +43,12 @@ func (s *Server) idempotency(next http.Handler) http.Handler {
 		}
 
 		key := r.Header.Get("Idempotency-Key")
-		if key == "" || len(key) < 8 || len(key) > 128 || s.Store == nil {
-			next.ServeHTTP(w, r)
+		if key == "" || len(key) < 8 || len(key) > 128 {
+			problem(w, 400, "A valid Idempotency-Key header is required (8-128 chars)")
+			return
+		}
+		if s.Store == nil {
+			problem(w, 503, "Command reservation unavailable")
 			return
 		}
 
@@ -59,7 +63,10 @@ func (s *Server) idempotency(next http.Handler) http.Handler {
 			r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 		}
 
+		// Calculate strong canonical envelope hash
 		hasher := sha256.New()
+		actor := string(store.Actor(r.Context()))
+		hasher.Write([]byte(actor + "|" + r.Method + "|" + r.URL.Path + "|v1|"))
 		hasher.Write(bodyBytes)
 		hash := hex.EncodeToString(hasher.Sum(nil))
 

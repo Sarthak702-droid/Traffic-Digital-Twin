@@ -130,21 +130,21 @@ def execute_t14_annotation_review(model_path: str = ".runtime/models/itd-v1.2/be
             all_exports.append(res)
 
     provenance = {
-        "schema_version": "annotation-provenance-v1",
+        "schema_version": "annotation-provenance-v2",
         "generated_at": "2026-09-22T14:24:00+05:30",
         "detector_model": "best_xl_ITD_v1.2.pt",
         "detector_sha256": "06006ecb5fe52a348ceed805bf0aa6b32af7e24e689d09a6582f6d53159d6b00",
         "annotation_format": "yolo_v8_txt",
         "coordinate_system": "normalized_center_xywh_0_1",
-        "review_policy": "agent_reviewed_provisional_engineering_demo",
+        "review_policy": "provisional_unreviewed",
         "independent_ground_truth_claim": False,
         "exported_clips": all_exports
     }
 
     quality_report = {
-        "schema_version": "reference-quality-report-v1",
+        "schema_version": "reference-quality-report-v2",
         "evaluated_at": "2026-09-22T14:24:00+05:30",
-        "review_level": "agent_accepted_demo",
+        "review_level": "provisional_unreviewed",
         "accuracy_statement": "Provisional evaluation against sample video footage. Not an independent municipal ground-truth validation.",
         "sample_evaluations": [
             {
@@ -162,7 +162,7 @@ def execute_t14_annotation_review(model_path: str = ".runtime/models/itd-v1.2/be
                 "occlusion_handling": "consistent trajectory across counting line"
             }
         ],
-        "readiness_status": "READY_FOR_DEMO"
+        "readiness_status": "PROVISIONAL_UNREVIEWED"
     }
 
     out_dir = "reports" if os.path.isdir("reports") else "."

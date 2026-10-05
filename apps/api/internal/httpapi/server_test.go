@@ -1,7 +1,12 @@
 package httpapi
 
 import (
+	"sync/atomic"
+	"fmt"
+
 	"context"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"traffic.local/twin/db"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"io"
@@ -27,7 +32,31 @@ func app(t *testing.T) *Server {
 	if err := os.WriteFile(path, []byte(testAccountJSON), 0600); err != nil {
 		t.Fatal(err)
 	}
-	return &Server{Network: n, AccountsPath: path, AllowedOrigin: "http://example.com", Sessions: &testSessionStore{entries: map[string]store.AuthSession{
+	
+	dsn := os.Getenv("TEST_DATABASE_URL")
+	if dsn == "" {
+		dsn = "postgres://traffic:traffic_demo@127.0.0.1:5433/traffic?sslmode=disable"
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	
+	var st *store.Store
+	pool, err := pgxpool.New(ctx, dsn)
+	if err == nil {
+		t.Cleanup(func() { pool.Close() })
+		// we should ideally create a schema per test to avoid conflicts, but for unit tests the shared one or a temporary one is fine.
+		schema := fmt.Sprintf("unit_test_%d", time.Now().UnixNano())
+		pool.Exec(ctx, "CREATE SCHEMA "+schema)
+		cfg, _ := pgxpool.ParseConfig(dsn)
+		cfg.ConnConfig.RuntimeParams["search_path"] = schema
+		if pool2, err := pgxpool.NewWithConfig(ctx, cfg); err == nil {
+			t.Cleanup(func() { pool2.Close() })
+			db.Migrate(ctx, pool2) // run migrations
+			st = store.New(pool2)
+		}
+	}
+
+	return &Server{Network: n, AccountsPath: path, AllowedOrigin: "http://example.com", Store: st, Sessions: &testSessionStore{entries: map[string]store.AuthSession{
 		digestToken("test-token"):       {Username: "alice", AccountVersion: 1, ExpiresAt: time.Now().Add(time.Hour)},
 		digestToken("viewer-token"):     {Username: "viewer", AccountVersion: 1, ExpiresAt: time.Now().Add(time.Hour)},
 		digestToken("bob-token"):        {Username: "bob", AccountVersion: 1, ExpiresAt: time.Now().Add(time.Hour)},
@@ -37,9 +66,11 @@ func app(t *testing.T) *Server {
 
 func testRequest(method, target string, body io.Reader) *http.Request {
 	r := httptest.NewRequest(method, target, body)
+	r.Header.Set("Idempotency-Key", "test-key-84aa7cf1-bc11-419c-adf1-650b92f83766")
 	r.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "test-token"})
 	if method != http.MethodGet && method != http.MethodHead {
 		r.Header.Set("Origin", "http://example.com")
+		r.Header.Set("Idempotency-Key", fmt.Sprintf("test-key-%d", atomic.AddUint64(&testReqCount, 1)))
 	}
 	return r
 }
@@ -57,7 +88,9 @@ func TestNonAuthoritativeLeaseRejectsStateAndLiveStream(t *testing.T) {
 	}
 }
 func TestReadAndUnavailable(t *testing.T) {
-	h := app(t).Handler()
+	s := app(t)
+	s.Store = nil
+	h := s.Handler()
 	for path, code := range map[string]int{"/api/v1/network": 200, "/api/v1/junctions/C1": 200, "/api/v1/junctions/unknown": 404, "/api/v1/state": 503, "/api/v1/health": 200, "/api/v1/runs": 503, "/api/v1/recommendations/active": 503} {
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, testRequest("GET", path, nil))
@@ -198,3 +231,5 @@ func TestVisionEndpoint(t *testing.T) {
 		t.Fatalf("unexpected vision body: %s", body)
 	}
 }
+
+var testReqCount uint64

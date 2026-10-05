@@ -6,6 +6,14 @@
   "max_concurrent_analyses": 1,
   "analysis_timeout_s": 1.5,
   "minimum_benefit_points": 10.0,
+  "regression_limits": {
+    "primary_queue_delay_reduction_min": 0.05,
+    "boundary_exits_regression_max": 0.02,
+    "boundary_backlog_regression_max": 0.02,
+    "boundary_wait_regression_max": 0.02,
+    "spillback_exposure_regression_max": 0.02,
+    "worst_service_debt_regression_max": 0.10
+  },
   "metric_units": {
     "queue_delay": "veh_s",
     "boundary_wait": "veh_s",

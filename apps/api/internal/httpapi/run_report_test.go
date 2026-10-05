@@ -7,6 +7,7 @@ import (
 
 func TestRunReportRequiresDatabaseAndValidRunID(t *testing.T) {
 	s := app(t)
+	s.Store = nil
 	w := httptest.NewRecorder()
 	s.Handler().ServeHTTP(w, testRequest("GET", "/api/v1/runs/not-a-uuid/report", nil))
 	if w.Code != 400 {

@@ -56,7 +56,7 @@ def boundary_forecast_rates(state, index, max_bins: int = 60):
             raise ValueError('Duplicate or out-of-order finalized history')
         ids.add(row.observation_id)
         previous[link] = row.window_end_s
-        if row.available_at_source_s > watermark:
+        if row.window_end_s > watermark or row.available_at_source_s > state.simulation_time_s:
             continue
         try:
             completed = datetime.fromisoformat(row.processed_at_utc.replace('Z', '+00:00'))

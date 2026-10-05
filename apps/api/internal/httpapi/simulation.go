@@ -218,6 +218,7 @@ func (s *Server) acceptFrame(frame *pb.TrafficState) error {
 	eligible := s.sim != nil && s.sim.command != nil && frame.RunId == s.sim.command.RunId &&
 		(s.state == nil || s.state.RunId != frame.RunId || s.state.SimulationTimeS <= frame.SimulationTimeS)
 	epoch := s.activeInputSessionID
+	frame.ControlRevision = s.controlRevision
 	s.mu.RUnlock()
 	if !eligible {
 		return nil

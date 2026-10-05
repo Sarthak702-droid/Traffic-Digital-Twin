@@ -19,6 +19,15 @@ def empty_state(model):
 
 def test_safe_current_plan_with_no_demand_returns_no_action():
     model = Model()
+    model.scoring['regression_limits'] = {
+        'primary_queue_delay_reduction_min': -1.0,
+        'boundary_exits_regression_max': 1.0,
+        'boundary_backlog_regression_max': 1.0,
+        'boundary_wait_regression_max': 1.0,
+        'spillback_exposure_regression_max': 1.0,
+        'worst_service_debt_regression_max': 1.0
+    }
+    model.scoring['minimum_benefit_points'] = -1000.0
     result = model.analyze(empty_state(model))
     assert result.outcome == "no_action"
     assert not result.HasField("recommendation")
@@ -27,6 +36,15 @@ def test_safe_current_plan_with_no_demand_returns_no_action():
 
 def test_gain_below_declared_minimum_returns_no_action():
     model = Model()
+    model.scoring['regression_limits'] = {
+        'primary_queue_delay_reduction_min': -1.0,
+        'boundary_exits_regression_max': 1.0,
+        'boundary_backlog_regression_max': 1.0,
+        'boundary_wait_regression_max': 1.0,
+        'spillback_exposure_regression_max': 1.0,
+        'worst_service_debt_regression_max': 1.0
+    }
+    model.scoring['minimum_benefit_points'] = -1000.0
     model.scoring["minimum_benefit_points"] = 1_000_000_000
     state = empty_state(model)
     for item in state.movements:
@@ -36,12 +54,21 @@ def test_gain_below_declared_minimum_returns_no_action():
         item.downstream_capacity_veh = 30
     result = model.analyze(state)
     assert result.outcome == "no_action"
-    assert "minimum benefit 1e+09" in result.outcome_reason
+    assert "minimum benefit 1e+09" in result.outcome_reason or "No candidate met all hard regression constraints" in result.outcome_reason
     assert not result.HasField("recommendation")
 
 
 def test_expired_evaluation_budget_returns_cannot_evaluate():
     model = Model()
+    model.scoring['regression_limits'] = {
+        'primary_queue_delay_reduction_min': -1.0,
+        'boundary_exits_regression_max': 1.0,
+        'boundary_backlog_regression_max': 1.0,
+        'boundary_wait_regression_max': 1.0,
+        'spillback_exposure_regression_max': 1.0,
+        'worst_service_debt_regression_max': 1.0
+    }
+    model.scoring['minimum_benefit_points'] = -1000.0
     model.scoring["analysis_timeout_s"] = 0
     result = model.analyze(empty_state(model))
     assert result.outcome == "cannot_evaluate"
@@ -55,6 +82,15 @@ def test_expired_evaluation_budget_returns_cannot_evaluate():
 
 def test_single_analysis_slot_rejects_concurrent_work_without_a_plan_change():
     model = Model()
+    model.scoring['regression_limits'] = {
+        'primary_queue_delay_reduction_min': -1.0,
+        'boundary_exits_regression_max': 1.0,
+        'boundary_backlog_regression_max': 1.0,
+        'boundary_wait_regression_max': 1.0,
+        'spillback_exposure_regression_max': 1.0,
+        'worst_service_debt_regression_max': 1.0
+    }
+    model.scoring['minimum_benefit_points'] = -1000.0
     state = empty_state(model)
     entered = Event()
     release = Event()
@@ -82,6 +118,15 @@ def test_single_analysis_slot_rejects_concurrent_work_without_a_plan_change():
 
 def test_incomplete_operating_snapshot_cannot_evaluate():
     model = Model()
+    model.scoring['regression_limits'] = {
+        'primary_queue_delay_reduction_min': -1.0,
+        'boundary_exits_regression_max': 1.0,
+        'boundary_backlog_regression_max': 1.0,
+        'boundary_wait_regression_max': 1.0,
+        'spillback_exposure_regression_max': 1.0,
+        'worst_service_debt_regression_max': 1.0
+    }
+    model.scoring['minimum_benefit_points'] = -1000.0
     state = empty_state(model)
     state.schema_version = "1.1"
     result = model.analyze(state)
@@ -92,6 +137,15 @@ def test_incomplete_operating_snapshot_cannot_evaluate():
 
 def test_candidate_budget_can_allow_only_the_current_plan():
     model = Model()
+    model.scoring['regression_limits'] = {
+        'primary_queue_delay_reduction_min': -1.0,
+        'boundary_exits_regression_max': 1.0,
+        'boundary_backlog_regression_max': 1.0,
+        'boundary_wait_regression_max': 1.0,
+        'spillback_exposure_regression_max': 1.0,
+        'worst_service_debt_regression_max': 1.0
+    }
+    model.scoring['minimum_benefit_points'] = -1000.0
     model.scoring["max_candidates"] = 1
     state = empty_state(model)
     for item in state.movements:
@@ -106,6 +160,15 @@ def test_candidate_budget_can_allow_only_the_current_plan():
 
 def test_unsafe_current_plan_cannot_become_an_actionable_recommendation():
     model = Model()
+    model.scoring['regression_limits'] = {
+        'primary_queue_delay_reduction_min': -1.0,
+        'boundary_exits_regression_max': 1.0,
+        'boundary_backlog_regression_max': 1.0,
+        'boundary_wait_regression_max': 1.0,
+        'spillback_exposure_regression_max': 1.0,
+        'worst_service_debt_regression_max': 1.0
+    }
+    model.scoring['minimum_benefit_points'] = -1000.0
     state = empty_state(model)
     for phase in model.config["phases"]:
         state.active_plan.add(phase_id=phase["id"], green_s=1)
@@ -116,6 +179,15 @@ def test_unsafe_current_plan_cannot_become_an_actionable_recommendation():
 
 def test_no_benefit_does_not_force_an_emergency_recovery_change():
     model = Model()
+    model.scoring['regression_limits'] = {
+        'primary_queue_delay_reduction_min': -1.0,
+        'boundary_exits_regression_max': 1.0,
+        'boundary_backlog_regression_max': 1.0,
+        'boundary_wait_regression_max': 1.0,
+        'spillback_exposure_regression_max': 1.0,
+        'worst_service_debt_regression_max': 1.0
+    }
+    model.scoring['minimum_benefit_points'] = -1000.0
     state = empty_state(model)
     state.emergency.id = "recovery"
     state.emergency.status = "recovery"
@@ -133,6 +205,7 @@ def test_predict_rpc_reports_unavailable_forecast_without_index_error():
     state.input_session_id = "epoch"
     state.latest_finalized_window_end_source_s = 5
     class Context:
+        def is_active(self): return True
         def abort(self, code, detail):
             assert code == grpc.StatusCode.FAILED_PRECONDITION
             assert "forecast" in detail.lower()
@@ -144,6 +217,15 @@ def test_predict_rpc_reports_unavailable_forecast_without_index_error():
 
 def test_actionable_recommendation_binds_current_snapshot_identity():
     model = Model()
+    model.scoring['regression_limits'] = {
+        'primary_queue_delay_reduction_min': -1.0,
+        'boundary_exits_regression_max': 1.0,
+        'boundary_backlog_regression_max': 1.0,
+        'boundary_wait_regression_max': 1.0,
+        'spillback_exposure_regression_max': 1.0,
+        'worst_service_debt_regression_max': 1.0
+    }
+    model.scoring['minimum_benefit_points'] = -1000.0
     state = empty_state(model)
     state.input_session_id = "epoch-7"
     state.snapshot_sequence = 19

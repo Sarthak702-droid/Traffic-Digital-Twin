@@ -199,6 +199,8 @@ class RecordedClipProcessor:
                     count += 1
             if not count:
                 raise ValueError('No finalized observation windows were produced')
+            if max_duration_s is not None and previous_end < max_duration_s - 0.5:
+                raise ValueError(f'Incomplete decode: requested {max_duration_s}s, reached {previous_end}s')
             os.replace(temporary, observations_path)
             manifest = {key: value for key, value in current.items() if key not in ('geometry',)}
             manifest.update(status='complete', cache_key=key, source_session_id=source_session_id,
