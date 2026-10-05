@@ -1,0 +1,182 @@
+{
+  "source_revision": "8ad7ac78f96c151f8cc588e2236ec42d2b5d07f7",
+  "recorded_at_utc": "2026-10-05T03:45:53.599011+00:00",
+  "acceptance": "not_verified; benefit gate failed; independent review blocked",
+  "checks": [
+    {
+      "check": "Real Python",
+      "command": "PYTHONPATH=\"$PWD:$PWD/packages/contracts/gen/python\" .venv/bin/python -m pytest services scripts/tests tests packages -q",
+      "status": "passed",
+      "tests": 300,
+      "artifact": "python-real.log",
+      "scope": "Real locked grpc/protobuf/OpenCV and full services/scripts/contracts/configuration/integration suites; serialized without competing development/benchmark processes"
+    },
+    {
+      "check": "Go/PostgreSQL/race",
+      "command": "TEST_DATABASE_URL=\"$AUDIT_TEST_DATABASE_URL\" GOCACHE=/tmp/traffic-audit-go-cache ./scripts/run-go.sh test -race ./...",
+      "status": "passed",
+      "artifact": "go-race.log",
+      "scope": "Real disposable PostgreSQL, migrations/store/recovery/API/authentication/concurrency/security; current generated Go contract; credentials excluded"
+    },
+    {
+      "check": "Frontend",
+      "command": "npm run test:ui",
+      "status": "passed",
+      "tests": 159,
+      "artifact": "frontend-tests.log"
+    },
+    {
+      "check": "Frontend typecheck/build",
+      "commands": [
+        "npm run typecheck",
+        "npm run build"
+      ],
+      "status": "passed",
+      "artifacts": [
+        "frontend-typecheck.log",
+        "frontend-build.log"
+      ],
+      "remaining": "Existing large-chunk warning retained"
+    },
+    {
+      "check": "Dashboard security/readiness",
+      "command": "node --test dashboard/evidence.test.mjs dashboard/readiness.test.mjs",
+      "status": "passed",
+      "artifact": "dashboard-security.log"
+    },
+    {
+      "check": "Static contracts",
+      "command": ".venv/bin/python scripts/verify-contracts.py",
+      "status": "passed",
+      "artifact": "contracts.log",
+      "scope": "Bindings regenerated together with original protobuf numbering; optional offered_window_s tag 4 preserved in additive public schemas; runtime roundtrip/bounds in full Python/frontend tests"
+    },
+    {
+      "check": "Candidate projection/causal regression",
+      "status": "passed",
+      "artifact": "projection-after.log",
+      "tests": 18,
+      "scope": "Changed plan and offset actual-engine parity on both graphs; bounded topology-aware proposals, seed independence, offered-backlog response, missing local-reference rejection, in-loop cancellation and bounded phase offsets; focused failing regressions retained"
+    },
+    {
+      "check": "Development benchmark",
+      "command": "PYTHONPATH=\"$PWD:$PWD/packages/contracts/gen/python\" .venv/bin/python -c 'from scripts.prototype_evaluation import main; main()' --full --protocol packages/scenario-config/prototype-evaluation-audit-development-v3.json --output reports/audit-controller-development-v5.json",
+      "status": "failed",
+      "qualified_origins": 31,
+      "eligible_origins": 144,
+      "scope": "Development seeds only; tuning evidence, never held-out acceptance; earlier v2-v4 diagnostics preserved"
+    },
+    {
+      "check": "Fresh synthetic held-out benchmark",
+      "command": "PYTHONPATH=\"$PWD:$PWD/packages/contracts/gen/python\" .venv/bin/python -c 'from scripts.prototype_evaluation import main; main()' --full --protocol packages/scenario-config/prototype-evaluation-audit-v7.json --output reports/audit-heldout-results-v7.json",
+      "status": "failed",
+      "cases": 72,
+      "eligible_origins": 144,
+      "qualified_origins": 33,
+      "qualified_fraction": 0.22916666666666666,
+      "required_fraction": 0.5,
+      "artifact": "holdout-summary.json",
+      "freeze": "../../audit-holdout-freeze-v7.json",
+      "scope": "Fresh seeds 43117/43223/43331, frozen before execution at 8ad7ac7; source/protocol hashes unchanged after execution; original benefit/regression thresholds unchanged; all 48 no-benefit, degraded-input and emergency lifecycle origins pass their respective criteria"
+    },
+    {
+      "check": "Candidate resources",
+      "command": ".venv/bin/python scripts/benchmark_compute.py --mode candidate_evaluation --protocol packages/scenario-config/prototype-resource-budget-audit-v2.json --output reports/audit-resource-candidates-controller-v3.json",
+      "status": "passed",
+      "samples": 60,
+      "p95_wall_s": 0.19495275400004175,
+      "scope": "Serialized local i7-1065G7 process; unchanged five candidates/concurrency one/horizon 120/deadline 1.5s; target workstation and continuous full-stack acceptance not inferred"
+    },
+    {
+      "check": "Independent recorded reviews/operator",
+      "status": "blocked",
+      "scope": "No genuine new reserved authorized footage, distinct reviewers, actual adjudication or non-implementing operator records supplied. Practical blank checklist prepared; nothing fabricated"
+    },
+    {
+      "check": "Current browser acceptance",
+      "status": "unverified",
+      "scope": "No current browser acceptance executed. Prior browser checks and the automatic approval rejection due to exhausted workspace credits remain historical evidence; REST/export checks cannot replace browser acceptance"
+    },
+    {
+      "check": "Real Go/PostgreSQL/Python workflow and exports",
+      "command": ".venv/bin/python scripts/rehearse_prototype.py --api http://127.0.0.1:18881 --origin http://127.0.0.1:3100 --username audit_operator --network-config \"$ACTIVE_GRAPH\" --output-dir \"$PRIVATE_REPORT_DIR\" --exercise-decisions",
+      "status": "passed",
+      "cases": 6,
+      "reports": 6,
+      "artifact": "stack-summary.json",
+      "scope": "New disposable databases and rebuilt Go API against current generated contracts; current real private gRPC simulation/intelligence. Both graphs/all three scenarios; existing authorized validated aggregate observation cache. Authenticated manual/lock changes acknowledged, cancellation proven, short-input approvals rejected, genuine longer-coverage plans applied at safe boundary and later state verified. Six exports pass strict schema, recursive privacy and canonical receipt hashes. Prior source-processing resource metadata is inherited, not remeasured. Developer run; no current fresh inference/browser/independent operator claim."
+    },
+    {
+      "check": "Simulation resources",
+      "command": ".venv/bin/python scripts/benchmark_compute.py --mode simulation --protocol packages/scenario-config/prototype-resource-budget-audit-v2.json --output reports/audit-resource-simulation-controller-v3.json",
+      "status": "passed",
+      "samples": 3600,
+      "p95_wall_s": 0.0006921949998286436,
+      "scope": "Serialized real aggregate-engine steps on both graphs/all three scenarios; unchanged frozen local budget; separate from inference and continuous workflow latency"
+    }
+  ],
+  "failed_or_superseded_checks": [
+    "An early full Python run executed alongside heavy development/benchmark jobs: 2 deadline failures, 294 passed. Actual 1.5-second deadline was preserved. Serialized full rerun: 300 passed; failed log retained.",
+    "Earlier heldouts v1-v6 and development results remain diagnostic failures; none relabeled as acceptance.",
+    "Finite unfrozen development search of 800 timing allocations per four seed-1101 peak origins found no qualifying sampled plan. This is not an impossibility proof, operating policy or acceptance evidence. Raw diagnostic log retained."
+  ],
+  "historical_evidence": "../manifest.json; earlier source revision and immutable artifacts retained, including authorized fresh processing, restart/recovery/dependency loss and explicit replay checks; no current fresh-perception claim",
+  "authoritative_audit_document": {
+    "filename": "Traffic_Digital_Twin_Engineering_Audit_Remediation_Report.docx",
+    "sha256": "7982c77be2ae8ef11189e7fcdfe3d8f0c77facad050c63f2355d10321eb00c59",
+    "scope": "All 20 findings read completely and checked against the reviewed source before remediation"
+  },
+  "privacy": "Aggregate evidence only; no private media, model assets, credentials or individual tracking state",
+  "deployment": "Virtual-only; physical actuation disabled; field/production readiness deferred",
+  "source_sha256": {
+    "services/intelligence/model.py": "17ede7ab00e9d681cb95b63b4efc1a59bbab2cd463f9854e1d75ceaeafb7dcb0",
+    "services/intelligence/controller.py": "3ec73ec21d13b566a612b77beb83066ea57e6eb56b9b2ef79a12ccac10087718",
+    "services/intelligence/forecast_demand.py": "cd8ca8493b4c0b1b2c6f229dad9c36924130e4fd6e154704dd12a9d1f5f5a304",
+    "services/simulation/aggregate_engine.py": "563e54d1fd562b1105a41b36c359d56c063eaa946e6f2d21ac3906d314ce93bc",
+    "services/simulation/video_demand.py": "b5649d773455676e53bdd6a4e7336f46382b3f3c515b8deb838029b9326669af",
+    "services/simulation/safety.py": "c43d39b4306c6bf96bad3ddf83c34e1f0690199e505ad86dfa34e0164d42b637",
+    "services/simulation/flow_kernel.py": "29c893d28b00e7bd22fd41233299fca4cd174f054cf731c220c09c4501c6b86c",
+    "scripts/prototype_evaluation.py": "bd660b443004dc9a4d844f56f052bea30c7fcc71178e17889064c316ff08a348",
+    "packages/contracts/proto/twin.proto": "28f43ab0a3a8637db9d34797917fe8d35d52b381d0685fa3a3394b203c88eb86",
+    "packages/scenario-config/comparison-scoring-v1.json": "a0336588d0acbb65809d1318a7203470b9629c698e46cadae1ecd09b6d5bc3bd",
+    "packages/scenario-config/prototype-evaluation-audit-v7.json": "5c77e44d99ac1830fce085256bfe3c5c2fb4d9cfa543942da9b964268bc536b1"
+  },
+  "artifacts_sha256": {
+    "contracts.log": "23dc729746de50a0a609d70137d205e8f774c50f10dc682879af840233999078",
+    "controller-final-focused.log": "242c6d89203cac8fac15c3e3272aafefce15c4925f932d0e45e6b8b22d104601",
+    "dashboard-security.log": "511ca98e9965503f965d53927255b7d7a9e5fc9ba8717c3ddcd9b9532106440f",
+    "development-feasibility-diagnostic.log": "ff920909b04a564d77bec4e722b350ed98bc587adaa493c260b188b280be607d",
+    "frontend-build.log": "391da9b51b064a5ce3adc6b785ab551195a7c70b1283f67ea2a595b56d96087f",
+    "frontend-tests.log": "6ceebd2ba68475bf37d23412a3a2347ae8810ca92b2a382115969dc6c18b6086",
+    "frontend-typecheck.log": "bc9bb10b7ed285bf479f3ad33cc5fdd3a7b549201d30abd9254b77a2ebd57608",
+    "go-race.log": "2d5da6aeef676c61ed94fb2f0cf981606921e1727b9d093f0dcf37c6d8186a10",
+    "holdout-summary.json": "656c7ba3a3ad3c8165c50a09ea4cbf73c82f2a2755131b39c6de876c1dbd5db6",
+    "local-reference-before.log": "cffac03faf8658f0d3513b4e03f58bed0f20e5b7a8cd83f7619d901a99510a96",
+    "offered-before.log": "a5f17840d81aafe287dea47ae49c27bf726b6765ab5ee0c6566f769c4438e4ac",
+    "offset-before.log": "f4b767ffb088808bda107b50ba0bf4a2540eae27a763019611299b05faa60fe4",
+    "projection-after.log": "2b471f7bd65882f246e3f3e754d1fe2b77400e24f68588a7200e63d843fcf4b6",
+    "projection-before.log": "38ace0a02647f4718c43d89151e300ca032e6b2b8da353883649211ea71d118a",
+    "python-contention-failed.log": "aee284a8ba64ad17ed093c6e57d5e7ad2e4a48ec7d3ad83d25962ae48414eab1",
+    "python-real.log": "ba3babf7d28a8cfbf693237aaa148dd9c4079d4ebee140355c8fae5cd36d2070",
+    "run-reports/344e6645-412f-45cc-b0cf-2c19c978d803.json": "9e1e97c50c3e270f5c5cbac5e464733238bd016f0558cba0c11f2d6c0c9fca1d",
+    "run-reports/4b81e071-2312-4382-981b-89f2a321e1a1.json": "ce4ce44ac856b9e65e2debd40795c9d8ea9ad965f2bbcf47e0d7742d417b094f",
+    "run-reports/b9367b3b-cab3-48d4-8e67-84c6399e9c97.json": "65673e8aaafa61545c15bf2d922e544908e40879a79cc6f357940bb8f475d058",
+    "run-reports/ca866236-14e2-4c97-bf2a-1962550e0590.json": "353dc7784a2197830f28da3bbdece9199b088dddaec4053c962e44665dd8794b",
+    "run-reports/d0327d38-1ef3-40a3-9d08-8d471b4a8e82.json": "d5d05a0b71ec0a69e08d81a9914eec4a3756f29801afa4776f74b0a2d96f86f0",
+    "run-reports/e812b9d3-0e9f-4a76-9313-2e412d0b0997.json": "23f1ea0ed664c5973dec8033806bd48d74a7b226b6dfe146db8aadd70095cfe3",
+    "stack-summary.json": "dc6ceee00f283e3f5625a44eb21cc3528e088cb4bc68c04c4e655e50f2c766c8",
+    "../../audit-controller-development-v5.json": "394eff1b788d6326917b287a802ae3abb0e93fdde1f9e994ba0e4e21ab847cd5",
+    "../../audit-controller-development-v2.json": "761e32a554c5d338796ebcb0acf0c425794983ba8e118fb5cfb8a94d70fb5302",
+    "../../audit-controller-development-v4.json": "9724350d67693a69429a51c75f7ffc4979c2b9fe091ec5a482aff65ad81d22c7",
+    "../../audit-controller-development-v3.json": "b687882d0f6c62d85ea7268ea3c4564ba184d1c370e865ec6089393b80d602c3",
+    "../../audit-heldout-results-v7.json": "c6345939171bf8f348c8bc83c64a8c064344937dd48b749ea32cecface0c8680",
+    "../../audit-holdout-freeze-v7.json": "b3fdd1cc9bf2cdb4887ff7b5c0e28441982ef9448601ac8a60ca1c747588edc6",
+    "../../audit-resource-candidates-controller-v3.json": "ce19c49c05b9162c2fa829e4d7dfd8757e3091faf3233e69d80b6453de527b28",
+    "../../audit-resource-simulation-controller-v3.json": "8fde13d8caaf91fcbccb9501032a23677a7bdfe3f47131e0c7a8452f56cb75a0",
+    "../../audit-remediation-completion.json": "a6a11767739ee32d1aff53d089367b3d9217faef58c10d3139c3a27402cc858b",
+    "../../../docs/AUDIT-REMEDIATION.md": "43a799e6cf24a53988213c3ed9cba43c55c5b070b4180c2f3a79cfaeb9ed6494",
+    "../../../docs/CONTROLLER-BENEFIT-DIAGNOSIS.md": "6c82984648ff39302043f76518024e80773cf1434a5e3dfe3fda696ad157c807",
+    "../../../docs/INDEPENDENT-REVIEW-CHECKLIST.md": "4d4cfbdcd873a4a649ed2e23ca6ca7714f33f5e586294490cf34542b17dbbc84",
+    "../../../packages/scenario-config/prototype-evaluation-audit-v7.json": "5c77e44d99ac1830fce085256bfe3c5c2fb4d9cfa543942da9b964268bc536b1"
+  }
+}

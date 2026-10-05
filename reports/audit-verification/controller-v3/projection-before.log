@@ -1,0 +1,188 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/sarthaktripathy/.codex/worktrees/f526/Traffic-Digital-Twin
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 6 items
+
+services/intelligence/tests/test_controller_diagnostics.py FFFFFF        [100%]
+
+=================================== FAILURES ===================================
+_____ test_changed_plan_projection_matches_real_virtual_execution[0-c1-c6] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-sarthaktripathy/pytest-7/test_changed_plan_projection_m0')
+graph = 'c1-c6', offset = 0
+
+    @pytest.mark.parametrize('graph',['c1-c6','three-controlled-junctions'])
+    @pytest.mark.parametrize('offset',[0,3])
+    def test_changed_plan_projection_matches_real_virtual_execution(tmp_path,graph,offset):
+        config_path=ROOT/'packages/scenario-config'/f'{graph}.json'
+        engine=AggregateEngine(config_path=config_path,directory=tmp_path/'live')
+        try:
+            engine.reset(pb.RunCommand(schema_version='1.0',run_id='parity',scenario_type='peak_surge',seed=1101,mode='recommend'))
+            for _ in range(16):engine.step()
+            state=engine.copy_state();model=Model(engine.config);plan=model.plan(state)
+            phases=next(iter(model.index.phases_by_node.values()))
+            plan[phases[0]['id']]+=4;plan[phases[1]['id']]-=4
+            offsets={node:offset for node in engine.phases}
+            future=copy.deepcopy(engine.demand);trace=[future.next(engine.tick+i) for i in range(1,121)]
+            evaluation={**model._evaluation_input(state),'demand_trace':trace}
+            predicted=model.rollout(state,plan,120,evaluation,offsets=offsets)
+            engine.apply_plan(pb.PlanCommand(run_id=state.run_id,command_id='parity-command',expected_input_session_id=state.input_session_id,expected_snapshot_sequence=state.snapshot_sequence,expected_control_epoch=state.control_epoch,changes=[pb.TimingChange(node_id=model.phases[p]['node_id'],phase_id=p,green_s=g,offset_s=offsets[model.phases[p]['node_id']]) for p,g in plan.items()]))
+            delay=wait=spill=0.0;initial_exits=engine.cumulative_exits
+            for _ in range(120):
+                engine.step()
+                metrics=[link_metrics(link,engine.cells[edge],0,0) for edge,link in engine.links.items()]
+                delay+=sum(link_metrics(engine.links[edge],engine.cells[edge],0,0)['queued'] for edge in engine.index.movements_by_incoming)
+                wait+=sum(engine.backlogs.values());spill+=sum(m['utilization']>=.85 for m in metrics)
+            assert predicted['queue_delay']==pytest.approx(delay)
+            assert predicted['boundary_wait']==pytest.approx(wait)
+            assert predicted['congested']==pytest.approx(spill)
+            assert predicted['throughput']==pytest.approx(engine.cumulative_exits-initial_exits)
+>           assert predicted['final_cells']==engine.cells
+                   ^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'final_cells'
+
+services/intelligence/tests/test_controller_diagnostics.py:38: KeyError
+_ test_changed_plan_projection_matches_real_virtual_execution[0-three-controlled-junctions] _
+
+tmp_path = PosixPath('/tmp/pytest-of-sarthaktripathy/pytest-7/test_changed_plan_projection_m1')
+graph = 'three-controlled-junctions', offset = 0
+
+    @pytest.mark.parametrize('graph',['c1-c6','three-controlled-junctions'])
+    @pytest.mark.parametrize('offset',[0,3])
+    def test_changed_plan_projection_matches_real_virtual_execution(tmp_path,graph,offset):
+        config_path=ROOT/'packages/scenario-config'/f'{graph}.json'
+        engine=AggregateEngine(config_path=config_path,directory=tmp_path/'live')
+        try:
+            engine.reset(pb.RunCommand(schema_version='1.0',run_id='parity',scenario_type='peak_surge',seed=1101,mode='recommend'))
+            for _ in range(16):engine.step()
+            state=engine.copy_state();model=Model(engine.config);plan=model.plan(state)
+            phases=next(iter(model.index.phases_by_node.values()))
+            plan[phases[0]['id']]+=4;plan[phases[1]['id']]-=4
+            offsets={node:offset for node in engine.phases}
+            future=copy.deepcopy(engine.demand);trace=[future.next(engine.tick+i) for i in range(1,121)]
+            evaluation={**model._evaluation_input(state),'demand_trace':trace}
+            predicted=model.rollout(state,plan,120,evaluation,offsets=offsets)
+            engine.apply_plan(pb.PlanCommand(run_id=state.run_id,command_id='parity-command',expected_input_session_id=state.input_session_id,expected_snapshot_sequence=state.snapshot_sequence,expected_control_epoch=state.control_epoch,changes=[pb.TimingChange(node_id=model.phases[p]['node_id'],phase_id=p,green_s=g,offset_s=offsets[model.phases[p]['node_id']]) for p,g in plan.items()]))
+            delay=wait=spill=0.0;initial_exits=engine.cumulative_exits
+            for _ in range(120):
+                engine.step()
+                metrics=[link_metrics(link,engine.cells[edge],0,0) for edge,link in engine.links.items()]
+                delay+=sum(link_metrics(engine.links[edge],engine.cells[edge],0,0)['queued'] for edge in engine.index.movements_by_incoming)
+                wait+=sum(engine.backlogs.values());spill+=sum(m['utilization']>=.85 for m in metrics)
+            assert predicted['queue_delay']==pytest.approx(delay)
+            assert predicted['boundary_wait']==pytest.approx(wait)
+            assert predicted['congested']==pytest.approx(spill)
+            assert predicted['throughput']==pytest.approx(engine.cumulative_exits-initial_exits)
+>           assert predicted['final_cells']==engine.cells
+                   ^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'final_cells'
+
+services/intelligence/tests/test_controller_diagnostics.py:38: KeyError
+_____ test_changed_plan_projection_matches_real_virtual_execution[3-c1-c6] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-sarthaktripathy/pytest-7/test_changed_plan_projection_m2')
+graph = 'c1-c6', offset = 3
+
+    @pytest.mark.parametrize('graph',['c1-c6','three-controlled-junctions'])
+    @pytest.mark.parametrize('offset',[0,3])
+    def test_changed_plan_projection_matches_real_virtual_execution(tmp_path,graph,offset):
+        config_path=ROOT/'packages/scenario-config'/f'{graph}.json'
+        engine=AggregateEngine(config_path=config_path,directory=tmp_path/'live')
+        try:
+            engine.reset(pb.RunCommand(schema_version='1.0',run_id='parity',scenario_type='peak_surge',seed=1101,mode='recommend'))
+            for _ in range(16):engine.step()
+            state=engine.copy_state();model=Model(engine.config);plan=model.plan(state)
+            phases=next(iter(model.index.phases_by_node.values()))
+            plan[phases[0]['id']]+=4;plan[phases[1]['id']]-=4
+            offsets={node:offset for node in engine.phases}
+            future=copy.deepcopy(engine.demand);trace=[future.next(engine.tick+i) for i in range(1,121)]
+            evaluation={**model._evaluation_input(state),'demand_trace':trace}
+            predicted=model.rollout(state,plan,120,evaluation,offsets=offsets)
+            engine.apply_plan(pb.PlanCommand(run_id=state.run_id,command_id='parity-command',expected_input_session_id=state.input_session_id,expected_snapshot_sequence=state.snapshot_sequence,expected_control_epoch=state.control_epoch,changes=[pb.TimingChange(node_id=model.phases[p]['node_id'],phase_id=p,green_s=g,offset_s=offsets[model.phases[p]['node_id']]) for p,g in plan.items()]))
+            delay=wait=spill=0.0;initial_exits=engine.cumulative_exits
+            for _ in range(120):
+                engine.step()
+                metrics=[link_metrics(link,engine.cells[edge],0,0) for edge,link in engine.links.items()]
+                delay+=sum(link_metrics(engine.links[edge],engine.cells[edge],0,0)['queued'] for edge in engine.index.movements_by_incoming)
+                wait+=sum(engine.backlogs.values());spill+=sum(m['utilization']>=.85 for m in metrics)
+            assert predicted['queue_delay']==pytest.approx(delay)
+            assert predicted['boundary_wait']==pytest.approx(wait)
+            assert predicted['congested']==pytest.approx(spill)
+            assert predicted['throughput']==pytest.approx(engine.cumulative_exits-initial_exits)
+>           assert predicted['final_cells']==engine.cells
+                   ^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'final_cells'
+
+services/intelligence/tests/test_controller_diagnostics.py:38: KeyError
+_ test_changed_plan_projection_matches_real_virtual_execution[3-three-controlled-junctions] _
+
+tmp_path = PosixPath('/tmp/pytest-of-sarthaktripathy/pytest-7/test_changed_plan_projection_m3')
+graph = 'three-controlled-junctions', offset = 3
+
+    @pytest.mark.parametrize('graph',['c1-c6','three-controlled-junctions'])
+    @pytest.mark.parametrize('offset',[0,3])
+    def test_changed_plan_projection_matches_real_virtual_execution(tmp_path,graph,offset):
+        config_path=ROOT/'packages/scenario-config'/f'{graph}.json'
+        engine=AggregateEngine(config_path=config_path,directory=tmp_path/'live')
+        try:
+            engine.reset(pb.RunCommand(schema_version='1.0',run_id='parity',scenario_type='peak_surge',seed=1101,mode='recommend'))
+            for _ in range(16):engine.step()
+            state=engine.copy_state();model=Model(engine.config);plan=model.plan(state)
+            phases=next(iter(model.index.phases_by_node.values()))
+            plan[phases[0]['id']]+=4;plan[phases[1]['id']]-=4
+            offsets={node:offset for node in engine.phases}
+            future=copy.deepcopy(engine.demand);trace=[future.next(engine.tick+i) for i in range(1,121)]
+            evaluation={**model._evaluation_input(state),'demand_trace':trace}
+            predicted=model.rollout(state,plan,120,evaluation,offsets=offsets)
+            engine.apply_plan(pb.PlanCommand(run_id=state.run_id,command_id='parity-command',expected_input_session_id=state.input_session_id,expected_snapshot_sequence=state.snapshot_sequence,expected_control_epoch=state.control_epoch,changes=[pb.TimingChange(node_id=model.phases[p]['node_id'],phase_id=p,green_s=g,offset_s=offsets[model.phases[p]['node_id']]) for p,g in plan.items()]))
+            delay=wait=spill=0.0;initial_exits=engine.cumulative_exits
+            for _ in range(120):
+                engine.step()
+                metrics=[link_metrics(link,engine.cells[edge],0,0) for edge,link in engine.links.items()]
+                delay+=sum(link_metrics(engine.links[edge],engine.cells[edge],0,0)['queued'] for edge in engine.index.movements_by_incoming)
+                wait+=sum(engine.backlogs.values());spill+=sum(m['utilization']>=.85 for m in metrics)
+            assert predicted['queue_delay']==pytest.approx(delay)
+            assert predicted['boundary_wait']==pytest.approx(wait)
+            assert predicted['congested']==pytest.approx(spill)
+            assert predicted['throughput']==pytest.approx(engine.cumulative_exits-initial_exits)
+>           assert predicted['final_cells']==engine.cells
+                   ^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'final_cells'
+
+services/intelligence/tests/test_controller_diagnostics.py:38: KeyError
+_______ test_diagnostics_cover_every_evaluated_candidate_and_its_guards ________
+
+tmp_path = PosixPath('/tmp/pytest-of-sarthaktripathy/pytest-7/test_diagnostics_cover_every_e0')
+
+    def test_diagnostics_cover_every_evaluated_candidate_and_its_guards(tmp_path):
+        engine=AggregateEngine(directory=tmp_path)
+        try:
+            engine.reset(pb.RunCommand(schema_version='1.0',run_id='diagnose',scenario_type='peak_surge',seed=1101,mode='recommend'))
+            for _ in range(120):engine.step()
+            model=Model(engine.config);state=engine.copy_state();before=state.SerializeToString()
+            result=model.analyze(state)
+>           diagnostic=model.analysis_diagnostics()
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'Model' object has no attribute 'analysis_diagnostics'
+
+services/intelligence/tests/test_controller_diagnostics.py:51: AttributeError
+________ test_regression_diagnostics_name_displaced_wait_and_lost_exits ________
+
+    def test_regression_diagnostics_name_displaced_wait_and_lost_exits():
+        model=Model();baseline=dict(queue_delay=100,throughput=10,backlog=0,boundary_wait=0,congested=0,worst_service_debt=10)
+        candidate={**baseline,'queue_delay':90,'throughput':9,'boundary_wait':1}
+>       assert set(model.regression_failures(baseline,candidate))=={'throughput','boundary_wait'}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'Model' object has no attribute 'regression_failures'
+
+services/intelligence/tests/test_controller_diagnostics.py:66: AttributeError
+=========================== short test summary info ============================
+FAILED services/intelligence/tests/test_controller_diagnostics.py::test_changed_plan_projection_matches_real_virtual_execution[0-c1-c6]
+FAILED services/intelligence/tests/test_controller_diagnostics.py::test_changed_plan_projection_matches_real_virtual_execution[0-three-controlled-junctions]
+FAILED services/intelligence/tests/test_controller_diagnostics.py::test_changed_plan_projection_matches_real_virtual_execution[3-c1-c6]
+FAILED services/intelligence/tests/test_controller_diagnostics.py::test_changed_plan_projection_matches_real_virtual_execution[3-three-controlled-junctions]
+FAILED services/intelligence/tests/test_controller_diagnostics.py::test_diagnostics_cover_every_evaluated_candidate_and_its_guards
+FAILED services/intelligence/tests/test_controller_diagnostics.py::test_regression_diagnostics_name_displaced_wait_and_lost_exits
+============================== 6 failed in 0.91s ===============================

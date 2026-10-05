@@ -1,0 +1,8 @@
+ok  	traffic.local/twin/apps/api/cmd/api	1.148s
+ok  	traffic.local/twin/apps/api/internal/config	(cached)
+ok  	traffic.local/twin/apps/api/internal/contracts	1.114s
+ok  	traffic.local/twin/apps/api/internal/httpapi	46.429s
+ok  	traffic.local/twin/apps/api/internal/store	7.240s
+ok  	traffic.local/twin/apps/api/internal/store/queries	(cached)
+?   	traffic.local/twin/db	[no test files]
+ok  	traffic.local/twin/packages/contracts/gen/go	1.205s

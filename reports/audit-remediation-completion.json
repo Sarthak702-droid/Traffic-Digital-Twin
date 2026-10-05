@@ -1,26 +1,44 @@
 {
   "reviewed_revision": "e2afd45bb0de58c6dbec5c0a1a3b9478848e2689",
-  "source_revision": "026eeddc6777a031421cc3f189eb02a4dcbe649a",
+  "source_revision": "8ad7ac78f96c151f8cc588e2236ec42d2b5d07f7",
   "scope": "Functional virtual-only engineering prototype; statuses describe code remediation, not acceptance",
   "items": [
     {
       "audit_item": "01 Control benefit",
       "priority": "P0",
       "status": "Partially Fixed",
-      "root_cause": "Uncoordinated alternatives were ranked without hard displacement constraints and failed the frozen benefit gate. Candidate de-duplication could replace the local reference slot; truncation favored early-junction changes.",
+      "root_cause": "Uncoordinated alternatives were ranked without hard displacement constraints and failed the frozen benefit gate. Candidate de-duplication could replace the local reference slot; truncation favored early-junction changes. Five-second offered-rate samples overreacted to low-demand arrivals. Earlier emergency benchmark protocols lacked actual lifecycle measurement; some origins censored recovery.",
       "files_changed": [
         "services/intelligence/model.py",
         "scripts/prototype_evaluation.py",
-        "services/intelligence/tests/test_bounded_recommendations_s03.py"
+        "services/intelligence/tests/test_bounded_recommendations_s03.py",
+        "services/intelligence/controller.py",
+        "services/intelligence/forecast_demand.py",
+        "services/simulation/aggregate_engine.py",
+        "packages/contracts/proto/twin.proto",
+        "packages/contracts/gen/go/twin.pb.go",
+        "packages/contracts/gen/python/twin_pb2.py",
+        "packages/contracts/events.schema.json",
+        "packages/contracts/openapi.json",
+        "packages/contracts/typescript/events.ts",
+        "scripts/generate_contract_docs.py",
+        "packages/scenario-config/comparison-scoring-v1.json",
+        "apps/web/lib/live.ts",
+        "docs/contracts-plan.md"
       ],
-      "exact_fix": "Added bounded coordinated green/offset alternatives, actual offset rollouts and regression admissibility against current/local baselines before ranking. Retained minimum benefit and safe no_action/cannot_evaluate behavior. Preserved explicit current/local reference slots even when identical; replaced truncated node-by-node changes with bounded whole-corridor integer split interpolation preserving every node cycle. Offered alternatives must individually exceed the unchanged minimum-benefit gate and avoid duplicate green plans.",
+      "exact_fix": "Preserved current timing and local adaptation as explicit reference slots. Operating schema 1.1 now evaluates three bounded demand/queue/receiving-storage proposals across the entire configured corridor, including alternative cycles and configured route phase offsets; legacy schema 1.0 preserves cycle-split behavior. Actual offset/activation rollouts, authority checks and all displacement constraints apply before ranking. Offered alternatives individually exceed unchanged minimum benefit and avoid duplicate green plans. Added past-only 60-second offered-demand smoothing and an optional observed-window contract field; forecast version/window bind comparison identity. Missing local reference fails closed. Per-candidate diagnostics expose activation, metric and regression failures; projection-versus-live-engine parity covers changed plans and offsets on both graphs. Emergency route flow uses the same 120-second window, with separate declared actual recovery observation through simulation time 600. Maximum five candidates, concurrency one, horizon 120 and deadline 1.5 seconds retained.",
       "tests_added_or_updated": [
         "services/intelligence/tests/test_bounded_recommendations_s03.py",
         "services/intelligence/tests/test_epic6.py",
-        "scripts/tests/test_prototype_evaluation.py"
+        "scripts/tests/test_prototype_evaluation.py",
+        "services/intelligence/tests/test_controller_diagnostics.py",
+        "services/intelligence/tests/test_coordinated_candidates.py",
+        "services/simulation/tests/test_offered_rate_window.py",
+        "packages/contracts/tests/test_prototype_roundtrip.py",
+        "apps/web/lib/live.test.tsx"
       ],
-      "verification_result": "Current real Python suite: 278 passed; frontend: 159 passed; Go/PostgreSQL race, typecheck/build, dashboard security and static contracts passed. New frozen v6: 72 cases, 144 eligible origins, 0 qualified improvements, benefit gate FAILED. Original v1-v5 and the failed development result retained. No thresholds reduced.",
-      "remaining_risk_or_dependency": "Benefit gate remains failed; no physical benefit or controller acceptance claim. New independent recorded holdout and successful untouched benchmark are still required."
+      "verification_result": "Fresh frozen v7 source hashes verified unchanged: 72 cases completed, 33/144 eligible origins qualify (22.9%); required 50% benefit gate FAILED. All 48 no-benefit, 48 degraded-input and 48 emergency lifecycle origins pass their respective checks. Final development: 31/144, diagnostic only. Real Python 300 passed; frontend 159 passed; Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed. Projection matches actual engine for changed plans and offsets on both graphs. Earlier failures and the contention-induced Python failure retained; serialized full rerun passed without changing deadlines or tests.",
+      "remaining_risk_or_dependency": "Benefit gate remains failed, especially peak and incident; finite development search is not an impossibility proof. No controller/physical benefit acceptance claim. Independent reserved recording, two genuine reviewers and non-implementing operator remain unavailable. See docs/CONTROLLER-BENEFIT-DIAGNOSIS.md."
     },
     {
       "audit_item": "02 Pending-plan authority",
@@ -48,7 +66,7 @@
         "apps/api/internal/httpapi/decision_test.go",
         "apps/api/internal/httpapi/reconcile_d01_test.go"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Real developer stack: cancellation proof on both graphs; three-junction peak/incident plans applied at safe tick 35; short-coverage approvals rejected when input degraded. Old approval remains rejected after recovery.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Real developer stack: cancellation proof on both graphs; three-junction peak/incident plans applied at safe tick 35; short-coverage approvals rejected when input degraded. Old approval remains rejected after recovery. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "Unproven/interrupted outcomes remain blocked until simulator evidence exists; no guessed settlement or automatic replay. Independent operator/field acceptance remains deferred."
     },
     {
@@ -69,7 +87,7 @@
         "apps/api/internal/store/store_test.go",
         "apps/api/internal/store/report_evidence_test.go"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Six current API reports pass JSON Schema, recursive privacy validation and canonical receipt-hash verification.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Six current API reports pass JSON Schema, recursive privacy validation and canonical receipt-hash verification. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "Receipt durability requires functioning PostgreSQL and simulator receipt storage; unresolved uncertainty correctly blocks approval."
     },
     {
@@ -86,7 +104,7 @@
         "apps/api/internal/httpapi/idempotency_audit_test.go",
         "apps/api/internal/httpapi/server_test.go"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions."
     },
     {
@@ -106,7 +124,7 @@
         "services/intelligence/tests/test_causal_forecast.py",
         "services/simulation/tests/test_bound_video_demand.py"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "Operating recorded adapter supports explicit identity mapping only; other mappings require a validated adapter."
     },
     {
@@ -122,7 +140,7 @@
       "tests_added_or_updated": [
         "dashboard/evidence.test.mjs"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions."
     },
     {
@@ -135,14 +153,15 @@
         "services/vision/measurement.py",
         "scripts/prototype_evaluation.py",
         "reports/annotation-provenance.json",
-        "reports/reference-quality-report.json"
+        "reports/reference-quality-report.json",
+        "docs/INDEPENDENT-REVIEW-CHECKLIST.md"
       ],
-      "exact_fix": "Generated predictions explicitly provisional; removed invented accuracy claims. Strict scorer requires two distinct real reviewers, timestamps, method/rights, immutable identity, adjudication and matching frozen split metadata. Historical unreviewed reports reclassified without fabricated scores.",
+      "exact_fix": "Generated predictions explicitly provisional; removed invented accuracy claims. Strict scorer requires two distinct real reviewers, timestamps, method/rights, immutable identity, adjudication and matching frozen split metadata. Historical unreviewed reports reclassified without fabricated scores. Prepared practical reviewer/operator selection and blank genuine-record checklist; no human counts or reviews generated.",
       "tests_added_or_updated": [
         "services/vision/tests/test_audit_measurement.py",
         "scripts/tests/test_prototype_evaluation.py"
       ],
-      "verification_result": "Strict provenance rejection regressions pass; genuine independently reviewed recorded accuracy remains unavailable. Prepared human handoff without signatures/results.",
+      "verification_result": "Strict provenance rejection regressions pass; genuine independently reviewed recorded accuracy remains unavailable. Prepared human handoff without signatures/results. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "No genuine independent review records or unseen reserved recorded input available. Prepared handoff; human measurement gate Blocked."
     },
     {
@@ -162,7 +181,7 @@
         "apps/api/internal/httpapi/idempotency_audit_test.go",
         "apps/api/internal/store/store_test.go"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions."
     },
     {
@@ -177,7 +196,7 @@
       "tests_added_or_updated": [
         "services/vision/tests/test_itd_finalization.py"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions."
     },
     {
@@ -199,7 +218,7 @@
         "services/simulation/tests/test_bound_video_demand.py",
         "apps/api/internal/httpapi/observations_v03_test.go"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions."
     },
     {
@@ -218,7 +237,7 @@
         "services/vision/tests/test_audit_measurement.py",
         "services/vision/tests/test_itd_finalization.py"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "Visible queue remains an estimate; no calibrated speed or physical queue acceptance is implied."
     },
     {
@@ -237,7 +256,7 @@
         "services/simulation/tests/test_bound_video_demand.py",
         "services/intelligence/tests/test_bound_history_forecast.py"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions."
     },
     {
@@ -253,7 +272,7 @@
       "tests_added_or_updated": [
         "services/intelligence/tests/test_bounded_recommendations_s03.py"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "Local serialized compute diagnostics do not prove original target-machine or continuous full-stack latency acceptance."
     },
     {
@@ -270,7 +289,7 @@
       "tests_added_or_updated": [
         "apps/api/internal/httpapi/session_audit_test.go"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions."
     },
     {
@@ -290,7 +309,7 @@
         "apps/web/lib/observations-u01.test.tsx",
         "apps/web/lib/video-display.test.tsx"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions. Final browser recheck after the report serialization correction is unavailable because approval review exhausted workspace credits; earlier authenticated developer UI/download observations are diagnostic, not full acceptance."
     },
     {
@@ -308,7 +327,7 @@
         "apps/web/lib/video-display.test.tsx",
         "apps/web/lib/observations-u01.test.tsx"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "Independent acceptance is distinct from the passing implementation regressions. Final browser recheck after the report serialization correction is unavailable because approval review exhausted workspace credits; earlier authenticated developer UI/download observations are diagnostic, not full acceptance."
     },
     {
@@ -331,7 +350,7 @@
         "services/vision/tests/test_display_telemetry.py",
         "apps/web/lib/video-display.test.tsx"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "The historical git revision still contains old telemetry; this remediation removes it from the current tree and operating/public outputs, not repository history. Final browser recheck after the report serialization correction is unavailable because approval review exhausted workspace credits; earlier authenticated developer UI/download observations are diagnostic, not full acceptance."
     },
     {
@@ -350,7 +369,7 @@
         "scripts/tests/test_rehearse_prototype.py",
         "scripts/tests/test_bootstrap_doctor.py"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "Executed bootstrap/doctor on this local machine; fresh-machine and non-implementer acceptance remain external dependencies."
     },
     {
@@ -369,7 +388,7 @@
         "apps/web/lib/observations-u01.test.tsx",
         "apps/api/internal/httpapi/server_test.go"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "Legacy diagnostic replay is explicitly labelled and cannot substitute for operating recorded-input inference."
     },
     {
@@ -386,7 +405,7 @@
       "tests_added_or_updated": [
         "dashboard/readiness.test.mjs"
       ],
-      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (274 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json.",
+      "verification_result": "Current full Go/PostgreSQL race suite, real-dependency Python suite (300 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Current source follow-up: real Python 300 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/controller-v3/manifest.json.",
       "remaining_risk_or_dependency": "Production/field readiness remains deferred; the six prototype gates are not inferred from these 20 remediation statuses."
     }
   ],
@@ -414,5 +433,7 @@
     "emergency": "no_action",
     "control_benefit": "FAILED: 0/144 v6 qualified improvement origins",
     "independent_review": "Blocked: actual genuine reviewer records and unseen authorized recorded input unavailable"
-  }
+  },
+  "previous_source_revision": "026eeddc6777a031421cc3f189eb02a4dcbe649a",
+  "verification_manifest": "reports/audit-verification/controller-v3/manifest.json"
 }

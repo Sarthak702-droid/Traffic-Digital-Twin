@@ -1,0 +1,84 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/sarthaktripathy/.codex/worktrees/f526/Traffic-Digital-Twin
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 8 items
+
+services/intelligence/tests/test_coordinated_candidates.py ......FF      [100%]
+
+=================================== FAILURES ===================================
+______ test_unavailable_local_reference_cannot_be_silently_omitted[c1-c6] ______
+
+world = (<services.intelligence.model.Model object at 0x79dad1bc46b0>, schema_version: "1.1"
+run_id: "candidate-regression"
+ti... {
+  link_id: "C6-C3"
+  backlog_veh: 63
+  offered_rate_vpm: 84
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x79dad1bc4830>
+
+    def test_unavailable_local_reference_cannot_be_silently_omitted(world,monkeypatch):
+        model,state=world;current=model.plan(state);local=model.allocate(state)
+        candidate=dict(current);phases=next(iter(model.index.phases_by_node.values()))
+        candidate[phases[0]['id']]+=1;candidate[phases[1]['id']]-=1
+        original=model.rollout
+        def controlled(snapshot,plan,*args,**kwargs):
+            if plan==local:raise ValueError('Downstream storage unavailable at activation boundary')
+            result=original(snapshot,current,*args,**kwargs)
+            result['cost']=100 if plan==current else 20
+            return result
+        monkeypatch.setattr(model,'rollout',controlled)
+        monkeypatch.setattr(model,'_generate_candidates',lambda *args:[current,local,candidate])
+        monkeypatch.setattr(model,'_candidate_offsets',lambda *args:{})
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'recommend' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + recommend
+
+services/intelligence/tests/test_coordinated_candidates.py:57: AssertionError
+_ test_unavailable_local_reference_cannot_be_silently_omitted[three-controlled-junctions] _
+
+world = (<services.intelligence.model.Model object at 0x79dad1bc7a40>, schema_version: "1.1"
+run_id: "candidate-regression"
+ti... {
+  link_id: "C6-C3"
+  backlog_veh: 63
+  offered_rate_vpm: 84
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x79dad1bc7b90>
+
+    def test_unavailable_local_reference_cannot_be_silently_omitted(world,monkeypatch):
+        model,state=world;current=model.plan(state);local=model.allocate(state)
+        candidate=dict(current);phases=next(iter(model.index.phases_by_node.values()))
+        candidate[phases[0]['id']]+=1;candidate[phases[1]['id']]-=1
+        original=model.rollout
+        def controlled(snapshot,plan,*args,**kwargs):
+            if plan==local:raise ValueError('Downstream storage unavailable at activation boundary')
+            result=original(snapshot,current,*args,**kwargs)
+            result['cost']=100 if plan==current else 20
+            return result
+        monkeypatch.setattr(model,'rollout',controlled)
+        monkeypatch.setattr(model,'_generate_candidates',lambda *args:[current,local,candidate])
+        monkeypatch.setattr(model,'_candidate_offsets',lambda *args:{})
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'recommend' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + recommend
+
+services/intelligence/tests/test_coordinated_candidates.py:57: AssertionError
+=========================== short test summary info ============================
+FAILED services/intelligence/tests/test_coordinated_candidates.py::test_unavailable_local_reference_cannot_be_silently_omitted[c1-c6]
+FAILED services/intelligence/tests/test_coordinated_candidates.py::test_unavailable_local_reference_cannot_be_silently_omitted[three-controlled-junctions]
+========================= 2 failed, 6 passed in 0.95s ==========================
