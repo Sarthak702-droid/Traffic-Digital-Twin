@@ -1,0 +1,217 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/sarthaktripathy/.codex/worktrees/f526/Traffic-Digital-Twin
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 36 items
+
+services/intelligence/tests/test_operating_input_integrity.py .......... [ 27%]
+.FF...............FF......                                               [100%]
+
+=================================== FAILURES ===================================
+_____ test_invalid_operating_snapshot_fails_closed[c1-c6-excessive_green] ______
+
+operating = (<services.intelligence.model.Model object at 0x7198b50ef530>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'excessive_green'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal','excessive_green','conflicting_permission',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='excessive_green':state.signals[0].remaining_s=model.phases[state.signals[0].phase_id]['max_green_s']+1
+        elif fault=='conflicting_permission':
+            row=state.signals[0]
+            row.permitted_movement_ids.append(next(mid for mid in model.moves if mid not in model.phases[row.phase_id]['movement_ids']))
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:45: AssertionError
+__ test_invalid_operating_snapshot_fails_closed[c1-c6-conflicting_permission] __
+
+operating = (<services.intelligence.model.Model object at 0x7198b4de54c0>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'conflicting_permission'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal','excessive_green','conflicting_permission',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='excessive_green':state.signals[0].remaining_s=model.phases[state.signals[0].phase_id]['max_green_s']+1
+        elif fault=='conflicting_permission':
+            row=state.signals[0]
+            row.permitted_movement_ids.append(next(mid for mid in model.moves if mid not in model.phases[row.phase_id]['movement_ids']))
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:45: AssertionError
+_ test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-excessive_green] _
+
+operating = (<services.intelligence.model.Model object at 0x7198b4de5490>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'excessive_green'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal','excessive_green','conflicting_permission',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='excessive_green':state.signals[0].remaining_s=model.phases[state.signals[0].phase_id]['max_green_s']+1
+        elif fault=='conflicting_permission':
+            row=state.signals[0]
+            row.permitted_movement_ids.append(next(mid for mid in model.moves if mid not in model.phases[row.phase_id]['movement_ids']))
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:45: AssertionError
+_ test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-conflicting_permission] _
+
+operating = (<services.intelligence.model.Model object at 0x7198b50eda30>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'conflicting_permission'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal','excessive_green','conflicting_permission',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='excessive_green':state.signals[0].remaining_s=model.phases[state.signals[0].phase_id]['max_green_s']+1
+        elif fault=='conflicting_permission':
+            row=state.signals[0]
+            row.permitted_movement_ids.append(next(mid for mid in model.moves if mid not in model.phases[row.phase_id]['movement_ids']))
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:45: AssertionError
+=========================== short test summary info ============================
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[c1-c6-excessive_green]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[c1-c6-conflicting_permission]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-excessive_green]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-conflicting_permission]
+========================= 4 failed, 32 passed in 1.25s =========================

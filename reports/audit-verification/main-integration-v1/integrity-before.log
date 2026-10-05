@@ -1,0 +1,1443 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/sarthaktripathy/.codex/worktrees/f526/Traffic-Digital-Twin
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 32 items
+
+services/intelligence/tests/test_operating_input_integrity.py FFF.FFFFFF [ 31%]
+.FFFFFFF.FFFFFF.FFFF..                                                   [100%]
+
+=================================== FAILURES ===================================
+_____ test_invalid_operating_snapshot_fails_closed[c1-c6-missing_boundary] _____
+
+operating = (<services.intelligence.model.Model object at 0x75b4075004d0>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C5-C1"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'missing_boundary'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+____ test_invalid_operating_snapshot_fails_closed[c1-c6-duplicate_boundary] ____
+
+operating = (<services.intelligence.model.Model object at 0x75b4071d3e30>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C2-C1"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'duplicate_boundary'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+_____ test_invalid_operating_snapshot_fails_closed[c1-c6-unknown_boundary] _____
+
+operating = (<services.intelligence.model.Model object at 0x75b406addfa0>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'unknown_boundary'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+_____ test_invalid_operating_snapshot_fails_closed[c1-c6-missing_movement] _____
+
+operating = (<services.intelligence.model.Model object at 0x75b406b10170>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'missing_movement'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+>       result=model.analyze(state)
+               ^^^^^^^^^^^^^^^^^^^^
+
+services/intelligence/tests/test_operating_input_integrity.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+services/intelligence/model.py:308: in analyze
+    with self._admission(context):result=self._analyze(state)
+                                         ^^^^^^^^^^^^^^^^^^^^
+services/intelligence/model.py:347: in _analyze
+    try:agda=self.allocate(state)
+             ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <services.intelligence.model.Model object at 0x75b406b10170>
+state = schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2026-10-05T04:13:23.479450+00:00"
+source: "synthetic"
+movements ... 0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+
+
+    def allocate(self,state):
+        values={m.movement_id:m for m in state.movements}; current=self.plan(state); plan={}
+        for node in sorted({p['node_id'] for p in self.phases.values()}):
+            phases=[p for p in self.phases.values() if p['node_id']==node]; budget=sum(current[p['id']] for p in phases); min_sum=sum(p['min_green_s'] for p in phases); max_sum=sum(p['max_green_s'] for p in phases)
+            if budget<min_sum:raise ValueError(f'Infeasible green budget for node {node}: {budget}s < min green sum {min_sum}s')
+            if budget>max_sum:raise ValueError(f'Infeasible green budget for node {node}: {budget}s > max green sum {max_sum}s')
+            weights=[]
+            for p in phases:
+                score=0.0
+                for mid in p['movement_ids']:
+>                   m=values[mid]; move=self.moves[mid]; incoming=self.links[move['incoming_link_id']]; outgoing=self.links[move['outgoing_link_id']]; out_storage=outgoing['storage_capacity_veh']; downstream=max(0,min(1,(out_storage-m.downstream_capacity_veh)/out_storage)); receiving=max(0,1-downstream**2)
+                      ^^^^^^^^^^^
+E                   KeyError: 'C6-C3-C1'
+
+services/intelligence/model.py:163: KeyError
+____ test_invalid_operating_snapshot_fails_closed[c1-c6-duplicate_movement] ____
+
+operating = (<services.intelligence.model.Model object at 0x75b406b12cf0>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'duplicate_movement'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+_____ test_invalid_operating_snapshot_fails_closed[c1-c6-unknown_movement] _____
+
+operating = (<services.intelligence.model.Model object at 0x75b406add2b0>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'unknown_movement'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+>       result=model.analyze(state)
+               ^^^^^^^^^^^^^^^^^^^^
+
+services/intelligence/tests/test_operating_input_integrity.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+services/intelligence/model.py:308: in analyze
+    with self._admission(context):result=self._analyze(state)
+                                         ^^^^^^^^^^^^^^^^^^^^
+services/intelligence/model.py:347: in _analyze
+    try:agda=self.allocate(state)
+             ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <services.intelligence.model.Model object at 0x75b406add2b0>
+state = schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2026-10-05T04:13:23.707115+00:00"
+source: "synthetic"
+movements ... 0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+
+
+    def allocate(self,state):
+        values={m.movement_id:m for m in state.movements}; current=self.plan(state); plan={}
+        for node in sorted({p['node_id'] for p in self.phases.values()}):
+            phases=[p for p in self.phases.values() if p['node_id']==node]; budget=sum(current[p['id']] for p in phases); min_sum=sum(p['min_green_s'] for p in phases); max_sum=sum(p['max_green_s'] for p in phases)
+            if budget<min_sum:raise ValueError(f'Infeasible green budget for node {node}: {budget}s < min green sum {min_sum}s')
+            if budget>max_sum:raise ValueError(f'Infeasible green budget for node {node}: {budget}s > max green sum {max_sum}s')
+            weights=[]
+            for p in phases:
+                score=0.0
+                for mid in p['movement_ids']:
+>                   m=values[mid]; move=self.moves[mid]; incoming=self.links[move['incoming_link_id']]; outgoing=self.links[move['outgoing_link_id']]; out_storage=outgoing['storage_capacity_veh']; downstream=max(0,min(1,(out_storage-m.downstream_capacity_veh)/out_storage)); receiving=max(0,1-downstream**2)
+                      ^^^^^^^^^^^
+E                   KeyError: 'C2-C1-C3'
+
+services/intelligence/model.py:163: KeyError
+_______ test_invalid_operating_snapshot_fails_closed[c1-c6-nan_movement] _______
+
+operating = (<services.intelligence.model.Model object at 0x75b4071d2c00>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'nan_movement'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+_____ test_invalid_operating_snapshot_fails_closed[c1-c6-duplicate_signal] _____
+
+operating = (<services.intelligence.model.Model object at 0x75b4071d1400>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'duplicate_signal'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+____ test_invalid_operating_snapshot_fails_closed[c1-c6-wrong_signal_phase] ____
+
+operating = (<services.intelligence.model.Model object at 0x75b406b10fb0>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'wrong_signal_phase'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+>       result=model.analyze(state)
+               ^^^^^^^^^^^^^^^^^^^^
+
+services/intelligence/tests/test_operating_input_integrity.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+services/intelligence/model.py:308: in analyze
+    with self._admission(context):result=self._analyze(state)
+                                         ^^^^^^^^^^^^^^^^^^^^
+services/intelligence/model.py:327: in _analyze
+    try:forecast=self.rollout(state,baseline,evaluation=evaluation)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/intelligence/model.py:104: in rollout
+    frozen=evaluation['state']; cells={edge:list(values) for edge,values in evaluation['cells'].items()}; scheduler=self._scheduler(frozen,plan,offsets); rates=evaluation['rates']; saved_backlogs=evaluation['backlogs']; backlogs={e:saved_backlogs.get(e,0.0) for e in self.index.boundary_inputs}
+                                                                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <services.intelligence.model.Model object at 0x75b406b10fb0>
+state = schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2026-10-05T04:13:24.091969+00:00"
+source: "synthetic"
+movements ... 0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+
+plan = {'C1-FROM-C2': 30.0, 'C1-FROM-C3': 30.0, 'C1-FROM-C4': 30.0, 'C1-FROM-C5': 30.0, ...}
+offsets = None
+
+    def _scheduler(self,state,plan,offsets=None):
+        scheduler=Signals(self.config); scheduler.plan=dict(self.plan(state)); scheduler.pending=dict(scheduler.plan)
+        for signal in state.signals:
+            if signal.node_id not in scheduler.nodes:continue
+>           phases=scheduler.nodes[signal.node_id]; index=next(i for i,p in enumerate(phases) if p['id']==signal.phase_id); scheduler.state[signal.node_id]=[index,signal.indication,max(1,int(signal.remaining_s))]
+                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           StopIteration
+
+services/intelligence/model.py:70: StopIteration
+_______ test_invalid_operating_snapshot_fails_closed[c1-c6-short_cells] ________
+
+operating = (<services.intelligence.model.Model object at 0x75b406b25c10>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'short_cells'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+______ test_invalid_operating_snapshot_fails_closed[c1-c6-negative_cells] ______
+
+operating = (<services.intelligence.model.Model object at 0x75b406ba0620>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'negative_cells'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+________ test_invalid_operating_snapshot_fails_closed[c1-c6-nan_cells] _________
+
+operating = (<services.intelligence.model.Model object at 0x75b4071a8d10>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'nan_cells'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+___ test_invalid_operating_snapshot_fails_closed[c1-c6-over_capacity_cells] ____
+
+operating = (<services.intelligence.model.Model object at 0x75b4071d1640>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'over_capacity_cells'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+_ test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-missing_boundary] _
+
+operating = (<services.intelligence.model.Model object at 0x75b406b13b60>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C5-C1"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'missing_boundary'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+_ test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-duplicate_boundary] _
+
+operating = (<services.intelligence.model.Model object at 0x75b406b12660>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C2-C1"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'duplicate_boundary'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+_ test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-unknown_boundary] _
+
+operating = (<services.intelligence.model.Model object at 0x75b40729eea0>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'unknown_boundary'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+_ test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-missing_movement] _
+
+operating = (<services.intelligence.model.Model object at 0x75b406ba1340>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'missing_movement'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+>       result=model.analyze(state)
+               ^^^^^^^^^^^^^^^^^^^^
+
+services/intelligence/tests/test_operating_input_integrity.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+services/intelligence/model.py:308: in analyze
+    with self._admission(context):result=self._analyze(state)
+                                         ^^^^^^^^^^^^^^^^^^^^
+services/intelligence/model.py:347: in _analyze
+    try:agda=self.allocate(state)
+             ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <services.intelligence.model.Model object at 0x75b406ba1340>
+state = schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2026-10-05T04:13:25.191619+00:00"
+source: "synthetic"
+movements ... 0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+
+
+    def allocate(self,state):
+        values={m.movement_id:m for m in state.movements}; current=self.plan(state); plan={}
+        for node in sorted({p['node_id'] for p in self.phases.values()}):
+            phases=[p for p in self.phases.values() if p['node_id']==node]; budget=sum(current[p['id']] for p in phases); min_sum=sum(p['min_green_s'] for p in phases); max_sum=sum(p['max_green_s'] for p in phases)
+            if budget<min_sum:raise ValueError(f'Infeasible green budget for node {node}: {budget}s < min green sum {min_sum}s')
+            if budget>max_sum:raise ValueError(f'Infeasible green budget for node {node}: {budget}s > max green sum {max_sum}s')
+            weights=[]
+            for p in phases:
+                score=0.0
+                for mid in p['movement_ids']:
+>                   m=values[mid]; move=self.moves[mid]; incoming=self.links[move['incoming_link_id']]; outgoing=self.links[move['outgoing_link_id']]; out_storage=outgoing['storage_capacity_veh']; downstream=max(0,min(1,(out_storage-m.downstream_capacity_veh)/out_storage)); receiving=max(0,1-downstream**2)
+                      ^^^^^^^^^^^
+E                   KeyError: 'C1-C7-C3'
+
+services/intelligence/model.py:163: KeyError
+_ test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-duplicate_movement] _
+
+operating = (<services.intelligence.model.Model object at 0x75b406b13920>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'duplicate_movement'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+_ test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-unknown_movement] _
+
+operating = (<services.intelligence.model.Model object at 0x75b4071d3bf0>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'unknown_movement'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+>       result=model.analyze(state)
+               ^^^^^^^^^^^^^^^^^^^^
+
+services/intelligence/tests/test_operating_input_integrity.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+services/intelligence/model.py:308: in analyze
+    with self._admission(context):result=self._analyze(state)
+                                         ^^^^^^^^^^^^^^^^^^^^
+services/intelligence/model.py:347: in _analyze
+    try:agda=self.allocate(state)
+             ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <services.intelligence.model.Model object at 0x75b4071d3bf0>
+state = schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2026-10-05T04:13:25.455830+00:00"
+source: "synthetic"
+movements ... 0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+
+
+    def allocate(self,state):
+        values={m.movement_id:m for m in state.movements}; current=self.plan(state); plan={}
+        for node in sorted({p['node_id'] for p in self.phases.values()}):
+            phases=[p for p in self.phases.values() if p['node_id']==node]; budget=sum(current[p['id']] for p in phases); min_sum=sum(p['min_green_s'] for p in phases); max_sum=sum(p['max_green_s'] for p in phases)
+            if budget<min_sum:raise ValueError(f'Infeasible green budget for node {node}: {budget}s < min green sum {min_sum}s')
+            if budget>max_sum:raise ValueError(f'Infeasible green budget for node {node}: {budget}s > max green sum {max_sum}s')
+            weights=[]
+            for p in phases:
+                score=0.0
+                for mid in p['movement_ids']:
+>                   m=values[mid]; move=self.moves[mid]; incoming=self.links[move['incoming_link_id']]; outgoing=self.links[move['outgoing_link_id']]; out_storage=outgoing['storage_capacity_veh']; downstream=max(0,min(1,(out_storage-m.downstream_capacity_veh)/out_storage)); receiving=max(0,1-downstream**2)
+                      ^^^^^^^^^^^
+E                   KeyError: 'C2-C1-C7'
+
+services/intelligence/model.py:163: KeyError
+_ test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-nan_movement] _
+
+operating = (<services.intelligence.model.Model object at 0x75b406ade0f0>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'nan_movement'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+_ test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-duplicate_signal] _
+
+operating = (<services.intelligence.model.Model object at 0x75b40729eba0>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'duplicate_signal'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+_ test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-wrong_signal_phase] _
+
+operating = (<services.intelligence.model.Model object at 0x75b406b27ad0>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'wrong_signal_phase'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+>       result=model.analyze(state)
+               ^^^^^^^^^^^^^^^^^^^^
+
+services/intelligence/tests/test_operating_input_integrity.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+services/intelligence/model.py:308: in analyze
+    with self._admission(context):result=self._analyze(state)
+                                         ^^^^^^^^^^^^^^^^^^^^
+services/intelligence/model.py:327: in _analyze
+    try:forecast=self.rollout(state,baseline,evaluation=evaluation)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/intelligence/model.py:104: in rollout
+    frozen=evaluation['state']; cells={edge:list(values) for edge,values in evaluation['cells'].items()}; scheduler=self._scheduler(frozen,plan,offsets); rates=evaluation['rates']; saved_backlogs=evaluation['backlogs']; backlogs={e:saved_backlogs.get(e,0.0) for e in self.index.boundary_inputs}
+                                                                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <services.intelligence.model.Model object at 0x75b406b27ad0>
+state = schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2026-10-05T04:13:25.851882+00:00"
+source: "synthetic"
+movements ... 0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+
+plan = {'C1-FROM-C2': 30.0, 'C1-FROM-C3': 30.0, 'C1-FROM-C4': 30.0, 'C1-FROM-C5': 30.0, ...}
+offsets = None
+
+    def _scheduler(self,state,plan,offsets=None):
+        scheduler=Signals(self.config); scheduler.plan=dict(self.plan(state)); scheduler.pending=dict(scheduler.plan)
+        for signal in state.signals:
+            if signal.node_id not in scheduler.nodes:continue
+>           phases=scheduler.nodes[signal.node_id]; index=next(i for i,p in enumerate(phases) if p['id']==signal.phase_id); scheduler.state[signal.node_id]=[index,signal.indication,max(1,int(signal.remaining_s))]
+                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           StopIteration
+
+services/intelligence/model.py:70: StopIteration
+_ test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-short_cells] _
+
+operating = (<services.intelligence.model.Model object at 0x75b406b503b0>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'short_cells'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+_ test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-negative_cells] _
+
+operating = (<services.intelligence.model.Model object at 0x75b407db0c20>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'negative_cells'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+_ test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-nan_cells] _
+
+operating = (<services.intelligence.model.Model object at 0x75b406add790>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'nan_cells'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+_ test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-over_capacity_cells] _
+
+operating = (<services.intelligence.model.Model object at 0x75b4071d1c70>, schema_version: "1.1"
+run_id: "integrity"
+timestamp: "2...0
+}
+boundary_demand {
+  link_id: "C6-C3"
+  offered_window_s: 0
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+fault = 'over_capacity_cells'
+
+    @pytest.mark.parametrize('fault',[
+        'missing_boundary','duplicate_boundary','unknown_boundary','negative_backlog',
+        'missing_movement','duplicate_movement','unknown_movement','nan_movement',
+        'duplicate_signal','wrong_signal_phase','nan_signal',
+        'short_cells','negative_cells','nan_cells','over_capacity_cells'])
+    def test_invalid_operating_snapshot_fails_closed(operating,fault):
+        model,state=operating
+        if fault=='missing_boundary':state.boundary_demand.pop()
+        elif fault=='duplicate_boundary':state.boundary_demand.add().CopyFrom(state.boundary_demand[0])
+        elif fault=='unknown_boundary':state.boundary_demand[0].link_id='unknown-boundary'
+        elif fault=='negative_backlog':state.boundary_demand[0].backlog_veh=-1
+        elif fault=='missing_movement':state.movements.pop()
+        elif fault=='duplicate_movement':state.movements.add().CopyFrom(state.movements[0])
+        elif fault=='unknown_movement':state.movements[0].movement_id='unknown-movement'
+        elif fault=='nan_movement':state.movements[0].queue_veh=math.nan
+        elif fault=='duplicate_signal':state.signals.add().CopyFrom(state.signals[0])
+        elif fault=='wrong_signal_phase':state.signals[0].phase_id='unknown-phase'
+        elif fault=='nan_signal':state.signals[0].remaining_s=math.nan
+        elif fault=='short_cells':state.cells[0].stock_veh.pop()
+        elif fault=='negative_cells':state.cells[0].stock_veh[0]=-1
+        elif fault=='nan_cells':state.cells[0].stock_veh[0]=math.nan
+        elif fault=='over_capacity_cells':state.cells[0].stock_veh[0]=model.links[state.cells[0].link_id]['storage_capacity_veh']+1
+        original=state.SerializeToString()
+        result=model.analyze(state)
+>       assert result.outcome=='cannot_evaluate'
+E       AssertionError: assert 'no_action' == 'cannot_evaluate'
+E         
+E         - cannot_evaluate
+E         + no_action
+
+services/intelligence/tests/test_operating_input_integrity.py:41: AssertionError
+=========================== short test summary info ============================
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[c1-c6-missing_boundary]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[c1-c6-duplicate_boundary]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[c1-c6-unknown_boundary]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[c1-c6-missing_movement]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[c1-c6-duplicate_movement]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[c1-c6-unknown_movement]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[c1-c6-nan_movement]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[c1-c6-duplicate_signal]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[c1-c6-wrong_signal_phase]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[c1-c6-short_cells]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[c1-c6-negative_cells]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[c1-c6-nan_cells]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[c1-c6-over_capacity_cells]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-missing_boundary]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-duplicate_boundary]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-unknown_boundary]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-missing_movement]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-duplicate_movement]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-unknown_movement]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-nan_movement]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-duplicate_signal]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-wrong_signal_phase]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-short_cells]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-negative_cells]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-nan_cells]
+FAILED services/intelligence/tests/test_operating_input_integrity.py::test_invalid_operating_snapshot_fails_closed[three-controlled-junctions-over_capacity_cells]
+========================= 26 failed, 6 passed in 3.83s =========================

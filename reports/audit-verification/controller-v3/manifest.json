@@ -173,10 +173,11 @@
     "../../audit-holdout-freeze-v7.json": "b3fdd1cc9bf2cdb4887ff7b5c0e28441982ef9448601ac8a60ca1c747588edc6",
     "../../audit-resource-candidates-controller-v3.json": "ce19c49c05b9162c2fa829e4d7dfd8757e3091faf3233e69d80b6453de527b28",
     "../../audit-resource-simulation-controller-v3.json": "8fde13d8caaf91fcbccb9501032a23677a7bdfe3f47131e0c7a8452f56cb75a0",
-    "../../audit-remediation-completion.json": "a6a11767739ee32d1aff53d089367b3d9217faef58c10d3139c3a27402cc858b",
-    "../../../docs/AUDIT-REMEDIATION.md": "43a799e6cf24a53988213c3ed9cba43c55c5b070b4180c2f3a79cfaeb9ed6494",
-    "../../../docs/CONTROLLER-BENEFIT-DIAGNOSIS.md": "6c82984648ff39302043f76518024e80773cf1434a5e3dfe3fda696ad157c807",
     "../../../docs/INDEPENDENT-REVIEW-CHECKLIST.md": "4d4cfbdcd873a4a649ed2e23ca6ca7714f33f5e586294490cf34542b17dbbc84",
-    "../../../packages/scenario-config/prototype-evaluation-audit-v7.json": "5c77e44d99ac1830fce085256bfe3c5c2fb4d9cfa543942da9b964268bc536b1"
-  }
+    "../../../packages/scenario-config/prototype-evaluation-audit-v7.json": "5c77e44d99ac1830fce085256bfe3c5c2fb4d9cfa543942da9b964268bc536b1",
+    "completion-report-at-verification.json": "a6a11767739ee32d1aff53d089367b3d9217faef58c10d3139c3a27402cc858b",
+    "remediation-report-at-verification.md": "43a799e6cf24a53988213c3ed9cba43c55c5b070b4180c2f3a79cfaeb9ed6494",
+    "controller-diagnosis-at-verification.md": "6c82984648ff39302043f76518024e80773cf1434a5e3dfe3fda696ad157c807"
+  },
+  "historical_completion_report": "Completion report copied verbatim at verification time; archived copy replaces hash reference to the evolving top-level report."
 }
