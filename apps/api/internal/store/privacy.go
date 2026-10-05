@@ -16,7 +16,7 @@ func RejectPrivateFields(value any) error {
 	if err = json.Unmarshal(b, &decoded); err != nil {
 		return err
 	}
-	denied := map[string]bool{"track_id": true, "track_ids": true, "tracking_id": true, "trail": true, "trails": true, "trajectory": true, "trajectories": true, "bbox": true, "bbox_history": true, "raw_frame": true, "raw_frames": true, "raw_video": true, "password": true, "credentials": true, "compute_token": true, "clip_path": true, "model_path": true}
+	denied := map[string]bool{"detections": true, "track_id": true, "track_ids": true, "tracking_id": true, "trail": true, "trails": true, "trajectory": true, "trajectories": true, "bbox": true, "bbox_history": true, "raw_frame": true, "raw_frames": true, "raw_video": true, "password": true, "credentials": true, "compute_token": true, "clip_path": true, "model_path": true}
 	normalized := map[string]bool{}
 	normalize := func(key string) string {
 		return strings.NewReplacer("_", "", "-", "", ".", "", " ", "").Replace(strings.ToLower(key))

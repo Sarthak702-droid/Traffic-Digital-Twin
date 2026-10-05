@@ -68,3 +68,30 @@ it("selects the registered camera from a non-twelve inventory", async () => {
   expect(screen.queryByText(/0 detector-estimated crossings/)).not.toBeInTheDocument();
   expect(screen.getAllByRole("option",{name:/CAM-99.*— veh/}).length).toBeGreaterThan(0);
 });
+
+it("loads registered private annotation media and aggregate counts without box-history telemetry", async()=>{
+ vi.stubEnv("NODE_ENV","development");
+ vi.spyOn(HTMLMediaElement.prototype,"play").mockResolvedValue();
+ vi.spyOn(HTMLMediaElement.prototype,"pause").mockImplementation(()=>{});
+ const fillText=vi.fn();vi.spyOn(HTMLCanvasElement.prototype,"getContext").mockReturnValue({fillRect:vi.fn(),fillText,beginPath:vi.fn(),moveTo:vi.fn(),lineTo:vi.fn(),stroke:vi.fn(),setLineDash:vi.fn(),closePath:vi.fn(),fill:vi.fn()} as any);
+ const response=(v:unknown)=>({ok:true,json:async()=>v}) as Response;
+ const source=assets.assets.find(a=>a.assigned_slot==="CAM-01")!;
+ const aggregate={schema_version:"display-aggregates-v3",video_file:source.filename,source_identity:{clip_sha256:source.sha256},geometry:cameras.cameras['CAM-01'].geometry,duration_s:5,frames:[{time_s:0,valid_until_s:.5,active_count:2,pedestrian_count:0,queue_count:null,class_counts:{car:2},cumulative_crossed:0}]};
+ vi.stubGlobal("fetch",vi.fn(async(url:RequestInfo|URL)=>{
+  if(String(url)==="/api/v1/cameras")return response({cameras:cameras.cameras,assets:assets.assets});
+  if(String(url)==="/api/v1/clips/CAM-01/annotation")return response({schema_version:"display-annotation-v1",status:"available",camera_id:"CAM-01",source_clip_sha256:source.sha256,geometry:aggregate.geometry,sample_fps:2,duration_s:5,media_url:"/api/v1/clips/CAM-01/annotation/media",aggregates:aggregate});
+  return response({});
+ }));
+ render(<VisionAnalyticsPanel/>);
+ const video=await screen.findByLabelText("Recorded clip display only");
+ await waitFor(()=>expect(video).toHaveAttribute("src","/api/v1/clips/CAM-01/annotation/media"));
+ expect(screen.getByText(/Vehicle annotation preview.*2.0 samples\/s/)).toBeInTheDocument();
+ fireEvent.loadedData(video);
+ await waitFor(()=>expect(fillText.mock.calls.some(([text])=>String(text).includes("QUEUE ROI: unavailable"))).toBe(true));
+ (video as HTMLVideoElement).currentTime=5.2;
+ fireEvent.timeUpdate(video);
+ expect((video as HTMLVideoElement).currentTime).toBe(0);
+ fireEvent.click(screen.getByRole("button",{name:"CAM-02"}));
+ await waitFor(()=>expect(video).toHaveAttribute("src","/api/v1/clips/CAM-02/media"));
+ expect(screen.getByText("Vehicle annotations unavailable for this clip")).toBeInTheDocument();
+});

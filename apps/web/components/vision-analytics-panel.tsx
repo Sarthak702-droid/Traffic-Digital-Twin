@@ -20,7 +20,7 @@ import {
   Zap,
   Gauge,
 } from "lucide-react";
-import { canvasSize, detectionFrameIndex, sameGeometry, isAggregateTelemetry, DISPLAY_TELEMETRY_VERSION, displayMediaURL } from "@/lib/video-display";
+import { canvasSize, detectionFrameIndex, sameGeometry, isAggregateTelemetry, DISPLAY_TELEMETRY_VERSION, displayMediaURL, annotationMediaURL } from "@/lib/video-display";
 import {LoadingState} from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
 import type { ProcessedClip } from "@/lib/run-input";
@@ -223,6 +223,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
   const [observationStatus, setObservationStatus] = useState("missing");
   const [observationReason, setObservationReason] = useState("");
   const [telemetryMap, setTelemetryMap] = useState<Record<string, any>>({});
+  const [annotationManifest, setAnnotationManifest] = useState<any>(null);
   const [displayManifest, setDisplayManifest] = useState<any>(null);
   const [cameraSlots, setCameraSlots] = useState<CameraSlot[]>(ALL_CAMERA_SLOTS);
   const [cameraRegistryReady, setCameraRegistryReady] = useState(typeof process !== "undefined" && process.env?.NODE_ENV === "test");
@@ -235,7 +236,9 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
   const prevCrossedCountRef = useRef<number>(0);
 
   const displayURL = displayMediaURL(selectedCamera, cameraSlots.find(camera => camera.id === selectedCamera)?.clipSha256, displayManifest);
-  const mediaURL = displayURL || `/api/v1/clips/${selectedCamera}/media`;
+  const selectedSlot = cameraSlots.find(camera => camera.id === selectedCamera);
+  const annotationURL = annotationMediaURL(selectedCamera, selectedSlot?.clipSha256, selectedSlot?.geometry, annotationManifest);
+  const mediaURL = annotationURL || displayURL || `/api/v1/clips/${selectedCamera}/media`;
 
   useEffect(() => {
     let mounted = true;
@@ -282,6 +285,20 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
       setCameraRegistryReady(true);
     }).catch(() => setCameraRegistryError(true));
   }, []);
+
+  useEffect(() => {
+    setAnnotationManifest(null);
+    if (!selectedSlot?.clipSha256 || !cameraRegistryReady) return;
+    const controller = new AbortController();
+    fetch(`/api/v1/clips/${selectedCamera}/annotation`, {cache: "no-store", signal: controller.signal})
+      .then(response => response.ok ? response.json() : null)
+      .then(payload => {
+        if (controller.signal.aborted || !annotationMediaURL(selectedCamera, selectedSlot.clipSha256, selectedSlot.geometry, payload)) return;
+        setAnnotationManifest(payload);
+        if (isAggregateTelemetry(payload.aggregates)) setTelemetryMap(current => ({...current, [selectedCamera]: payload.aggregates}));
+      }).catch(() => {});
+    return () => controller.abort();
+  }, [selectedCamera, selectedSlot?.clipSha256, selectedSlot?.geometry, cameraRegistryReady]);
 
   const observationURL = observationQuery(selectedCamera, processingMode, frame, boundaryMapping, sourceSessions, Math.floor(mediaTime));
 
@@ -356,10 +373,13 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
   const syncMediaTime = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
+    // Sampled encoders can round the final frame beyond source coverage.
+    // Loop display at the immutable source end; never hold stale annotations.
+    if (annotationURL && video.currentTime >= annotationManifest.duration_s) video.currentTime = 0;
     const time = video.currentTime;
     setMediaTime(Math.floor(time * 100) / 100);
     setCurrentFrameIdx(detectionFrameIndex(activeTelemetry, time));
-  }, [activeTelemetry]);
+  }, [activeTelemetry, annotationURL, annotationManifest]);
 
   // Single-pulse line crossing detection
   useEffect(() => {
@@ -471,71 +491,9 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
       ctx.fillText(`COUNTING LINE (${crossed}) ↓`, midX, midY + 4);
     }
 
-    // 5. ITD v1.2 Vehicle Bounding Boxes & Tracking Trails
-    const detections = activeFrameData?.detections || [];
-    const CLASS_COLORS: Record<string, string> = {
-      car: "#10b981",
-      two_wheeler: "#a855f7",
-      autorickshaw: "#f59e0b",
-      bus: "#3b82f6",
-      truck: "#ef4444",
-      pedestrain: "#ec4899",
-      lcv: "#06b6d4",
-    };
-
-    detections.forEach((det: any) => {
-      const [bx1, by1, bx2, by2] = det.bbox;
-      const px1 = bx1 * width;
-      const py1 = by1 * height;
-      const bw = (bx2 - bx1) * width;
-      const bh = (by2 - by1) * height;
-      const color = CLASS_COLORS[det.class] || "#10b981";
-
-      // Draw tracking motion trail
-      if (det.trail && det.trail.length > 1) {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([3, 3]);
-        ctx.beginPath();
-        det.trail.forEach(([tx, ty]: [number, number], idx: number) => {
-          if (idx === 0) ctx.moveTo(tx * width, ty * height);
-          else ctx.lineTo(tx * width, ty * height);
-        });
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-
-      // Draw bounding box
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(px1, py1, bw, bh);
-
-      // Corner accent brackets
-      const corner = Math.min(8, bw / 3, bh / 3);
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(px1, py1 + corner); ctx.lineTo(px1, py1); ctx.lineTo(px1 + corner, py1);
-      ctx.moveTo(px1 + bw - corner, py1); ctx.lineTo(px1 + bw, py1); ctx.lineTo(px1 + bw, py1 + corner);
-      ctx.moveTo(px1, py1 + bh - corner); ctx.lineTo(px1, py1 + bh); ctx.lineTo(px1 + corner, py1 + bh);
-      ctx.moveTo(px1 + bw - corner, py1 + bh); ctx.lineTo(px1 + bw, py1 + bh); ctx.lineTo(px1 + bw, py1 + bh - corner);
-      ctx.stroke();
-
-      // Label Header: TRK #ID CLASS CONF%
-      const className = displayVehicleClass(String(det.class)).toUpperCase();
-      const label = `${className} ${(det.conf * 100).toFixed(0)}%`;
-      ctx.font = "bold 9px monospace";
-      const tm = typeof ctx.measureText === "function" ? ctx.measureText(label) : { width: label.length * 6 };
-      const tagW = tm.width + 8;
-      const tagH = 14;
-      const tagY = Math.max(0, py1 - tagH);
-
-      ctx.fillStyle = color;
-      ctx.fillRect(px1, tagY, tagW, tagH);
-
-      ctx.fillStyle = "#000000";
-      ctx.textAlign = "left";
-      ctx.fillText(label, px1 + 4, tagY + 10);
-    });
+    // Verified detector boxes/class confidence are rasterized into private
+    // sampled preview media. No tracking details enter aggregate telemetry.
+    const detections: never[] = [];
 
     // 6. CCTV HUD / OSD Overlay Banner
     ctx.fillStyle = "rgba(10, 15, 20, 0.85)";
@@ -558,7 +516,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
     ctx.fillStyle = "#10b981";
     ctx.textAlign = "right";
     const actCount = activeFrameData?.active_count ?? detections.length;
-    const qCount = activeFrameData?.queue_count ?? 0;
+    const qCount = typeof activeFrameData?.queue_count === "number" ? activeFrameData.queue_count : "unavailable";
     ctx.fillText(
       activeFrameData ? `CACHED DETECTIONS · VEHICLES: ${actCount} · PEDESTRIANS: ${activeFrameData.pedestrian_count ?? 0} · QUEUE ROI: ${qCount}` : "DETECTION UNAVAILABLE AT THIS SOURCE TIME",
       width - 12,
@@ -986,6 +944,9 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
             </div>
           </div>
 
+            <span role="status" className="text-xs text-muted-foreground">
+              {annotationURL ? `Vehicle annotation preview · ${annotationManifest.sample_fps.toFixed(1)} samples/s · provisional detector output` : "Vehicle annotations unavailable for this clip"}
+            </span>
           <div className="vision-canvas-wrapper" style={{ position: "relative", aspectRatio: `${mediaSize.width} / ${mediaSize.height}`, width: `min(100%, ${640 * mediaSize.width / mediaSize.height}px)` }}>
             <video
               ref={videoRef}
@@ -1456,7 +1417,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
               <div><span>Window</span><strong>{currentObservation.window_start_s}–{currentObservation.window_end_s}s</strong><small>{currentObservation.observation_status}</small></div>
               <div><span>Directional crossings</span><strong>{currentObservation.crossings_veh ?? "—"}</strong><small>{currentObservation.direction_id ?? "unknown direction"}</small></div>
               <div><span>Flow</span><strong>{currentObservation.observation_status === "valid" ? Number(currentObservation.flow_vpm).toFixed(2) : "—"}</strong><small>veh/min · finalized</small></div>
-            </div> : <p className="vision-roi-note">No completed observation window at this media time. Frame boxes are available only for the analyzed segment.</p>}
+            </div> : <p className="vision-roi-note">No completed observation window at this media time. Vehicle annotations require a verified preview for this clip.</p>}
             {currentObservation && <p className="vision-roi-note">Available at source {Number(currentObservation.available_at_source_s).toFixed(2)} s · processing completed {currentObservation.processed_at_utc} · {currentObservation.validation_level || "review level unavailable"}</p>}
             {currentObservation?.derivation && <p className="vision-roi-note">Provenance: derived from cached ITD frame telemetry; per-class crossing counts unavailable.</p>}
           </div>

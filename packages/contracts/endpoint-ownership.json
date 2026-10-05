@@ -366,6 +366,39 @@
       "required_role": "operator",
       "idempotency_supported": true,
       "description": "Explicit pause/resume of virtual model clock for snapshot review"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/clips/{id}/annotation",
+      "go_owner": "Server.getAnnotation",
+      "rpc_dependency": "none",
+      "persistence_class": "none",
+      "is_mutating": false,
+      "required_role": "viewer",
+      "idempotency_supported": false,
+      "description": "Private identity-bound raster annotation preview; no tracking history exported"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/clips/{id}/annotation/media",
+      "go_owner": "Server.getAnnotationMedia",
+      "rpc_dependency": "none",
+      "persistence_class": "none",
+      "is_mutating": false,
+      "required_role": "viewer",
+      "idempotency_supported": false,
+      "description": "Private identity-bound raster annotation preview; no tracking history exported"
+    },
+    {
+      "method": "HEAD",
+      "path": "/api/v1/clips/{id}/annotation/media",
+      "go_owner": "Server.getAnnotationMedia",
+      "rpc_dependency": "none",
+      "persistence_class": "none",
+      "is_mutating": false,
+      "required_role": "viewer",
+      "idempotency_supported": false,
+      "description": "Private identity-bound raster annotation preview; no tracking history exported"
     }
   ]
 }

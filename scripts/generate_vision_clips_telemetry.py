@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate local, timestamped full-clip display detections; never run demand.
 
-Private tracking IDs stay in an ignored local sidecar. Existing finalized
+Tracking associations stay transient. Private raster previews contain class/confidence annotations only. Existing finalized
 aggregate observation artifacts are not rewritten by display processing.
 """
 import argparse
@@ -9,11 +9,16 @@ import hashlib
 import json
 import math
 import os
+import sys
 from pathlib import Path
 from datetime import datetime, timezone
 import cv2
 import torch
 from ultralytics import YOLO
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from services.vision.annotation_preview import AnnotationEncoder, raster_annotations
+from services.shared.privacy import reject_private_fields
+from scripts.prepare_video_displays import registered_source
 
 VERSION = "display-aggregates-v3"
 ITD_CANONICAL_CLASSES = {0: "two_wheeler", 1: "autorickshaw", 2: "car", 3: "bus", 4: "lcv", 5: "truck", 6: "bicycle", 7: "pedestrain"}
@@ -81,7 +86,7 @@ def has_crossed_line(prev_pt, curr_pt, p1, p2, vec) -> bool:
     return False
 
 
-def process_video(video_path, cam_cfg, model, sample_fps=2.0, device="cpu", identity=None):
+def process_video(video_path, cam_cfg, model, sample_fps=2.0, device="cpu", identity=None, annotation_path=None):
     validate_model_classes(model)
     if not math.isfinite(sample_fps) or sample_fps <= 0:
         raise ValueError("Sampling FPS must be finite and positive")
@@ -106,6 +111,7 @@ def process_video(video_path, cam_cfg, model, sample_fps=2.0, device="cpu", iden
     queue_roi = geometry.get("queue_roi", [])
     tracks, unique, crossed, rows = {}, {}, set(), []
     frame_index = 0
+    encoder = None
     try:
         while True:
             ok, frame = cap.read() if frame_index % step == 0 else (cap.grab(), None)
@@ -152,6 +158,10 @@ def process_video(video_path, cam_cfg, model, sample_fps=2.0, device="cpu", iden
                         class_counts[name] = class_counts.get(name, 0) + 1
                         detections.append({"id": tid, "class": name, "conf": float(confidence), "bbox": bbox,
                                            "centroid": center, "trail": trail, "in_queue": in_queue, "has_crossed": tid in crossed})
+                if annotation_path is not None:
+                    rendered = raster_annotations(resized, detections)
+                    if encoder is None:encoder = AnnotationEncoder(annotation_path, rendered, fps/step, duration)
+                    encoder.write(rendered)
                 rows.append({"time_s": time_s, "valid_until_s": min(duration, (frame_index + step) / fps),
                              "frame_idx": frame_index, "active_count": sum(v for k, v in class_counts.items() if k != "pedestrain"),
                              "pedestrian_count": class_counts.get("pedestrain", 0), "queue_count": None if queue_unknown else queued,
@@ -162,10 +172,15 @@ def process_video(video_path, cam_cfg, model, sample_fps=2.0, device="cpu", iden
                 if len(rows) % 50 == 0:
                     print(f"  {cam_cfg['camera_id']}: {time_s:.1f}/{duration:.1f}s processed", flush=True)
             frame_index += 1
+    except BaseException:
+        if encoder is not None:encoder.abort()
+        raise
     finally:
         cap.release()
     if frame_index < count:
+        if encoder is not None:encoder.abort()
         raise ValueError(f"Incomplete decode: {frame_index}/{count} frames; telemetry not published")
+    if encoder is not None:encoder.finish()
     summary_classes = {name: sum(value == name for value in unique.values()) for name in ITD_CANONICAL_CLASSES.values()}
     return {"schema_version": VERSION, "camera_id": cam_cfg['camera_id'], "video_file": Path(video_path).name,
             "resolution": f"{width}x{height}", "fps": fps, "duration_s": duration,
@@ -183,30 +198,48 @@ def main():
     parser.add_argument("--model", type=Path, default=ROOT / ".runtime/models/itd-v1.2/best_xl_ITD_v1.2.pt")
     parser.add_argument("--video-root", type=Path, default=ROOT)
     parser.add_argument("--output", type=Path, default=ROOT / "apps/web/public/vision-display-data.json")
+    parser.add_argument("--annotation-root", type=Path, default=ROOT / ".runtime/vision/display-annotations")
     parser.add_argument("--sample-fps", type=float, default=2)
     parser.add_argument("--cameras", nargs="*")
     args = parser.parse_args()
     torch.set_num_threads(min(4, os.cpu_count() or 4))
-    model = YOLO(str(args.model))
-    validate_model_classes(model)
+    import fcntl
+    args.annotation_root.mkdir(parents=True,exist_ok=True)
+    lock = (args.annotation_root / '.fresh-preview.lock').open('a+b')
+    try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+    except BlockingIOError:raise RuntimeError('A serialized annotation job is already running')
     model_hash = hash_file(args.model)
     if model_hash != "06006ecb5fe52a348ceed805bf0aa6b32af7e24e689d09a6582f6d53159d6b00":
         raise ValueError("Detector checkpoint SHA-256 does not match verified ITD v1.2")
+    model = YOLO(str(args.model))
+    validate_model_classes(model)
     config = json.loads((ROOT / "packages/camera-config/cameras.json").read_text())["cameras"]
     results = json.loads(args.output.read_text()) if args.output.exists() else {}
+    assets={a['assigned_slot']:a for a in json.loads((ROOT/'reports/asset-manifest.json').read_text())['assets']}
+    manifest_path=args.annotation_root/'manifest.json'
+    manifest=json.loads(manifest_path.read_text()) if manifest_path.exists() else {'schema_version':'display-annotation-v1','cameras':{}}
     for camera in args.cameras or sorted(config):
         settings = config[camera]
-        path = args.video_root / settings["assigned_video"]
+        if settings['assigned_video']!=assets[camera]['filename']:raise ValueError('Camera source differs from authorized registry')
+        path = registered_source(args.video_root,assets[camera])
+        preview=args.annotation_root/f"{camera}-{assets[camera]['sha256']}-annotated-v1.mp4"
         identity = {"clip_sha256": hash_file(path), "geometry_sha256": hash_json(settings["geometry"]),
                     "model_sha256": model_hash, "detector_version": "itd-v1.2", "tracker_version": "bytetrack",
                     "ultralytics_version": __import__("ultralytics").__version__,
                     "config_sha256": hash_json(settings), "preprocessing_version": VERSION,
                     "sample_fps": args.sample_fps, "imgsz": 640, "confidence": .22}
-        if results.get(camera, {}).get("schema_version") == VERSION and results[camera].get("source_identity") == identity:
+        cached=manifest.get('cameras',{}).get(camera,{})
+        if results.get(camera, {}).get("schema_version") == VERSION and results[camera].get("source_identity") == identity and cached.get('identity')==identity and cached.get('coverage_complete') and preview.is_file() and hash_file(preview)==cached.get('rendition_sha256'):
             print(f"{camera}: matching cache", flush=True)
             continue
         print(f"Processing {camera}: {path.name}", flush=True)
-        results[camera] = process_video(path, settings, model, args.sample_fps, identity=identity)
+        results[camera] = process_video(path, settings, model, args.sample_fps, identity=identity,annotation_path=preview)
+        reject_private_fields(results[camera])
+        manifest['cameras'][camera]={'source_clip_sha256':assets[camera]['sha256'],'model_sha256':model_hash,
+            'filename':preview.name,'rendition_sha256':hash_file(preview),'geometry':settings['geometry'],
+            'sample_fps':1/results[camera]['sample_interval_s'],'duration_s':results[camera]['duration_s'],
+            'coverage_complete':True,'identity':identity,'aggregates':results[camera]}
+        atomic=manifest_path.with_suffix('.json.tmp');atomic.write_text(json.dumps(manifest,separators=(',',':')));atomic.replace(manifest_path)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         temporary = args.output.with_suffix(".json.tmp")
         temporary.write_text(json.dumps(results, separators=(",", ":")))

@@ -47,3 +47,16 @@ it("rejects nested persisted tracking details in an aggregate display artifact",
   expect(detectionFrameIndex(value,0)).toBe(-1);
  }
 });
+
+it("uses identity-bound authenticated raster annotations without accepting detection histories", async()=>{
+ const {annotationMediaURL}=await import("./video-display");
+ const hash="a".repeat(64);const geometry={counting_line:{p1:[0,.5],p2:[1,.5]}};
+ const manifest={schema_version:"display-annotation-v1",status:"available",camera_id:"CAM-01",source_clip_sha256:hash,geometry,media_url:"/api/v1/clips/CAM-01/annotation/media",sample_fps:2,duration_s:15};
+ expect(annotationMediaURL("CAM-01",hash,geometry,manifest)).toBe(manifest.media_url);
+ expect(annotationMediaURL("CAM-02",hash,geometry,manifest)).toBeNull();
+ expect(annotationMediaURL("CAM-01","b".repeat(64),geometry,manifest)).toBeNull();
+ expect(annotationMediaURL("CAM-01",hash,{},manifest)).toBeNull();
+ expect(annotationMediaURL("CAM-01",hash,geometry,{...manifest,media_url:"https://external.invalid/clip"})).toBeNull();
+ expect(annotationMediaURL("CAM-01",hash,geometry,{...manifest,status:"incomplete"})).toBeNull();
+ expect(annotationMediaURL("CAM-01",hash,geometry,{...manifest,duration_s:NaN})).toBeNull();
+});

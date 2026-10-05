@@ -48,3 +48,14 @@ export function displayMediaURL(camera: string, clipSha256: string | undefined, 
   const filename = `${camera}-${clipSha256}-v1.mp4`;
   return entry?.source_clip_sha256 === clipSha256 && entry.filename === filename ? `/vision-display-media/${filename}` : null;
 }
+
+// Raster annotations travel as authenticated private media, never box histories.
+export function annotationMediaURL(camera: string, clipSha256: string | undefined, geometry: unknown, manifest: any): string | null {
+  const url = `/api/v1/clips/${camera}/annotation/media`;
+  if (!clipSha256 || !/^[a-f0-9]{64}$/.test(clipSha256) || manifest?.schema_version !== "display-annotation-v1"
+      || manifest.status !== "available" || manifest.camera_id !== camera || manifest.source_clip_sha256 !== clipSha256
+      || manifest.media_url !== url || !sameGeometry(geometry, manifest.geometry)
+      || !Number.isFinite(manifest.duration_s) || manifest.duration_s <= 0
+      || !Number.isFinite(manifest.sample_fps) || manifest.sample_fps <= 0) return null;
+  return url;
+}

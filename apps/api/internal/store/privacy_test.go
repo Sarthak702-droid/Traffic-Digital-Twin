@@ -3,7 +3,7 @@ package store
 import "testing"
 
 func TestAuditAggregateExportRejectsNestedPrivateFields(t *testing.T) {
-	for _, key := range []string{"track_id", "trail", "bbox_history", "raw_frame", "credentials", "trackId", "tracking-ID", "accessToken", "compute_token"} {
+	for _, key := range []string{"detections", "track_id", "trail", "bbox_history", "raw_frame", "credentials", "trackId", "tracking-ID", "accessToken", "compute_token"} {
 		if RejectPrivateFields(map[string]any{"events": []any{map[string]any{key: "private"}}}) == nil {
 			t.Fatalf("export accepted %s", key)
 		}

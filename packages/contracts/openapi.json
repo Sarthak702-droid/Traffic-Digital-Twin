@@ -1168,6 +1168,85 @@
           }
         }
       }
+    },
+    "/api/v1/clips/{id}/annotation": {
+      "get": {
+        "summary": "Identity-bound private sampled vehicle annotation metadata",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^CAM-[0-9]{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private source preview; provisional detector output, not reviewed reference evidence"
+          },
+          "401": {
+            "description": "Verified session required"
+          },
+          "404": {
+            "description": "No complete identity-matching preview available"
+          }
+        }
+      }
+    },
+    "/api/v1/clips/{id}/annotation/media": {
+      "get": {
+        "summary": "Authenticated private raster annotation video",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^CAM-[0-9]{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private source preview; provisional detector output, not reviewed reference evidence"
+          },
+          "401": {
+            "description": "Verified session required"
+          },
+          "404": {
+            "description": "No complete identity-matching preview available"
+          }
+        }
+      },
+      "head": {
+        "summary": "Authenticated private raster annotation video headers",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^CAM-[0-9]{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private source preview; provisional detector output, not reviewed reference evidence"
+          },
+          "401": {
+            "description": "Verified session required"
+          },
+          "404": {
+            "description": "No complete identity-matching preview available"
+          }
+        }
+      }
     }
   },
   "components": {
