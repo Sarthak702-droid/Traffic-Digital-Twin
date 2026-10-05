@@ -1,25 +1,25 @@
 {
   "reviewed_revision": "e2afd45bb0de58c6dbec5c0a1a3b9478848e2689",
-  "source_revision": "13d3405fb94304803c1db1355dd4fdd5e32fb23c",
+  "source_revision": "026eeddc6777a031421cc3f189eb02a4dcbe649a",
   "scope": "Functional virtual-only engineering prototype; statuses describe code remediation, not acceptance",
   "items": [
     {
       "audit_item": "01 Control benefit",
       "priority": "P0",
       "status": "Partially Fixed",
-      "root_cause": "Uncoordinated alternatives were ranked without hard displacement constraints and failed the frozen benefit gate.",
+      "root_cause": "Uncoordinated alternatives were ranked without hard displacement constraints and failed the frozen benefit gate. Candidate de-duplication could replace the local reference slot; truncation favored early-junction changes.",
       "files_changed": [
         "services/intelligence/model.py",
         "scripts/prototype_evaluation.py",
         "services/intelligence/tests/test_bounded_recommendations_s03.py"
       ],
-      "exact_fix": "Added bounded coordinated green/offset alternatives, actual offset rollouts and regression admissibility against current/local baselines before ranking. Retained minimum benefit and safe no_action/cannot_evaluate behavior.",
+      "exact_fix": "Added bounded coordinated green/offset alternatives, actual offset rollouts and regression admissibility against current/local baselines before ranking. Retained minimum benefit and safe no_action/cannot_evaluate behavior. Preserved explicit current/local reference slots even when identical; replaced truncated node-by-node changes with bounded whole-corridor integer split interpolation preserving every node cycle. Offered alternatives must individually exceed the unchanged minimum-benefit gate and avoid duplicate green plans.",
       "tests_added_or_updated": [
         "services/intelligence/tests/test_bounded_recommendations_s03.py",
         "services/intelligence/tests/test_epic6.py",
         "scripts/tests/test_prototype_evaluation.py"
       ],
-      "verification_result": "Frozen v5: 72 cases executed, 144 eligible origins, 0 improvement-qualified origins; benefit gate FAILED. Candidate/safety regression tests pass. Prior v1-v4 failures preserved.",
+      "verification_result": "Current real Python suite: 278 passed; frontend: 159 passed; Go/PostgreSQL race, typecheck/build, dashboard security and static contracts passed. New frozen v6: 72 cases, 144 eligible origins, 0 qualified improvements, benefit gate FAILED. Original v1-v5 and the failed development result retained. No thresholds reduced.",
       "remaining_risk_or_dependency": "Benefit gate remains failed; no physical benefit or controller acceptance claim. New independent recorded holdout and successful untouched benchmark are still required."
     },
     {
@@ -401,5 +401,18 @@
       "Original target workstation and continuous full-stack p95",
       "Final browser recheck after serialization fix: workspace credits exhausted"
     ]
+  },
+  "followup_verification": {
+    "python_tests_passed": 278,
+    "frontend_tests_passed": 159,
+    "go_database_race": "passed",
+    "typecheck_build_security_contracts": "passed",
+    "isolated_stack_cases": 6,
+    "strict_reports_validated": 6,
+    "three_junction_peak_incident_applied_at_tick": 35,
+    "two_junction_short_input_approval": "safely_rejected",
+    "emergency": "no_action",
+    "control_benefit": "FAILED: 0/144 v6 qualified improvement origins",
+    "independent_review": "Blocked: actual genuine reviewer records and unseen authorized recorded input unavailable"
   }
 }

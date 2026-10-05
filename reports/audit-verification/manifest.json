@@ -1,7 +1,7 @@
 {
-  "source_revision": "13d3405fb94304803c1db1355dd4fdd5e32fb23c",
+  "source_revision": "026eeddc6777a031421cc3f189eb02a4dcbe649a",
   "reviewed_revision": "e2afd45bb0de58c6dbec5c0a1a3b9478848e2689",
-  "recorded_at_utc": "2026-10-05T02:30:40.804041+00:00",
+  "recorded_at_utc": "2026-10-05T02:56:14.949752+00:00",
   "acceptance": "not_verified",
   "checks": [
     {
@@ -105,7 +105,7 @@
       "eligible_origins": 144,
       "improved_origins": 0,
       "gate_pass": false,
-      "scope": "New seeds frozen before execution with unchanged thresholds; exact frozen computational source hashes still match. Old v1-v4 results preserved; v2-v4 superseded only by required safety/recovery corrections, never tuned on held-out failures."
+      "scope": "Historical v5 failure preserved; computational source superseded by candidate-reference and whole-corridor corrections developed only on declared tuning seeds. Fresh v6 evidence recorded separately below."
     },
     {
       "check": "Local compute resources",
@@ -115,6 +115,93 @@
       ],
       "status": "within_local_diagnostic_budget",
       "scope": "Serialized separate real processes; Intel i7-1065G7 exposed by runtime. Original Core Ultra 9 target-machine acceptance remains blocked; no supported concurrency claim from camera count."
+    },
+    {
+      "check": "Follow-up Go/PostgreSQL/race",
+      "command": "TEST_DATABASE_URL=\"$AUDIT_TEST_DATABASE_URL\" GOCACHE=/tmp/traffic-audit-go-cache ./scripts/run-go.sh test -race ./...",
+      "status": "passed",
+      "artifact": "go-followup.log",
+      "scope": "Complete relevant suite against real disposable PostgreSQL; Go source unchanged from preceding verified revision"
+    },
+    {
+      "check": "Follow-up real Python",
+      "command": ".venv/bin/python -m pytest services scripts/tests tests packages -q",
+      "status": "passed",
+      "tests": 278,
+      "artifact": "python-followup.log"
+    },
+    {
+      "check": "Follow-up controller regressions",
+      "command": ".venv/bin/python -m pytest services/intelligence/tests/test_bounded_recommendations_s03.py -q",
+      "status": "passed",
+      "tests": 19,
+      "artifact": "controller-followup.log",
+      "scope": "Explicit local reference slot, joint bounded integer splits, individual minimum-benefit alternatives, authority locks/admission/safety checks"
+    },
+    {
+      "check": "Follow-up frontend",
+      "commands": [
+        "npm run test:ui",
+        "npm run typecheck",
+        "npm run build"
+      ],
+      "status": "passed",
+      "tests": 159,
+      "artifacts": [
+        "frontend-followup.log",
+        "typecheck-followup.log",
+        "build-followup.log"
+      ],
+      "remaining": "Existing large-chunk build warning preserved"
+    },
+    {
+      "check": "Follow-up security/contracts",
+      "commands": [
+        "node --test dashboard/evidence.test.mjs dashboard/readiness.test.mjs",
+        ".venv/bin/python scripts/verify-contracts.py"
+      ],
+      "status": "passed",
+      "artifacts": [
+        "dashboard-followup.log",
+        "contracts-followup.log"
+      ]
+    },
+    {
+      "check": "Follow-up development control benchmark",
+      "status": "failed",
+      "artifact": "../audit-development-candidates.json",
+      "scope": "Declared tuning seeds 1101/2202/3303 only. Not acceptance evidence; 0/144 improvement-qualified origins. No tuning on previously viewed heldout seeds. Reproducible development protocol: packages/scenario-config/prototype-evaluation-audit-development-v1.json.",
+      "protocol": "packages/scenario-config/prototype-evaluation-audit-development-v1.json"
+    },
+    {
+      "check": "Fresh frozen v6 control holdout",
+      "command": "PYTHONPATH=\"$PWD:$PWD/packages/contracts/gen/python\" .venv/bin/python -c 'from scripts.prototype_evaluation import main; main()' --full --protocol packages/scenario-config/prototype-evaluation-audit-v6.json --output reports/audit-heldout-results-v6.json",
+      "status": "failed",
+      "artifact": "../audit-heldout-results-v6.json",
+      "freeze": "../audit-holdout-freeze-v6.json",
+      "declared_cases": 72,
+      "failed_cases": 0,
+      "eligible_origins": 144,
+      "improved_origins": 0,
+      "gate_pass": false,
+      "scope": "Fresh seeds 54121/54217/54331, original thresholds unchanged; frozen computational hashes match. No claim of control or field acceptance."
+    },
+    {
+      "check": "Follow-up candidate resources",
+      "command": ".venv/bin/python scripts/benchmark_compute.py --mode candidate_evaluation --protocol packages/scenario-config/prototype-resource-budget-audit-v2.json --output reports/audit-resource-candidates-followup.json",
+      "status": "within_local_diagnostic_budget",
+      "artifact": "../audit-resource-candidates-followup.json",
+      "samples": 60,
+      "p95_wall_s": 0.19987226499961253,
+      "scope": "Serialized real Python on exposed Intel i7-1065G7. Full-stack continuous p95 and original target-machine acceptance remain unavailable"
+    },
+    {
+      "check": "Follow-up isolated real stack and exports",
+      "command": ".venv/bin/python scripts/rehearse_prototype.py --api http://127.0.0.1:18881 --origin http://127.0.0.1:3100 --username audit_operator --network-config \"$ACTIVE_GRAPH\" --output-dir \"$PRIVATE_REPORT_DIR\" --exercise-decisions",
+      "status": "passed",
+      "cases": 6,
+      "artifact": "stack-followup-summary.json",
+      "scope": "New disposable databases, existing authorized validated aggregate observations; both graphs/all three scenarios; current real Python gRPC/Go stack. Manual/lock changes acknowledged, pending cancellation proven, genuine recommendations only, later virtual scheduler verified. Six reports pass strict schema, recursive privacy and terminal receipt hashes. Existing Go binary matches unchanged Go source. Developer-run acceptance only; no fresh inference, browser or independent operator claim."
     }
   ],
   "failed_or_superseded_checks": [
@@ -127,7 +214,10 @@
     "A final export attempt ran a stale binary before its build completed; rejected its report shape, then rebuilt synchronously and re-exported through current Go. Only validated current exports are included.",
     "New report-test fixture initially omitted mandatory before_values; fixed fixture, retained database constraint and reran full Go suite.",
     "Final browser approval review could not execute due to exhausted workspace credits; no alternative browser automation bypass used.",
-    "Execution environment reset stopped PostgreSQL during the final archival rerun; connection-refused failure preserved in go-environment-reset-failure.log. Existing disposable database retained; service restarted and suite rerun. No code/test change to bypass failure."
+    "Execution environment reset stopped PostgreSQL during the final archival rerun; connection-refused failure preserved in go-environment-reset-failure.log. Existing disposable database retained; service restarted and suite rerun. No code/test change to bypass failure.",
+    "Follow-up regressions first failed on shifted local-baseline slot and absent bounded joint candidate; implementation fixed without altering thresholds.",
+    "Candidate integration initially offered duplicate green plans with different offsets; preserved existing uniqueness assertion, omitted duplicate green plans and reran affected/full suites.",
+    "Fresh v6 and development control benchmarks both fail at 0/144 eligible improvement origins; all prior failures retained."
   ],
   "remaining_gates": [
     {
@@ -179,7 +269,28 @@
     "run-reports/6a4f37e2-4bfd-4b08-a284-b3abcb66a876.json": "6885bb638a1c44a6a3c8e4b9687c3319847554212b7a6d7a1c83520d74a10291",
     "run-reports/7fb23e94-ba9d-4534-a3aa-ccb51045f26e.json": "c307ad40a08ddf222deed0556f6dce29d7a40e5a054eb6b7b23e8fe5adcc467f",
     "run-reports/3539ad1c-7dc8-43e2-bd7e-ddc421bcdb2a.json": "73278727aeefe6b5ae10ae6fe0ba27f9ef5d2b0ceb6aa510e4edf8bfda418260",
-    "run-reports/feb35f8c-5511-4977-8434-eac95b5e1c20.json": "5dcfd8b5b6fd4526b5343b4dfd796864f2934504a52ffc8be1cc918ea292c8d9"
+    "run-reports/feb35f8c-5511-4977-8434-eac95b5e1c20.json": "5dcfd8b5b6fd4526b5343b4dfd796864f2934504a52ffc8be1cc918ea292c8d9",
+    "build-followup.log": "8ca98327f17a4eaed3dca17cbb755784f9529bce111bfd0c5aeb99989b3e4e34",
+    "contracts-followup.log": "23dc729746de50a0a609d70137d205e8f774c50f10dc682879af840233999078",
+    "controller-followup.log": "928c7cf41eac50841cebf6519acd5dea562c438c40ec1a5a5cd4c3d94674c29f",
+    "dashboard-followup.log": "8cba3ed600459e9b711443eb61ca25d29a9c7da97fb5f799edcc1d76db3e02c8",
+    "frontend-followup.log": "2d5274edde49aa2e5dcb29797402b43d57dc8650c700f71c6de8ae32efca5025",
+    "go-followup.log": "6fc38f864143bc3bc4521f848d96146eedbf772c93b95c7d2c0d20a653431e54",
+    "python-followup.log": "acb979f52b231fd65c7e17080d84119d8dffec7c64dc443e2ec4d42e7ea60eb5",
+    "typecheck-followup.log": "bc9bb10b7ed285bf479f3ad33cc5fdd3a7b549201d30abd9254b77a2ebd57608",
+    "../audit-heldout-results-v6.json": "a49326bc5cf002dc99702ad798125dafa8f91b74d66e209d3c82a423096246d4",
+    "../audit-holdout-freeze-v6.json": "a052cb7759a10204a17955190a721c6763297bea89ffebcf6d3f5f7d72ff5234",
+    "../audit-development-candidates.json": "d6071c10e427bac7d893c2669cc704c1321f394326464bfb178ea232e10e1f10",
+    "../audit-resource-candidates-followup.json": "bb5674c0b07c4ee92e918ac1d951e184f685c3a2d171e76f4cd17242cf9c6ea2",
+    "stack-followup-summary.json": "848acb555c247c3d6b94dd6c0dac1e53244b3ddc4cb59bbaa22ce58ccde83bec",
+    "followup-run-reports/34fd0268-c7f9-40ef-828f-3f0f15ac98ce.json": "cb83628fcfee9b102919d177fd278a94b9d38d7f6208783577ef5dc111b6cd8f",
+    "followup-run-reports/42f06e03-f497-42d4-ab9b-27569eaa85eb.json": "eaf94b0a389cd1ec781ec3305fe91170927f91c9b8ec656f4bd095c60b6fb16f",
+    "followup-run-reports/66225c3a-050e-4aaa-a447-2bc82e9c4995.json": "629e3bc2011627b87b3a6cac3a19e81ad866283ec39c700dad6d39af1b819838",
+    "followup-run-reports/aff0294a-6a31-41bf-9aa1-0535268e1421.json": "e67a870dc6d61d4c5b05520bbc1bda353da6b909fa22ddf923cff0cada76a962",
+    "followup-run-reports/c0bcb35e-2aad-4060-aecb-2f8331af47ed.json": "2a5710e8d8e27af9565b5c89643c178dea1cc960c3514d3b0c551f4113c1663f",
+    "followup-run-reports/d39a916d-fcc7-4bce-8743-674711452d55.json": "353d74f5f3c27494caccd6280204fcdbea84174baf0c70605e91651988d85b00",
+    "controller-before-followup.log": "0fecefb53579556fe73ac13ed996e2f71ab45e2c86109185cc5091384051579b",
+    "../../packages/scenario-config/prototype-evaluation-audit-development-v1.json": "f7491f8e617c8c175ebd7eb34db46514e3af9f844344f80e04cc72aba914ff84"
   },
   "authoritative_audit_document": {
     "filename": "Traffic_Digital_Twin_Engineering_Audit_Remediation_Report.docx",
