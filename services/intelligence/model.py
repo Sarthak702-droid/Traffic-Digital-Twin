@@ -168,18 +168,24 @@ class Model:
                 _,p=(max(eligible,key=lambda x:weights[x[0]]) if diff>0 else min(eligible,key=lambda x:weights[x[0]]));plan[p['id']]+=1 if diff>0 else -1;diff+=-1 if diff>0 else 1
         validate_plan(self.config,plan);return plan
     def _generate_candidates(self,state,baseline,agda):
+        # These two slots are semantic references, even if their timings match.
+        # Deduplicating them shifts index 1 to an unrelated alternative and
+        # silently loses the local-adaptive regression baseline.
         candidates=[dict(baseline),dict(agda)]
-        # Independent junction corrections avoid moving every split together.
-        nodes=sorted(self.index.phases_by_node)
-        for node,delta in [(node,delta) for delta in (-5,5) for node in nodes]:
-            candidate=dict(agda);phases=self.index.phases_by_node[node]
-            if len(phases)<2:continue
-            a,b=phases[0],phases[1]
-            actual=max(a['min_green_s']-candidate[a['id']],min(delta,a['max_green_s']-candidate[a['id']],candidate[b['id']]-b['min_green_s'],b['max_green_s']-candidate[b['id']]))
-            candidate[a['id']]+=actual;candidate[b['id']]-=actual
-            try:validate_plan(self.config,candidate);candidates.append(candidate)
-            except ValueError:pass
-        seen=set();return [p for p in candidates if not (tuple(sorted(p.items())) in seen or seen.add(tuple(sorted(p.items()))))]
+        # Joint corrections cover every configured node within the same bounded
+        # budget. Interpolate integer splits without changing a node's cycle.
+        for fraction in (0.5,0.25,0.75):
+            candidate={}
+            for phases in self.index.phases_by_node.values():
+                values={p['id']:baseline[p['id']]+fraction*(agda[p['id']]-baseline[p['id']]) for p in phases}
+                rounded={pid:math.floor(value) for pid,value in values.items()}
+                remaining=int(sum(baseline[p['id']] for p in phases)-sum(rounded.values()))
+                for pid in sorted(values,key=lambda pid:(-(values[pid]-rounded[pid]),pid))[:remaining]:
+                    rounded[pid]+=1
+                candidate.update(rounded)
+            validate_plan(self.config,candidate)
+            candidates.append(candidate)
+        return candidates[:self.scoring['max_candidates']]
     def _authority_admissible(self,state,plan,offsets):
         if state.control_mode and state.control_mode!='recommend':return False
         locked=set(state.locked_targets);current=self.plan(state)
@@ -308,7 +314,12 @@ class Model:
         if len(controlled)<2: raise ValueError('Configured route has no controlled corridor')
         corridor=next(link for link in self.links.values() if link['from_node']==controlled[0] and link['to_node']==controlled[1])
         eta=corridor['length_m']/(corridor['free_flow_speed_kph']/3.6)
-        for rank,(score,index,plan) in enumerate([entry for entry in scored if entry[1]!=0][:self.scoring['max_alternatives']]):
+        offered=[];seen_plans=set()
+        for entry in scored:
+            score,index,plan=entry;signature=tuple(sorted(plan.items()))
+            if index==0 or baseline_cost-score<=self.scoring['minimum_benefit_points'] or signature in seen_plans:continue
+            seen_plans.add(signature);offered.append(entry)
+        for rank,(score,index,plan) in enumerate(offered[:self.scoring['max_alternatives']]):
             identity=(state.run_id,state.input_session_id,state.snapshot_sequence,state.control_epoch,state.config_hash,source_origin,MODEL,METRICS_VERSION,self.scoring['version'],state.simulation_time_s,sorted(plan.items()),sorted(self._candidate_offsets(state,index).items()))
             rid=str(uuid.uuid5(uuid.NAMESPACE_URL,repr(identity)));changes=[pb.TimingChange(node_id=self.phases[p]['node_id'],phase_id=p,green_s=g,offset_s=self._candidate_offsets(state,index).get(self.phases[p]['node_id'],0)) for p,g in plan.items()];summary=' · '.join(f'{c.phase_id}: {int(c.green_s)}s' for c in changes)
             recommendations.append(pb.Recommendation(id=rid,run_id=state.run_id,timestamp=datetime.now(timezone.utc).isoformat(),priority=priority if rank==0 else 'normal',reason=f'Best among {len(scored)} evaluated feasible aggregate plans' if rank==0 else f'Feasible alternative #{rank}',changes=changes,safety_status='requires_fresh_validation',status='pending',input_session_id=state.input_session_id,snapshot_sequence=state.snapshot_sequence,config_hash=state.config_hash,model_version=MODEL,metrics_version=METRICS_VERSION,forecast_origin_source_s=source_origin,control_epoch=state.control_epoch,explanation_facts=[f'Trigger: {trigger} ({priority.upper()} priority)',f'Upstream corridor: {corridor["id"]} modeled free-flow ETA {eta:.1f}s',f'Coordinated timing: {summary}',f'{self.scoring["window_s"]}-second {self.scoring["version"]} weighted model points: {score:.3f}',f'Minimum modeled gain: {self.scoring["minimum_benefit_points"]:g} weighted points',f'Candidate rank #{rank+1}; not a global optimum','Human approval required; virtual signals only; aggregate-predictor-v1']))

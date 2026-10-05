@@ -219,3 +219,49 @@ def test_terminal_cancellation_diagnostic_does_not_prevent_fresh_safe_analysis(t
         assert result.forecasts
         assert engine.receipts.status(command)=='rejected'
     finally:engine.close()
+
+
+def test_equal_local_plan_keeps_its_baseline_slot():
+    model = Model()
+    state = empty_state(model)
+    current = model.plan(state)
+    candidates = model._generate_candidates(state, current, current)
+    # Index 1 is the local reference even when timings equal the current plan.
+    assert candidates[0] == current
+    assert candidates[1] == current
+
+
+def test_bounded_candidates_include_a_whole_corridor_split_correction():
+    model = Model()
+    state = empty_state(model)
+    current = model.plan(state)
+    local = dict(current)
+    for phases in model.index.phases_by_node.values():
+        local[phases[0]['id']] += 8
+        local[phases[1]['id']] -= 8
+    candidates = model._generate_candidates(state, current, local)
+    assert len(candidates) <= model.scoring['max_candidates']
+    joint = candidates[2]
+    for phases in model.index.phases_by_node.values():
+        assert joint[phases[0]['id']] == current[phases[0]['id']] + 4
+        assert joint[phases[1]['id']] == current[phases[1]['id']] - 4
+        assert sum(joint[p['id']] for p in phases) == sum(current[p['id']] for p in phases)
+
+
+def test_every_offered_alternative_exceeds_minimum_benefit():
+    model = Model()
+    state = empty_state(model)
+    for item in state.movements:
+        item.queue_veh = 8
+        item.vehicle_count = 8
+        item.arrival_rate_vpm = 12
+        item.downstream_capacity_veh = 30
+    result = model.analyze(state)
+    assert result.outcome == 'recommend'
+    evaluation = model._evaluation_input(state)
+    current = model.rollout(state, model.plan(state), 120, evaluation)
+    for rec in [result.recommendation, *result.alternatives]:
+        score = model.rollout(state, {c.phase_id: c.green_s for c in rec.changes},
+                              120, evaluation,
+                              offsets={c.node_id: c.offset_s for c in rec.changes})
+        assert current['cost'] - score['cost'] > model.scoring['minimum_benefit_points']
