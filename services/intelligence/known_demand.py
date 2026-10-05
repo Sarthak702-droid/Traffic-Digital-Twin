@@ -1,6 +1,8 @@
 """One causal demand release sequence for proposals and matched rollouts."""
 import math
 
+KNOWN_RELEASE_VERSION = "eligible-release-v2"
+
 
 def boundary_offers(state, rates, horizon_s, check_budget=lambda: None):
     """Yield tick offers without mutating the snapshot or reading future bins.
@@ -26,7 +28,7 @@ def boundary_offers(state, rates, horizon_s, check_budget=lambda: None):
     for tick in range(1, horizon_s + 1):
         check_budget()
         now = state.simulation_time_s + tick
-        offered = {link: 0.0 if now < known_end[link] else rate
+        offered = {link: rate * max(0.0, now + 1 - max(now, known_end[link]))
                    for link, rate in rates.items()}
         for c in commitments:
             overlap = max(0, min(now + 1, c['end']) - max(now, c['start']))

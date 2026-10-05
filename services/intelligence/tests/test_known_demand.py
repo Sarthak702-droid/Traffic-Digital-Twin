@@ -36,3 +36,10 @@ def test_proposal_horizon_demand_matches_rollout_mass_and_forecast_after_known_e
     assert result['offered_external_veh']==pytest.approx(mass)
     assert result['mass_residual_veh']==pytest.approx(0,abs=1e-8)
     assert state.SerializeToString()==before
+
+def test_fractional_known_horizon_resumes_forecast_only_for_uncovered_tick_fraction():
+    state=pb.TrafficState(simulation_time_s=9)
+    state.demand_commitments.add(boundary_link_id='boundary',release_start_simulation_s=5.5,
+        release_end_simulation_s=10.5,remaining_mass_veh=1,rate_vps=2)
+    # Tick [10,11): one known vehicle in [10,10.5), then 0.5*0.4 forecast.
+    assert list(boundary_offers(state,{'boundary':.4},1))==[{'boundary':1.2}]

@@ -12,7 +12,7 @@ from services.simulation.metrics import METRICS_VERSION, link_metrics
 from services.simulation.safety import Signals, activation_rejection, default_plan, validate_plan, validate_runtime_safety
 from services.intelligence.forecast_demand import FORECAST_VERSION, HORIZONS_S, boundary_forecast_rates
 from services.intelligence.controller import coordinated_plan
-from services.intelligence.known_demand import boundary_offers
+from services.intelligence.known_demand import KNOWN_RELEASE_VERSION, boundary_offers
 
 MODEL='aggregate-predictor-v1'
 
@@ -66,7 +66,7 @@ class Model:
             if frozen.scheduler.HasField('requested_at_tick') or pending and pending!=self.plan(frozen):
                 raise ValueError('Operating comparison has a pending virtual plan')
         rates,methods=boundary_forecast_rates(frozen,self.index)
-        assumptions={'forecast_version':FORECAST_VERSION,'offered_window_s':{row.link_id:row.offered_window_s if row.HasField('offered_window_s') else None for row in frozen.boundary_demand},'run_id':frozen.run_id,'input_session_id':frozen.input_session_id,'demand_source':frozen.demand_source,'input_quality':frozen.input_quality,'config_hash':frozen.config_hash,'forecast_origin_source_s':frozen.latest_finalized_window_end_source_s,'source_mapping': {'source_origin_s':frozen.source_time_mapping.source_origin_s,'simulation_origin_s':frozen.source_time_mapping.simulation_origin_s,'rate':frozen.source_time_mapping.source_seconds_per_simulation_second},'source_availability_watermark_s':frozen.snapshot_source_available_s if frozen.HasField('snapshot_source_available_s') else None,'rates_vps':rates,'forecast_methods':methods,'commitments':[{'link':c.boundary_link_id,'start':c.release_start_simulation_s,'end':c.release_end_simulation_s,'remaining':c.remaining_mass_veh,'rate':c.rate_vps} for c in frozen.demand_commitments]}
+        assumptions={'known_release_version':KNOWN_RELEASE_VERSION,'forecast_version':FORECAST_VERSION,'offered_window_s':{row.link_id:row.offered_window_s if row.HasField('offered_window_s') else None for row in frozen.boundary_demand},'run_id':frozen.run_id,'input_session_id':frozen.input_session_id,'demand_source':frozen.demand_source,'input_quality':frozen.input_quality,'config_hash':frozen.config_hash,'forecast_origin_source_s':frozen.latest_finalized_window_end_source_s,'source_mapping': {'source_origin_s':frozen.source_time_mapping.source_origin_s,'simulation_origin_s':frozen.source_time_mapping.simulation_origin_s,'rate':frozen.source_time_mapping.source_seconds_per_simulation_second},'source_availability_watermark_s':frozen.snapshot_source_available_s if frozen.HasField('snapshot_source_available_s') else None,'rates_vps':rates,'forecast_methods':methods,'commitments':[{'link':c.boundary_link_id,'start':c.release_start_simulation_s,'end':c.release_end_simulation_s,'remaining':c.remaining_mass_veh,'rate':c.rate_vps} for c in frozen.demand_commitments]}
         digest=hashlib.sha256(json.dumps(assumptions,sort_keys=True,separators=(',',':')).encode()).hexdigest()
         return {'state':frozen,'cells':self._initial_cells(frozen),'backlogs':{item.link_id:item.backlog_veh for item in frozen.boundary_demand},'rates':rates,'methods':methods,'demand_hash':digest}
     def regression_failures(self,baseline,candidate,require_benefit=True):
