@@ -9,7 +9,7 @@ import twin_pb2 as pb
 from services.shared.network_config import NetworkIndex, ROOT, config_hash, load_config
 from services.simulation.flow_kernel import step_cells
 from services.simulation.metrics import METRICS_VERSION, link_metrics
-from services.simulation.safety import Signals, activation_rejection, default_plan, validate_plan
+from services.simulation.safety import Signals, activation_rejection, default_plan, validate_plan, validate_runtime_safety
 from services.intelligence.forecast_demand import FORECAST_VERSION, HORIZONS_S, boundary_forecast_rates
 from services.intelligence.controller import coordinated_plan
 
@@ -25,6 +25,31 @@ class Model:
         self._request=threading.local()
         self.regression=json.loads((ROOT/'packages/scenario-config/prototype-evaluation-v1.json').read_text())['control']
     def plan(self,state): return {c.phase_id:c.green_s for c in state.active_plan} or default_plan(self.config)
+    def _validate_operating_snapshot(self,state):
+        for rows,key,expected,label in (
+            (state.boundary_demand,'link_id',set(self.index.boundary_inputs),'boundary demand'),
+            (state.movements,'movement_id',set(self.moves),'movement'),
+            (state.signals,'node_id',set(self.index.phases_by_node),'signal')):
+            ids=[getattr(row,key) for row in rows]
+            if len(ids)!=len(set(ids)) or set(ids)!=expected:
+                raise ValueError(f'Operating comparison requires a complete unique {label} snapshot')
+        cell_length=self.config.get('flow_model',{}).get('cell_length_m',40)
+        for row in state.cells:
+            link=self.links[row.link_id];count=max(1,math.ceil(link['length_m']/cell_length))
+            capacity=link['storage_capacity_veh']/count
+            if len(row.stock_veh)!=count or any(not math.isfinite(v) or v<0 or v>capacity+1e-9 for v in row.stock_veh):
+                raise ValueError('Operating cell stock is invalid or outside configured capacity')
+        for row in state.boundary_demand:
+            if any(not math.isfinite(v) or v<0 for v in (row.backlog_veh,row.offered_rate_vpm)):
+                raise ValueError('Operating boundary demand is invalid')
+        for row in state.movements:
+            if any(not math.isfinite(v) or v<0 for v in (row.queue_veh,row.arrival_rate_vpm,row.departure_rate_vpm,row.downstream_capacity_veh,row.waiting_age_s)):
+                raise ValueError('Operating movement measurements are invalid')
+        for row in state.signals:
+            phase=self.phases.get(row.phase_id)
+            if phase is None or phase['node_id']!=row.node_id or row.indication not in ('green','amber','all_red') or not math.isfinite(row.remaining_s) or row.remaining_s<0:
+                raise ValueError('Operating signal state is invalid')
+        validate_runtime_safety(self.config,state.signals)
     def _evaluation_input(self,state):
         frozen=pb.TrafficState();frozen.CopyFrom(state)
         if frozen.schema_version=='1.1':
@@ -33,6 +58,7 @@ class Model:
                 raise ValueError('Operating comparison requires a complete cell snapshot')
             if frozen.config_hash!=config_hash(self.config):
                 raise ValueError('Operating comparison configuration differs from snapshot')
+            self._validate_operating_snapshot(frozen)
             if {item.node_id for item in frozen.signals}!=set(self.index.phases_by_node):
                 raise ValueError('Operating comparison requires every controlled signal')
             pending={item.phase_id:item.green_s for item in frozen.scheduler.pending_plan}
