@@ -144,8 +144,8 @@ def process_video(video_path, cam_cfg, model, sample_fps=2.0, device="cpu", iden
                         in_queue = name != "pedestrain" and bool(queue_roi) and point_in_poly(*center, queue_roi)
                         queued += int(in_queue)
                         class_counts[name] = class_counts.get(name, 0) + 1
-                        detections.append({"id": tid, "class": name, "conf": float(confidence), "bbox": bbox,
-                                           "centroid": center, "trail": trail, "in_queue": in_queue, "has_crossed": tid in crossed})
+                        detections.append({"class": name, "conf": float(confidence), "bbox": bbox,
+                                           "centroid": center, "in_queue": in_queue, "has_crossed": tid in crossed})
                 rows.append({"time_s": time_s, "valid_until_s": min(duration, (frame_index + step) / fps),
                              "frame_idx": frame_index, "active_count": sum(v for k, v in class_counts.items() if k != "pedestrain"),
                              "pedestrian_count": class_counts.get("pedestrain", 0), "queue_count": queued,

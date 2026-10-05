@@ -16,7 +16,7 @@ go mod download
 docker compose up -d --wait postgres
 ```
 
-Start the local Go-control-plane stack:
+Start the complete end-to-end pipeline (Go control plane, Python compute, and Vite frontend):
 
 ```sh
 python3 scripts/bootstrap-local.py

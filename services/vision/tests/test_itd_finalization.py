@@ -47,15 +47,16 @@ def test_crossing_at_window_boundary_belongs_to_later_window(tmp_path, monkeypat
             boxes = Boxes(self.index)
             self.index += 1
             return [SimpleNamespace(boxes=boxes)]
-    ultralytics.YOLO = YOLO
-    monkeypatch.setitem(sys.modules, 'ultralytics', ultralytics)
-    sys.modules.pop('services.vision.itd_pipeline', None)
-    module = importlib.import_module('services.vision.itd_pipeline')
+            
+    monkeypatch.setattr('services.vision.itd_pipeline.YOLO', YOLO)
+    monkeypatch.setattr('services.vision.itd_pipeline.cv2', cv2)
+    
+    from services.vision.itd_pipeline import ITDVideoAnalyticsSession
     video = tmp_path / 'clip.mp4'
     model = tmp_path / 'model.pt'
     video.write_bytes(b'video')
     model.write_bytes(b'model')
-    session = module.ITDVideoAnalyticsSession('CAM-01', str(video), str(model),
+    session = ITDVideoAnalyticsSession('CAM-01', str(video), str(model),
         geometry={'counting_line': {'p1': [0.15, .55], 'p2': [.85, .55]},
                   'direction_vector': [0, 1], 'primary_direction': 'approaching'},
         target_fps=1)
@@ -64,4 +65,3 @@ def test_crossing_at_window_boundary_belongs_to_later_window(tmp_path, monkeypat
     assert rows[0].available_at_source_s >= rows[0].window_end_s
     assert rows[0].validation_level == 'provisional_unreviewed'
     assert len(rows[0].geometry_hash) == len(rows[0].model_hash) == 64
-    sys.modules.pop('services.vision.itd_pipeline', None)

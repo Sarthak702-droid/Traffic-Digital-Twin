@@ -52,7 +52,7 @@ def mock_dependencies(monkeypatch):
     # Save original to restore later
     yield monkeypatch
 
-def test_approaching_approaching_count(tmp_path, mock_dependencies):
+def test_approaching_approaching_count(tmp_path, mock_dependencies, monkeypatch):
     # Camera expects approaching, car moves approaching
     class Boxes:
         def __init__(self, index):
@@ -66,7 +66,7 @@ def test_approaching_approaching_count(tmp_path, mock_dependencies):
             boxes = Boxes(self.index)
             self.index += 1
             return [SimpleNamespace(boxes=boxes)]
-    mock_dependencies.setattr('services.vision.itd_pipeline.YOLO', YOLO)
+    monkeypatch.setattr('services.vision.itd_pipeline.YOLO', YOLO)
     
     video = tmp_path / 'clip.mp4'
     model = tmp_path / 'model.pt'
@@ -82,7 +82,7 @@ def test_approaching_approaching_count(tmp_path, mock_dependencies):
     assert rows[1].crossings_veh == 1
     assert rows[1].counts_by_class['car'] == 1
 
-def test_approaching_departing_zero(tmp_path, mock_dependencies):
+def test_approaching_departing_zero(tmp_path, mock_dependencies, monkeypatch):
     # Camera expects approaching, car moves departing (y goes from 384 to 320)
     class Boxes:
         def __init__(self, index):
@@ -96,7 +96,7 @@ def test_approaching_departing_zero(tmp_path, mock_dependencies):
             boxes = Boxes(self.index)
             self.index += 1
             return [SimpleNamespace(boxes=boxes)]
-    mock_dependencies.setattr('services.vision.itd_pipeline.YOLO', YOLO)
+    monkeypatch.setattr('services.vision.itd_pipeline.YOLO', YOLO)
     
     video = tmp_path / 'clip.mp4'
     model = tmp_path / 'model.pt'
@@ -112,7 +112,7 @@ def test_approaching_departing_zero(tmp_path, mock_dependencies):
     assert rows[1].crossings_veh == 0
     assert rows[1].counts_by_class['car'] == 0
 
-def test_departing_departing_count(tmp_path, mock_dependencies):
+def test_departing_departing_count(tmp_path, mock_dependencies, monkeypatch):
     # Camera expects departing, car moves departing
     class Boxes:
         def __init__(self, index):
@@ -126,7 +126,7 @@ def test_departing_departing_count(tmp_path, mock_dependencies):
             boxes = Boxes(self.index)
             self.index += 1
             return [SimpleNamespace(boxes=boxes)]
-    mock_dependencies.setattr('services.vision.itd_pipeline.YOLO', YOLO)
+    monkeypatch.setattr('services.vision.itd_pipeline.YOLO', YOLO)
     
     video = tmp_path / 'clip.mp4'
     model = tmp_path / 'model.pt'
@@ -142,7 +142,7 @@ def test_departing_departing_count(tmp_path, mock_dependencies):
     assert rows[1].crossings_veh == 1
     assert rows[1].counts_by_class['car'] == 1
 
-def test_departing_approaching_zero(tmp_path, mock_dependencies):
+def test_departing_approaching_zero(tmp_path, mock_dependencies, monkeypatch):
     # Camera expects departing, car moves approaching
     class Boxes:
         def __init__(self, index):
@@ -156,7 +156,7 @@ def test_departing_approaching_zero(tmp_path, mock_dependencies):
             boxes = Boxes(self.index)
             self.index += 1
             return [SimpleNamespace(boxes=boxes)]
-    mock_dependencies.setattr('services.vision.itd_pipeline.YOLO', YOLO)
+    monkeypatch.setattr('services.vision.itd_pipeline.YOLO', YOLO)
     
     video = tmp_path / 'clip.mp4'
     model = tmp_path / 'model.pt'

@@ -78,7 +78,7 @@ type View = (typeof sections)[number]["id"];
 
 const scenarioLabels: Record<Scenario["id"], string> = {
   peak_surge: "Peak demand surge",
-  incident_c3: "C3 capacity reduction",
+  incident_c3: "Configured capacity reduction",
   ambulance_corridor: "Emergency corridor",
 };
 
@@ -557,7 +557,7 @@ export function Workspace() {
                 {view === "command"
                   ? "Real-time twin state, forward horizons, predictive alerts, and operator actions."
                   : view === "network"
-                    ? "Full connected C1–C6 corridor with before-and-after digital twin rollouts."
+                    ? "Full connected corridor with before-and-after digital twin rollouts."
                     : view === "audit"
                       ? "Durable audit record in PostgreSQL with component availability."
                       : view === "vision"

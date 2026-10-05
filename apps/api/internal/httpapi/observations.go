@@ -155,7 +155,7 @@ func (s *Server) getObservations(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if len(results) == 0 {
-			status, reason = "missing", "No finalized window is available at the requested source time"
+			status, reason = "missing", "Missing input: check recording"
 		}
 		if len(results) > 0 && asOf < 1e12 {
 			latest := results[len(results)-1]

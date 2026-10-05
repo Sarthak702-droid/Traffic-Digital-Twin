@@ -631,7 +631,8 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
   const laneMetrics = getStreamLaneMetrics(activeFrameData, activeTelemetry);
   const replayTimeS = mediaTime;
   const currentObservation = latestDisplayObservation(liveObservations, replayTimeS);
-  const observedFlowVpm = currentObservation?.observation_status === "valid" ? Number(currentObservation.flow_vpm) : null;
+  const isObservationStale = currentObservation ? (replayTimeS - Number(currentObservation.window_end_s) > 5) : false;
+  const observedFlowVpm = (currentObservation?.observation_status === "valid" && !isObservationStale) ? Number(currentObservation.flow_vpm) : null;
   const coverageLabel = activeTelemetry ? `${Number(activeTelemetry.duration_s).toFixed(1)}s analyzed · cached detections sampled at ${(1 / activeTelemetry.sample_interval_s).toFixed(1)} FPS · ${activeCamInfo.resolution}` : "Detection cache unavailable; process this registered clip";
   const activeClassCounts = activeFrameData?.class_counts || {};
   const [dominantClass, dominantClassCount] = Object.entries(activeClassCounts)
@@ -1016,7 +1017,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
             <div className="vision-stream-kpis">
               <div><span>Active vehicles</span><strong>{activeFrameData ? displayActiveVehicles : "—"}</strong><small>tracked in frame</small></div>
               <div><span>Queue ROI</span><strong>{activeFrameData ? displayQueueVehicles : "—"}</strong><small>observed vehicles</small></div>
-              <div><span>Line flow</span><strong>{observedFlowVpm == null ? "—" : observedFlowVpm.toFixed(1)}</strong><small>{observedFlowVpm == null ? "window not ready" : "vpm · observed"}</small></div>
+              <div><span>Line flow</span><strong>{observedFlowVpm == null ? "—" : observedFlowVpm.toFixed(1)}</strong><small>{observedFlowVpm == null ? (isObservationStale ? "stale evidence" : "window not ready") : "vpm · observed"}</small></div>
             </div>
             <p className="vision-stream-coverage">{coverageLabel} · {activeCamInfo.fps} source FPS · {displayURL ? "15 FPS display copy; original preserved · " : ""}{activeCamInfo.videoFile}</p>
           </div>
