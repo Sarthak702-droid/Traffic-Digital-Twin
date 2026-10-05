@@ -12,6 +12,7 @@ from math import isfinite
 
 from services.intelligence.forecast_demand import CausalForecaster
 
+CONTROL_BENEFIT_CLASSIFIER = 'control-benefit-v2'
 
 def _identity(row):
     source = row.get("source_identity", {})
@@ -280,6 +281,38 @@ def _within_regression(candidate, baseline, key, fraction, lower_is_better=True)
     return value + 1e-9 >= reference * (1 - fraction)
 
 
+def control_benefit_failures(plans, outcome, criteria):
+    """Classify measured normal-plan benefit with the frozen hard limits.
+
+    Shared by fresh evaluation and explicitly labelled historical rescoring.
+    A retained plan or zero reference delay does not prove percentage gain.
+    """
+    failures={}
+    for name,item in plans.items():
+        if item['status']!='available':
+            failures[name]=[item.get('reason','metric_evidence_unavailable')]
+            continue
+        residual=item.get('mass_residual_veh')
+        if isinstance(residual,bool) or not isinstance(residual,(int,float)) or not isfinite(residual) or abs(residual)>=1e-6:
+            failures[name]=['mass_conservation_failure']
+            continue
+        for key in ('queue_delay_veh_s','boundary_exits_veh','boundary_backlog_veh','boundary_wait_veh_s','spillback_exposure_link_s','worst_service_debt_s'):
+            value=item.get(key)
+            if isinstance(value,bool) or not isinstance(value,(int,float)) or not isfinite(value) or value<0:
+                failures.setdefault(name,[]).append('invalid_metric_evidence:'+key)
+    if failures:return failures
+    candidate=plans['coordinated']
+    failures={'coordinated': [f'{outcome}_is_not_an_improvement'] if outcome!='recommend' else []}
+    for name in ('fixed_timing','local_adaptive'):
+        baseline=plans[name];reasons=[]
+        if baseline['queue_delay_veh_s']<=1e-9:reasons.append('zero_reference_delay_has_no_percentage_gain')
+        if candidate['queue_delay_veh_s']>baseline['queue_delay_veh_s']*(1-criteria['primary_queue_delay_reduction_min'])+1e-9:reasons.append('queue_delay_reduction_below_5_percent')
+        for key,limit,lower in [('boundary_exits_veh','boundary_exits_regression_max',False),('boundary_backlog_veh','boundary_backlog_regression_max',True),('boundary_wait_veh_s','boundary_wait_regression_max',True),('spillback_exposure_link_s','spillback_exposure_regression_max',True),('worst_service_debt_s','worst_service_debt_regression_max',True)]:
+            if not _within_regression(candidate,baseline,key,criteria[limit],lower):reasons.append(key)
+        failures[name]=reasons
+    return failures
+
+
 def emergency_plan_metrics(live, plan, horizon_s, trace=None, offsets=None, recovery_observation_end_s=None):
     """Tuning diagnostic of aggregate route service and actual model recovery.
 
@@ -442,20 +475,7 @@ def sample_virtual_origin(engine, model, horizon_s, protocol, condition="peak"):
             result["emergency_recovery_availability"] = "unavailable_no_matched_route_metric"
             result["pass"] = False
         return result
-    if any(item["status"] != "available" or abs(item["mass_residual_veh"]) >= 1e-6
-           for item in plans.values()):
-        result["pass"] = False
-        result["benefit_failures"]={name:[item.get("reason","mass_conservation_failure")] for name,item in plans.items() if item["status"]!="available" or abs(item.get("mass_residual_veh",0))>=1e-6}
-        return result
-    candidate = plans["coordinated"]
-    criteria = protocol["control"]
-    failures={}
-    for name in ('fixed_timing','local_adaptive'):
-        baseline=plans[name];reasons=[]
-        if candidate['queue_delay_veh_s']>baseline['queue_delay_veh_s']*(1-criteria['primary_queue_delay_reduction_min'])+1e-9:reasons.append('queue_delay_reduction_below_5_percent')
-        for key,limit,lower in [('boundary_exits_veh','boundary_exits_regression_max',False),('boundary_backlog_veh','boundary_backlog_regression_max',True),('boundary_wait_veh_s','boundary_wait_regression_max',True),('spillback_exposure_link_s','spillback_exposure_regression_max',True),('worst_service_debt_s','worst_service_debt_regression_max',True)]:
-            if not _within_regression(candidate,baseline,key,criteria[limit],lower):reasons.append(key)
-        failures[name]=reasons
+    failures=control_benefit_failures(plans,analysis.outcome,protocol['control'])
     result['benefit_failures']=failures
     result['pass']=not any(failures.values())
     return result
@@ -537,7 +557,7 @@ def run_virtual_suite(protocol, workspace):
     conservation = all(case["world_mass_residual_veh"] < 1e-6 for case in cases
                        if case["status"] == "completed")
     failed = sum(case["status"] != "completed" for case in cases)
-    return {"target_type": "synthetic_model", "declared_cases": len(dimensions),
+    return {"target_type": "synthetic_model", "benefit_classifier_version": CONTROL_BENEFIT_CLASSIFIER, "declared_cases": len(dimensions),
             "failed_cases": failed, "eligible_origins": len(eligible),
             "improved_origins": improved,
             "improved_fraction": improved / len(eligible) if eligible else None,

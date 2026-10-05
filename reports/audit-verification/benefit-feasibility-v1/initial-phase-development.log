@@ -1,0 +1,4 @@
+c1-c6 peak 240 valid 40 admissible 0 beneficial 0 best None
+c1-c6 peak 480 valid 40 admissible 0 beneficial 0 best None
+three-controlled-junctions peak 240 valid 80 admissible 0 beneficial 0 best None
+three-controlled-junctions incident 480 valid 80 admissible 0 beneficial 0 best None

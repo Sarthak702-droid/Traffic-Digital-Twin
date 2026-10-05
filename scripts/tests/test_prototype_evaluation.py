@@ -383,3 +383,56 @@ def test_emergency_recovery_observation_does_not_extend_matched_flow_window(tmp_
         assert observed['recovery_observation_end_simulation_s']>60
         assert engine.tick==30
     finally:engine.close()
+
+@pytest.mark.parametrize('graph',['c1-c6','three-controlled-junctions'])
+def test_zero_delay_no_action_is_not_a_normal_benefit_pass(tmp_path,graph):
+    import json
+    import twin_pb2 as pb
+    from scripts.prototype_evaluation import sample_virtual_origin
+    from services.intelligence.model import Model
+    from services.shared.network_config import ROOT,load_config
+    from services.simulation.aggregate_engine import AggregateEngine
+    config=load_config(ROOT/'packages/scenario-config'/f'{graph}.json')
+    for scenario in config['scenarios']:
+        for key in ('base_rate_vps','feeder_rate_vps','surge_rate_vps'):scenario[key]=.001
+    path=tmp_path/'world.json';path.write_text(json.dumps(config))
+    engine=AggregateEngine(config_path=path,directory=tmp_path/'runtime')
+    try:
+        engine.reset(pb.RunCommand(schema_version='1.0',run_id='zero-delay-regression',scenario_type='peak_surge',seed=1101,mode='recommend'))
+        for _ in range(120):engine.step()
+        result=sample_virtual_origin(engine,Model(config),120,PROTOCOL,condition='off_peak')
+        assert result['analysis_outcome']=='no_action'
+        assert result['plans']['fixed_timing']['queue_delay_veh_s']==0
+        assert not result['pass']
+        assert 'no_action_is_not_an_improvement' in result['benefit_failures']['coordinated']
+        assert 'zero_reference_delay_has_no_percentage_gain' in result['benefit_failures']['fixed_timing']
+    finally:engine.close()
+
+@pytest.mark.parametrize('residual',[None,float('nan'),float('inf')])
+def test_missing_or_nonfinite_mass_evidence_cannot_qualify(residual):
+    from scripts.prototype_evaluation import control_benefit_failures
+    base={'status':'available','mass_residual_veh':0,'queue_delay_veh_s':100,
+          'boundary_exits_veh':10,'boundary_backlog_veh':0,'boundary_wait_veh_s':0,
+          'spillback_exposure_link_s':0,'worst_service_debt_s':10}
+    candidate={**base,'queue_delay_veh_s':90}
+    if residual is None:candidate.pop('mass_residual_veh')
+    else:candidate['mass_residual_veh']=residual
+    failures=control_benefit_failures({'fixed_timing':base,'local_adaptive':base,'coordinated':candidate},'recommend',PROTOCOL['control'])
+    assert failures['coordinated']==['mass_conservation_failure']
+
+@pytest.mark.parametrize('queue',[None,float('nan'),float('inf')])
+def test_invalid_delay_evidence_cannot_prove_percentage_gain(queue):
+    from scripts.prototype_evaluation import control_benefit_failures
+    base={'status':'available','mass_residual_veh':0,'queue_delay_veh_s':100,
+          'boundary_exits_veh':10,'boundary_backlog_veh':0,'boundary_wait_veh_s':0,
+          'spillback_exposure_link_s':0,'worst_service_debt_s':10}
+    plans={'fixed_timing':base,'local_adaptive':base,'coordinated':{**base,'queue_delay_veh_s':queue}}
+    assert control_benefit_failures(plans,'recommend',PROTOCOL['control'])['coordinated']==['invalid_metric_evidence:queue_delay_veh_s']
+
+def test_real_positive_improvement_still_qualifies_with_original_limits():
+    from scripts.prototype_evaluation import control_benefit_failures
+    base={'status':'available','mass_residual_veh':0,'queue_delay_veh_s':100,
+          'boundary_exits_veh':10,'boundary_backlog_veh':0,'boundary_wait_veh_s':0,
+          'spillback_exposure_link_s':0,'worst_service_debt_s':10}
+    plans={'fixed_timing':base,'local_adaptive':base,'coordinated':{**base,'queue_delay_veh_s':90}}
+    assert not any(control_benefit_failures(plans,'recommend',PROTOCOL['control']).values())

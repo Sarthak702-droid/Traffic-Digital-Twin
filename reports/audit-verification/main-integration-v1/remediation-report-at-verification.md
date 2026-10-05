@@ -6,7 +6,7 @@ Controller source revision: `92a55e7a37c5e668670cb27d443f9cc583cdff53`; audit re
 
 Fresh frozen v8: **35/144 qualifying benefit origins (24.3%; required 50%) — FAILED**. All 48 no-benefit, degraded-input and emergency lifecycle origins pass their respective checks. Candidate policy unchanged from v7; the fraction difference reflects fresh seeds, not an improvement attributed to the new validation.
 
-The latest complete real Python suite passes **347 tests** (benchmark-only follow-up); frontend **159 tests**, Go/database race, typecheck/build, dashboard security and contracts passed for the unchanged runtime at main integration. Current and historical scopes, failed regressions, resource results and integration evidence are recorded in [verification](../reports/audit-verification/main-integration-v1/manifest.json). The [structured report](../reports/audit-remediation-completion.json) includes the numerical benchmark pointer and matching summary. Prior evidence is preserved, with previous evolving reports archived verbatim.
+The complete real Python suite passes **338 tests**; frontend **159 tests**, Go/database race, typecheck/build, dashboard security and contracts pass. Current and historical scopes, failed regressions, resource results and integration evidence are recorded in [verification](../reports/audit-verification/main-integration-v1/manifest.json). The [structured report](../reports/audit-remediation-completion.json) includes the numerical benchmark pointer and matching summary. Prior evidence is preserved, with previous evolving reports archived verbatim.
 
 Independent recorded accuracy requires actual reserved authorized input, two distinct reviewers, real adjudication and a non-implementing operator. Those records remain unavailable. Current browser acceptance, original-target resources, field benefit and production readiness remain unverified. See [review checklist](INDEPENDENT-REVIEW-CHECKLIST.md), [handoff](AUDIT-INDEPENDENT-ACCEPTANCE-HANDOFF.md) and [controller diagnosis](CONTROLLER-BENEFIT-DIAGNOSIS.md).
 
@@ -312,9 +312,3 @@ Independent recorded accuracy requires actual reserved authorized input, two dis
 **Verification:** Current full Go/PostgreSQL race suite, real-dependency Python suite (338 tests), frontend suite (159 tests), typecheck/build and dashboard security checks; exact scope/evidence in reports/audit-verification/manifest.json. Current source follow-up: real Python 338 passed, frontend 159 passed, Go/PostgreSQL race, typecheck/build, contracts and dashboard security passed; exact evidence in reports/audit-verification/main-integration-v1/manifest.json.
 
 **Remaining risk/dependency:** Production/field readiness remains deferred; the six prototype gates are not inferred from these 20 remediation statuses.
-
-## Benchmark correctness and development feasibility follow-up
-
-The benchmark now rejects zero-delay no-action outcomes and missing/nonfinite mass or metric evidence rather than claiming a percentage improvement. Nine regression cases protect these requirements; the full real Python suite passes 347 tests and the script suite passes 55. Thresholds and operating candidate policy are unchanged.
-
-Historical rescoring of the previously viewed v8 artifact still gives **35/144**, versus **72 required**. This is diagnostic rescoring, not fresh held-out acceptance. The latest finite development-only searches found no qualifying plan in the exercised saturated peak/incident states, even with realized demand used only for offline diagnosis. They do not prove that no better controller exists. The failed gate remains open. See [scoped evidence](../reports/audit-verification/benefit-feasibility-v1/manifest.json) and [diagnosis](CONTROLLER-BENEFIT-DIAGNOSIS.md).

@@ -7,7 +7,7 @@
       "audit_item": "01 Control benefit",
       "priority": "P0",
       "status": "Partially Fixed",
-      "root_cause": "Uncoordinated alternatives were ranked without hard displacement constraints and failed the frozen benefit gate. Candidate de-duplication could replace the local reference slot; truncation favored early-junction changes. Five-second offered-rate samples overreacted to low-demand arrivals. Earlier emergency benchmark protocols lacked actual lifecycle measurement; some origins censored recovery. Benchmark classification also allowed zero-delay no_action to satisfy the percentage inequality and failed open on nonfinite metric evidence.",
+      "root_cause": "Uncoordinated alternatives were ranked without hard displacement constraints and failed the frozen benefit gate. Candidate de-duplication could replace the local reference slot; truncation favored early-junction changes. Five-second offered-rate samples overreacted to low-demand arrivals. Earlier emergency benchmark protocols lacked actual lifecycle measurement; some origins censored recovery.",
       "files_changed": [
         "services/intelligence/model.py",
         "scripts/prototype_evaluation.py",
@@ -26,7 +26,7 @@
         "apps/web/lib/live.ts",
         "docs/contracts-plan.md"
       ],
-      "exact_fix": "Preserved current timing and local adaptation as explicit reference slots. Operating schema 1.1 now evaluates three bounded demand/queue/receiving-storage proposals across the entire configured corridor, including alternative cycles and configured route phase offsets; legacy schema 1.0 preserves cycle-split behavior. Actual offset/activation rollouts, authority checks and all displacement constraints apply before ranking. Offered alternatives individually exceed unchanged minimum benefit and avoid duplicate green plans. Added past-only 60-second offered-demand smoothing and an optional observed-window contract field; forecast version/window bind comparison identity. Missing local reference fails closed. Per-candidate diagnostics expose activation, metric and regression failures; projection-versus-live-engine parity covers changed plans and offsets on both graphs. Emergency route flow uses the same 120-second window, with separate declared actual recovery observation through simulation time 600. Maximum five candidates, concurrency one, horizon 120 and deadline 1.5 seconds retained. Further required complete unique operating boundary/movement/signal sets, finite physical cells within configured capacity, valid metrics and shared runtime-safety checks before evaluation; malformed input cannot produce forecasts or recommendations. Classifier control-benefit-v2 requires a recommendation, positive baseline delay, finite nonnegative metrics and explicit finite mass-conservation evidence. The original improvement and displacement thresholds remain unchanged; no_action retains its separate safe-retention checks.",
+      "exact_fix": "Preserved current timing and local adaptation as explicit reference slots. Operating schema 1.1 now evaluates three bounded demand/queue/receiving-storage proposals across the entire configured corridor, including alternative cycles and configured route phase offsets; legacy schema 1.0 preserves cycle-split behavior. Actual offset/activation rollouts, authority checks and all displacement constraints apply before ranking. Offered alternatives individually exceed unchanged minimum benefit and avoid duplicate green plans. Added past-only 60-second offered-demand smoothing and an optional observed-window contract field; forecast version/window bind comparison identity. Missing local reference fails closed. Per-candidate diagnostics expose activation, metric and regression failures; projection-versus-live-engine parity covers changed plans and offsets on both graphs. Emergency route flow uses the same 120-second window, with separate declared actual recovery observation through simulation time 600. Maximum five candidates, concurrency one, horizon 120 and deadline 1.5 seconds retained. Further required complete unique operating boundary/movement/signal sets, finite physical cells within configured capacity, valid metrics and shared runtime-safety checks before evaluation; malformed input cannot produce forecasts or recommendations.",
       "tests_added_or_updated": [
         "services/intelligence/tests/test_bounded_recommendations_s03.py",
         "services/intelligence/tests/test_epic6.py",
@@ -38,7 +38,7 @@
         "apps/web/lib/live.test.tsx",
         "services/intelligence/tests/test_operating_input_integrity.py"
       ],
-      "verification_result": "Frozen v8 at source 92a55e7: 72 cases complete, 35/144 qualifying origins (24.3%); required 50% gate FAILED. All 48 no-benefit, degraded-input and emergency lifecycle checks pass. Candidate policy unchanged from v7; difference in fraction reflects fresh seeds, not a claimed controller improvement from validation. Source hashes verified after execution. Full real Python suite passes; current Go/database race, frontend 159, typecheck/build/security/contracts pass. Invalid-snapshot regressions reproduce 26 failures plus four unsafe signal failures before fixes; all reject safely afterward. Existing projection/execution parity passes. Prior failures preserved. Benchmark-only follow-up: 347 real Python tests and 55 script tests pass, including nine new regressions. Historical strict rescore still qualifies 35/144, all genuine recommendations; no acceptance change. Finite development-only actual-trace allocation/cycle/phase/search probes found no qualifying plan in the exercised saturated states; they are not an impossibility proof or operating candidates.",
+      "verification_result": "Frozen v8 at source 92a55e7: 72 cases complete, 35/144 qualifying origins (24.3%); required 50% gate FAILED. All 48 no-benefit, degraded-input and emergency lifecycle checks pass. Candidate policy unchanged from v7; difference in fraction reflects fresh seeds, not a claimed controller improvement from validation. Source hashes verified after execution. Full real Python suite passes; current Go/database race, frontend 159, typecheck/build/security/contracts pass. Invalid-snapshot regressions reproduce 26 failures plus four unsafe signal failures before fixes; all reject safely afterward. Existing projection/execution parity passes. Prior failures preserved.",
       "remaining_risk_or_dependency": "Benefit gate remains failed, especially peak and incident; finite development search is not an impossibility proof. No controller/physical benefit acceptance claim. Independent reserved recording, two genuine reviewers and non-implementing operator remain unavailable. See docs/CONTROLLER-BENEFIT-DIAGNOSIS.md."
     },
     {
@@ -436,7 +436,7 @@
     }
   },
   "followup_verification": {
-    "python_tests_passed": 347,
+    "python_tests_passed": 338,
     "frontend_tests_passed": 159,
     "go_database_race": "passed",
     "typecheck_build_security_contracts": "passed",
@@ -449,19 +449,8 @@
     "independent_review": "Blocked: actual genuine reviewer records and unseen authorized recorded input unavailable",
     "snapshot_integrity": "passed: complete unique boundaries/movements/signals, finite cell/metric values, configured physical capacity and shared runtime safety",
     "report_evidence_consistency": "passed: numerical benchmark pointer and 20-item totals match artifacts",
-    "integration_base": "82b9a6a: main already contained previous remediation before this follow-up",
-    "benchmark_correctness": {
-      "classifier": "control-benefit-v2",
-      "python_tests_passed": 347,
-      "script_tests_passed": 55,
-      "historical_rescore": "reports/audit-verification/benefit-feasibility-v1/v8-diagnostic-rescore.json",
-      "qualified_origins": 35,
-      "required_origins": 72,
-      "gate_pass": false,
-      "scope": "Benchmark-only changes; historical rescoring is diagnostic, not a fresh holdout. Go/frontend/runtime evidence remains scoped to main-integration-v1."
-    }
+    "integration_base": "82b9a6a: main already contained previous remediation before this follow-up"
   },
   "previous_source_revision": "8ad7ac78f96c151f8cc588e2236ec42d2b5d07f7",
-  "verification_manifest": "reports/audit-verification/main-integration-v1/manifest.json",
-  "benchmark_followup_manifest": "reports/audit-verification/benefit-feasibility-v1/manifest.json"
+  "verification_manifest": "reports/audit-verification/main-integration-v1/manifest.json"
 }

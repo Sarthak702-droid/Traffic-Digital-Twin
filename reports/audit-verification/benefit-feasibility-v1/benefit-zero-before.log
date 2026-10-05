@@ -1,0 +1,72 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/sarthaktripathy/.codex/worktrees/f526/Traffic-Digital-Twin
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 27 items
+
+scripts/tests/test_prototype_evaluation.py .........................FF   [100%]
+
+=================================== FAILURES ===================================
+________ test_zero_delay_no_action_is_not_a_normal_benefit_pass[c1-c6] _________
+
+tmp_path = PosixPath('/tmp/pytest-of-sarthaktripathy/pytest-29/test_zero_delay_no_action_is_n0')
+graph = 'c1-c6'
+
+    @pytest.mark.parametrize('graph',['c1-c6','three-controlled-junctions'])
+    def test_zero_delay_no_action_is_not_a_normal_benefit_pass(tmp_path,graph):
+        import json
+        import twin_pb2 as pb
+        from scripts.prototype_evaluation import sample_virtual_origin
+        from services.intelligence.model import Model
+        from services.shared.network_config import ROOT,load_config
+        from services.simulation.aggregate_engine import AggregateEngine
+        config=load_config(ROOT/'packages/scenario-config'/f'{graph}.json')
+        for scenario in config['scenarios']:
+            for key in ('base_rate_vps','feeder_rate_vps','surge_rate_vps'):scenario[key]=.001
+        path=tmp_path/'world.json';path.write_text(json.dumps(config))
+        engine=AggregateEngine(config_path=path,directory=tmp_path/'runtime')
+        try:
+            engine.reset(pb.RunCommand(schema_version='1.0',run_id='zero-delay-regression',scenario_type='peak_surge',seed=1101,mode='recommend'))
+            for _ in range(120):engine.step()
+            result=sample_virtual_origin(engine,Model(config),120,PROTOCOL,condition='off_peak')
+            assert result['analysis_outcome']=='no_action'
+            assert result['plans']['fixed_timing']['queue_delay_veh_s']==0
+>           assert not result['pass']
+E           assert not True
+
+scripts/tests/test_prototype_evaluation.py:406: AssertionError
+_ test_zero_delay_no_action_is_not_a_normal_benefit_pass[three-controlled-junctions] _
+
+tmp_path = PosixPath('/tmp/pytest-of-sarthaktripathy/pytest-29/test_zero_delay_no_action_is_n1')
+graph = 'three-controlled-junctions'
+
+    @pytest.mark.parametrize('graph',['c1-c6','three-controlled-junctions'])
+    def test_zero_delay_no_action_is_not_a_normal_benefit_pass(tmp_path,graph):
+        import json
+        import twin_pb2 as pb
+        from scripts.prototype_evaluation import sample_virtual_origin
+        from services.intelligence.model import Model
+        from services.shared.network_config import ROOT,load_config
+        from services.simulation.aggregate_engine import AggregateEngine
+        config=load_config(ROOT/'packages/scenario-config'/f'{graph}.json')
+        for scenario in config['scenarios']:
+            for key in ('base_rate_vps','feeder_rate_vps','surge_rate_vps'):scenario[key]=.001
+        path=tmp_path/'world.json';path.write_text(json.dumps(config))
+        engine=AggregateEngine(config_path=path,directory=tmp_path/'runtime')
+        try:
+            engine.reset(pb.RunCommand(schema_version='1.0',run_id='zero-delay-regression',scenario_type='peak_surge',seed=1101,mode='recommend'))
+            for _ in range(120):engine.step()
+            result=sample_virtual_origin(engine,Model(config),120,PROTOCOL,condition='off_peak')
+            assert result['analysis_outcome']=='no_action'
+            assert result['plans']['fixed_timing']['queue_delay_veh_s']==0
+            assert not result['pass']
+>           assert 'no_action_is_not_an_improvement' in result['benefit_failures']['coordinated']
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'coordinated'
+
+scripts/tests/test_prototype_evaluation.py:407: KeyError
+=========================== short test summary info ============================
+FAILED scripts/tests/test_prototype_evaluation.py::test_zero_delay_no_action_is_not_a_normal_benefit_pass[c1-c6]
+FAILED scripts/tests/test_prototype_evaluation.py::test_zero_delay_no_action_is_not_a_normal_benefit_pass[three-controlled-junctions]
+========================= 2 failed, 25 passed in 2.51s =========================

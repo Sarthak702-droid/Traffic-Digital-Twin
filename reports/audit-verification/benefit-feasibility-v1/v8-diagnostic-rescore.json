@@ -1,0 +1,2159 @@
+{
+  "scope": "historical diagnostic rescoring of previously viewed v8 metrics; not a new untouched holdout or acceptance",
+  "source_artifact": "reports/audit-heldout-results-v8.json",
+  "source_sha256": "223749f8210276f30478916dffeb8ac31a449766962397f3079599c2d9b2e663",
+  "benefit_classifier_version": "control-benefit-v2",
+  "original_qualified_origins": 35,
+  "strict_qualified_origins": 35,
+  "eligible_origins": 144,
+  "required_qualified_origins": 72,
+  "gate_pass": false,
+  "criteria": {
+    "comparison_window_s": 120,
+    "baselines": [
+      "fixed_timing",
+      "local_adaptive"
+    ],
+    "primary_queue_delay_reduction_min": 0.05,
+    "minimum_improved_eligible_cases_fraction": 0.5,
+    "boundary_exits_regression_max": 0.02,
+    "boundary_backlog_regression_max": 0.02,
+    "boundary_wait_regression_max": 0.02,
+    "worst_service_debt_regression_max": 0.1,
+    "spillback_exposure_regression_max": 0.02,
+    "allowed_unsafe_applications": 0,
+    "degraded_input_actionable_recommendations_max": 0
+  },
+  "origins": [
+    {
+      "case_id": "c1-c6-32117-peak-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-peak-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-peak-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-peak-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-peak-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-peak-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-peak-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-peak-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-off_peak-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-off_peak-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-off_peak-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-off_peak-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-off_peak-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-off_peak-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-off_peak-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-off_peak-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-incident-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-incident-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-incident-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-incident-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-incident-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-incident-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-incident-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32117-incident-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-peak-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-peak-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-peak-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-peak-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent",
+          "boundary_exits_veh"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-peak-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-peak-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-peak-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-peak-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent",
+          "boundary_backlog_veh"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-off_peak-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-off_peak-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-off_peak-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-off_peak-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-off_peak-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-off_peak-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-off_peak-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-off_peak-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-incident-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-incident-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-incident-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-incident-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent",
+          "boundary_exits_veh"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-incident-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent",
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-incident-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-incident-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32233-incident-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent",
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-peak-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-peak-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-peak-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-peak-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-peak-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-peak-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-peak-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-peak-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-off_peak-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-off_peak-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-off_peak-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-off_peak-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-off_peak-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-off_peak-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-off_peak-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-off_peak-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-incident-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-incident-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-incident-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-incident-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-incident-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent",
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-incident-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-incident-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "c1-c6-32341-incident-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent",
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-peak-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-peak-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-peak-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-peak-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-peak-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-peak-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-peak-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-peak-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-off_peak-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-off_peak-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-off_peak-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-off_peak-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-off_peak-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-off_peak-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-off_peak-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-off_peak-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-incident-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-incident-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-incident-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-incident-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-incident-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-incident-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-incident-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32117-incident-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-peak-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-peak-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-peak-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-peak-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-peak-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-peak-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s",
+          "spillback_exposure_link_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-peak-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-peak-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent",
+          "spillback_exposure_link_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-off_peak-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [
+          "spillback_exposure_link_s"
+        ],
+        "local_adaptive": [
+          "spillback_exposure_link_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-off_peak-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-off_peak-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-off_peak-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-off_peak-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-off_peak-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-off_peak-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-off_peak-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-incident-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-incident-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-incident-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-incident-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-incident-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-incident-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-incident-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32233-incident-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent",
+          "spillback_exposure_link_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-peak-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-peak-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-peak-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-peak-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-peak-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-peak-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-peak-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-peak-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-off_peak-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent",
+          "spillback_exposure_link_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-off_peak-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-off_peak-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-off_peak-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-off_peak-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-off_peak-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-off_peak-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-off_peak-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": true,
+      "strict_pass": true,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [],
+        "local_adaptive": []
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-incident-low_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-incident-low_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-incident-low_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-incident-low_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-incident-high_capacity",
+      "origin_simulation_s": 120.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "queue_delay_reduction_below_5_percent",
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-incident-high_capacity",
+      "origin_simulation_s": 240.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-incident-high_capacity",
+      "origin_simulation_s": 360.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "coordinated": [
+          "no_action_is_not_an_improvement"
+        ],
+        "fixed_timing": [
+          "queue_delay_reduction_below_5_percent"
+        ],
+        "local_adaptive": [
+          "boundary_backlog_veh",
+          "boundary_wait_veh_s"
+        ]
+      }
+    },
+    {
+      "case_id": "three-controlled-junctions-32341-incident-high_capacity",
+      "origin_simulation_s": 480.0,
+      "original_pass": false,
+      "strict_pass": false,
+      "failures": {
+        "local_adaptive": [
+          "Downstream storage unavailable at activation boundary"
+        ]
+      }
+    }
+  ]
+}

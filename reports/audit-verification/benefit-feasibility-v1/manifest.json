@@ -1,0 +1,119 @@
+{
+  "scope": "Benchmark correctness and finite development-only feasibility diagnostics; not held-out acceptance or proof of infeasibility",
+  "base_source_revision": "0d3c2ac075d18c982ae11c7a5f183507436a816b",
+  "controller_revision": "92a55e7a37c5e668670cb27d443f9cc583cdff53",
+  "controller_policy_changed": false,
+  "classifier": "control-benefit-v2",
+  "thresholds_changed": false,
+  "python_tests": 347,
+  "script_tests": 55,
+  "verification_commands": [
+    "PYTHONPATH=\"$PWD:$PWD/packages/contracts/gen/python\" .venv/bin/python -m pytest services scripts/tests tests packages -q",
+    "PYTHONPATH=\"$PWD:$PWD/packages/contracts/gen/python\" .venv/bin/python -m pytest scripts/tests -q"
+  ],
+  "probe_execution": "Run from repository root with PYTHONPATH=\"$PWD:$PWD/packages/contracts/gen/python\" .venv/bin/python reports/audit-verification/benefit-feasibility-v1/<probe>.py; expensive development-only diagnostics, not operating code",
+  "development_probe_seed": 1101,
+  "realized_future_demand_scope": "offline diagnostic only; never controller input",
+  "historical_rescore": {
+    "eligible_origins": 144,
+    "improved_origins": 35,
+    "required_origins": 72,
+    "gate_pass": false,
+    "fresh_holdout": false
+  },
+  "unchanged_runtime_evidence": "../main-integration-v1/manifest.json",
+  "remaining_dependencies": [
+    "Qualifying past-only operating policy and fresh unseen synthetic holdout",
+    "Two genuine independent reviewers and reserved authorized recorded input",
+    "Non-implementing operator acceptance",
+    "Current browser and original target workstation acceptance"
+  ],
+  "artifacts": [
+    {
+      "relative_path": "benefit-invalid-metric-before.log",
+      "sha256": "545a272b2c1355509f7489341d766e627f1b74e31ff3267f8fbb211336ff10fd"
+    },
+    {
+      "relative_path": "benefit-mass-after.log",
+      "sha256": "37145c9da24089b3f908e5007fd9b45a6f7cc332a71550ed09df0e9279f64282"
+    },
+    {
+      "relative_path": "benefit-mass-before.log",
+      "sha256": "b7037de0afcb2eb196c1baffcbf3256b516bae41cd508428f8158fa753644a9f"
+    },
+    {
+      "relative_path": "benefit-python-final.log",
+      "sha256": "d361bd88b0c1e09d1010de4d99d849a6091e8490db17700cd8962986d1b524fb"
+    },
+    {
+      "relative_path": "benefit-scripts-final.log",
+      "sha256": "c92b7b135ba208b9309e9355d248811ff1899ba298a827cb95165ce346b17d45"
+    },
+    {
+      "relative_path": "benefit-scripts-report-final.log",
+      "sha256": "7083928a33437daf3f16f24c8eb0b04c854241af08b53dba0ef6fac165a98fe9"
+    },
+    {
+      "relative_path": "benefit-zero-after.log",
+      "sha256": "502b90f80e5e4bfd0102bce6903293b1bb4b6e6d1df93d320cf13db5de94b70c"
+    },
+    {
+      "relative_path": "benefit-zero-before.log",
+      "sha256": "b3670db66229a9c2dfd8713fe85abbb96614abde681ccf4cb232d9551ba36a4c"
+    },
+    {
+      "relative_path": "constraint-search-development.log",
+      "sha256": "5d6422d70e79cdc52639be8d195a82baced16e742ac5e4150200b587128d755b"
+    },
+    {
+      "relative_path": "constraint-search-development.py",
+      "sha256": "333139de287d765b36c4584c1efcfd50069332db29f09ce290d9007f7a9f2a66"
+    },
+    {
+      "relative_path": "control-feasibility-realized.log",
+      "sha256": "e9e272b9f63241d51fa0192184b2c607aeaab35e8a4e7413d53f2b7fd770ac70"
+    },
+    {
+      "relative_path": "control-feasibility-realized.py",
+      "sha256": "deae4f29a00d53511f725b0ac4b622cca6c32d889536ce66ff2dcfe1dd103a1b"
+    },
+    {
+      "relative_path": "coupled-cycle-development.log",
+      "sha256": "95b034853fd99b2799fe0f16b444061652446408fd23d13abea1efe2bea7f702"
+    },
+    {
+      "relative_path": "coupled-cycle-development.py",
+      "sha256": "3298fe8135e61589b33c80dfd9e4d617586fbbab72b03aa4fb6bb54e6faf0305"
+    },
+    {
+      "relative_path": "initial-phase-development.log",
+      "sha256": "4cf0d999f7b9172f7a44ef6c3f9c783bd5fbedca160537cbb9f5207799f24091"
+    },
+    {
+      "relative_path": "initial-phase-development.py",
+      "sha256": "d5546c3c6c21b3da763e7f6113bdd32463fa6d097b49286397805e87dc640509"
+    },
+    {
+      "relative_path": "long-cycle-development.log",
+      "sha256": "6ffc8fd77ad2e117fc228001100517f543e416606fa7ee3a600aeb0a21a4cab5"
+    },
+    {
+      "relative_path": "long-cycle-development.py",
+      "sha256": "f65ed3ae9f610a0c7b82103e45be8de2fadfab14e72afdae77a5d3990bfa055e"
+    },
+    {
+      "relative_path": "v8-diagnostic-rescore.json",
+      "sha256": "e3c8097a30c81761245c5e340d475e61418eec20b53fdf8b34cb144857025ef8"
+    }
+  ],
+  "source_hashes": {
+    "scripts/prototype_evaluation.py": "b0ceb2375965935b78f1a9abdd1cd916d3ddda3fd80415c8d0125d8a0e47fcfe",
+    "scripts/tests/test_prototype_evaluation.py": "79fba385d16f29f2332144b274d9d7889d4f0d8e7c79c2917179a95dc8fc986b"
+  },
+  "recorded_at_utc": "2026-10-05T04:58:12.709940+00:00",
+  "current_reporting_sha256": {
+    "reports/audit-remediation-completion.json": "a33fd6b3d40a7f4f8fea799e7dad0b5dd0933cf5780cf02a5d7d9c9199713c3b",
+    "docs/AUDIT-REMEDIATION.md": "ebe80591a8d5917394a85e8f4309e4da667851ddcb070944eee3706fe545db5b",
+    "docs/CONTROLLER-BENEFIT-DIAGNOSIS.md": "58432b8ab6e82f69075ed8a55ec2ca90fa726bfb6ea2c6a8ee8ef0fdf569668f"
+  }
+}

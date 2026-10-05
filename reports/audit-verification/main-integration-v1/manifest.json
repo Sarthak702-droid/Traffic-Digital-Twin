@@ -160,10 +160,11 @@
     "../../audit-heldout-results-v8.json": "223749f8210276f30478916dffeb8ac31a449766962397f3079599c2d9b2e663",
     "../../audit-holdout-freeze-v8.json": "dea7912ec4a39d0a01c722df9e0420205761cb847d6c5371a14ab4b59de1c125",
     "../../audit-resource-candidates-main-v1.json": "9d0ecc46215bdddf0f05fa121f1f5f83fd6302eee0352c575e3221ca83bfd55e",
-    "../../audit-remediation-completion.json": "f44522f4c34da447ef86666fdb34c40e67c34d8b2bba6e39af8d91d77ecf6bd7",
-    "../../../docs/AUDIT-REMEDIATION.md": "9b893e03345c992262d24707394df84f404fce0966b31f5bc575d078172b0a3d",
-    "../../../docs/CONTROLLER-BENEFIT-DIAGNOSIS.md": "8402a9af5ea3c25fd788e2ad7ac31d53cfc0ea70568f35bec8cde2f64b1010f5",
     "../../../packages/scenario-config/prototype-evaluation-audit-v8.json": "68a933e8e85a572e1882cd640be98bc57f242da6daeda2b516685d1ec8d20aa4",
-    "../controller-v3/manifest.json": "c4210733d98f929ceb276ab9991982d98ba16cc9abd2e9be5aa0c4697a223a5d"
-  }
+    "../controller-v3/manifest.json": "c4210733d98f929ceb276ab9991982d98ba16cc9abd2e9be5aa0c4697a223a5d",
+    "completion-report-at-verification.json": "f44522f4c34da447ef86666fdb34c40e67c34d8b2bba6e39af8d91d77ecf6bd7",
+    "remediation-report-at-verification.md": "9b893e03345c992262d24707394df84f404fce0966b31f5bc575d078172b0a3d",
+    "controller-diagnosis-at-verification.md": "8402a9af5ea3c25fd788e2ad7ac31d53cfc0ea70568f35bec8cde2f64b1010f5"
+  },
+  "historical_reporting": "Evolving top-level reports archived verbatim before benefit-feasibility follow-up; hash pointers now bind the actual report snapshot."
 }

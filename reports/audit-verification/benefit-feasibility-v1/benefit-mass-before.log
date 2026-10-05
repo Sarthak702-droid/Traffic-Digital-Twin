@@ -1,0 +1,57 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/sarthaktripathy/.codex/worktrees/f526/Traffic-Digital-Twin
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 30 items
+
+scripts/tests/test_prototype_evaluation.py ...........................FF [ 96%]
+.                                                                        [100%]
+
+=================================== FAILURES ===================================
+_________ test_missing_or_nonfinite_mass_evidence_cannot_qualify[None] _________
+
+residual = None
+
+    @pytest.mark.parametrize('residual',[None,float('nan'),float('inf')])
+    def test_missing_or_nonfinite_mass_evidence_cannot_qualify(residual):
+        from scripts.prototype_evaluation import control_benefit_failures
+        base={'status':'available','mass_residual_veh':0,'queue_delay_veh_s':100,
+              'boundary_exits_veh':10,'boundary_backlog_veh':0,'boundary_wait_veh_s':0,
+              'spillback_exposure_link_s':0,'worst_service_debt_s':10}
+        candidate={**base,'queue_delay_veh_s':90}
+        if residual is None:candidate.pop('mass_residual_veh')
+        else:candidate['mass_residual_veh']=residual
+        failures=control_benefit_failures({'fixed_timing':base,'local_adaptive':base,'coordinated':candidate},'recommend',PROTOCOL['control'])
+>       assert failures['coordinated']==['mass_conservation_failure']
+E       AssertionError: assert [] == ['mass_conservation_failure']
+E         
+E         Right contains one more item: 'mass_conservation_failure'
+E         Use -v to get more diff
+
+scripts/tests/test_prototype_evaluation.py:421: AssertionError
+_________ test_missing_or_nonfinite_mass_evidence_cannot_qualify[nan] __________
+
+residual = nan
+
+    @pytest.mark.parametrize('residual',[None,float('nan'),float('inf')])
+    def test_missing_or_nonfinite_mass_evidence_cannot_qualify(residual):
+        from scripts.prototype_evaluation import control_benefit_failures
+        base={'status':'available','mass_residual_veh':0,'queue_delay_veh_s':100,
+              'boundary_exits_veh':10,'boundary_backlog_veh':0,'boundary_wait_veh_s':0,
+              'spillback_exposure_link_s':0,'worst_service_debt_s':10}
+        candidate={**base,'queue_delay_veh_s':90}
+        if residual is None:candidate.pop('mass_residual_veh')
+        else:candidate['mass_residual_veh']=residual
+        failures=control_benefit_failures({'fixed_timing':base,'local_adaptive':base,'coordinated':candidate},'recommend',PROTOCOL['control'])
+>       assert failures['coordinated']==['mass_conservation_failure']
+E       AssertionError: assert [] == ['mass_conservation_failure']
+E         
+E         Right contains one more item: 'mass_conservation_failure'
+E         Use -v to get more diff
+
+scripts/tests/test_prototype_evaluation.py:421: AssertionError
+=========================== short test summary info ============================
+FAILED scripts/tests/test_prototype_evaluation.py::test_missing_or_nonfinite_mass_evidence_cannot_qualify[None]
+FAILED scripts/tests/test_prototype_evaluation.py::test_missing_or_nonfinite_mass_evidence_cannot_qualify[nan]
+========================= 2 failed, 28 passed in 2.49s =========================

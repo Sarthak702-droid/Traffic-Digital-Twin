@@ -1,0 +1,98 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/sarthaktripathy/.codex/worktrees/f526/Traffic-Digital-Twin
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 34 items
+
+scripts/tests/test_prototype_evaluation.py ............................. [ 85%]
+.FFF.                                                                    [100%]
+
+=================================== FAILURES ===================================
+________ test_invalid_delay_evidence_cannot_prove_percentage_gain[None] ________
+
+queue = None
+
+    @pytest.mark.parametrize('queue',[None,float('nan'),float('inf')])
+    def test_invalid_delay_evidence_cannot_prove_percentage_gain(queue):
+        from scripts.prototype_evaluation import control_benefit_failures
+        base={'status':'available','mass_residual_veh':0,'queue_delay_veh_s':100,
+              'boundary_exits_veh':10,'boundary_backlog_veh':0,'boundary_wait_veh_s':0,
+              'spillback_exposure_link_s':0,'worst_service_debt_s':10}
+        plans={'fixed_timing':base,'local_adaptive':base,'coordinated':{**base,'queue_delay_veh_s':queue}}
+>       assert control_benefit_failures(plans,'recommend',PROTOCOL['control'])['coordinated']==['invalid_metric_evidence:queue_delay_veh_s']
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+scripts/tests/test_prototype_evaluation.py:430: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+plans = {'fixed_timing': {'status': 'available', 'mass_residual_veh': 0, 'queue_delay_veh_s': 100, 'boundary_exits_veh': 10, ....oordinated': {'status': 'available', 'mass_residual_veh': 0, 'queue_delay_veh_s': None, 'boundary_exits_veh': 10, ...}}
+outcome = 'recommend'
+criteria = {'primary_queue_delay_reduction_min': 0.05, 'boundary_exits_regression_max': 0.02, 'boundary_backlog_regression_max': 0.02, 'boundary_wait_regression_max': 0.02, ...}
+
+    def control_benefit_failures(plans, outcome, criteria):
+        """Classify measured normal-plan benefit with the frozen hard limits.
+    
+        Shared by fresh evaluation and explicitly labelled historical rescoring.
+        A retained plan or zero reference delay does not prove percentage gain.
+        """
+        failures={}
+        for name,item in plans.items():
+            if item['status']!='available':
+                failures[name]=[item.get('reason','metric_evidence_unavailable')]
+                continue
+            residual=item.get('mass_residual_veh')
+            if not isinstance(residual,(int,float)) or not isfinite(residual) or abs(residual)>=1e-6:
+                failures[name]=['mass_conservation_failure']
+        if failures:return failures
+        candidate=plans['coordinated']
+        failures={'coordinated': [f'{outcome}_is_not_an_improvement'] if outcome!='recommend' else []}
+        for name in ('fixed_timing','local_adaptive'):
+            baseline=plans[name];reasons=[]
+            if baseline['queue_delay_veh_s']<=1e-9:reasons.append('zero_reference_delay_has_no_percentage_gain')
+>           if candidate['queue_delay_veh_s']>baseline['queue_delay_veh_s']*(1-criteria['primary_queue_delay_reduction_min'])+1e-9:reasons.append('queue_delay_reduction_below_5_percent')
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: '>' not supported between instances of 'NoneType' and 'float'
+
+scripts/prototype_evaluation.py:303: TypeError
+________ test_invalid_delay_evidence_cannot_prove_percentage_gain[nan] _________
+
+queue = nan
+
+    @pytest.mark.parametrize('queue',[None,float('nan'),float('inf')])
+    def test_invalid_delay_evidence_cannot_prove_percentage_gain(queue):
+        from scripts.prototype_evaluation import control_benefit_failures
+        base={'status':'available','mass_residual_veh':0,'queue_delay_veh_s':100,
+              'boundary_exits_veh':10,'boundary_backlog_veh':0,'boundary_wait_veh_s':0,
+              'spillback_exposure_link_s':0,'worst_service_debt_s':10}
+        plans={'fixed_timing':base,'local_adaptive':base,'coordinated':{**base,'queue_delay_veh_s':queue}}
+>       assert control_benefit_failures(plans,'recommend',PROTOCOL['control'])['coordinated']==['invalid_metric_evidence:queue_delay_veh_s']
+E       AssertionError: assert [] == ['invalid_met..._delay_veh_s']
+E         
+E         Right contains one more item: 'invalid_metric_evidence:queue_delay_veh_s'
+E         Use -v to get more diff
+
+scripts/tests/test_prototype_evaluation.py:430: AssertionError
+________ test_invalid_delay_evidence_cannot_prove_percentage_gain[inf] _________
+
+queue = inf
+
+    @pytest.mark.parametrize('queue',[None,float('nan'),float('inf')])
+    def test_invalid_delay_evidence_cannot_prove_percentage_gain(queue):
+        from scripts.prototype_evaluation import control_benefit_failures
+        base={'status':'available','mass_residual_veh':0,'queue_delay_veh_s':100,
+              'boundary_exits_veh':10,'boundary_backlog_veh':0,'boundary_wait_veh_s':0,
+              'spillback_exposure_link_s':0,'worst_service_debt_s':10}
+        plans={'fixed_timing':base,'local_adaptive':base,'coordinated':{**base,'queue_delay_veh_s':queue}}
+>       assert control_benefit_failures(plans,'recommend',PROTOCOL['control'])['coordinated']==['invalid_metric_evidence:queue_delay_veh_s']
+E       AssertionError: assert [] == ['invalid_met..._delay_veh_s']
+E         
+E         Right contains one more item: 'invalid_metric_evidence:queue_delay_veh_s'
+E         Use -v to get more diff
+
+scripts/tests/test_prototype_evaluation.py:430: AssertionError
+=========================== short test summary info ============================
+FAILED scripts/tests/test_prototype_evaluation.py::test_invalid_delay_evidence_cannot_prove_percentage_gain[None]
+FAILED scripts/tests/test_prototype_evaluation.py::test_invalid_delay_evidence_cannot_prove_percentage_gain[nan]
+FAILED scripts/tests/test_prototype_evaluation.py::test_invalid_delay_evidence_cannot_prove_percentage_gain[inf]
+========================= 3 failed, 31 passed in 2.55s =========================

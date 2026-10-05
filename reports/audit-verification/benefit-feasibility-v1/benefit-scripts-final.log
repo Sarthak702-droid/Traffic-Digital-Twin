@@ -1,0 +1,21 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/sarthaktripathy/.codex/worktrees/f526/Traffic-Digital-Twin
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 55 items
+
+scripts/tests/test_asset_verification.py ...                             [  5%]
+scripts/tests/test_audit_completion_consistency.py ..                    [  9%]
+scripts/tests/test_benchmark_compute.py .                                [ 10%]
+scripts/tests/test_bootstrap_doctor.py .                                 [ 12%]
+scripts/tests/test_process_cpu_budget.py .                               [ 14%]
+scripts/tests/test_prototype_evaluation.py ............................. [ 67%]
+.....                                                                    [ 76%]
+scripts/tests/test_record_replay.py ..                                   [ 80%]
+scripts/tests/test_rehearse_prototype.py .                               [ 81%]
+scripts/tests/test_start_all.py .......                                  [ 94%]
+scripts/tests/test_synthetic_forecasts.py .                              [ 96%]
+scripts/tests/test_verify_contracts.py ..                                [100%]
+
+============================== 55 passed in 2.63s ==============================
