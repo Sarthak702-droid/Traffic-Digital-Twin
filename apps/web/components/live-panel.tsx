@@ -54,7 +54,7 @@ export function LiveSummary({
             <div>
               <span>QUEUED</span>
               <strong>
-                {f.movements.reduce((n, m) => n + m.queue_veh, 0)}
+                {f.movements.reduce((n, m) => n + m.queue_veh, 0).toFixed(1)}
                 <small>vehicles</small>
               </strong>
             </div>
@@ -145,7 +145,7 @@ export function JunctionLive({
                   <dl>
                     <div>
                       <dt>Queue</dt>
-                      <dd>{m.queue_veh} veh</dd>
+                      <dd>{m.queue_veh.toFixed(1)} veh</dd>
                     </div>
                     <div>
                       <dt>Speed</dt>
@@ -154,7 +154,7 @@ export function JunctionLive({
                     <div>
                       <dt>Arrivals / departures</dt>
                       <dd>
-                        {m.arrival_rate_vpm} / {m.departure_rate_vpm} vpm
+                        {m.arrival_rate_vpm.toFixed(1)} / {m.departure_rate_vpm.toFixed(1)} vpm
                       </dd>
                     </div>
                     <div>
