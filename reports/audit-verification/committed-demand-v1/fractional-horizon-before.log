@@ -1,0 +1,27 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/sarthaktripathy/.codex/worktrees/f526/Traffic-Digital-Twin
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 5 items
+
+services/intelligence/tests/test_known_demand.py ....F                   [100%]
+
+=================================== FAILURES ===================================
+_ test_fractional_known_horizon_resumes_forecast_only_for_uncovered_tick_fraction _
+
+    def test_fractional_known_horizon_resumes_forecast_only_for_uncovered_tick_fraction():
+        state=pb.TrafficState(simulation_time_s=9)
+        state.demand_commitments.add(boundary_link_id='boundary',release_start_simulation_s=5.5,
+            release_end_simulation_s=10.5,remaining_mass_veh=1,rate_vps=2)
+        # Tick [10,11): one known vehicle in [10,10.5), then 0.5*0.4 forecast.
+>       assert list(boundary_offers(state,{'boundary':.4},1))==[{'boundary':1.2}]
+E       AssertionError: assert [{'boundary': 1.0}] == [{'boundary': 1.2}]
+E         
+E         At index 0 diff: {'boundary': 1.0} != {'boundary': 1.2}
+E         Use -v to get more diff
+
+services/intelligence/tests/test_known_demand.py:45: AssertionError
+=========================== short test summary info ============================
+FAILED services/intelligence/tests/test_known_demand.py::test_fractional_known_horizon_resumes_forecast_only_for_uncovered_tick_fraction
+========================= 1 failed, 4 passed in 0.08s ==========================

@@ -1,0 +1,59 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/sarthaktripathy/.codex/worktrees/f526/Traffic-Digital-Twin
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 14 items
+
+services/intelligence/tests/test_coordinated_candidates.py ............F [ 92%]
+F                                                                        [100%]
+
+=================================== FAILURES ===================================
+_______ test_known_unreleased_demand_changes_candidate_allocation[c1-c6] _______
+
+tmp_path = PosixPath('/tmp/pytest-of-sarthaktripathy/pytest-0/test_known_unreleased_demand_c0')
+graph = 'c1-c6'
+
+    @pytest.mark.parametrize('graph',['c1-c6','three-controlled-junctions'])
+    def test_known_unreleased_demand_changes_candidate_allocation(tmp_path,graph):
+        engine=AggregateEngine(config_path=ROOT/'packages/scenario-config'/f'{graph}.json',directory=tmp_path)
+        engine.reset(pb.RunCommand(schema_version='1.0',run_id='committed-candidate',scenario_type='peak_surge',seed=1101,mode='recommend'))
+        try:
+            model=Model(engine.config);state=engine.copy_state();current=model.plan(state)
+            policy=model.scoring['candidate_policy']['variants'][0]
+            from services.intelligence.controller import coordinated_plan
+            before=coordinated_plan(model.index,model.config,state,current,model._evaluation_input(state),policy,120)
+            link=next(iter(model.index.boundary_inputs))
+            state.demand_commitments.add(boundary_link_id=link,release_start_simulation_s=1,release_end_simulation_s=21,remaining_mass_veh=100,rate_vps=5)
+            after=coordinated_plan(model.index,model.config,state,current,model._evaluation_input(state),policy,120)
+            phase=next(p for p in model.phases.values() if any(model.moves[mid]['incoming_link_id']==link for mid in p['movement_ids']))
+>           assert after[phase['id']]>before[phase['id']]
+E           assert 30 > 30
+
+services/intelligence/tests/test_coordinated_candidates.py:95: AssertionError
+_ test_known_unreleased_demand_changes_candidate_allocation[three-controlled-junctions] _
+
+tmp_path = PosixPath('/tmp/pytest-of-sarthaktripathy/pytest-0/test_known_unreleased_demand_c1')
+graph = 'three-controlled-junctions'
+
+    @pytest.mark.parametrize('graph',['c1-c6','three-controlled-junctions'])
+    def test_known_unreleased_demand_changes_candidate_allocation(tmp_path,graph):
+        engine=AggregateEngine(config_path=ROOT/'packages/scenario-config'/f'{graph}.json',directory=tmp_path)
+        engine.reset(pb.RunCommand(schema_version='1.0',run_id='committed-candidate',scenario_type='peak_surge',seed=1101,mode='recommend'))
+        try:
+            model=Model(engine.config);state=engine.copy_state();current=model.plan(state)
+            policy=model.scoring['candidate_policy']['variants'][0]
+            from services.intelligence.controller import coordinated_plan
+            before=coordinated_plan(model.index,model.config,state,current,model._evaluation_input(state),policy,120)
+            link=next(iter(model.index.boundary_inputs))
+            state.demand_commitments.add(boundary_link_id=link,release_start_simulation_s=1,release_end_simulation_s=21,remaining_mass_veh=100,rate_vps=5)
+            after=coordinated_plan(model.index,model.config,state,current,model._evaluation_input(state),policy,120)
+            phase=next(p for p in model.phases.values() if any(model.moves[mid]['incoming_link_id']==link for mid in p['movement_ids']))
+>           assert after[phase['id']]>before[phase['id']]
+E           assert 30 > 30
+
+services/intelligence/tests/test_coordinated_candidates.py:95: AssertionError
+=========================== short test summary info ============================
+FAILED services/intelligence/tests/test_coordinated_candidates.py::test_known_unreleased_demand_changes_candidate_allocation[c1-c6]
+FAILED services/intelligence/tests/test_coordinated_candidates.py::test_known_unreleased_demand_changes_candidate_allocation[three-controlled-junctions]
+========================= 2 failed, 12 passed in 1.53s =========================

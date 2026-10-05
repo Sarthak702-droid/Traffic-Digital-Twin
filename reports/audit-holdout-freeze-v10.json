@@ -1,0 +1,27 @@
+{
+  "frozen_at_utc": "2026-10-05T16:32:42.894552+00:00",
+  "source_revision": "7ff7c6d771f1d68eb87a72651e901251f25784c9",
+  "synthetic_seeds": [
+    84911,
+    85009,
+    85121
+  ],
+  "source_sha256": {
+    "services/intelligence/model.py": "0b7d5b89a9e530a9d0e69ed63deb5de751508cdc0cff7dc44276ebd40bfdd79a",
+    "services/intelligence/controller.py": "2a8f129af7b2e1bc45d19a5199115fe1dd8f53c7368099e2c730eb84d2f104ad",
+    "services/intelligence/known_demand.py": "04f3d397749621b9c73552f5a56b8b40a79aceaed058d7c10c7ef5bb74a3a1c4",
+    "services/intelligence/forecast_demand.py": "cd8ca8493b4c0b1b2c6f229dad9c36924130e4fd6e154704dd12a9d1f5f5a304",
+    "services/simulation/aggregate_engine.py": "563e54d1fd562b1105a41b36c359d56c063eaa946e6f2d21ac3906d314ce93bc",
+    "services/simulation/video_demand.py": "b5649d773455676e53bdd6a4e7336f46382b3f3c515b8deb838029b9326669af",
+    "services/simulation/safety.py": "c43d39b4306c6bf96bad3ddf83c34e1f0690199e505ad86dfa34e0164d42b637",
+    "services/simulation/flow_kernel.py": "29c893d28b00e7bd22fd41233299fca4cd174f054cf731c220c09c4501c6b86c",
+    "scripts/prototype_evaluation.py": "b0ceb2375965935b78f1a9abdd1cd916d3ddda3fd80415c8d0125d8a0e47fcfe",
+    "packages/contracts/proto/twin.proto": "28f43ab0a3a8637db9d34797917fe8d35d52b381d0685fa3a3394b203c88eb86",
+    "packages/scenario-config/comparison-scoring-v1.json": "a97128f4d965c3a4a0cdd214027dca273b87b8286825b95fd0c5146d53efb025",
+    "packages/scenario-config/prototype-evaluation-audit-v10.json": "9debf5321d772c8b701067de42475cdf06a73c33a4783e2437c7472e34046fe9"
+  },
+  "thresholds": "Original 5% delay vs both baselines in at least 50% eligible normal origins, all original displacement limits and compute budgets unchanged",
+  "evidence_scope": "Fresh synthetic holdout frozen before execution; no tuning from this or previously viewed holdouts",
+  "development_scope": "Specific recorded-input fix: candidates and rollouts share already eligible committed release plus forecast after known horizon. Candidate/scoring identity versions increased. Synthetic cases contain no recorded commitments; no synthetic benefit improvement promised. Fractional horizon continuation now counts only the unknown portion of a tick; release version participates in demand assumptions hash. No synthetic holdout tuning.",
+  "recorded_holdout": "Blocked: real independent reviewers and reserved authorized input unavailable"
+}

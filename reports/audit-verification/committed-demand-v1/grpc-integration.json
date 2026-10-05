@@ -1,0 +1,21 @@
+{
+  "scope": "Real loopback authenticated private gRPC with complete synthetic engine snapshots and known-release fixtures; not recorded-video, Go/PostgreSQL/browser or human acceptance",
+  "cases": [
+    {
+      "graph": "c1-c6",
+      "analysis_outcome": "recommend",
+      "comparison_scoring_version": "comparison-scoring-v1.4",
+      "private_authentication": "passed",
+      "stale_demand_identity_rejection": "passed",
+      "snapshot_immutability": "passed"
+    },
+    {
+      "graph": "three-controlled-junctions",
+      "analysis_outcome": "recommend",
+      "comparison_scoring_version": "comparison-scoring-v1.4",
+      "private_authentication": "passed",
+      "stale_demand_identity_rejection": "passed",
+      "snapshot_immutability": "passed"
+    }
+  ]
+}

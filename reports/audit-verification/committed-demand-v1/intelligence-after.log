@@ -1,0 +1,23 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/sarthaktripathy/.codex/worktrees/f526/Traffic-Digital-Twin
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 124 items
+
+services/intelligence/tests/test_bound_history_forecast.py ..........    [  8%]
+services/intelligence/tests/test_bounded_recommendations_s03.py ........ [ 14%]
+...........                                                              [ 23%]
+services/intelligence/tests/test_causal_forecast.py ..                   [ 25%]
+services/intelligence/tests/test_comparison_s02.py .............         [ 35%]
+services/intelligence/tests/test_controller_diagnostics.py ......        [ 40%]
+services/intelligence/tests/test_coordinated_candidates.py ............. [ 50%]
+.                                                                        [ 51%]
+services/intelligence/tests/test_epic6.py .......                        [ 57%]
+services/intelligence/tests/test_epic7.py .....                          [ 61%]
+services/intelligence/tests/test_forecast_quality_f02.py ....            [ 64%]
+services/intelligence/tests/test_model.py ........                       [ 70%]
+services/intelligence/tests/test_operating_input_integrity.py .......... [ 79%]
+..........................                                               [100%]
+
+============================= 124 passed in 12.80s =============================

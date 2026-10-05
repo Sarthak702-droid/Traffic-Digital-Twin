@@ -1,0 +1,107 @@
+{
+  "source_revision": "7ff7c6d771f1d68eb87a72651e901251f25784c9",
+  "recorded_at_utc": "2026-10-05T16:37:40.391525+00:00",
+  "scope": "Specific known-demand candidate mismatch and fractional forecast timing remediation. Engineering verification, not acceptance completion.",
+  "checks": {
+    "python_real": {
+      "passed": 354,
+      "new_regressions": 7
+    },
+    "intelligence_after_first_fix": {
+      "passed": 124,
+      "before_failed_graph_regressions": 2
+    },
+    "fractional_before": {
+      "failed": 1,
+      "passed": 4
+    },
+    "real_authenticated_grpc": {
+      "graphs": 2,
+      "passed": true,
+      "scope": "loopback private service, complete synthetic snapshots with release fixtures; no Go/PG/browser/recorded inference acceptance"
+    },
+    "candidate_resource": {
+      "samples": 60,
+      "p95_s": 0.2281760519981617,
+      "within_budget": true
+    },
+    "development": {
+      "cases": 72,
+      "qualified": 31,
+      "eligible": 144,
+      "acceptance_evidence": false,
+      "source_revision": "cee3461deff3fcbb25e46636bf8d1ce4284d13ca"
+    },
+    "fresh_v10": {
+      "cases": 72,
+      "qualified": 33,
+      "eligible": 144,
+      "required": 72,
+      "gate_pass": false,
+      "source_hashes_verified_after_execution": true
+    },
+    "previous_runtime_verification": {
+      "manifest": "../main-integration-v1/manifest.json",
+      "scope": "Go/frontend/PG/browser and six operator workflows historical; not re-executed this demand-only follow-up"
+    },
+    "report_consistency": {
+      "passed": 2
+    }
+  },
+  "commands": [
+    "PYTHONPATH=\"$PWD:$PWD/packages/contracts/gen/python\" .venv/bin/python -m pytest services scripts/tests tests packages -q",
+    "PYTHONPATH=\"$PWD:$PWD/packages/contracts/gen/python\" .venv/bin/python scripts/evaluate-prototype.py --full --protocol packages/scenario-config/prototype-evaluation-audit-development-v3.json --output \"$DEVELOPMENT_OUTPUT\"",
+    "PYTHONPATH=\"$PWD:$PWD/packages/contracts/gen/python\" .venv/bin/python scripts/evaluate-prototype.py --full --protocol packages/scenario-config/prototype-evaluation-audit-v10.json --output reports/audit-heldout-results-v10.json",
+    "PYTHONPATH=\"$PWD:$PWD/packages/contracts/gen/python\" .venv/bin/python scripts/benchmark_compute.py --mode candidate_evaluation --protocol packages/scenario-config/prototype-resource-budget-audit-v2.json --output \"$RESOURCE_OUTPUT\"",
+    "PYTHONPATH=\"$PWD:$PWD/packages/contracts/gen/python\" .venv/bin/python reports/audit-verification/committed-demand-v1/grpc-probe.py"
+  ],
+  "unavailable": [
+    "Genuine independent references and operator acceptance",
+    "Current browser/full-stack/original target workstation acceptance"
+  ],
+  "resource_first_attempt": "Default original-target budget correctly rejected local CPU mismatch; rerun uses existing frozen local audit-v2 budget without changing limits.",
+  "source_sha256": {
+    "services/intelligence/model.py": "0b7d5b89a9e530a9d0e69ed63deb5de751508cdc0cff7dc44276ebd40bfdd79a",
+    "services/intelligence/controller.py": "2a8f129af7b2e1bc45d19a5199115fe1dd8f53c7368099e2c730eb84d2f104ad",
+    "services/intelligence/known_demand.py": "04f3d397749621b9c73552f5a56b8b40a79aceaed058d7c10c7ef5bb74a3a1c4",
+    "services/intelligence/forecast_demand.py": "cd8ca8493b4c0b1b2c6f229dad9c36924130e4fd6e154704dd12a9d1f5f5a304",
+    "services/simulation/aggregate_engine.py": "563e54d1fd562b1105a41b36c359d56c063eaa946e6f2d21ac3906d314ce93bc",
+    "services/simulation/video_demand.py": "b5649d773455676e53bdd6a4e7336f46382b3f3c515b8deb838029b9326669af",
+    "services/simulation/safety.py": "c43d39b4306c6bf96bad3ddf83c34e1f0690199e505ad86dfa34e0164d42b637",
+    "services/simulation/flow_kernel.py": "29c893d28b00e7bd22fd41233299fca4cd174f054cf731c220c09c4501c6b86c",
+    "scripts/prototype_evaluation.py": "b0ceb2375965935b78f1a9abdd1cd916d3ddda3fd80415c8d0125d8a0e47fcfe",
+    "packages/contracts/proto/twin.proto": "28f43ab0a3a8637db9d34797917fe8d35d52b381d0685fa3a3394b203c88eb86",
+    "packages/scenario-config/comparison-scoring-v1.json": "a97128f4d965c3a4a0cdd214027dca273b87b8286825b95fd0c5146d53efb025",
+    "packages/scenario-config/prototype-evaluation-audit-v10.json": "9debf5321d772c8b701067de42475cdf06a73c33a4783e2437c7472e34046fe9"
+  },
+  "artifacts_sha256": {
+    "candidate-before.log": "70ba6d71ef881991b2beb2e144e6194b6653544f145a1b223a40af6bec10d8a3",
+    "development.json": "c33d4e43940f2d927a5da267fc09a81f7e9e79381902996772762ed8827ba954",
+    "development.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "fractional-horizon-before.log": "f0519a511fcf94e983bc0977fa35ba2967bc5203cdf6fd81f1e933ab3ec16d9a",
+    "grpc-integration.json": "ae0e907a4b5f2d591a2c70b975325dc24a4dbaa9602512c009dd680a45e9ceae",
+    "grpc-integration.log": "f7d659a92be56d0843d71d2640fa16d201dae97b7b512920c26495b1ce2ec535",
+    "grpc-probe.py": "f40538a4738e6ebf9ee43665802671cb096e3b999e98870aab9c367587947122",
+    "intelligence-after.log": "d753f80242b3149b0f9ecbb31df1064af285c95acb21cf9c1f2084413468eea6",
+    "pre-followup-completion.json": "a33fd6b3d40a7f4f8fea799e7dad0b5dd0933cf5780cf02a5d7d9c9199713c3b",
+    "pre-followup-diagnosis.md": "58432b8ab6e82f69075ed8a55ec2ca90fa726bfb6ea2c6a8ee8ef0fdf569668f",
+    "pre-followup-remediation.md": "ebe80591a8d5917394a85e8f4309e4da667851ddcb070944eee3706fe545db5b",
+    "python-final.log": "f0da2f00483c1b27847ee954f7d20dbc17c7b182ebdb1d7f667150ad48e9bd9b",
+    "python-real.log": "92b7a840e40ec2b002862e58f775a5e41c283d8a9a700eb7732d1bac264b6334",
+    "resources-at-cee3461.json": "0259e1de356d56c3242a8dab9aef57968de5b36e4e56b2134aa0836acf3ca471",
+    "resources-final.json": "3225d431c5215e6a63d7253dfa132f86b7112170c7bad0227a26dd4b47dbb784",
+    "resources-final.log": "0cf8c711065f1524f6b6fec3e6b866c3d23e3db4ff917ce859ecc41dc373016a",
+    "v10-execution.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "v9-execution.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "v9-source-verified.json": "89840a94a2f5598c779cba9769cd0fdcc53a1f7cb3cae4318325bc1b88c106fd",
+    "../../audit-heldout-results-v9.json": "1e2e47ef359c5feb480688aac0bd3278122fc108a0a32014bb7febd837eca60e",
+    "../../audit-holdout-freeze-v9.json": "95e3245510060ecfbac99569e3cbca33a8fa24219f4ae8c639464e5e337d2c4b",
+    "../../audit-heldout-results-v10.json": "afa37e59428393ce1d2ef761c9e45f521c3de282461f87fc77047cc25330d414",
+    "../../audit-holdout-freeze-v10.json": "0213475ccb049ec45e306287b341293dde52ba8242104b8f38b487cc7a744a4c",
+    "report-consistency.log": "48140f54b8e4ced922ef1a09d7f521abfa6af04f705e58b61843b9f12c515767",
+    "../../audit-remediation-completion.json": "b6643aa4eeb837f40dd62929987e0a41175736ffacd9aa6b69e0df4023b25193",
+    "../../../docs/AUDIT-REMEDIATION.md": "a55f6ff4824c172bc0bd12cab122ba9bff021ce641fb36413630240af29a9a24",
+    "../../../docs/CONTROLLER-BENEFIT-DIAGNOSIS.md": "9fe75844e129a227b4ad75e4d4839a1ac4cbca6afa8ec95fb84165c20d089137",
+    "../../../docs/REMEDIATION-COMMITTED-DEMAND.md": "c2cb448791bb8a305af8736cb19afe969ee25885de7c593f2e50a819ec0a9478"
+  }
+}

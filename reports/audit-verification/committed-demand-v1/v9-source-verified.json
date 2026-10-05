@@ -1,0 +1,8 @@
+{
+  "source_revision": "cee3461deff3fcbb25e46636bf8d1ce4284d13ca",
+  "source_hashes_verified_after_execution": true,
+  "qualified_origins": 31,
+  "eligible_origins": 144,
+  "gate_pass": false,
+  "scope": "Source cee3461 before subsequent fractional-horizon correction; historical fresh v9, not verification of the later version"
+}

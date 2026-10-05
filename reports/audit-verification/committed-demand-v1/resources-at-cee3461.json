@@ -1,0 +1,105 @@
+{
+  "schema_version": "prototype-compute-resource-v1",
+  "protocol_version": "prototype-resource-budget-audit-v2",
+  "mode": "candidate_evaluation",
+  "python": "3.12.3",
+  "budget": {
+    "samples_per_scenario": 10,
+    "max_candidates": 5,
+    "concurrent_analyses": 1,
+    "comparison_window_s": 120,
+    "analysis_p95_wall_s": 1.5,
+    "peak_cpu_cores": 2,
+    "peak_ram_bytes": 536870912
+  },
+  "sample_scope": "serialized real Python compute; source/seed tuning only; RSS process lifetime peak",
+  "samples": 60,
+  "p95_wall_s": 0.2312830999981088,
+  "cases": [
+    {
+      "graph": "c1-c6-v5",
+      "config_hash": "e131f1043af7e5e3fefcbea7ffb0b5b61979fdd689364053c0aaa32e4b74813e",
+      "scenario": "peak_surge",
+      "samples": 10,
+      "p95_wall_s": 0.23577738200037857,
+      "max_wall_s": 0.23577738200037857,
+      "analysis_outcomes": {
+        "recommend": 3,
+        "no_action": 7
+      }
+    },
+    {
+      "graph": "c1-c6-v5",
+      "config_hash": "e131f1043af7e5e3fefcbea7ffb0b5b61979fdd689364053c0aaa32e4b74813e",
+      "scenario": "incident_c3",
+      "samples": 10,
+      "p95_wall_s": 0.2223390079998353,
+      "max_wall_s": 0.2223390079998353,
+      "analysis_outcomes": {
+        "recommend": 2,
+        "no_action": 8
+      }
+    },
+    {
+      "graph": "c1-c6-v5",
+      "config_hash": "e131f1043af7e5e3fefcbea7ffb0b5b61979fdd689364053c0aaa32e4b74813e",
+      "scenario": "ambulance_corridor",
+      "samples": 10,
+      "p95_wall_s": 0.2285037790024944,
+      "max_wall_s": 0.2285037790024944,
+      "analysis_outcomes": {
+        "no_action": 8,
+        "recommend": 2
+      }
+    },
+    {
+      "graph": "three-controlled-junctions-v1",
+      "config_hash": "be074cfcc38c69f4b865ca71aa1b201880f8f73b615860f4f0d79af6fade58ec",
+      "scenario": "peak_surge",
+      "samples": 10,
+      "p95_wall_s": 0.23019581499829656,
+      "max_wall_s": 0.23019581499829656,
+      "analysis_outcomes": {
+        "recommend": 3,
+        "no_action": 6,
+        "cannot_evaluate": 1
+      }
+    },
+    {
+      "graph": "three-controlled-junctions-v1",
+      "config_hash": "be074cfcc38c69f4b865ca71aa1b201880f8f73b615860f4f0d79af6fade58ec",
+      "scenario": "incident_c3",
+      "samples": 10,
+      "p95_wall_s": 0.24305758099944796,
+      "max_wall_s": 0.24305758099944796,
+      "analysis_outcomes": {
+        "recommend": 2,
+        "no_action": 7,
+        "cannot_evaluate": 1
+      }
+    },
+    {
+      "graph": "three-controlled-junctions-v1",
+      "config_hash": "be074cfcc38c69f4b865ca71aa1b201880f8f73b615860f4f0d79af6fade58ec",
+      "scenario": "ambulance_corridor",
+      "samples": 10,
+      "p95_wall_s": 0.190437279001344,
+      "max_wall_s": 0.190437279001344,
+      "analysis_outcomes": {
+        "no_action": 9,
+        "cannot_evaluate": 1
+      }
+    }
+  ],
+  "resources": {
+    "wall_s": 11.373139200000878,
+    "inference_frames": null,
+    "fresh_inference_fps": null,
+    "peak_cpu_percent": 100.17443159538281,
+    "cpu_s": 11.339779,
+    "peak_ram_bytes": 27889664,
+    "measurement_scope": "serialized compute process including snapshot setup; CPU sampled at 100ms; RSS process lifetime peak"
+  },
+  "within_budget": true,
+  "full_stack_state_to_recommendation_p95": null
+}
