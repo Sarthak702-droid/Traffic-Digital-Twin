@@ -44,6 +44,7 @@ func TestEndpointOwnershipInventoryIsExhaustiveAndConsistent(t *testing.T) {
 		"POST /api/v1/locks/{id}": true, "DELETE /api/v1/locks/{id}": true,
 		"POST /api/v1/replay/{scenario}": true, "GET /api/v1/vision/{id}": true,
 		"GET /api/v1/commands/{id}": true, "GET /api/v1/session": true,
+		"GET /api/v1/clips/{id}/annotation": true, "GET /api/v1/clips/{id}/annotation/media": true, "HEAD /api/v1/clips/{id}/annotation/media": true,
 		"POST /api/v1/session/login": true, "POST /api/v1/session/logout": true, "GET /ws/v1/live": true,
 	}
 	seen := map[string]bool{}
