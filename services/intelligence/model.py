@@ -11,6 +11,7 @@ from services.simulation.flow_kernel import step_cells
 from services.simulation.metrics import METRICS_VERSION, link_metrics
 from services.simulation.safety import Signals, activation_rejection, default_plan, validate_plan
 from services.intelligence.forecast_demand import FORECAST_VERSION, HORIZONS_S, boundary_forecast_rates
+from services.intelligence.controller import coordinated_plan
 
 MODEL='aggregate-predictor-v1'
 
@@ -38,16 +39,22 @@ class Model:
             if frozen.scheduler.HasField('requested_at_tick') or pending and pending!=self.plan(frozen):
                 raise ValueError('Operating comparison has a pending virtual plan')
         rates,methods=boundary_forecast_rates(frozen,self.index)
-        assumptions={'run_id':frozen.run_id,'input_session_id':frozen.input_session_id,'demand_source':frozen.demand_source,'input_quality':frozen.input_quality,'config_hash':frozen.config_hash,'forecast_origin_source_s':frozen.latest_finalized_window_end_source_s,'source_mapping': {'source_origin_s':frozen.source_time_mapping.source_origin_s,'simulation_origin_s':frozen.source_time_mapping.simulation_origin_s,'rate':frozen.source_time_mapping.source_seconds_per_simulation_second},'source_availability_watermark_s':frozen.snapshot_source_available_s if frozen.HasField('snapshot_source_available_s') else None,'rates_vps':rates,'forecast_methods':methods,'commitments':[{'link':c.boundary_link_id,'start':c.release_start_simulation_s,'end':c.release_end_simulation_s,'remaining':c.remaining_mass_veh,'rate':c.rate_vps} for c in frozen.demand_commitments]}
+        assumptions={'forecast_version':FORECAST_VERSION,'offered_window_s':{row.link_id:row.offered_window_s if row.HasField('offered_window_s') else None for row in frozen.boundary_demand},'run_id':frozen.run_id,'input_session_id':frozen.input_session_id,'demand_source':frozen.demand_source,'input_quality':frozen.input_quality,'config_hash':frozen.config_hash,'forecast_origin_source_s':frozen.latest_finalized_window_end_source_s,'source_mapping': {'source_origin_s':frozen.source_time_mapping.source_origin_s,'simulation_origin_s':frozen.source_time_mapping.simulation_origin_s,'rate':frozen.source_time_mapping.source_seconds_per_simulation_second},'source_availability_watermark_s':frozen.snapshot_source_available_s if frozen.HasField('snapshot_source_available_s') else None,'rates_vps':rates,'forecast_methods':methods,'commitments':[{'link':c.boundary_link_id,'start':c.release_start_simulation_s,'end':c.release_end_simulation_s,'remaining':c.remaining_mass_veh,'rate':c.rate_vps} for c in frozen.demand_commitments]}
         digest=hashlib.sha256(json.dumps(assumptions,sort_keys=True,separators=(',',':')).encode()).hexdigest()
         return {'state':frozen,'cells':self._initial_cells(frozen),'backlogs':{item.link_id:item.backlog_veh for item in frozen.boundary_demand},'rates':rates,'methods':methods,'demand_hash':digest}
-    def _admissible(self,baseline,candidate,require_benefit=True):
-        limits=self.regression
-        if require_benefit and candidate['queue_delay']>baseline['queue_delay']+1e-9:return False
-        if candidate['throughput']<baseline['throughput']*(1-limits['boundary_exits_regression_max']):return False
+    def regression_failures(self,baseline,candidate,require_benefit=True):
+        limits=self.regression;failures=[]
+        if require_benefit and candidate['queue_delay']>baseline['queue_delay']+1e-9:failures.append('queue_delay')
+        if candidate['throughput']<baseline['throughput']*(1-limits['boundary_exits_regression_max']):failures.append('throughput')
         for key,limit in [('backlog','boundary_backlog_regression_max'),('boundary_wait','boundary_wait_regression_max'),('congested','spillback_exposure_regression_max'),('worst_service_debt','worst_service_debt_regression_max')]:
-            if candidate[key]>baseline[key]*(1+limits[limit])+1e-9:return False
-        return True
+            if candidate[key]>baseline[key]*(1+limits[limit])+1e-9:failures.append(key)
+        return failures
+    def _admissible(self,baseline,candidate,require_benefit=True):
+        return not self.regression_failures(baseline,candidate,require_benefit)
+    def analysis_diagnostics(self):
+        # Thread-local aggregate diagnostics never carry future demand traces.
+        import copy
+        return copy.deepcopy(getattr(self._request,'diagnostics',{}))
     def _score_mode(self,state):
         if state.HasField('emergency'):
             if state.emergency.status in ('pre_clearance','priority'):return 'emergency_priority'
@@ -95,6 +102,7 @@ class Model:
         validate_plan(self.config,plan)
         evaluation=evaluation or self._evaluation_input(state)
         frozen=evaluation['state']; cells={edge:list(values) for edge,values in evaluation['cells'].items()}; scheduler=self._scheduler(frozen,plan,offsets); rates=evaluation['rates']; saved_backlogs=evaluation['backlogs']; backlogs={e:saved_backlogs.get(e,0.0) for e in self.index.boundary_inputs}
+        new_activation=scheduler.requested_at is not None
         demand_trace=evaluation.get('demand_trace')
         if demand_trace is not None and (len(demand_trace)!=horizon or any(set(row)!=set(self.index.boundary_inputs) or any(not math.isfinite(value) or value<0 for value in row.values()) for row in demand_trace)):
             raise ValueError('Benchmark demand trace must cover every boundary and rollout tick')
@@ -141,7 +149,7 @@ class Model:
         backlog=sum(backlogs.values()); change=sum(abs(plan[p]-self.plan(frozen)[p]) for p in plan)+sum((offsets or {}).values())
         metrics={'queue_delay':queue_delay,'boundary_wait':boundary_wait,'congested':congested,'throughput':throughput,'worst_service_debt':worst_service_debt,'timing_change':change}
         cost=self.score_metrics(metrics,self._score_mode(frozen))
-        return {'snapshots':snapshots,'peak':peak,'queue_delay':queue_delay,'throughput':throughput,'congested':congested,'backlog':backlog,'boundary_wait':boundary_wait,'worst_service_debt':worst_service_debt,'delay':queue_delay/max(1,sum(arrivals.values())),'spill':congested,'stops':0.0,'cost':cost,'demand_version':FORECAST_VERSION,'offered_external_veh':offered_total,'mass_residual_veh':initial_mass+offered_total-sum(map(sum,cells.values()))-sum(backlogs.values())-throughput}
+        return {'final_cells':cells,'final_backlogs':backlogs,'scheduler_snapshot':scheduler.snapshot(),'activation_tick':scheduler.applied_at if new_activation else None,'snapshots':snapshots,'peak':peak,'queue_delay':queue_delay,'throughput':throughput,'congested':congested,'backlog':backlog,'boundary_wait':boundary_wait,'worst_service_debt':worst_service_debt,'delay':queue_delay/max(1,sum(arrivals.values())),'spill':congested,'stops':0.0,'cost':cost,'demand_version':FORECAST_VERSION,'offered_external_veh':offered_total,'mass_residual_veh':initial_mass+offered_total-sum(map(sum,cells.values()))-sum(backlogs.values())-throughput}
     def allocate(self,state):
         values={m.movement_id:m for m in state.movements}; current=self.plan(state); plan={}
         for node in sorted({p['node_id'] for p in self.phases.values()}):
@@ -172,6 +180,17 @@ class Model:
         # Deduplicating them shifts index 1 to an unrelated alternative and
         # silently loses the local-adaptive regression baseline.
         candidates=[dict(baseline),dict(agda)]
+        self._request.proposal_failures={}
+        self._request.generated_offsets={}
+        if state.schema_version=='1.1':
+            evaluation=self._evaluation_input(state)
+            for policy in self.scoring['candidate_policy']['variants']:
+                try:candidates.append(coordinated_plan(self.index,self.config,state,baseline,evaluation,policy,self.scoring['window_s'],check_budget=self._check_budget))
+                except ValueError as exc:
+                    self._request.proposal_failures[len(candidates)]=str(exc);candidates.append(dict(baseline))
+            if len(candidates)>4 and 4 not in self._request.proposal_failures:
+                self._request.generated_offsets[4]=self._phase_offsets(state,candidates[4])
+            return candidates[:self.scoring['max_candidates']]
         # Joint corrections cover every configured node within the same bounded
         # budget. Interpolate integer splits without changing a node's cycle.
         for fraction in (0.5,0.25,0.75):
@@ -194,7 +213,47 @@ class Model:
             if phase['id'] in locked or locked.intersection(phase['movement_ids']):
                 if plan[phase['id']]!=current[phase['id']] or offsets.get(phase['node_id'],0)!=current_offsets.get(phase['node_id'],0):return False
         return True
+    def _phase_offsets(self,state,plan):
+        if state.scheduler.priority or state.scheduler.recovering:return {}
+        route=next(s['route_node_ids'] for s in self.config['scenarios'] if s['id']==state.scenario_type)
+        route_phases={}
+        for position,(previous,node) in enumerate(zip(route,route[1:]),start=1):
+            following=route[position+1] if position+1<len(route) else None
+            eligible=[(mid,move) for mid,move in self.moves.items()
+                if move['node_id']==node and self.links[move['incoming_link_id']]['from_node']==previous
+                and (following is None or self.links[move['outgoing_link_id']]['to_node']==following)]
+            if eligible:
+                # A scenario path can end at a controlled node. Coordinate its
+                # declared incoming approach using the largest configured turn,
+                # rather than silently dropping that endpoint from the corridor.
+                mid,_=max(eligible,key=lambda row:(row[1]['turning_ratio'],row[0]))
+                route_phases[node]=self.serving[mid]
+        if len(route_phases)<2:return {}
+        scheduler=self._scheduler(state,plan)
+        if scheduler.requested_at is None:scheduler.apply(plan)
+        cycle=max(sum(plan[p['id']]+p['amber_s']+p['all_red_s'] for p in phases) for phases in scheduler.nodes.values())
+        for _ in range(int(cycle)+1):
+            self._check_budget();scheduler.advance()
+            if scheduler.requested_at is None:break
+        if scheduler.requested_at is not None or scheduler.rejected_reason:return {}
+        origin=scheduler.tick;starts={}
+        for _ in range(int(2*cycle)+1):
+            self._check_budget()
+            for node,pid in route_phases.items():
+                index,stage,_=scheduler.state[node]
+                if stage=='green' and scheduler.nodes[node][index]['id']==pid:starts.setdefault(node,scheduler.tick-origin)
+            if len(starts)==len(route_phases):break
+            scheduler.advance()
+        if len(starts)!=len(route_phases):return {}
+        arrival=0.0;desired={}
+        for previous,node in zip(route,route[1:]):
+            edge=next(link for link in self.links.values() if link['from_node']==previous and link['to_node']==node)
+            arrival+=edge['length_m']/(edge['free_flow_speed_kph']/3.6)
+            if node in starts:desired[node]=arrival-starts[node]
+        earliest=min(desired.values());limit=self.scoring['candidate_policy']['max_offset_s']
+        return {node:min(limit,max(0,round(value-earliest))) for node,value in desired.items()}
     def _candidate_offsets(self,state,index):
+        if state.schema_version=='1.1':return dict(getattr(self._request,'generated_offsets',{}).get(index,{}))
         if index<3:return {}
         route=next(s['route_node_ids'] for s in self.config['scenarios'] if s['id']==state.scenario_type)
         controlled=[n for n in route if n in self.index.phases_by_node]
@@ -244,9 +303,12 @@ class Model:
     def comparison(self,*args,context=None,**kwargs):
         with self._admission(context):return self._comparison(*args,**kwargs)
     def analyze(self,state,context=None):
+        self._request.diagnostics={'snapshot_sequence':state.snapshot_sequence,'simulation_time_s':state.simulation_time_s,'candidates':[]}
         try:
-            with self._admission(context):return self._analyze(state)
-        except ComputeBudgetError as exc:return self._compute_unavailable(state,str(exc))
+            with self._admission(context):result=self._analyze(state)
+        except ComputeBudgetError as exc:result=self._compute_unavailable(state,str(exc))
+        self._request.diagnostics.update(outcome=result.outcome,reason=result.outcome_reason)
+        return result
     def _compute_unavailable(self,state,reason):
         return pb.Analysis(run_id=state.run_id,simulation_time_s=state.simulation_time_s,input_session_id=state.input_session_id,snapshot_sequence=state.snapshot_sequence,config_hash=state.config_hash,model_version=MODEL,metrics_version=METRICS_VERSION,input_quality=state.input_quality or 'synthetic',forecast_origin_source_s=state.latest_finalized_window_end_source_s if state.HasField('latest_finalized_window_end_source_s') else 0,outcome='cannot_evaluate',outcome_reason=reason,horizon_availability=[pb.HorizonAvailability(horizon_s=h,status='compute_unavailable',reason=reason) for h in HORIZONS_S])
     def _analyze(self,state):
@@ -289,11 +351,19 @@ class Model:
         for i,plan in enumerate(candidates):
             if expired():
                 result.outcome='cannot_evaluate';result.outcome_reason='Analysis timeout';return result
-            if i>0 and not self._authority_admissible(state,plan,self._candidate_offsets(state,i)):continue
+            diagnostic={'index':i,'kind':'current' if i==0 else 'local_adaptive' if i==1 else 'coordinated','plan':dict(plan),'offsets':self._candidate_offsets(state,i),'status':'not_evaluated','reason':''}
+            self._request.diagnostics['candidates'].append(diagnostic)
+            proposal_failure=getattr(self._request,'proposal_failures',{}).get(i)
+            if proposal_failure:
+                diagnostic.update(status='rejected',reason='Proposal invalid: '+proposal_failure);continue
+            if i>0 and not self._authority_admissible(state,plan,self._candidate_offsets(state,i)):
+                diagnostic.update(status='rejected',reason='Control mode or manual lock excludes candidate');continue
             try:
                 metrics[i]=self.rollout(state,plan,self.scoring['window_s'],evaluation,offsets=self._candidate_offsets(state,i))
+                diagnostic.update(status='evaluated',metrics={key:metrics[i][key] for key in ('queue_delay','throughput','backlog','boundary_wait','congested','worst_service_debt','cost')},activation_tick=metrics[i]['activation_tick'],regression_failures={})
                 scored.append((metrics[i]['cost'],i,plan))
-            except ValueError:
+            except ValueError as exc:
+                diagnostic.update(status='rejected',reason=str(exc))
                 if i==0:
                     result.outcome='cannot_evaluate';result.outcome_reason='Current virtual plan cannot be evaluated safely';return result
         if expired():
@@ -303,11 +373,18 @@ class Model:
         baseline_metrics=metrics[0]
         references=[baseline_metrics]+([metrics[1]] if 1 in metrics else [])
         normal=self._score_mode(state)=='normal'
+        for diagnostic in self._request.diagnostics['candidates']:
+            if diagnostic['status']!='evaluated':continue
+            index=diagnostic['index']
+            diagnostic['regression_failures']={name:self.regression_failures(ref,metrics[index],require_benefit=normal) for name,ref in [('current',baseline_metrics)]+([('local_adaptive',metrics[1])] if 1 in metrics else [])}
+            diagnostic['minimum_benefit_pass']=baseline_metrics['cost']-metrics[index]['cost']>self.scoring['minimum_benefit_points']
+        if normal and len(candidates)>1 and 1 not in metrics:
+            result.outcome='cannot_evaluate';result.outcome_reason='Local adaptive reference cannot be evaluated safely; retaining current plan';return result
         scored=[entry for entry in scored if entry[1]==0 or all(self._admissible(ref,metrics[entry[1]],require_benefit=normal) for ref in references)]
         baseline_cost=next(score for score,i,_ in scored if i==0)
         scored.sort();best_cost,best_index,_=scored[0]
         if best_index==0 or baseline_cost-best_cost<=self.scoring['minimum_benefit_points']:
-            result.outcome='no_action';result.outcome_reason='Current plan is best' if best_index==0 else f'Modeled gain {baseline_cost-best_cost:.3f} weighted points does not exceed minimum benefit {self.scoring["minimum_benefit_points"]:g}';return result
+            result.outcome='no_action';result.outcome_reason='Current plan is best among evaluated admissible candidates' if best_index==0 else f'Modeled gain {baseline_cost-best_cost:.3f} weighted points does not exceed minimum benefit {self.scoring["minimum_benefit_points"]:g}';return result
         priority='critical' if critical else 'warning' if warning else 'normal';trigger='spillback_risk' if critical else 'corridor_coordination' if warning else 'demand_balancing'; recommendations=[]
         route=next(s['route_node_ids'] for s in self.config['scenarios'] if s['id']==state.scenario_type)
         controlled=[node for node in route if self.nodes[node]['kind']=='controlled']

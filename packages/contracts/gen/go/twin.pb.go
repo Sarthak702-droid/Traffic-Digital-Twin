@@ -1059,6 +1059,7 @@ type BoundaryDemandState struct {
 	LinkId         string                 `protobuf:"bytes,1,opt,name=link_id,json=linkId,proto3" json:"link_id,omitempty"`
 	BacklogVeh     float64                `protobuf:"fixed64,2,opt,name=backlog_veh,json=backlogVeh,proto3" json:"backlog_veh,omitempty"`
 	OfferedRateVpm float64                `protobuf:"fixed64,3,opt,name=offered_rate_vpm,json=offeredRateVpm,proto3" json:"offered_rate_vpm,omitempty"`
+	OfferedWindowS *float64               `protobuf:"fixed64,4,opt,name=offered_window_s,json=offeredWindowS,proto3,oneof" json:"offered_window_s,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -1110,6 +1111,13 @@ func (x *BoundaryDemandState) GetBacklogVeh() float64 {
 func (x *BoundaryDemandState) GetOfferedRateVpm() float64 {
 	if x != nil {
 		return x.OfferedRateVpm
+	}
+	return 0
+}
+
+func (x *BoundaryDemandState) GetOfferedWindowS() float64 {
+	if x != nil && x.OfferedWindowS != nil {
+		return *x.OfferedWindowS
 	}
 	return 0
 }
@@ -4583,12 +4591,14 @@ const file_twin_proto_rawDesc = "" +
 	"\x10_applied_at_tick\"A\n" +
 	"\tCellStock\x12\x17\n" +
 	"\alink_id\x18\x01 \x01(\tR\x06linkId\x12\x1b\n" +
-	"\tstock_veh\x18\x02 \x03(\x01R\bstockVeh\"y\n" +
+	"\tstock_veh\x18\x02 \x03(\x01R\bstockVeh\"\xbd\x01\n" +
 	"\x13BoundaryDemandState\x12\x17\n" +
 	"\alink_id\x18\x01 \x01(\tR\x06linkId\x12\x1f\n" +
 	"\vbacklog_veh\x18\x02 \x01(\x01R\n" +
 	"backlogVeh\x12(\n" +
-	"\x10offered_rate_vpm\x18\x03 \x01(\x01R\x0eofferedRateVpm\"\xe2\x02\n" +
+	"\x10offered_rate_vpm\x18\x03 \x01(\x01R\x0eofferedRateVpm\x12-\n" +
+	"\x10offered_window_s\x18\x04 \x01(\x01H\x00R\x0eofferedWindowS\x88\x01\x01B\x13\n" +
+	"\x11_offered_window_s\"\xe2\x02\n" +
 	"\x0eSourceIdentity\x12\x1f\n" +
 	"\vclip_sha256\x18\x01 \x01(\tR\n" +
 	"clipSha256\x12'\n" +
@@ -5104,6 +5114,7 @@ func file_twin_proto_init() {
 	}
 	file_twin_proto_msgTypes[5].OneofWrappers = []any{}
 	file_twin_proto_msgTypes[10].OneofWrappers = []any{}
+	file_twin_proto_msgTypes[12].OneofWrappers = []any{}
 	file_twin_proto_msgTypes[14].OneofWrappers = []any{}
 	file_twin_proto_msgTypes[15].OneofWrappers = []any{}
 	file_twin_proto_msgTypes[16].OneofWrappers = []any{}

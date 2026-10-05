@@ -114,6 +114,7 @@ export interface BoundaryDemandState {
   link_id: string;
   backlog_veh: number;
   offered_rate_vpm: number;
+  offered_window_s?: number;
 }
 
 export interface SourceIdentity {

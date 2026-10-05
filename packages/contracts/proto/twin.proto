@@ -43,7 +43,7 @@ message SchedulerSnapshot {
   string rejected_reason = 12;
 }
 message CellStock { string link_id = 1; repeated double stock_veh = 2; }
-message BoundaryDemandState { string link_id = 1; double backlog_veh = 2; double offered_rate_vpm = 3; }
+message BoundaryDemandState { string link_id = 1; double backlog_veh = 2; double offered_rate_vpm = 3; optional double offered_window_s = 4; }
 // Identity and completion are required before a window enters an authoritative run.
 message SourceIdentity { string clip_sha256 = 1; string geometry_sha256 = 2; string detector_version = 3; string tracker_version = 4; string observation_schema_version = 5; string source_session_id = 6; string config_hash = 7; string processing_mode = 8; }
 message FinalizedObservation { string observation_id = 1; string camera_id = 2; string boundary_link_id = 3; double window_start_s = 4; double window_end_s = 5; double available_at_source_s = 6; string processed_at_utc = 7; uint32 crossings_veh = 8; string observation_status = 9; SourceIdentity source_identity = 10; optional uint32 queue_visible_veh_estimate = 11; string queue_status = 12; optional double release_start_simulation_s = 13; }

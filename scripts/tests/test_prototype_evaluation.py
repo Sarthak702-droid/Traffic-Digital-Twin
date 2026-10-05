@@ -363,3 +363,23 @@ def test_emergency_diagnostic_measures_real_route_flow_and_censored_recovery(tmp
 def test_reference_split_and_actual_review_times_required(change):
     record=review();record.update(change)
     assert measurement_score(observation(5),record,PROTOCOL)['status']=='unavailable'
+
+def test_emergency_recovery_observation_does_not_extend_matched_flow_window(tmp_path):
+    from scripts.prototype_evaluation import emergency_plan_metrics
+    from services.simulation.aggregate_engine import AggregateEngine
+    import twin_pb2 as pb
+    engine=AggregateEngine(directory=tmp_path/'live')
+    try:
+        state=engine.reset(pb.RunCommand(schema_version='1.0',run_id='separate-recovery',scenario_type='ambulance_corridor',seed=1101,mode='recommend'))
+        for _ in range(30):state=engine.step()
+        plan={p.phase_id:p.green_s for p in state.active_plan}
+        short=emergency_plan_metrics(engine,plan,30)
+        observed=emergency_plan_metrics(engine,plan,30,recovery_observation_end_s=600)
+        assert short['recovery_status']=='censored_at_window_end'
+        assert observed['recovery_status']=='completed'
+        assert observed['window_end_simulation_s']==short['window_end_simulation_s']==60
+        assert observed['route_departures_veh']==short['route_departures_veh']
+        assert observed['route_green_service_node_s']==short['route_green_service_node_s']
+        assert observed['recovery_observation_end_simulation_s']>60
+        assert engine.tick==30
+    finally:engine.close()

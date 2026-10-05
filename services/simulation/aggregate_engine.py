@@ -56,7 +56,7 @@ class AggregateEngine:
             self.scheduler=Signals(self.config); self.tick=0
             self.control_epoch=0; self.locked_targets=set(command.locked_targets); self.authority_commands={}
             self.cumulative_demand=self.cumulative_admitted=self.cumulative_exits=0.0
-            self.offered_history={e:deque(maxlen=5) for e in self.index.boundary_inputs}
+            self.offered_history={e:deque(maxlen=60) for e in self.index.boundary_inputs}
             self.flow_history={e:deque(maxlen=60) for e in self.links}; self.movement_arrivals={m:0.0 for m in self.moves}; self.movement_departures={m:0.0 for m in self.moves}; self.waiting_age={m:0.0 for m in self.moves}
             self.failure=None; self.incident=None; self.emergency=None; self.version=0; self._events(); self.signal_states=self._signal_states(); self.paused=False;self.latest=self._snapshot(); self.running=True; self.version+=1; self.changed.notify_all(); return self.copy_state()
     def _events(self):
@@ -189,7 +189,7 @@ class AggregateEngine:
         for edge, stocks in self.cells.items():r.cells.add(link_id=edge, stock_veh=stocks)
         for edge, backlog in self.backlogs.items():
             samples=self.offered_history[edge]
-            r.boundary_demand.add(link_id=edge,backlog_veh=backlog,offered_rate_vpm=60*sum(samples)/len(samples) if samples else 0.0)
+            r.boundary_demand.add(link_id=edge,backlog_veh=backlog,offered_rate_vpm=60*sum(samples)/len(samples) if samples else 0.0,offered_window_s=len(samples))
         r.scheduler.pending_plan.extend(pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=self.scheduler.pending[p['id']]) for p in self.config['phases'])
         r.scheduler.service_history.extend(pb.SchedulerService(phase_id=pid,last_served_tick=tick) for pid,tick in self.scheduler.last_served.items())
         r.scheduler.priority.extend(pb.SchedulerPriority(node_id=node,phase_id=pid) for node,pid in self.scheduler.priority.items())

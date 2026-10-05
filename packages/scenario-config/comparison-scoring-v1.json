@@ -1,5 +1,5 @@
 {
-  "version": "comparison-scoring-v1.1",
+  "version": "comparison-scoring-v1.2",
   "window_s": 120,
   "max_candidates": 5,
   "max_alternatives": 3,
@@ -39,5 +39,35 @@
       "worst_service_debt": 1.0,
       "timing_change": 0.1
     }
+  },
+  "candidate_policy": {
+    "version": "causal-corridor-proposals-v1",
+    "variants": [
+      {
+        "name": "pressure_current_cycles",
+        "cycle_s": null,
+        "queue_weight": 1.0,
+        "receiving_floor": 0.05
+      },
+      {
+        "name": "demand_short_cycles",
+        "cycle_s": 80,
+        "queue_weight": 0.0,
+        "receiving_floor": 0.05
+      },
+      {
+        "name": "pressure_common_cycles",
+        "cycle_s": 100,
+        "queue_weight": 1.0,
+        "receiving_floor": 0.05
+      }
+    ],
+    "offset_policy": "phase-progress-and-route-travel-v1; bounded offsets for common-cycle proposal; actual activation and regression guards remain authoritative",
+    "development_only_seeds": [
+      1101,
+      2202,
+      3303
+    ],
+    "max_offset_s": 10
   }
 }

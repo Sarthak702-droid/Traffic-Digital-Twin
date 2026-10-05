@@ -731,6 +731,11 @@
         "offered_rate_vpm": {
           "type": "number",
           "minimum": 0
+        },
+        "offered_window_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 60
         }
       },
       "additionalProperties": false,

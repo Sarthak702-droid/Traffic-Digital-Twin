@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
 
-FORECAST_VERSION = "recent-flow-v1"
+FORECAST_VERSION = "recent-flow-v2"
 HORIZONS_S = [30, 60, 120, 300]
 
 
@@ -98,6 +98,10 @@ def boundary_rates(state, index):
     rates = {}
     for edge in index.boundary_inputs:
         if edge in offered:
+            row=offered[edge]
+            if not all(math.isfinite(v) and v>=0 for v in (row.offered_rate_vpm,row.backlog_veh)):raise ValueError('Invalid offered boundary demand')
+            if row.HasField('offered_window_s') and (not math.isfinite(row.offered_window_s) or row.offered_window_s<0 or row.offered_window_s>60 or row.offered_window_s==0 and row.offered_rate_vpm!=0):
+                raise ValueError('Invalid causal offered-demand averaging window')
             rates[edge] = max(0.0, offered[edge].offered_rate_vpm / 60.0)
             continue
         observed = links.get(edge)

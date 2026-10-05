@@ -19,6 +19,7 @@ additive_from={
     'Analysis':7,
     'CompareCommand':4,
     'RunCommand':9,
+    'BoundaryDemandState':4,
 }
 quality=('fresh','cached_valid','synthetic','missing','stale','degraded',
          'out_of_order','duplicate','replay')
@@ -58,6 +59,7 @@ for name,message in messages.items():
             schema={"anyOf":[schema,{"type":"null"}]};typ+=" | null"
         if not optional and schema.get('type') in ('number','integer') and (f.name.endswith(('_s','_veh','_vpm','_kph')) or f.name=='occupancy_ratio'):schema['minimum']=0
         if f.name=='occupancy_ratio':schema['maximum']=1
+        if name=='BoundaryDemandState' and f.name=='offered_window_s':schema.update(minimum=0,maximum=60)
         if f.name=='schema_version' and name=='TrafficState':schema={'enum':['1.0','1.1']};typ='"1.0" | "1.1"'
         elif f.name=='schema_version':schema={'const':'1.0'};typ='"1.0"'
         elif (name,f.name) in string_vocab:
