@@ -163,47 +163,108 @@ class Model:
                 eligible=[(i,p) for i,p in enumerate(phases) if (diff>0 and plan[p['id']]<p['max_green_s']) or (diff<0 and plan[p['id']]>p['min_green_s'])]
                 if not eligible:break
                 _,p=(max(eligible,key=lambda x:weights[x[0]]) if diff>0 else min(eligible,key=lambda x:weights[x[0]]));plan[p['id']]+=1 if diff>0 else -1;diff+=-1 if diff>0 else 1
+            if node == 'C1':
+                with open('/tmp/debug_allocate.txt', 'a') as f:
+                    f.write(f"AGDA C1 phases: {[p['id'] for p in phases]} weights: {weights} plan: {plan}\\n")
         validate_plan(self.config,plan);return plan
-    def _generate_candidates(self,state,baseline,agda):
-        candidates=[(dict(baseline), {}), (dict(agda), {})]
+    def _smart_allocate(self,state,corridor_phases):
+        values={m.movement_id:m for m in state.movements}; current=self.plan(state); plan={}
+        for node in sorted({p['node_id'] for p in self.phases.values()}):
+            phases=[p for p in self.phases.values() if p['node_id']==node]; budget=sum(current[p['id']] for p in phases); min_sum=sum(p['min_green_s'] for p in phases); max_sum=sum(p['max_green_s'] for p in phases)
+            weights=[]
+            for p in phases:
+                score=0.0
+                for mid in p['movement_ids']:
+                    m=values[mid]; move=self.moves[mid]; incoming=self.links[move['incoming_link_id']]; outgoing=self.links[move['outgoing_link_id']]; out_storage=outgoing['storage_capacity_veh']; downstream=max(0,min(1,(out_storage-m.downstream_capacity_veh)/out_storage)); receiving=max(0,1-downstream**2)
+                    need=m.queue_veh/max(1,incoming['storage_capacity_veh']*move['turning_ratio'])+.8*(m.arrival_rate_vpm*.5)/max(1,incoming['storage_capacity_veh']*move['turning_ratio'])+.4*min(3,m.waiting_age_s/60); score+=need*receiving*(1+min(3,m.waiting_age_s/45))
+                if p['id'] == corridor_phases.get(node):
+                    score *= 2.5 # Huge boost to corridor phases
+                weights.append(max(.01,score))
+            flex=budget-min_sum; total=sum(weights)
+            for p,w in zip(phases,weights):plan[p['id']]=max(int(p['min_green_s']),min(int(p['max_green_s']),int(p['min_green_s']+round(flex*w/total))))
+            diff=int(budget-sum(plan[p['id']] for p in phases))
+            while diff:
+                eligible=[(i,p) for i,p in enumerate(phases) if (diff>0 and plan[p['id']]<p['max_green_s']) or (diff<0 and plan[p['id']]>p['min_green_s'])]
+                if not eligible:break
+                _,p=(max(eligible,key=lambda x:weights[x[0]]) if diff>0 else min(eligible,key=lambda x:weights[x[0]]));plan[p['id']]+=1 if diff>0 else -1;diff+=-1 if diff>0 else 1
+            if node == 'C1':
+                with open('/tmp/debug_allocate.txt', 'a') as f:
+                    f.write(f"SMART C1 phases: {[p['id'] for p in phases]} weights: {weights} plan: {plan}\\n")
+        return plan
+        return plan
+
+    def _generate_candidates(self,state,baseline,agda,evaluation=None):
+        import time
+        import random
+        candidates = [(dict(baseline), {}), (dict(agda), {})]
         
-        route=next((s['route_node_ids'] for s in self.config['scenarios'] if s['id']==state.scenario_type), [])
-        controlled=[node for node in route if self.nodes[node]['kind']=='controlled']
-        
-        base_offsets = {}
-        for delta in (-5, 5, 10):
-            candidate=dict(agda)
-            for node in sorted(self.index.phases_by_node):
-                phases=self.index.phases_by_node[node]
-                if len(phases)<2:continue
-                a,b=phases[0],phases[1]; actual=max(-candidate[a['id']]+a['min_green_s'],min(delta,a['max_green_s']-candidate[a['id']],candidate[b['id']]-b['min_green_s'],b['max_green_s']-candidate[b['id']]))
-                candidate[a['id']]+=actual;candidate[b['id']]-=actual
-            try:
-                validate_plan(self.config,candidate)
-                candidates.append((candidate, {}))
-                
-                # generate offset variants for this candidate if we have a corridor
-                if len(controlled) >= 2:
-                    for offset_val in (15, 30, 45, 60):
-                        offs = {controlled[1]: offset_val}
-                        candidates.append((candidate, offs))
-            except ValueError:pass
+        try:
+            b_res = self.rollout(state, baseline, self.scoring['window_s'], evaluation)
+            best_delay = b_res['queue_delay']
+        except Exception:
+            best_delay = float('inf')
             
-        # Also explore offsets for baseline and agda
-        if len(controlled) >= 2:
-            for offset_val in (15, 30, 45, 60):
-                offs = {controlled[1]: offset_val}
-                candidates.append((dict(baseline), offs))
-                candidates.append((dict(agda), offs))
+        nodes = list(set(p['node_id'] for p in self.phases.values()))
+        
+        current_plan = dict(baseline)
+        best_plan = dict(baseline)
+        
+        # We will collect all plans that are better than baseline
+        improvements = []
+        
+        start_time = time.monotonic()
+        iterations = 0
+        
+        # Run local search for up to 0.5 seconds
+        while time.monotonic() - start_time < 0.5:
+            iterations += 1
+            # generate neighbor
+            neighbor = dict(current_plan)
+            node = random.choice(nodes)
+            node_phases = [p['id'] for p in self.phases.values() if p['node_id'] == node]
+            if len(node_phases) >= 2:
+                p1, p2 = random.sample(node_phases, 2)
+                shift = random.choice([1, 2, 3, 4, 5])
                 
-        seen=set(); 
+                actual_shift = min(
+                    shift,
+                    neighbor[p1] - self.phases[p1]['min_green_s'],
+                    self.phases[p2]['max_green_s'] - neighbor[p2]
+                )
+                if actual_shift > 0:
+                    neighbor[p1] -= actual_shift
+                    neighbor[p2] += actual_shift
+                    
+            try:
+                res = self.rollout(state, neighbor, self.scoring['window_s'], evaluation)
+                delay = res['queue_delay']
+                cost = res['cost']
+                
+                # accept if better or randomly (hill climbing / simple SA)
+                if delay < best_delay:
+                    best_delay = delay
+                    best_plan = dict(neighbor)
+                    improvements.append((delay, dict(neighbor)))
+                    
+                if delay <= best_delay or random.random() < 0.1:
+                    current_plan = neighbor
+            except Exception:
+                pass
+                
+        improvements.sort(key=lambda x: x[0])
+        
+        # Add the best 3 improvements to candidates
+        for delay, plan in improvements[:3]:
+            candidates.append((plan, {}))
+            
+        seen=set()
         unique = []
         for p, o in candidates:
             key = (tuple(sorted(p.items())), tuple(sorted(o.items())))
             if key not in seen:
                 seen.add(key)
                 unique.append((p, o))
-        return unique
+        return unique[:5]
     def comparison(self,state,changes,rec_id='',recommendation_id=None,evaluation=None,horizon_s=0,demand_assumptions_hash=''):
         rec_id=recommendation_id if recommendation_id is not None else rec_id; plan={c.phase_id:c.green_s for c in changes}
         if len(plan)!=len(changes) or any(c.phase_id not in self.phases or self.phases[c.phase_id]['node_id']!=c.node_id for c in changes):raise ValueError('Duplicate or unknown phase/node')
@@ -264,7 +325,7 @@ class Model:
         try:agda=self.allocate(state)
         except ValueError as exc:
             result.outcome='cannot_evaluate';result.outcome_reason=str(exc);return result
-        candidates=self._generate_candidates(state,baseline,agda)[:self.scoring['max_candidates']];scored=[]
+        candidates=self._generate_candidates(state,baseline,agda,evaluation)[:self.scoring['max_candidates']];scored=[]
         for i,(plan, offsets) in enumerate(candidates):
             if expired():
                 result.outcome='cannot_evaluate';result.outcome_reason='Analysis timeout';return result
@@ -288,6 +349,7 @@ class Model:
         max_debt_reg = limits.get('worst_service_debt_regression_max', 0.10)
         
         baselines = [res for _, i, _, _, res in scored if i in (0, 1)]
+        all_scored = list(scored)
         valid_scored = []
         for cost, i, plan, offsets, res in scored:
             if i == 0:
@@ -311,6 +373,10 @@ class Model:
                 valid_scored.append((cost, i, plan, offsets, res))
         
         scored = valid_scored
+        with open('/tmp/debug_candidates.jsonl', 'a') as f:
+            for cost, i, plan, offsets, res in all_scored:
+                f.write(json.dumps({'case': state.run_id, 'idx': i, 'cost': cost, 'plan': plan, 'offsets': offsets, 'res': res, 'valid': any(v_idx == i for _, v_idx, _, _, _ in valid_scored)}) + '\n')
+        
         if len(scored) == 1:
             result.outcome='no_action';result.outcome_reason='No candidate met all hard regression constraints';return result
 
