@@ -78,3 +78,21 @@ def test_route_offsets_follow_candidate_phase_progression_and_remain_bounded(wor
     assert all(0<=value<=10 and int(value)==value for value in offsets.values())
     from services.simulation.safety import Signals
     Signals(model.config).apply(plans[4],offsets=offsets)
+
+@pytest.mark.parametrize('graph',['c1-c6','three-controlled-junctions'])
+def test_known_unreleased_demand_changes_candidate_allocation(tmp_path,graph):
+    engine=AggregateEngine(config_path=ROOT/'packages/scenario-config'/f'{graph}.json',directory=tmp_path)
+    engine.reset(pb.RunCommand(schema_version='1.0',run_id='committed-candidate',scenario_type='peak_surge',seed=1101,mode='recommend'))
+    try:
+        model=Model(engine.config);state=engine.copy_state();current=model.plan(state)
+        policy=model.scoring['candidate_policy']['variants'][0]
+        from services.intelligence.controller import coordinated_plan
+        before=coordinated_plan(model.index,model.config,state,current,model._evaluation_input(state),policy,120)
+        link=next(iter(model.index.boundary_inputs))
+        state.demand_commitments.add(boundary_link_id=link,release_start_simulation_s=1,release_end_simulation_s=21,remaining_mass_veh=100,rate_vps=5)
+        after=coordinated_plan(model.index,model.config,state,current,model._evaluation_input(state),policy,120)
+        phase=next(p for p in model.phases.values() if any(model.moves[mid]['incoming_link_id']==link for mid in p['movement_ids']))
+        assert after[phase['id']]>before[phase['id']]
+        assert state.demand_commitments[0].remaining_mass_veh==100
+        validate_plan(model.config,after)
+    finally:engine.close()

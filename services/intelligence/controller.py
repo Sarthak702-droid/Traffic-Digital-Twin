@@ -4,15 +4,19 @@ These proposals are not an optimizer or acceptance result. The model evaluates
 at most the configured five plans and applies every existing regression guard.
 """
 from services.simulation.safety import validate_plan
+from services.intelligence.known_demand import boundary_offers
 
 
 def coordinated_plan(index, config, state, current, evaluation, policy, horizon_s, check_budget=lambda:None):
-    # Propagate only current eligible external rates through declared turns.
-    # A bounded number of iterations cannot inspect scenario schedules/seeds.
-    flows={edge:evaluation['rates'].get(edge,0.0) for edge in index.links}
+    # Known eligible releases take precedence over extrapolated rates, exactly
+    # as in comparison rollouts. Proposal generation cannot inspect future bins.
+    offered_mass={edge:0.0 for edge in index.links}
+    for row in boundary_offers(evaluation['state'],evaluation['rates'],horizon_s,check_budget):
+        for edge,amount in row.items():offered_mass[edge]+=amount
+    flows=dict(offered_mass)
     for _ in range(len(index.links)):
         check_budget()
-        flows={edge:evaluation['rates'].get(edge,0.0)+sum(
+        flows={edge:offered_mass[edge]+sum(
             flows[move['incoming_link_id']]*move['turning_ratio']
             for move in index.movements_by_outgoing.get(edge,[])) for edge in index.links}
     observed={m.movement_id:m for m in state.movements};plan={}
@@ -27,7 +31,7 @@ def coordinated_plan(index, config, state, current, evaluation, policy, horizon_
             for mid in phase['movement_ids']:
                 move=index.movements[mid];incoming=move['incoming_link_id'];outgoing=move['outgoing_link_id'];ratio=move['turning_ratio']
                 queue=observed[mid].queue_veh if mid in observed else 0.0
-                need=flows[incoming]*horizon_s*ratio+policy['queue_weight']*(queue+evaluation['backlogs'].get(incoming,0.0)*ratio)
+                need=flows[incoming]*ratio+policy['queue_weight']*(queue+evaluation['backlogs'].get(incoming,0.0)*ratio)
                 storage=index.links[outgoing]['storage_capacity_veh']
                 receiving=max(policy['receiving_floor'],1-sum(evaluation['cells'][outgoing])/storage)
                 saturation=move.get('saturation_capacity_vps',0.5*index.links[incoming]['lanes'])

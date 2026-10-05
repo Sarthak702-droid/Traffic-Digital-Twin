@@ -1,5 +1,5 @@
 {
-  "version": "comparison-scoring-v1.2",
+  "version": "comparison-scoring-v1.3",
   "window_s": 120,
   "max_candidates": 5,
   "max_alternatives": 3,
@@ -41,7 +41,7 @@
     }
   },
   "candidate_policy": {
-    "version": "causal-corridor-proposals-v1",
+    "version": "causal-corridor-proposals-v2",
     "variants": [
       {
         "name": "pressure_current_cycles",

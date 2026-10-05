@@ -12,6 +12,7 @@ from services.simulation.metrics import METRICS_VERSION, link_metrics
 from services.simulation.safety import Signals, activation_rejection, default_plan, validate_plan, validate_runtime_safety
 from services.intelligence.forecast_demand import FORECAST_VERSION, HORIZONS_S, boundary_forecast_rates
 from services.intelligence.controller import coordinated_plan
+from services.intelligence.known_demand import boundary_offers
 
 MODEL='aggregate-predictor-v1'
 
@@ -134,25 +135,14 @@ class Model:
             raise ValueError('Benchmark demand trace must cover every boundary and rollout tick')
         snapshots={}; arrivals={m:0.0 for m in self.moves}; eta={m:None for m in self.moves}; peak=queue_delay=congested=throughput=boundary_wait=worst_service_debt=0.0
         initial_mass=sum(map(sum,cells.values()))+sum(backlogs.values());offered_total=0.0
-        commitments=[{'link':c.boundary_link_id,'start':c.release_start_simulation_s,'end':c.release_end_simulation_s,'remaining':c.remaining_mass_veh,'rate':c.rate_vps} for c in frozen.demand_commitments]
-        for c in commitments:
-            if c['link'] not in rates or not all(math.isfinite(c[k]) and c[k]>=0 for k in ('start','end','remaining','rate')) or c['end']<=c['start']:raise ValueError('Invalid known demand commitment')
-        known_end={link:max((c['end'] for c in commitments if c['link']==link),default=-1) for link in rates}
+        causal_offers=boundary_offers(frozen,rates,horizon,self._check_budget) if demand_trace is None else None
         capacity={m:1.0 for m in self.moves}
         if state.HasField('incident') and state.incident.status=='active':
             for mid,m in self.moves.items():
                 if m['node_id']==state.incident.node_id:capacity[mid]=state.incident.capacity_ratio
         for tick in range(1,horizon+1):
             self._check_budget()
-            external=dict(demand_trace[tick-1]) if demand_trace is not None else dict(rates); permissions=set()
-            if demand_trace is None and commitments:
-                now=frozen.simulation_time_s+tick
-                for link in external:
-                    if now<known_end[link]:external[link]=0.0
-                for c in commitments:
-                    overlap=max(0,min(now+1,c['end'])-max(now,c['start']))
-                    amount=min(c['remaining'],overlap*c['rate']);c['remaining']-=amount
-                    external[c['link']]+=amount
+            external=dict(demand_trace[tick-1]) if demand_trace is not None else next(causal_offers); permissions=set()
 
             for node,phases in scheduler.nodes.items():
                 index,stage,_=scheduler.state[node]
