@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"sort"
@@ -207,8 +209,9 @@ func (s *Store) RunReport(ctx context.Context, id pgtype.UUID) (map[string]any, 
 			return nil, err
 		}
 		var detail struct {
-			CommandID   string          `json:"command_id"`
-			PlanOutcome json.RawMessage `json:"plan_outcome"`
+			CommandID     string          `json:"command_id"`
+			PlanOutcome   json.RawMessage `json:"plan_outcome"`
+			ReceiptSHA256 string          `json:"receipt_sha256"`
 		}
 		if event == "scenario.interrupted" {
 			report["failures"] = append(report["failures"].([]any), map[string]any{"code": "simulator_state_missing_after_restart", "occurred_at_utc": created.UTC().Format(time.RFC3339Nano), "message": "Run ended after simulator restart; fresh analysis requires a new run"})
@@ -244,7 +247,19 @@ func (s *Store) RunReport(ctx context.Context, id pgtype.UUID) (map[string]any, 
 					audit.Close()
 					return nil, err
 				}
-				report["applied_outcome"] = map[string]any{"command_id": detail.CommandID, "status": outcome.Status, "applied_at_simulation_s": outcome.AppliedAtSimulationS, "resolved_at_utc": created.UTC().Format(time.RFC3339Nano)}
+				if detail.ReceiptSHA256 == "" {
+					var canonical any
+					if err = json.Unmarshal(detail.PlanOutcome, &canonical); err != nil {
+						return nil, err
+					}
+					b, _ := json.Marshal(canonical)
+					digest := sha256.Sum256(b)
+					detail.ReceiptSHA256 = hex.EncodeToString(digest[:])
+				}
+				report["applied_outcome"] = map[string]any{"command_id": detail.CommandID, "status": outcome.Status, "applied_at_simulation_s": outcome.AppliedAtSimulationS, "resolved_at_utc": created.UTC().Format(time.RFC3339Nano), "receipt_sha256": detail.ReceiptSHA256, "receipt": json.RawMessage(detail.PlanOutcome)}
+				if outcome.AppliedAtSimulationS == nil {
+					delete(report["applied_outcome"].(map[string]any), "applied_at_simulation_s")
+				}
 				report["application_events"] = append(report["application_events"].([]any), report["applied_outcome"])
 			}
 			if strings.HasPrefix(result, "rejected:") || strings.Contains(result, "failed") || strings.Contains(result, "timed_out") {
@@ -255,6 +270,9 @@ func (s *Store) RunReport(ctx context.Context, id pgtype.UUID) (map[string]any, 
 	err = audit.Err()
 	audit.Close()
 	if err != nil {
+		return nil, err
+	}
+	if err = RejectPrivateFields(report); err != nil {
 		return nil, err
 	}
 	if err = tx.Commit(ctx); err != nil {

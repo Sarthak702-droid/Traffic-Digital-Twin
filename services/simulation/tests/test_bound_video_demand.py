@@ -37,6 +37,7 @@ def processed_source(root, cache_key, session, counts, camera="CAM-01", boundary
     (folder / "observations.jsonl").write_bytes(encoded)
     digest = hashlib.sha256(encoded).hexdigest()
     manifest = {
+        "coverage": {"status":"complete","requested_frames":max(1,len(rows)*5),"decoded_frames":max(1,len(rows)*5),"source_fps":1,"decoded_until_source_s":max(1,len(rows)*5)},
         "status": "complete", "camera_id": camera, "source_session_id": session,
         "clip_sha256": clip, "geometry_sha256": geometry, "model_sha256": model,
         "config_hash": config, "observations_sha256": digest,
@@ -134,3 +135,10 @@ def test_engine_rejects_processed_source_from_other_network_config(tmp_path, mon
                             source_bindings=bindings)
     with pytest.raises(ValueError, match="configuration"):
         engine.reset(command)
+
+def test_missing_decode_proof_is_not_an_authoritative_cache(tmp_path):
+    binding,_=processed_source(tmp_path,'cache','source-1',[1])
+    path=tmp_path/'CAM-01/cache/manifest.json'
+    data=json.loads(path.read_text());data.pop('coverage');path.write_text(json.dumps(data))
+    with pytest.raises(ValueError,match='decode coverage'):
+        VideoProfileDemandProvider(processed_dir=tmp_path,source_bindings=[binding],camera_boundary_links={'CAM-01':'C2-C1'})

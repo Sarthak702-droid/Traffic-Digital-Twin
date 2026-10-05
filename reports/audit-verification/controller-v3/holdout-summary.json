@@ -1,0 +1,45 @@
+{
+  "source_revision": "8ad7ac78f96c151f8cc588e2236ec42d2b5d07f7",
+  "virtual_control": {
+    "declared_cases": 72,
+    "eligible_origins": 144,
+    "failed_cases": 0,
+    "gate_pass": false,
+    "improved_fraction": 0.22916666666666666,
+    "improved_origins": 33,
+    "target_type": "synthetic_model"
+  },
+  "conditions": {
+    "peak": {
+      "origins": 48,
+      "criterion_pass": 0,
+      "criterion_type": "benefit"
+    },
+    "off_peak": {
+      "origins": 48,
+      "criterion_pass": 33,
+      "criterion_type": "benefit"
+    },
+    "incident": {
+      "origins": 48,
+      "criterion_pass": 0,
+      "criterion_type": "benefit"
+    },
+    "emergency": {
+      "origins": 48,
+      "criterion_pass": 48,
+      "criterion_type": "safe_retention_or_lifecycle"
+    },
+    "degraded_input": {
+      "origins": 48,
+      "criterion_pass": 48,
+      "criterion_type": "safe_retention_or_lifecycle"
+    },
+    "no_benefit": {
+      "origins": 48,
+      "criterion_pass": 48,
+      "criterion_type": "safe_retention_or_lifecycle"
+    }
+  },
+  "acceptance": "failed; 33/144 < 50%; independent recorded/operator gates unavailable"
+}

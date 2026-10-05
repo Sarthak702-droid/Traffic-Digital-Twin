@@ -44,6 +44,9 @@ describe("live reconnection", () => {
     });
     expect(frame).toMatchObject({engine_kind:"aggregate_ctm",links:[{stock_veh:4}],
       cells:[{stock_veh:[1,3]}],boundary_backlog_veh:2,cumulative_demand_veh:8});
+    const averaged = liveSchema.parse({...frame,boundary_demand:[{link_id:"C2-C1",backlog_veh:2,offered_rate_vpm:10,offered_window_s:60}]});
+    expect(averaged.boundary_demand?.[0].offered_window_s).toBe(60);
+    expect(() => liveSchema.parse({...frame,boundary_demand:[{link_id:"C2-C1",backlog_veh:2,offered_rate_vpm:10,offered_window_s:61}]})).toThrow();
     expect(() => liveSchema.parse({...frame,cells:[{link_id:"C2-C1",stock_veh:[-1]}]})).toThrow();
   });
   it("accepts current 1.1 state identity and finalized source time", () => {

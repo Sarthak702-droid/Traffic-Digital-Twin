@@ -34,6 +34,16 @@ class SimulationStub:
         Args:
             channel: A grpc.Channel.
         """
+        self.UpdateAuthority = channel.unary_unary(
+                '/traffic.v1.Simulation/UpdateAuthority',
+                request_serializer=twin__pb2.AuthorityCommand.SerializeToString,
+                response_deserializer=twin__pb2.TrafficState.FromString,
+                _registered_method=True)
+        self.CancelPlan = channel.unary_unary(
+                '/traffic.v1.Simulation/CancelPlan',
+                request_serializer=twin__pb2.PlanCommand.SerializeToString,
+                response_deserializer=twin__pb2.PlanOutcome.FromString,
+                _registered_method=True)
         self.SetClock = channel.unary_unary(
                 '/traffic.v1.Simulation/SetClock',
                 request_serializer=twin__pb2.ClockCommand.SerializeToString,
@@ -78,6 +88,18 @@ class SimulationStub:
 
 class SimulationServicer:
     """Missing associated documentation comment in .proto file."""
+
+    def UpdateAuthority(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CancelPlan(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def SetClock(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -130,6 +152,16 @@ class SimulationServicer:
 
 def add_SimulationServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'UpdateAuthority': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateAuthority,
+                    request_deserializer=twin__pb2.AuthorityCommand.FromString,
+                    response_serializer=twin__pb2.TrafficState.SerializeToString,
+            ),
+            'CancelPlan': grpc.unary_unary_rpc_method_handler(
+                    servicer.CancelPlan,
+                    request_deserializer=twin__pb2.PlanCommand.FromString,
+                    response_serializer=twin__pb2.PlanOutcome.SerializeToString,
+            ),
             'SetClock': grpc.unary_unary_rpc_method_handler(
                     servicer.SetClock,
                     request_deserializer=twin__pb2.ClockCommand.FromString,
@@ -180,6 +212,60 @@ def add_SimulationServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class Simulation:
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def UpdateAuthority(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/traffic.v1.Simulation/UpdateAuthority',
+            twin__pb2.AuthorityCommand.SerializeToString,
+            twin__pb2.TrafficState.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CancelPlan(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/traffic.v1.Simulation/CancelPlan',
+            twin__pb2.PlanCommand.SerializeToString,
+            twin__pb2.PlanOutcome.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def SetClock(request,

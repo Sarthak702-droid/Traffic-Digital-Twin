@@ -4,8 +4,10 @@ import sys
 from types import ModuleType, SimpleNamespace
 
 
+@pytest.mark.parametrize("decode_mode",["valid","truncated","subrange","zero"])
+@pytest.mark.parametrize("primary,direction",[("approaching","approaching"),("departing","approaching"),("departing","departing"),("approaching","departing")])
 @pytest.mark.parametrize("class_id, expected_vehicles", [(2, 1), (7, 0)])
-def test_crossing_at_window_boundary_belongs_to_later_window(tmp_path, monkeypatch, class_id, expected_vehicles):
+def test_crossing_at_window_boundary_belongs_to_later_window(tmp_path, monkeypatch, class_id, expected_vehicles, primary, direction, decode_mode):
     class Frame:
         shape = (100, 100, 3)
     class Capture:
@@ -13,7 +15,7 @@ def test_crossing_at_window_boundary_belongs_to_later_window(tmp_path, monkeypat
         def isOpened(self): return True
         def get(self, prop): return {1: 1, 2: 100, 3: 100, 4: 6}[prop]
         def read(self):
-            if self.index == 6: return False, None
+            if self.index == (3 if decode_mode=="truncated" else 0 if decode_mode=="zero" else 6): return False, None
             self.index += 1
             return True, Frame()
         def release(self): pass
@@ -39,7 +41,7 @@ def test_crossing_at_window_boundary_belongs_to_later_window(tmp_path, monkeypat
         def __init__(self, index):
             self.id = [Scalar(1)] if index >= 4 else None
             self.cls = [Scalar(class_id)] if index >= 4 else []
-            self.xyxy = [Array([256, 192, 384, 320 if index == 4 else 384])] if index >= 4 else []
+            self.xyxy = [Array([256, 192, 384, (320 if index == 4 else 384) if direction=="approaching" else (384 if index == 4 else 320)])] if index >= 4 else []
         def __len__(self): return len(self.xyxy)
     class YOLO:
         def __init__(self, *_): self.index = 0
@@ -57,9 +59,20 @@ def test_crossing_at_window_boundary_belongs_to_later_window(tmp_path, monkeypat
     model.write_bytes(b'model')
     session = module.ITDVideoAnalyticsSession('CAM-01', str(video), str(model),
         geometry={'counting_line': {'p1': [0.15, .55], 'p2': [.85, .55]},
-                  'direction_vector': [0, 1], 'primary_direction': 'approaching'},
+                  'direction_vector': [0, 1], 'primary_direction': primary},
         target_fps=1)
+    if decode_mode in ('truncated','zero'):
+        with pytest.raises(IOError,match='incomplete_decode'):list(session.process_stream())
+        sys.modules.pop('services.vision.itd_pipeline',None)
+        return
+    if decode_mode=='subrange':
+        rows=list(session.process_stream(max_duration_s=3))
+        assert rows[-1].window_end_s==3
+        assert session.coverage['status']=='complete'
+        sys.modules.pop('services.vision.itd_pipeline',None)
+        return
     rows = list(session.process_stream())
+    if primary!=direction:expected_vehicles=0
     assert [(row.window_start_s, row.window_end_s, row.crossings_veh) for row in rows] == [(0, 5, 0), (5, 6, expected_vehicles)]
     assert rows[0].available_at_source_s >= rows[0].window_end_s
     assert rows[0].validation_level == 'provisional_unreviewed'

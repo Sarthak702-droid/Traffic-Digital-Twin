@@ -1,0 +1,25 @@
+ok  	traffic.local/twin/apps/api/cmd/api	1.038s
+ok  	traffic.local/twin/apps/api/internal/config	1.080s
+ok  	traffic.local/twin/apps/api/internal/contracts	1.029s
+--- FAIL: TestApprovalRechecksLatestSimulatorEpochBeforeActuation (0.00s)
+    decision_identity_integration_test.go:76: failed to connect to `user=traffic database=traffic_audit_remediation`: 127.0.0.1:5433 (127.0.0.1): dial error: dial tcp 127.0.0.1:5433: connect: connection refused
+--- FAIL: TestStartResetFailureAndAuditedLifecycle (0.00s)
+    workflow_integration_test.go:38: failed to connect to `user=traffic database=traffic_audit_remediation`: 127.0.0.1:5433 (127.0.0.1): dial error: dial tcp 127.0.0.1:5433: connect: connection refused
+FAIL
+FAIL	traffic.local/twin/apps/api/internal/httpapi	16.152s
+--- FAIL: TestConfigUpgradePreservesPersistedV4AndRunHistory (0.00s)
+    config_upgrade_test.go:36: failed to connect to `user=traffic database=traffic_audit_remediation`: 127.0.0.1:5433 (127.0.0.1): dial error: dial tcp 127.0.0.1:5433: connect: connection refused
+--- FAIL: TestAcceptedPlanIntentStaysOpenUntilAppliedOutcome (0.00s)
+    decision_outcome_test.go:32: failed to connect to `user=traffic database=traffic_audit_remediation`: 127.0.0.1:5433 (127.0.0.1): dial error: dial tcp 127.0.0.1:5433: connect: connection refused
+--- FAIL: TestRunInputBindingIsDurableAndDistinctPerRun (0.00s)
+    input_binding_test.go:30: failed to connect to `user=traffic database=traffic_audit_remediation`: 127.0.0.1:5433 (127.0.0.1): dial error: dial tcp 127.0.0.1:5433: connect: connection refused
+--- FAIL: TestReportEvidenceEventsAreAppendOnlyAndSurviveReconnect (0.00s)
+    report_evidence_test.go:32: failed to connect to `user=traffic database=traffic_audit_remediation`: 127.0.0.1:5433 (127.0.0.1): dial error: dial tcp 127.0.0.1:5433: connect: connection refused
+--- FAIL: TestPostgresDurabilityAndAtomicAudit (0.00s)
+    store_test.go:32: failed to connect to `user=traffic database=traffic_audit_remediation`: 127.0.0.1:5433 (127.0.0.1): dial error: dial tcp 127.0.0.1:5433: connect: connection refused
+FAIL
+FAIL	traffic.local/twin/apps/api/internal/store	0.026s
+ok  	traffic.local/twin/apps/api/internal/store/queries	1.014s
+?   	traffic.local/twin/db	[no test files]
+ok  	traffic.local/twin/packages/contracts/gen/go	1.024s
+FAIL

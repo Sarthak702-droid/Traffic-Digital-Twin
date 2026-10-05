@@ -52,6 +52,10 @@
     "input_session_id": "",
     "observation_history": [],
     "input_quality": "",
-    "simulation_paused": false
+    "simulation_paused": false,
+    "control_epoch": "0",
+    "control_mode": "",
+    "locked_targets": [],
+    "demand_commitments": []
   }
 }

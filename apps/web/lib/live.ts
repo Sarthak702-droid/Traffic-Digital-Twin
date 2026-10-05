@@ -36,7 +36,7 @@ export const liveSchema = z.object({
     receiving_blocked:z.boolean(),
   })).optional(),
   cells:z.array(z.object({link_id:z.string(),stock_veh:z.array(nonnegative)})).optional(),
-  boundary_demand:z.array(z.object({link_id:z.string(),backlog_veh:nonnegative,offered_rate_vpm:nonnegative})).optional(),
+  boundary_demand:z.array(z.object({link_id:z.string(),backlog_veh:nonnegative,offered_rate_vpm:nonnegative,offered_window_s:nonnegative.max(60).optional()})).optional(),
   boundary_backlog_veh:nonnegative.optional(),
   cumulative_demand_veh:nonnegative.optional(),
   cumulative_admitted_veh:nonnegative.optional(),

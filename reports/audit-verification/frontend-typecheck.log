@@ -1,0 +1,8 @@
+
+> typecheck
+> npm run typecheck -w apps/web
+
+
+> @traffic/web@0.1.0 typecheck
+> tsc --noEmit
+

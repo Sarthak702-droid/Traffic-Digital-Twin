@@ -40,9 +40,13 @@ def test_timestamped_full_clip_excludes_pedestrians_from_vehicles(tmp_path):
     assert data['frames'][-1]['time_s'] > 10
     assert len(data['frames']) == 60
     assert data['frames'][0]['class_counts']['pedestrain'] == 1
-    assert data['frames'][0]['active_count'] == data['frames'][0]['queue_count'] == 1
+    assert data['frames'][0]['active_count'] == 1
+    assert data['frames'][0]['queue_count'] is None
+    assert data['frames'][0]['queue_status'] == 'unavailable'
+    assert data['frames'][1]['queue_count'] == 1
+    assert all('detections' not in row for row in data['frames'])
     assert data['summary']['total_unique_vehicles'] == data['summary']['total_unique_pedestrians'] == 1
-    assert data['schema_version'] == 'display-detections-v2'
+    assert data['schema_version'] == 'display-aggregates-v3'
     assert len(data['source_identity']['clip_sha256']) == 64
     assert all(row['time_s'] < row['valid_until_s'] <= 12 for row in data['frames'])
 

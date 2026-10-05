@@ -1,0 +1,11 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/sarthaktripathy/.codex/worktrees/f526/Traffic-Digital-Twin
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 22 items
+
+services/intelligence/tests/test_coordinated_candidates.py ..........    [ 45%]
+packages/contracts/tests/test_prototype_roundtrip.py ............        [100%]
+
+============================== 22 passed in 3.67s ==============================

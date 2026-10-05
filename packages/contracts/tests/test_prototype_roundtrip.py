@@ -148,3 +148,17 @@ def test_plan_dispatch_identity_preserves_explicit_seeded_epoch_and_zero_sequenc
     assert restored.HasField('expected_snapshot_sequence')
     assert restored.expected_snapshot_sequence == 0
     assert not pb.PlanCommand().HasField('expected_snapshot_sequence')
+
+
+def test_offered_averaging_window_is_additive_and_bounded():
+    schema=json.loads((Path(__file__).resolve().parents[1]/'events.schema.json').read_text())
+    shape={'$defs':schema['$defs'],'$ref':'#/$defs/BoundaryDemandState'}
+    legacy={'link_id':'boundary','backlog_veh':0,'offered_rate_vpm':1}
+    validate(legacy,shape)
+    message=json_format.ParseDict({**legacy,'offered_window_s':60},pb.BoundaryDemandState())
+    restored=pb.BoundaryDemandState.FromString(message.SerializeToString())
+    assert restored.offered_window_s==60
+    assert pb.BoundaryDemandState.DESCRIPTOR.fields_by_name['offered_rate_vpm'].number==3
+    assert pb.BoundaryDemandState.DESCRIPTOR.fields_by_name['offered_window_s'].number==4
+    validate(json_format.MessageToDict(restored,preserving_proto_field_name=True,always_print_fields_with_no_presence=True),shape)
+    with pytest.raises(ValidationError):validate({**legacy,'offered_window_s':61},shape)

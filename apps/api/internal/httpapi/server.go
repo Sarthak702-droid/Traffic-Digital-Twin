@@ -100,7 +100,7 @@ func (s *Server) Handler() http.Handler {
 			next.ServeHTTP(w, req)
 		})
 	})
-	r.Use(middleware.Recoverer, s.access, s.idempotency)
+	r.Use(middleware.Recoverer, s.access)
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -175,9 +175,9 @@ func (s *Server) Handler() http.Handler {
 		}
 		send(w, 200, v)
 	})
-	r.Post("/api/v1/runs", s.createRun)
+	r.With(s.idempotency).Post("/api/v1/runs", s.createRun)
 	r.Get("/api/v1/runs/{id}/report", s.getRunReport)
-	r.Post("/api/v1/runs/{id}/clock", s.setRunClock)
+	r.With(s.idempotency).Post("/api/v1/runs/{id}/clock", s.setRunClock)
 	r.Get("/api/v1/audit", func(w http.ResponseWriter, r *http.Request) {
 		if !s.db(w) {
 			return
@@ -217,16 +217,16 @@ func (s *Server) Handler() http.Handler {
 	})
 	r.Get("/api/v1/recommendations/active", s.activeRecommendation)
 	r.Get("/api/v1/analysis", s.getAnalysis)
-	r.Post("/api/v1/recommendations/{id}/{action}", s.decision)
-	r.Post("/api/v1/scenarios/{type}/start", s.startScenario)
-	r.Post("/api/v1/scenarios/reset", s.resetScenario)
+	r.With(s.idempotency).Post("/api/v1/recommendations/{id}/{action}", s.decision)
+	r.With(s.idempotency).Post("/api/v1/scenarios/{type}/start", s.startScenario)
+	r.With(s.idempotency).Post("/api/v1/scenarios/reset", s.resetScenario)
 	r.Get("/api/v1/decisions/unresolved", s.getUnresolvedDecisions)
-	r.Post("/api/v1/decisions/resolve", s.resolveDecision)
+	r.With(s.idempotency).Post("/api/v1/decisions/resolve", s.resolveDecision)
 	r.Get("/api/v1/mode", s.getMode)
-	r.Post("/api/v1/mode/{mode}", s.setMode)
+	r.With(s.idempotency).Post("/api/v1/mode/{mode}", s.setMode)
 	r.Get("/api/v1/locks", s.listLocks)
-	r.Post("/api/v1/locks/{id}", s.setLock)
-	r.Delete("/api/v1/locks/{id}", s.deleteLock)
+	r.With(s.idempotency).Post("/api/v1/locks/{id}", s.setLock)
+	r.With(s.idempotency).Delete("/api/v1/locks/{id}", s.deleteLock)
 	r.Get("/api/v1/observations", s.getObservations)
 	r.Get("/api/v1/vision/clips", s.getProcessedClips)
 	r.Get("/api/v1/cameras", s.getCameras)
@@ -235,12 +235,12 @@ func (s *Server) Handler() http.Handler {
 	r.Head("/api/v1/clips/{id}/media", s.getClipMedia)
 	r.Get("/api/v1/vision/clips/{id}/media", s.getClipMedia)
 	r.Head("/api/v1/vision/clips/{id}/media", s.getClipMedia)
-	r.Post("/api/v1/replay/{scenario}", s.startReplay)
+	r.With(s.idempotency).Post("/api/v1/replay/{scenario}", s.startReplay)
 	r.Get("/api/v1/vision/{id}", s.getVisionState)
 	r.Get("/api/v1/commands/{id}", s.getCommand)
 	r.Get("/api/v1/session", s.getSession)
-	r.Post("/api/v1/session/login", s.loginSession)
-	r.Post("/api/v1/session/logout", s.logoutSession)
+	r.With(s.idempotency).Post("/api/v1/session/login", s.loginSession)
+	r.With(s.idempotency).Post("/api/v1/session/logout", s.logoutSession)
 	r.Get("/ws/v1/live", s.live)
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) { problem(w, http.StatusNotFound, "Unknown API route") })
 	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
@@ -359,6 +359,14 @@ func (s *Server) live(w http.ResponseWriter, r *http.Request) {
 	}
 	defer c.CloseNow()
 	ctx := c.CloseRead(r.Context())
+	cookie, _ := r.Cookie(sessionCookieName)
+	session, err := s.Sessions.LookupSession(ctx, digestToken(cookie.Value))
+	if err != nil {
+		c.Close(websocket.StatusPolicyViolation, "Session unavailable")
+		return
+	}
+	expiry := time.NewTimer(time.Until(session.ExpiresAt))
+	defer expiry.Stop()
 	frames := make(chan *pb.TrafficState, 1)
 	s.mu.Lock()
 	if s.sim != nil {
@@ -389,6 +397,10 @@ func (s *Server) live(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	write := func(kind string, payload proto.Message) error {
+		if !s.liveSessionMatches(r, &session) {
+			c.Close(websocket.StatusPolicyViolation, "Session expired or revoked")
+			return context.Canceled
+		}
 		sequence++
 		b, e := (protojson.MarshalOptions{UseProtoNames: true, EmitUnpopulated: true}).Marshal(payload)
 		if e != nil {
@@ -433,10 +445,13 @@ func (s *Server) live(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(250 * time.Millisecond)
 	defer ticker.Stop()
 	for {
 		select {
+		case <-expiry.C:
+			c.Close(websocket.StatusPolicyViolation, "Session expired")
+			return
 		case <-ctx.Done():
 			return
 		case frame := <-frames:
@@ -459,6 +474,10 @@ func (s *Server) live(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		case <-ticker.C:
+			if !s.liveSessionMatches(r, &session) {
+				c.Close(websocket.StatusPolicyViolation, "Session expired or revoked")
+				return
+			}
 			s.mu.RLock()
 			var analysis *pb.Analysis
 			if s.analysis != nil && s.analysisFault == "" {
@@ -519,9 +538,15 @@ func (s *Server) live(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getVisionState(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Deprecation", "true")
+	w.Header().Set("X-Evidence-Scope", "legacy_demo_only")
 	junctionID := strings.ToUpper(chi.URLParam(r, "id"))
 	if junctionID != "C3" {
-		problem(w, 404, "No vision camera configured for this junction; sample video is available only at C3")
+		problem(w, 404, "Legacy demo alias supports C3 only; use the registered camera inventory and observations for the active configuration")
+		return
+	}
+	if r.URL.Query().Get("status") == "" && r.URL.Query().Get("legacy_replay") != "true" {
+		send(w, 200, map[string]any{"available": false, "status": "unavailable", "camera_id": "CAM-C3-NORTH", "evidence_scope": "legacy_demo_only", "authoritative_input": false, "message": "Deprecated demonstration replay requires explicit legacy_replay=true; use registered camera observations for operating evidence"})
 		return
 	}
 	if status := r.URL.Query().Get("status"); status == "offline" || status == "unavailable" {
@@ -570,7 +595,13 @@ func (s *Server) getVisionState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	var legacy map[string]any
+	if json.Unmarshal(data, &legacy) != nil || store.RejectPrivateFields(legacy) != nil {
+		problem(w, 503, "Legacy evidence violates the aggregate artifact boundary")
+		return
+	}
+	legacy["evidence_scope"] = "legacy_demo_only"
+	legacy["authoritative_input"] = false
+	legacy["replay"] = true
+	send(w, 200, legacy)
 }

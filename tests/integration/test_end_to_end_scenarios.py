@@ -23,14 +23,20 @@ from services.simulation.snapshot_sanitizer import SnapshotSanitizer
 from services.simulation.video_demand import VideoProfileDemandProvider, CAMERA_TO_BOUNDARY_LINK
 
 
-def test_normal_video_demand_simulation_with_mass_conservation():
+def test_normal_video_demand_simulation_with_mass_conservation(tmp_path):
     """Verifies end-to-end flow from video observations through CTM cells with conservation."""
     cfg = load_config()
     index = NetworkIndex.build(cfg)
-    provider = VideoProfileDemandProvider(
-        observations_dir=".runtime/vision/observations",
-        scale=1.0
-    )
+    # A deterministic declared aggregate fixture removes dependence on hidden
+    # workstation caches. Real recorded-video acceptance is a separate gate.
+    import json
+    for camera in cfg['camera_boundary_links']:
+        (tmp_path/f'{camera}.jsonl').write_text(''.join(json.dumps({
+            'window_start_s':start,'window_end_s':start+5,
+            'available_at_source_s':start+5,'crossings_veh':3,
+            'observation_status':'valid'})+'\n' for start in range(0,25,5)))
+    provider = VideoProfileDemandProvider(observations_dir=tmp_path,scale=1.0,camera_boundary_links=cfg['camera_boundary_links'])
+
 
     length = float(cfg.get("flow_model", {}).get("cell_length_m", 40))
     cells = {e: [0.0] * max(1, int(index.links[e]["length_m"] // length)) for e in index.links}

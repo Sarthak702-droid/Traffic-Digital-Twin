@@ -1,0 +1,50 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/sarthaktripathy/.codex/worktrees/f526/Traffic-Digital-Twin
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 17 items
+
+services/intelligence/tests/test_bounded_recommendations_s03.py ........ [ 47%]
+.......FF                                                                [100%]
+
+=================================== FAILURES ===================================
+________________ test_equal_local_plan_keeps_its_baseline_slot _________________
+
+    def test_equal_local_plan_keeps_its_baseline_slot():
+        model = Model()
+        state = empty_state(model)
+        current = model.plan(state)
+        candidates = model._generate_candidates(state, current, current)
+        # Index 1 is the local reference even when timings equal the current plan.
+        assert candidates[0] == current
+>       assert candidates[1] == current
+E       AssertionError: assert {'C1-FROM-C2'...-C5': 30, ...} == {'C1-FROM-C2'...-C5': 30, ...}
+E         
+E         Omitting 4 identical items, use -vv to show
+E         Differing items:
+E         {'C1-FROM-C2': 25} != {'C1-FROM-C2': 30}
+E         {'C1-FROM-C3': 35} != {'C1-FROM-C3': 30}
+E         Use -v to get more diff
+
+services/intelligence/tests/test_bounded_recommendations_s03.py:231: AssertionError
+______ test_bounded_candidates_include_a_whole_corridor_split_correction _______
+
+    def test_bounded_candidates_include_a_whole_corridor_split_correction():
+        model = Model()
+        state = empty_state(model)
+        current = model.plan(state)
+        local = dict(current)
+        for phases in model.index.phases_by_node.values():
+            local[phases[0]['id']] += 8
+            local[phases[1]['id']] -= 8
+        candidates = model._generate_candidates(state, current, local)
+>       assert len(candidates) <= model.scoring['max_candidates']
+E       AssertionError: assert 6 <= 5
+E        +  where 6 = len([{'C1-FROM-C2': 30, 'C1-FROM-C3': 30, 'C1-FROM-C4': 30, 'C1-FROM-C5': 30, ...}, {'C1-FROM-C2': 38, 'C1-FROM-C3': 22, '...C1-FROM-C4': 30, 'C1-FROM-C5': 30, ...}, {'C1-FROM-C2': 38, 'C1-FROM-C3': 22, 'C1-FROM-C4': 30, 'C1-FROM-C5': 30, ...}])
+
+services/intelligence/tests/test_bounded_recommendations_s03.py:243: AssertionError
+=========================== short test summary info ============================
+FAILED services/intelligence/tests/test_bounded_recommendations_s03.py::test_equal_local_plan_keeps_its_baseline_slot
+FAILED services/intelligence/tests/test_bounded_recommendations_s03.py::test_bounded_candidates_include_a_whole_corridor_split_correction
+========================= 2 failed, 15 passed in 1.44s =========================

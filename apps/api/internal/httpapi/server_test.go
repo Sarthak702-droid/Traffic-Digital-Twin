@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"fmt"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 	"traffic.local/twin/apps/api/internal/config"
@@ -35,11 +37,14 @@ func app(t *testing.T) *Server {
 	}}}
 }
 
+var testCommandSequence atomic.Uint64
+
 func testRequest(method, target string, body io.Reader) *http.Request {
 	r := httptest.NewRequest(method, target, body)
 	r.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "test-token"})
 	if method != http.MethodGet && method != http.MethodHead {
 		r.Header.Set("Origin", "http://example.com")
+		r.Header.Set("Idempotency-Key", fmt.Sprintf("test-command-%d", testCommandSequence.Add(1)))
 	}
 	return r
 }
@@ -87,7 +92,11 @@ func TestHealthMakesUnavailableAndSimulatedDependenciesExplicit(t *testing.T) {
 	}
 }
 func TestRejectInvalidCommands(t *testing.T) {
-	h := app(t).Handler()
+	s := app(t)
+	st, cleanup := setupTestStore(t)
+	defer cleanup()
+	s.Store = st
+	h := s.Handler()
 	for _, body := range []string{`{}`, `null`, `{"schema_version":"1.0","scenario_type":"unknown","mode":"recommend","seed":1}`, `{"schema_version":"1.0","scenario_type":"peak_surge","mode":"live","seed":1}`, `{"schema_version":"1.0","scenario_type":"peak_surge","mode":"recommend","seed":-1}`, `{"schema_version":"1.0","scenario_type":"peak_surge","mode":"recommend","seed":1,"unsafe":true}`, `{} {}`, strings.Repeat(" ", 5000) + `{}`} {
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, testRequest("POST", "/api/v1/runs", strings.NewReader(body)))
@@ -114,6 +123,9 @@ func TestCrossOriginAndUnavailableActions(t *testing.T) {
 
 func TestConfiguredFrontendOrigin(t *testing.T) {
 	s := app(t)
+	st, cleanup := setupTestStore(t)
+	defer cleanup()
+	s.Store = st
 	s.AllowedOrigin = "http://127.0.0.1:3100"
 	r := testRequest("POST", "http://127.0.0.1:8081/api/v1/runs", strings.NewReader(`{}`))
 	r.Header.Set("Origin", s.AllowedOrigin)

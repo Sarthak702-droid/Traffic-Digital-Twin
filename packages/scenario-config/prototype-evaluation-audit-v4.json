@@ -1,0 +1,104 @@
+{
+  "version": "prototype-evaluation-audit-v4",
+  "status": "frozen_before_new_synthetic_held_out_execution",
+  "reference_manifest": "packages/reference-samples/candidate-windows-v1.json",
+  "reference_windows": {
+    "tuning": [
+      "candidate-ordinary-01",
+      "candidate-crowded-01"
+    ],
+    "reserved": [
+      "candidate-difficult-01"
+    ]
+  },
+  "synthetic": {
+    "graphs": [
+      "c1-c6.json",
+      "three-controlled-junctions.json"
+    ],
+    "tuning_seeds": [
+      1101,
+      2202,
+      3303
+    ],
+    "held_out_seeds": [
+      77101,
+      77213,
+      77327
+    ],
+    "conditions": [
+      "peak",
+      "off_peak",
+      "incident",
+      "emergency",
+      "degraded_input",
+      "no_benefit"
+    ],
+    "held_out_perturbations": [
+      {
+        "id": "low_capacity",
+        "internal_link_capacity_scale": 0.8,
+        "turning_ratio_shift": 0.1,
+        "boundary_demand_scale": 1.1
+      },
+      {
+        "id": "high_capacity",
+        "internal_link_capacity_scale": 1.2,
+        "turning_ratio_shift": -0.1,
+        "boundary_demand_scale": 0.9
+      }
+    ],
+    "run_duration_s": 600,
+    "warmup_s": 120
+  },
+  "measurement": {
+    "count_total_abs_error_max_veh": 2,
+    "count_total_relative_error_max": 0.2,
+    "visible_queue_abs_error_max_veh": 2,
+    "required_independently_reviewed_reserved_windows": 1
+  },
+  "forecast": {
+    "horizons_s": [
+      30,
+      60,
+      120,
+      300
+    ],
+    "metrics": [
+      "mae_veh",
+      "bias_veh",
+      "eligible_origins"
+    ],
+    "primary_improvement_vs_persistence_min": 0.05,
+    "per_horizon_regression_vs_persistence_max": 0.1,
+    "minimum_eligible_origins_per_horizon": 5
+  },
+  "control": {
+    "comparison_window_s": 120,
+    "baselines": [
+      "fixed_timing",
+      "local_adaptive"
+    ],
+    "primary_queue_delay_reduction_min": 0.05,
+    "minimum_improved_eligible_cases_fraction": 0.5,
+    "boundary_exits_regression_max": 0.02,
+    "boundary_backlog_regression_max": 0.02,
+    "boundary_wait_regression_max": 0.02,
+    "worst_service_debt_regression_max": 0.1,
+    "spillback_exposure_regression_max": 0.02,
+    "allowed_unsafe_applications": 0,
+    "degraded_input_actionable_recommendations_max": 0
+  },
+  "resource": {
+    "target_host": "Intel Core Ultra 9 285H workstation, 16 logical CPUs, 30 GiB RAM",
+    "fresh_video_jobs_max": 1,
+    "provisional_fresh_video_peak_rss_gib": 2.0,
+    "provisional_fresh_video_cpu_cores": 6,
+    "state_to_recommendation_p95_s": 5.0,
+    "state_to_recommendation_p95_s_target_range_start": 2.0,
+    "candidate_evaluation_deadline_s": 1.5,
+    "max_input_age_s": 10.0
+  },
+  "recorded_holdout_status": "blocked_new_unseen_authorized_input_and_independent_review_required",
+  "prior_recorded_scope": "diagnostic_only_previously_viewed"
+}

@@ -1,0 +1,42 @@
+{
+  "version": "prototype-resource-budget-audit-v2",
+  "scope": "audit local runtime diagnostics; unchanged limits; original target workstation acceptance remains unverified",
+  "target_cpu": "Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz",
+  "fresh_perception": {
+    "concurrent_jobs": 1,
+    "cached_boundary_inputs": 3,
+    "peak_cpu_cores": 6,
+    "peak_ram_bytes": 2147483648
+  },
+  "simulation": {
+    "step_samples_per_scenario": 600,
+    "step_p95_wall_s": 1,
+    "peak_cpu_cores": 2,
+    "peak_ram_bytes": 536870912
+  },
+  "candidate_evaluation": {
+    "samples_per_scenario": 10,
+    "max_candidates": 5,
+    "concurrent_analyses": 1,
+    "comparison_window_s": 120,
+    "analysis_p95_wall_s": 1.5,
+    "peak_cpu_cores": 2,
+    "peak_ram_bytes": 536870912
+  },
+  "end_to_end": {
+    "state_to_analysis_wall_s_target": 5,
+    "continuous_run_p95": "requires separate full-stack measurement"
+  },
+  "graphs": [
+    "c1-c6.json",
+    "three-controlled-junctions.json"
+  ],
+  "scenarios": [
+    "peak_surge",
+    "incident_c3",
+    "ambulance_corridor"
+  ],
+  "seed": 1101,
+  "seed_split": "tuning_only; no held-out accuracy or control scoring",
+  "frozen_at_utc": "2026-10-04T17:06:24.511020+00:00"
+}

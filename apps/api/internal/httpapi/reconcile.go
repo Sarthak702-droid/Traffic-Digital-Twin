@@ -40,8 +40,60 @@ func (s *Server) ReconcileDecisions(ctx context.Context) {
 			if s.Store == nil || s.sim == nil {
 				continue
 			}
+			s.reconcileControls(ctx)
 			s.reconcileDecisions(ctx)
 		}
+	}
+}
+
+func (s *Server) reconcileControls(ctx context.Context) {
+	call, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	rows, err := s.Store.Pool.Query(call, "SELECT id,actor,response FROM command_outcomes WHERE status IN ('pending','unknown') AND response ? 'authority_intent' LIMIT 10")
+	if err != nil {
+		return
+	}
+	type item struct {
+		id, actor string
+		payload   []byte
+	}
+	items := []item{}
+	for rows.Next() {
+		var v item
+		if rows.Scan(&v.id, &v.actor, &v.payload) == nil {
+			items = append(items, v)
+		}
+	}
+	rows.Close()
+	for _, v := range items {
+		var intent store.ControlIntent
+		if json.Unmarshal(v.payload, &intent) != nil {
+			continue
+		}
+		command := new(pb.AuthorityCommand)
+		if protojson.Unmarshal(intent.AuthorityIntent, command) != nil || command.CommandId != v.id {
+			continue
+		}
+		s.sim.commands.Lock()
+		state, err := s.sim.client.UpdateAuthority(call, command)
+		if err == nil {
+			save := store.WithCommand(store.WithActor(call, v.actor), v.id)
+			if s.Store.Write(save, intent.Operation, intent.Control, nil) == nil {
+				s.mu.Lock()
+				s.state = state
+				s.analysis = nil
+				s.manual = state.ControlMode == "manual"
+				if s.sim.command != nil {
+					s.sim.command.Mode = state.ControlMode
+				}
+				s.locks = map[string]bool{}
+				for _, target := range state.LockedTargets {
+					s.locks[target] = true
+				}
+				s.mu.Unlock()
+			}
+		}
+		s.sim.commands.Unlock()
 	}
 }
 func (s *Server) reconcileDecisions(ctx context.Context) {
@@ -95,29 +147,23 @@ func (s *Server) reconcileDecisions(ctx context.Context) {
 			case "applied", "rejected":
 				terminalReceipt(rec, &v, outcome)
 				rec.Changes = changes
-			case "interrupted":
-				rec.Status = "failed"
-				rec.SafetyStatus = "simulator_restarted_outcome_interrupted"
-			case "unknown":
+			case "unknown", "interrupted":
+				// A stopped process does not prove whether application occurred.
+				// Retain the durable unresolved intent and approval block.
+				s.sim.commands.Unlock()
+				continue
+			case "not_found":
 				if time.Since(p.created) <= 30*time.Second {
 					s.sim.commands.Unlock()
 					continue
 				}
-				stopped, stopErr := s.sim.client.Stop(call, &pb.RunRequest{RunId: rec.RunId})
-				if stopErr != nil || !stopped.Valid {
+				cancelled, cancelErr := s.sim.client.CancelPlan(call, command)
+				if cancelErr != nil || !terminalReceipt(rec, &v, cancelled) {
 					s.sim.commands.Unlock()
 					continue
 				}
-				rec.Status = "failed"
-				rec.SafetyStatus = "application_unknown_simulator_stopped"
-			case "not_found":
-				if time.Since(p.created) > 30*time.Second {
-					rec.Status = "failed"
-					rec.SafetyStatus = "not_dispatched_before_deadline"
-				} else {
-					s.sim.commands.Unlock()
-					continue
-				}
+				outcome = cancelled
+				rec.Changes = changes
 			default:
 				s.sim.commands.Unlock()
 				continue

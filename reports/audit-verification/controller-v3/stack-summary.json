@@ -1,0 +1,788 @@
+[
+  {
+    "graph": "c1-c6-v5",
+    "scenario": "peak_surge",
+    "run_id": "b9367b3b-cab3-48d4-8e67-84c6399e9c97",
+    "input_session_id": "af54f397-c377-424b-bf6a-3a6cc28ea923",
+    "simulation_time_s": 16,
+    "forecast_count": 56,
+    "horizons": [
+      30,
+      60,
+      120,
+      300
+    ],
+    "outcome": "recommend",
+    "recorded_observations": 12,
+    "review_state_to_analysis_wall_s": 4.588839774000007,
+    "latency_scope": "clock request through polling exact held-snapshot analysis; includes HTTP/DB/cadence; not continuous-run p95",
+    "resources": {
+      "fresh_inference_fps": {
+        "availability": "measured_min_fresh_source_process",
+        "value": 0.5214496307229101
+      },
+      "peak_cpu_percent": {
+        "availability": "measured_peak_fresh_source_process",
+        "value": 377.60834401838986
+      },
+      "peak_ram_bytes": {
+        "availability": "measured_peak_fresh_source_process",
+        "value": 1432821760
+      },
+      "recommendation_latency_s": {
+        "availability": "measured_max_analysis_rpc_wall_s",
+        "value": 0.195299747
+      }
+    },
+    "cancelled_command_id": "b5acd3e5-a89f-4d75-b2d4-a95fce91dd7a",
+    "virtual_application": {
+      "command_id": "bf026b02-dd68-4135-9aae-0c1709b8dcaa",
+      "receipt": {
+        "status": "rejected",
+        "message": "Authoritative input degraded before activation",
+        "command_id": "bf026b02-dd68-4135-9aae-0c1709b8dcaa",
+        "input_session_id": "af54f397-c377-424b-bf6a-3a6cc28ea923",
+        "snapshot_sequence": "35"
+      },
+      "receipt_sha256": "5727c124c4b9d61711c142a2d9e3ea95217965d8c4d9e89739e55fd6a8e8ece9",
+      "resolved_at_utc": "2026-10-05T03:41:45.30587Z",
+      "status": "rejected"
+    },
+    "application_verification": {
+      "approved_changes": [
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C2",
+          "green_s": 11,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C3",
+          "green_s": 11,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C4",
+          "green_s": 55,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C5",
+          "green_s": 43,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C1",
+          "green_s": 30,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C6",
+          "green_s": 30,
+          "offset_s": 0
+        }
+      ],
+      "later_active_plan": [
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C2",
+          "green_s": 30
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C3",
+          "green_s": 30
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C4",
+          "green_s": 30
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C5",
+          "green_s": 30
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C1",
+          "green_s": 30
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C6",
+          "green_s": 30
+        }
+      ],
+      "later_scheduler_offsets": [
+        {
+          "node_id": "C1",
+          "offset_s": 0
+        },
+        {
+          "node_id": "C3",
+          "offset_s": 0
+        }
+      ],
+      "later_signals": [
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C2",
+          "indication": "green",
+          "remaining_s": 4,
+          "permitted_movement_ids": [
+            "C2-C1-C3",
+            "C2-C1-C4",
+            "C2-C1-C5"
+          ]
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C1",
+          "indication": "green",
+          "remaining_s": 4,
+          "permitted_movement_ids": [
+            "C1-C3-C6"
+          ]
+        }
+      ],
+      "later_simulation_time_s": 26
+    },
+    "authority_verification": "manual, lock, unlock, recommend acknowledged; paused clock preserved",
+    "control_epoch_after": 4
+  },
+  {
+    "graph": "c1-c6-v5",
+    "scenario": "incident_c3",
+    "run_id": "4b81e071-2312-4382-981b-89f2a321e1a1",
+    "input_session_id": "059c8231-8824-4d91-9f82-b0ba04818c30",
+    "simulation_time_s": 16,
+    "forecast_count": 56,
+    "horizons": [
+      30,
+      60,
+      120,
+      300
+    ],
+    "outcome": "recommend",
+    "recorded_observations": 12,
+    "review_state_to_analysis_wall_s": 4.574429194000004,
+    "latency_scope": "clock request through polling exact held-snapshot analysis; includes HTTP/DB/cadence; not continuous-run p95",
+    "resources": {
+      "fresh_inference_fps": {
+        "availability": "measured_min_fresh_source_process",
+        "value": 0.5214496307229101
+      },
+      "peak_cpu_percent": {
+        "availability": "measured_peak_fresh_source_process",
+        "value": 377.60834401838986
+      },
+      "peak_ram_bytes": {
+        "availability": "measured_peak_fresh_source_process",
+        "value": 1432821760
+      },
+      "recommendation_latency_s": {
+        "availability": "measured_max_analysis_rpc_wall_s",
+        "value": 0.205094427
+      }
+    },
+    "cancelled_command_id": "129701ab-1c2d-4420-8eb7-3e25e12679f3",
+    "virtual_application": {
+      "command_id": "e96a52bd-3aba-44a5-9b15-b9c0f3a83e24",
+      "receipt": {
+        "status": "rejected",
+        "message": "Authoritative input degraded before activation",
+        "command_id": "e96a52bd-3aba-44a5-9b15-b9c0f3a83e24",
+        "input_session_id": "059c8231-8824-4d91-9f82-b0ba04818c30",
+        "snapshot_sequence": "35"
+      },
+      "receipt_sha256": "f7251a6342baf71960e9a66f90af1cb9ebd9e14b477836e2fd60093260ee9b35",
+      "resolved_at_utc": "2026-10-05T03:42:20.306208Z",
+      "status": "rejected"
+    },
+    "application_verification": {
+      "approved_changes": [
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C2",
+          "green_s": 11,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C3",
+          "green_s": 11,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C4",
+          "green_s": 55,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C5",
+          "green_s": 43,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C1",
+          "green_s": 30,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C6",
+          "green_s": 30,
+          "offset_s": 0
+        }
+      ],
+      "later_active_plan": [
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C2",
+          "green_s": 30
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C3",
+          "green_s": 30
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C4",
+          "green_s": 30
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C5",
+          "green_s": 30
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C1",
+          "green_s": 30
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C6",
+          "green_s": 30
+        }
+      ],
+      "later_scheduler_offsets": [
+        {
+          "node_id": "C1",
+          "offset_s": 0
+        },
+        {
+          "node_id": "C3",
+          "offset_s": 0
+        }
+      ],
+      "later_signals": [
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C2",
+          "indication": "green",
+          "remaining_s": 4,
+          "permitted_movement_ids": [
+            "C2-C1-C3",
+            "C2-C1-C4",
+            "C2-C1-C5"
+          ]
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C1",
+          "indication": "green",
+          "remaining_s": 4,
+          "permitted_movement_ids": [
+            "C1-C3-C6"
+          ]
+        }
+      ],
+      "later_simulation_time_s": 26
+    },
+    "authority_verification": "manual, lock, unlock, recommend acknowledged; paused clock preserved",
+    "control_epoch_after": 4
+  },
+  {
+    "graph": "c1-c6-v5",
+    "scenario": "ambulance_corridor",
+    "run_id": "e812b9d3-0e9f-4a76-9313-2e412d0b0997",
+    "input_session_id": "b739252c-3928-4782-8af8-ffa7571745d7",
+    "simulation_time_s": 16,
+    "forecast_count": 56,
+    "horizons": [
+      30,
+      60,
+      120,
+      300
+    ],
+    "outcome": "no_action",
+    "recorded_observations": 12,
+    "review_state_to_analysis_wall_s": 4.593593544999749,
+    "latency_scope": "clock request through polling exact held-snapshot analysis; includes HTTP/DB/cadence; not continuous-run p95",
+    "resources": {
+      "fresh_inference_fps": {
+        "availability": "measured_min_fresh_source_process",
+        "value": 0.5214496307229101
+      },
+      "peak_cpu_percent": {
+        "availability": "measured_peak_fresh_source_process",
+        "value": 377.60834401838986
+      },
+      "peak_ram_bytes": {
+        "availability": "measured_peak_fresh_source_process",
+        "value": 1432821760
+      },
+      "recommendation_latency_s": {
+        "availability": "measured_max_analysis_rpc_wall_s",
+        "value": 0.100804718
+      }
+    },
+    "virtual_application": {
+      "status": "not_exercised",
+      "reason": "no_action"
+    },
+    "authority_verification": "manual, lock, unlock, recommend acknowledged; paused clock preserved",
+    "control_epoch_after": 4
+  },
+  {
+    "graph": "three-controlled-junctions-v1",
+    "scenario": "peak_surge",
+    "run_id": "d0327d38-1ef3-40a3-9d08-8d471b4a8e82",
+    "input_session_id": "c6310cb1-9ff2-422c-ae79-1b6ecf65afef",
+    "simulation_time_s": 16,
+    "forecast_count": 64,
+    "horizons": [
+      30,
+      60,
+      120,
+      300
+    ],
+    "outcome": "recommend",
+    "recorded_observations": 12,
+    "review_state_to_analysis_wall_s": 4.596287592999943,
+    "latency_scope": "clock request through polling exact held-snapshot analysis; includes HTTP/DB/cadence; not continuous-run p95",
+    "resources": {
+      "fresh_inference_fps": {
+        "availability": "measured_min_fresh_source_process",
+        "value": 0.6548009619715371
+      },
+      "peak_cpu_percent": {
+        "availability": "measured_peak_fresh_source_process",
+        "value": 396.3836739259084
+      },
+      "peak_ram_bytes": {
+        "availability": "measured_peak_fresh_source_process",
+        "value": 1454964736
+      },
+      "recommendation_latency_s": {
+        "availability": "measured_max_analysis_rpc_wall_s",
+        "value": 0.208445073
+      }
+    },
+    "cancelled_command_id": "5e40904c-1567-47bd-8093-eb24c02c2243",
+    "virtual_application": {
+      "applied_at_simulation_s": 35,
+      "command_id": "12d0011b-7f2e-4f24-972b-9c7d4f74a8eb",
+      "receipt": {
+        "status": "applied",
+        "message": "Virtual plan receipt; no command is replayed",
+        "command_id": "12d0011b-7f2e-4f24-972b-9c7d4f74a8eb",
+        "input_session_id": "c6310cb1-9ff2-422c-ae79-1b6ecf65afef",
+        "snapshot_sequence": "44",
+        "applied_at_simulation_s": 35
+      },
+      "receipt_sha256": "83ee5ca41d876884c7bf766f4a484442ea7e5ec7690e689b30a47091687693f7",
+      "resolved_at_utc": "2026-10-05T03:43:30.406496Z",
+      "status": "applied"
+    },
+    "application_verification": {
+      "approved_changes": [
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C2",
+          "green_s": 11,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C3",
+          "green_s": 11,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C4",
+          "green_s": 55,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C5",
+          "green_s": 43,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C1",
+          "green_s": 30,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C6",
+          "green_s": 30,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C7",
+          "phase_id": "C7-FROM-C3",
+          "green_s": 30,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C7",
+          "phase_id": "C7-FROM-C1",
+          "green_s": 30,
+          "offset_s": 0
+        }
+      ],
+      "later_active_plan": [
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C2",
+          "green_s": 11
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C3",
+          "green_s": 11
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C4",
+          "green_s": 55
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C5",
+          "green_s": 43
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C1",
+          "green_s": 30
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C6",
+          "green_s": 30
+        },
+        {
+          "node_id": "C7",
+          "phase_id": "C7-FROM-C3",
+          "green_s": 30
+        },
+        {
+          "node_id": "C7",
+          "phase_id": "C7-FROM-C1",
+          "green_s": 30
+        }
+      ],
+      "later_scheduler_offsets": [
+        {
+          "node_id": "C1",
+          "offset_s": 0
+        },
+        {
+          "node_id": "C3",
+          "offset_s": 0
+        },
+        {
+          "node_id": "C7",
+          "offset_s": 0
+        }
+      ],
+      "later_signals": [
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C3",
+          "indication": "green",
+          "remaining_s": 11,
+          "permitted_movement_ids": [
+            "C7-C1-C2",
+            "C7-C1-C4",
+            "C7-C1-C5"
+          ]
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C6",
+          "indication": "green",
+          "remaining_s": 30,
+          "permitted_movement_ids": [
+            "C6-C3-C7"
+          ]
+        },
+        {
+          "node_id": "C7",
+          "phase_id": "C7-FROM-C1",
+          "indication": "green",
+          "remaining_s": 30,
+          "permitted_movement_ids": [
+            "C1-C7-C3"
+          ]
+        }
+      ],
+      "later_simulation_time_s": 35
+    },
+    "authority_verification": "manual, lock, unlock, recommend acknowledged; paused clock preserved",
+    "control_epoch_after": 4
+  },
+  {
+    "graph": "three-controlled-junctions-v1",
+    "scenario": "incident_c3",
+    "run_id": "344e6645-412f-45cc-b0cf-2c19c978d803",
+    "input_session_id": "d21dbcc9-3ea7-40ed-ad0b-55212bb12028",
+    "simulation_time_s": 16,
+    "forecast_count": 64,
+    "horizons": [
+      30,
+      60,
+      120,
+      300
+    ],
+    "outcome": "recommend",
+    "recorded_observations": 12,
+    "review_state_to_analysis_wall_s": 0.5203607390003526,
+    "latency_scope": "clock request through polling exact held-snapshot analysis; includes HTTP/DB/cadence; not continuous-run p95",
+    "resources": {
+      "fresh_inference_fps": {
+        "availability": "measured_min_fresh_source_process",
+        "value": 0.6548009619715371
+      },
+      "peak_cpu_percent": {
+        "availability": "measured_peak_fresh_source_process",
+        "value": 396.3836739259084
+      },
+      "peak_ram_bytes": {
+        "availability": "measured_peak_fresh_source_process",
+        "value": 1454964736
+      },
+      "recommendation_latency_s": {
+        "availability": "measured_max_analysis_rpc_wall_s",
+        "value": 0.210603446
+      }
+    },
+    "cancelled_command_id": "dc337962-4825-47bd-a8d1-3b7b7244f7f0",
+    "virtual_application": {
+      "applied_at_simulation_s": 35,
+      "command_id": "355ff24d-b2fc-4b45-8d34-4cff3065e4b4",
+      "receipt": {
+        "status": "applied",
+        "message": "Virtual plan receipt; no command is replayed",
+        "command_id": "355ff24d-b2fc-4b45-8d34-4cff3065e4b4",
+        "input_session_id": "d21dbcc9-3ea7-40ed-ad0b-55212bb12028",
+        "snapshot_sequence": "44",
+        "applied_at_simulation_s": 35
+      },
+      "receipt_sha256": "976f209df4baaf0ddc8633acd84edef6901defdb81767b4ce820bfbca758b012",
+      "resolved_at_utc": "2026-10-05T03:44:10.40643Z",
+      "status": "applied"
+    },
+    "application_verification": {
+      "approved_changes": [
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C2",
+          "green_s": 11,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C3",
+          "green_s": 11,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C4",
+          "green_s": 55,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C5",
+          "green_s": 43,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C1",
+          "green_s": 30,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C6",
+          "green_s": 30,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C7",
+          "phase_id": "C7-FROM-C3",
+          "green_s": 30,
+          "offset_s": 0
+        },
+        {
+          "node_id": "C7",
+          "phase_id": "C7-FROM-C1",
+          "green_s": 30,
+          "offset_s": 0
+        }
+      ],
+      "later_active_plan": [
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C2",
+          "green_s": 11
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C3",
+          "green_s": 11
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C4",
+          "green_s": 55
+        },
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C5",
+          "green_s": 43
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C1",
+          "green_s": 30
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C6",
+          "green_s": 30
+        },
+        {
+          "node_id": "C7",
+          "phase_id": "C7-FROM-C3",
+          "green_s": 30
+        },
+        {
+          "node_id": "C7",
+          "phase_id": "C7-FROM-C1",
+          "green_s": 30
+        }
+      ],
+      "later_scheduler_offsets": [
+        {
+          "node_id": "C1",
+          "offset_s": 0
+        },
+        {
+          "node_id": "C3",
+          "offset_s": 0
+        },
+        {
+          "node_id": "C7",
+          "offset_s": 0
+        }
+      ],
+      "later_signals": [
+        {
+          "node_id": "C1",
+          "phase_id": "C1-FROM-C3",
+          "indication": "green",
+          "remaining_s": 11,
+          "permitted_movement_ids": [
+            "C7-C1-C2",
+            "C7-C1-C4",
+            "C7-C1-C5"
+          ]
+        },
+        {
+          "node_id": "C3",
+          "phase_id": "C3-FROM-C6",
+          "indication": "green",
+          "remaining_s": 30,
+          "permitted_movement_ids": [
+            "C6-C3-C7"
+          ]
+        },
+        {
+          "node_id": "C7",
+          "phase_id": "C7-FROM-C1",
+          "indication": "green",
+          "remaining_s": 30,
+          "permitted_movement_ids": [
+            "C1-C7-C3"
+          ]
+        }
+      ],
+      "later_simulation_time_s": 35
+    },
+    "authority_verification": "manual, lock, unlock, recommend acknowledged; paused clock preserved",
+    "control_epoch_after": 4
+  },
+  {
+    "graph": "three-controlled-junctions-v1",
+    "scenario": "ambulance_corridor",
+    "run_id": "ca866236-14e2-4c97-bf2a-1962550e0590",
+    "input_session_id": "c8102c46-4759-4f94-bff3-9e7acc830804",
+    "simulation_time_s": 16,
+    "forecast_count": 64,
+    "horizons": [
+      30,
+      60,
+      120,
+      300
+    ],
+    "outcome": "no_action",
+    "recorded_observations": 12,
+    "review_state_to_analysis_wall_s": 0.524702115000764,
+    "latency_scope": "clock request through polling exact held-snapshot analysis; includes HTTP/DB/cadence; not continuous-run p95",
+    "resources": {
+      "fresh_inference_fps": {
+        "availability": "measured_min_fresh_source_process",
+        "value": 0.6548009619715371
+      },
+      "peak_cpu_percent": {
+        "availability": "measured_peak_fresh_source_process",
+        "value": 396.3836739259084
+      },
+      "peak_ram_bytes": {
+        "availability": "measured_peak_fresh_source_process",
+        "value": 1454964736
+      },
+      "recommendation_latency_s": {
+        "availability": "measured_max_analysis_rpc_wall_s",
+        "value": 0.106965302
+      }
+    },
+    "virtual_application": {
+      "status": "not_exercised",
+      "reason": "no_action"
+    },
+    "authority_verification": "manual, lock, unlock, recommend acknowledged; paused clock preserved",
+    "control_epoch_after": 4
+  }
+]

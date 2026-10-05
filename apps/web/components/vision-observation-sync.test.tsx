@@ -44,7 +44,27 @@ it("retains fetched authoritative observations when the display rendition arrive
   const video = screen.getByLabelText("Recorded clip display only") as HTMLVideoElement;
   video.currentTime = 5.3;
   fireEvent.timeUpdate(video);
-  expect(within(screen.getByRole("region", { name: "CAM-01 finalized ITD observation" })).getByText("0–5s"))
-    .toBeInTheDocument();
-  expect(fetchMock.mock.calls.filter(([url]) => String(url).startsWith("/api/v1/observations?"))).toHaveLength(1);
+  await waitFor(()=>expect(within(screen.getByRole("region", { name: "CAM-01 finalized ITD observation" })).getByText("0–5s"))
+    .toBeInTheDocument());
+  expect(fetchMock.mock.calls.filter(([url]) => String(url).startsWith("/api/v1/observations?"))).toHaveLength(2);
+  expect(fetchMock.mock.calls.some(([url])=>String(url).includes("as_of_source_s=5"))).toBe(true);
+});
+
+it("selects the registered camera from a non-twelve inventory", async () => {
+  vi.stubEnv("NODE_ENV", "development");
+  vi.spyOn(HTMLMediaElement.prototype,"play").mockResolvedValue();
+  vi.spyOn(HTMLMediaElement.prototype,"pause").mockImplementation(()=>{});
+  vi.spyOn(HTMLCanvasElement.prototype,"getContext").mockReturnValue(null);
+  const response=(value:unknown)=>({ok:true,json:async()=>value}) as Response;
+  vi.stubGlobal("fetch",vi.fn(async(url:RequestInfo|URL)=>{
+    if(String(url)==="/api/v1/cameras") return response({cameras:{"CAM-99":cameras.cameras["CAM-01"]},assets:[{...assets.assets[0],assigned_slot:"CAM-99",filename:cameras.cameras["CAM-01"].assigned_video}]});
+    return response({});
+  }));
+  render(<VisionAnalyticsPanel />);
+  await waitFor(()=>expect(screen.getByLabelText("Recorded clip display only")).toHaveAttribute("src","/api/v1/clips/CAM-99/media"));
+  expect(screen.queryByRole("option",{name:/CAM-01/})).not.toBeInTheDocument();
+  expect(screen.getAllByRole("option",{name:/CAM-99/}).length).toBeGreaterThan(0);
+  expect(screen.queryByText(/0 tracked targets/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/0 detector-estimated crossings/)).not.toBeInTheDocument();
+  expect(screen.getAllByRole("option",{name:/CAM-99.*— veh/}).length).toBeGreaterThan(0);
 });

@@ -1,0 +1,53 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/sarthaktripathy/.codex/worktrees/f526/Traffic-Digital-Twin
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 278 items
+
+services/intelligence/tests/test_bound_history_forecast.py ..........    [  3%]
+services/intelligence/tests/test_bounded_recommendations_s03.py ........ [  6%]
+...........                                                              [ 10%]
+services/intelligence/tests/test_causal_forecast.py ..                   [ 11%]
+services/intelligence/tests/test_comparison_s02.py .............         [ 15%]
+services/intelligence/tests/test_epic6.py .......                        [ 18%]
+services/intelligence/tests/test_epic7.py .....                          [ 20%]
+services/intelligence/tests/test_forecast_quality_f02.py ....            [ 21%]
+services/intelligence/tests/test_model.py ........                       [ 24%]
+services/shared/test_privacy.py ..........                               [ 28%]
+services/shared/test_schema.py ..                                        [ 28%]
+services/shared/test_validation.py ......                                [ 30%]
+services/simulation/tests/test_aggregate_conservation.py ....            [ 32%]
+services/simulation/tests/test_audit_authority.py ......                 [ 34%]
+services/simulation/tests/test_bound_video_demand.py ......              [ 36%]
+services/simulation/tests/test_configurable_network.py ...........       [ 40%]
+services/simulation/tests/test_engine.py ......................          [ 48%]
+services/simulation/tests/test_plan_dispatch.py ....                     [ 50%]
+services/simulation/tests/test_receipts.py ..                            [ 50%]
+services/simulation/tests/test_safety.py ............                    [ 55%]
+services/simulation/tests/test_service.py ...                            [ 56%]
+services/simulation/tests/test_snapshot_sanitizer.py ..                  [ 56%]
+services/simulation/tests/test_video_demand_conservation.py ..           [ 57%]
+services/vision/tests/test_audit_measurement.py .....                    [ 59%]
+services/vision/tests/test_display_media.py ..                           [ 60%]
+services/vision/tests/test_display_telemetry.py ...                      [ 61%]
+services/vision/tests/test_itd_finalization.py ......................... [ 70%]
+.......                                                                  [ 72%]
+services/vision/tests/test_recorded_clip.py ..........                   [ 76%]
+services/vision/tests/test_vision_pipeline.py ....                       [ 77%]
+scripts/tests/test_asset_verification.py ...                             [ 78%]
+scripts/tests/test_benchmark_compute.py .                                [ 79%]
+scripts/tests/test_bootstrap_doctor.py .                                 [ 79%]
+scripts/tests/test_process_cpu_budget.py .                               [ 79%]
+scripts/tests/test_prototype_evaluation.py ........................      [ 88%]
+scripts/tests/test_record_replay.py ..                                   [ 89%]
+scripts/tests/test_rehearse_prototype.py .                               [ 89%]
+scripts/tests/test_start_all.py .......                                  [ 92%]
+scripts/tests/test_synthetic_forecasts.py .                              [ 92%]
+scripts/tests/test_verify_contracts.py ..                                [ 93%]
+tests/integration/test_end_to_end_scenarios.py .....                     [ 94%]
+packages/contracts/tests/test_prototype_roundtrip.py ...........         [ 98%]
+packages/reference-samples/tests/test_review_geometry.py ..              [ 99%]
+packages/scenario-config/tests/test_prototype_evaluation_protocol.py .   [100%]
+
+============================= 278 passed in 19.47s =============================

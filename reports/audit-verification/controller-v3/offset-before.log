@@ -1,0 +1,52 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/sarthaktripathy/.codex/worktrees/f526/Traffic-Digital-Twin
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 12 items
+
+services/intelligence/tests/test_coordinated_candidates.py ..........FF  [100%]
+
+=================================== FAILURES ===================================
+_ test_route_offsets_follow_candidate_phase_progression_and_remain_bounded[c1-c6] _
+
+world = (<services.intelligence.model.Model object at 0x71448f3dc410>, schema_version: "1.1"
+run_id: "candidate-regression"
+ti...backlog_veh: 63
+  offered_rate_vpm: 103
+  offered_window_s: 60
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+
+    def test_route_offsets_follow_candidate_phase_progression_and_remain_bounded(world):
+        model,state=world;current=model.plan(state);plans=model._generate_candidates(state,current,model.allocate(state))
+        offsets=model._candidate_offsets(state,4)
+>       assert offsets
+E       assert {}
+
+services/intelligence/tests/test_coordinated_candidates.py:76: AssertionError
+_ test_route_offsets_follow_candidate_phase_progression_and_remain_bounded[three-controlled-junctions] _
+
+world = (<services.intelligence.model.Model object at 0x71448f3dee70>, schema_version: "1.1"
+run_id: "candidate-regression"
+ti...backlog_veh: 63
+  offered_rate_vpm: 103
+  offered_window_s: 60
+}
+input_quality: "synthetic"
+control_mode: "recommend"
+)
+
+    def test_route_offsets_follow_candidate_phase_progression_and_remain_bounded(world):
+        model,state=world;current=model.plan(state);plans=model._generate_candidates(state,current,model.allocate(state))
+        offsets=model._candidate_offsets(state,4)
+>       assert offsets
+E       assert {}
+
+services/intelligence/tests/test_coordinated_candidates.py:76: AssertionError
+=========================== short test summary info ============================
+FAILED services/intelligence/tests/test_coordinated_candidates.py::test_route_offsets_follow_candidate_phase_progression_and_remain_bounded[c1-c6]
+FAILED services/intelligence/tests/test_coordinated_candidates.py::test_route_offsets_follow_candidate_phase_progression_and_remain_bounded[three-controlled-junctions]
+========================= 2 failed, 10 passed in 1.12s =========================

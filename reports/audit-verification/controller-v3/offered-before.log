@@ -1,0 +1,52 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/sarthaktripathy/.codex/worktrees/f526/Traffic-Digital-Twin
+configfile: pytest.ini
+plugins: anyio-4.15.1
+collected 2 items
+
+services/simulation/tests/test_offered_rate_window.py FF                 [100%]
+
+=================================== FAILURES ===================================
+________ test_sparse_arrival_is_averaged_over_declared_past_only_window ________
+
+tmp_path = PosixPath('/tmp/pytest-of-sarthaktripathy/pytest-13/test_sparse_arrival_is_average0')
+
+    def test_sparse_arrival_is_averaged_over_declared_past_only_window(tmp_path):
+        engine=AggregateEngine(directory=tmp_path)
+        try:
+            engine.reset(pb.RunCommand(schema_version='1.0',run_id='sparse',scenario_type='peak_surge',seed=1101,mode='recommend'))
+            link=engine.index.boundary_inputs[0];engine.demand=OneArrival(link)
+            for _ in range(60):engine.step()
+            row=next(x for x in engine.copy_state().boundary_demand if x.link_id==link)
+>           assert row.offered_rate_vpm==pytest.approx(1.0)
+E           assert 12.0 == 1.0 ± 1.0e-06
+E             
+E             comparison failed
+E             Obtained: 12.0
+E             Expected: 1.0 ± 1.0e-06
+
+services/simulation/tests/test_offered_rate_window.py:18: AssertionError
+_________ test_warmup_window_does_not_include_unobserved_future_ticks __________
+
+tmp_path = PosixPath('/tmp/pytest-of-sarthaktripathy/pytest-13/test_warmup_window_does_not_in0')
+
+    def test_warmup_window_does_not_include_unobserved_future_ticks(tmp_path):
+        engine=AggregateEngine(directory=tmp_path)
+        try:
+            engine.reset(pb.RunCommand(schema_version='1.0',run_id='warmup',scenario_type='peak_surge',seed=1101,mode='recommend'))
+            link=engine.index.boundary_inputs[0]
+            class Demand:
+                def next(self,tick):return {link:1.0 if tick==1 else 0.0}
+            engine.demand=Demand()
+            for _ in range(3):engine.step()
+            row=next(x for x in engine.copy_state().boundary_demand if x.link_id==link)
+>           assert row.offered_window_s==3
+                   ^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: offered_window_s
+
+services/simulation/tests/test_offered_rate_window.py:34: AttributeError
+=========================== short test summary info ============================
+FAILED services/simulation/tests/test_offered_rate_window.py::test_sparse_arrival_is_averaged_over_declared_past_only_window
+FAILED services/simulation/tests/test_offered_rate_window.py::test_warmup_window_does_not_include_unobserved_future_ticks
+============================== 2 failed in 0.11s ===============================

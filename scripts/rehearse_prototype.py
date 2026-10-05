@@ -33,20 +33,21 @@ class Client:
         self.api, self.origin = api.rstrip('/') + '/api/v1', origin
         self.http = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
 
-    def call(self, path, body=None):
+    def call(self, path, body=None, method=None):
         headers = {'Origin': self.origin, 'Content-Type': 'application/json'}
-        if body is not None:
+        if body is not None or method not in (None,'GET','HEAD'):
             headers['Idempotency-Key'] = str(uuid.uuid4())
+            self.last_command_id=headers['Idempotency-Key']
         request = urllib.request.Request(self.api + path, headers=headers,
-                                        data=None if body is None else json.dumps(body).encode())
+                                        data=None if body is None else json.dumps(body).encode(), method=method)
         try:
             with self.http.open(request, timeout=15) as response:
                 return response.status, json.load(response)
         except urllib.error.HTTPError as error:
             return error.code, json.load(error)
 
-    def require(self, path, body=None):
-        status, result = self.call(path, body)
+    def require(self, path, body=None, method=None):
+        status, result = self.call(path, body, method)
         if status != 200:
             raise RuntimeError(f'{path}: HTTP {status}: {result.get("message", "request failed")}')
         return result
@@ -69,6 +70,7 @@ def main():
     parser.add_argument('--username', required=True)
     parser.add_argument('--network-config', type=pathlib.Path, required=True)
     parser.add_argument('--output-dir', type=pathlib.Path, required=True)
+    parser.add_argument('--exercise-decisions', action='store_true', help='Approve only genuine recommendations, verify cancellation and safe virtual application')
     args = parser.parse_args()
     for url in (args.api, args.origin):
         parsed = urllib.parse.urlsplit(url)
@@ -119,6 +121,55 @@ def main():
                   'review_state_to_analysis_wall_s': review_latency,
                   'latency_scope': 'clock request through polling exact held-snapshot analysis; includes HTTP/DB/cadence; not continuous-run p95',
                   'resources': report['resources']}
+        epoch=int(state.get('control_epoch',0))
+        cancelled_id=None
+        if args.exercise_decisions and analysis['outcome']=='recommend':
+            client.require('/recommendations/'+analysis['recommendation']['id']+'/approve',{'reason':'Other: Developer virtual-only cancellation rehearsal'})
+            cancelled_id=client.last_command_id
+        client.require('/mode/manual',{})
+        manual=client.require('/state')
+        if manual.get('control_mode')!='manual' or int(manual['control_epoch'])!=epoch+1 or not manual['simulation_paused']:
+            raise RuntimeError('Manual authority acknowledgement or paused-clock identity failed')
+        target=config['phases'][0]['id']
+        client.require('/locks/'+target,{})
+        locked=client.require('/state')
+        if target not in locked['locked_targets'] or int(locked['control_epoch'])!=epoch+2:
+            raise RuntimeError('Simulator lock authority acknowledgement failed')
+        client.require('/locks/'+target,method='DELETE')
+        client.require('/mode/recommend',{})
+        recovered=client.require('/state')
+        if recovered['locked_targets'] or recovered['control_mode']!='recommend' or not recovered['simulation_paused']:
+            raise RuntimeError('Authority cleanup failed; next scenario remains blocked')
+        if cancelled_id:
+            proof=wait_for(lambda: client.require('/runs/'+rid+'/report'),lambda report:any(event['command_id']==cancelled_id and event['status']=='rejected' and event.get('receipt_sha256') for event in report['application_events']))
+            result['cancelled_command_id']=cancelled_id
+        if args.exercise_decisions:
+            _, fresh=wait_for(lambda:client.call('/analysis'),lambda response:response[0]==200 and response[1].get('snapshot_sequence')==str(recovered['snapshot_sequence']) and bool(response[1].get('forecasts')),timeout=12)
+            if fresh['outcome']=='recommend':
+                approved=fresh['recommendation']
+                client.require('/recommendations/'+approved['id']+'/approve',{'reason':'Other: Developer virtual-only safe application rehearsal'})
+                applied_id=client.last_command_id
+                client.require('/runs/'+rid+'/clock',{'paused':False})
+                terminal=wait_for(lambda:client.require('/runs/'+rid+'/report'),lambda report:any(event['command_id']==applied_id and event['status'] in ('applied','rejected') and event.get('receipt_sha256') for event in report['application_events']),timeout=100)
+                event=next(event for event in terminal['application_events'] if event['command_id']==applied_id)
+                after=client.require('/state')
+                if event['status']=='applied':
+                    actual={change['phase_id']:change['green_s'] for change in after['active_plan']}
+                    expected={change['phase_id']:change['green_s'] for change in approved['changes']}
+                    if actual!=expected:raise RuntimeError('Receipt claims applied but virtual timing differs')
+                    if after['simulation_time_s']<=state['simulation_time_s']:raise RuntimeError('Applied receipt has no later virtual state')
+                result['virtual_application']=event
+                result['application_verification']={'approved_changes':approved['changes'],'later_active_plan':after['active_plan'],'later_scheduler_offsets':after['scheduler']['offsets'],'later_signals':after['signals'],'later_simulation_time_s':after['simulation_time_s']}
+                if event['status']=='applied':
+                    expected_offsets={change['node_id']:change.get('offset_s',0) for change in approved['changes']}
+                    actual_offsets={entry['node_id']:entry['offset_s'] for entry in after['scheduler']['offsets']}
+                    if actual_offsets!=expected_offsets:raise RuntimeError('Applied virtual offsets differ from approved plan')
+                client.require('/runs/'+rid+'/clock',{'paused':True})
+                report=client.require('/runs/'+rid+'/report')
+                (args.output_dir/(rid+'.json')).write_text(json.dumps(report,indent=2)+'\n')
+            else:result['virtual_application']={'status':'not_exercised','reason':fresh['outcome']}
+        result['authority_verification']='manual, lock, unlock, recommend acknowledged; paused clock preserved'
+        result['control_epoch_after']=int(recovered['control_epoch'])
         results.append(result)
         print(json.dumps(result), flush=True)
     (args.output_dir / 'summary.json').write_text(json.dumps(results, indent=2) + '\n')

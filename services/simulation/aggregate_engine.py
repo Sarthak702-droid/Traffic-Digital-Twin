@@ -36,6 +36,7 @@ class AggregateEngine:
     def reset(self,command):
         self._validate_command(command)
         with self.lock:
+            if set(command.locked_targets)-set(self.index.phases)-set(self.moves):raise ValueError('Unknown initial lock target')
             demand_source=command.demand_source or 'seeded'
             scenario=next(s for s in self.config['scenarios'] if s['id']==command.scenario_type)
             if demand_source == 'video_profile':
@@ -53,10 +54,11 @@ class AggregateEngine:
             self.demand_source=demand_source
             self.demand=demand
             self.scheduler=Signals(self.config); self.tick=0
+            self.control_epoch=0; self.locked_targets=set(command.locked_targets); self.authority_commands={}
             self.cumulative_demand=self.cumulative_admitted=self.cumulative_exits=0.0
-            self.offered_history={e:deque(maxlen=5) for e in self.index.boundary_inputs}
+            self.offered_history={e:deque(maxlen=60) for e in self.index.boundary_inputs}
             self.flow_history={e:deque(maxlen=60) for e in self.links}; self.movement_arrivals={m:0.0 for m in self.moves}; self.movement_departures={m:0.0 for m in self.moves}; self.waiting_age={m:0.0 for m in self.moves}
-            self.failure=None; self.incident=None; self.emergency=None; self.version=0; self._events(); self.signal_states=self._signal_states(); self.latest=self._snapshot(); self.paused=False;self.running=True; self.version+=1; self.changed.notify_all(); return self.copy_state()
+            self.failure=None; self.incident=None; self.emergency=None; self.version=0; self._events(); self.signal_states=self._signal_states(); self.paused=False;self.latest=self._snapshot(); self.running=True; self.version+=1; self.changed.notify_all(); return self.copy_state()
     def _events(self):
         self.incident=self.emergency=None; ratios={m:1.0 for m in self.moves}
         if self.command.scenario_type=='incident_c3':
@@ -92,6 +94,8 @@ class AggregateEngine:
             for mid,m in self.moves.items():
                 stock=sum(self.cells[m['incoming_link_id']])*m['turning_ratio']; departed=out.junction_flows.get(mid,0.0); self.movement_departures[mid]+=departed
                 added=(out.admitted.get(m['incoming_link_id'],0.0)+sum(v for source,v in out.junction_flows.items() if self.moves[source]['outgoing_link_id']==m['incoming_link_id']))*m['turning_ratio']; self.movement_arrivals[mid]+=added; self.waiting_age[mid]=self.waiting_age[mid]+1 if stock>.1 and departed<.01 else 0.0
+            if getattr(self,"pending_command",None) is not None and self._input_quality() not in ("synthetic","cached_valid","fresh"):
+                self.cancel_plan(self.pending_command,reason="Authoritative input degraded before activation")
             self.scheduler.advance(self._activation_guard)
             if getattr(self,'pending_command',None) is not None:
                 if self.scheduler.applied_at is not None:
@@ -102,22 +106,76 @@ class AggregateEngine:
                     self.pending_command=None
             self.signal_states=self._signal_states(); self.latest=self._snapshot(); self.version+=1; self.changed.notify_all(); return self.copy_state()
     def _activation_guard(self):
+        command=getattr(self,'pending_command',None)
+        if command is not None:
+            if self._input_quality() not in ("synthetic","cached_valid","fresh"):
+                return "Authoritative input degraded before activation"
+            if command.expected_control_epoch != self.control_epoch or self.command.mode != 'recommend':
+                return 'Control authority changed before activation'
+            for phase in self.config['phases']:
+                if (phase['id'] in self.locked_targets or any(mid in self.locked_targets for mid in phase['movement_ids'])) and (self.scheduler.pending[phase['id']] != self.scheduler.plan[phase['id']] or self.scheduler.offsets.get(phase['node_id'],0) != self.pending_scheduler_prior['offsets'].get(phase['node_id'],0)):
+                    return 'Manual lock changed before activation'
         return activation_rejection(self.scheduler,self.cells,self.links,self.moves)
+
+    def _input_quality(self, history=None):
+        if self.demand_source != "video_profile":return "synthetic"
+        history=self.demand.finalized_history(self.tick) if history is None else history
+        latest={row.boundary_link_id:row for row in history}
+        if set(latest) != set(self.index.boundary_inputs):return "missing"
+        if any(row.observation_status not in ("", "valid") for row in latest.values()):return "degraded"
+        if any(self.tick-row.window_end_s>2*(row.window_end_s-row.window_start_s) for row in latest.values()):return "stale"
+        return "cached_valid"
+
+    def cancel_plan(self, command, reason="Cancelled by control authority"):
+        with self.lock:
+            status=self.receipts.status(command)
+            if status=='not_found':
+                # Persist a negative receipt under the engine lock. A delayed
+                # dispatch with this exact identity can no longer activate.
+                self.receipts.prepare(command);self.receipts.accept(command)
+                self.receipts.finish(command,'rejected',message='Cancellation fenced an undispatched command')
+                return 'rejected'
+            if status=='accepted':
+                if self.pending_command is None or self.receipts.digest(self.pending_command)!=self.receipts.digest(command):
+                    raise ValueError('Pending command identity differs')
+                self.receipts.finish(command,'rejected',message=reason)
+                self.pending_command=None
+                self.scheduler.pending=dict(self.scheduler.plan)
+                self.scheduler.offsets=dict(self.pending_scheduler_prior['offsets'])
+                self.scheduler.requested_at=None; self.scheduler.waiting=set(); self.scheduler.release_at={}
+                self.scheduler.rejected_reason=reason
+            return self.receipts.status(command)
+
+    def update_authority(self, command):
+        with self.lock:
+            if not self.running or command.run_id!=self.command.run_id or not command.command_id:
+                raise ValueError('Active run and command identity required')
+            digest=self.receipts.digest(command)
+            if command.command_id in self.authority_commands:
+                if self.authority_commands[command.command_id]!=digest:raise ValueError('Authority command conflict')
+                return self.copy_state()
+            if command.expected_control_epoch!=self.control_epoch:raise ValueError('Control authority revision conflict')
+            if command.mode not in ('manual','observe','recommend'):raise ValueError('Invalid authority mode')
+            if set(command.locked_targets)-set(self.index.phases)-set(self.moves):raise ValueError('Unknown lock target')
+            if getattr(self,'pending_command',None) is not None:self.cancel_plan(self.pending_command)
+            self.control_epoch+=1; self.command.mode=command.mode; self.locked_targets=set(command.locked_targets)
+            self.authority_commands[command.command_id]=digest
+            self.latest=self._snapshot();self.version+=1;self.changed.notify_all()
+            return self.copy_state()
     def _snapshot(self):
         r=pb.TrafficState(schema_version='1.1',run_id=self.command.run_id,timestamp=datetime.now(timezone.utc).isoformat(),simulation_time_s=self.tick,source='synthetic',signals=self.signal_states,vehicles_in_network=round(sum(map(sum,self.cells.values()))),inserted_total=round(self.cumulative_admitted),arrived_total=round(self.cumulative_exits),teleported_total=0,scenario_type=self.command.scenario_type,seed=self.command.seed,active_plan=[pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=self.scheduler.plan[p['id']]) for p in self.config['phases']],engine_kind=self.engine_kind,model_version=self.model_version,metrics_version=METRICS_VERSION,config_hash=self.config_digest,snapshot_sequence=self.version+1,boundary_backlog_veh=sum(self.backlogs.values()),cumulative_demand_veh=self.cumulative_demand,cumulative_admitted_veh=self.cumulative_admitted,cumulative_boundary_exits_veh=self.cumulative_exits,control_target='virtual_only',demand_source=self.demand_source)
+        r.simulation_paused=self.paused
+        r.control_epoch=self.control_epoch; r.control_mode=self.command.mode; r.locked_targets.extend(sorted(self.locked_targets))
         if self.demand_source == 'video_profile':
+            r.source_time_mapping.CopyFrom(pb.SourceTimeMapping(source_origin_s=0,simulation_origin_s=0,source_seconds_per_simulation_second=1))
+            r.snapshot_source_available_s=self.tick
             r.input_session_id=self.command.input_session_id
             history=self.demand.finalized_history(self.tick)
             r.observation_history.extend(history)
+            r.demand_commitments.extend(self.demand.eligible_commitments(self.tick))
             if history:
                 r.latest_finalized_window_end_source_s=max(row.window_end_s for row in history)
-                latest_by_link={}
-                for row in history:latest_by_link[row.boundary_link_id]=row
-                if len(latest_by_link)<len(self.index.boundary_inputs):r.input_quality='missing'
-                elif any(self.tick-row.window_end_s>2*(row.window_end_s-row.window_start_s) for row in latest_by_link.values()):r.input_quality='stale'
-                else:r.input_quality='cached_valid'
-            else:
-                r.input_quality='missing'
+            r.input_quality=self._input_quality(history)
         else:
             r.input_quality='synthetic'
         r.scheduler.tick=self.scheduler.tick; r.scheduler.recovering=self.scheduler.recovering
@@ -131,7 +189,7 @@ class AggregateEngine:
         for edge, stocks in self.cells.items():r.cells.add(link_id=edge, stock_veh=stocks)
         for edge, backlog in self.backlogs.items():
             samples=self.offered_history[edge]
-            r.boundary_demand.add(link_id=edge,backlog_veh=backlog,offered_rate_vpm=60*sum(samples)/len(samples) if samples else 0.0)
+            r.boundary_demand.add(link_id=edge,backlog_veh=backlog,offered_rate_vpm=60*sum(samples)/len(samples) if samples else 0.0,offered_window_s=len(samples))
         r.scheduler.pending_plan.extend(pb.TimingChange(node_id=p['node_id'],phase_id=p['id'],green_s=self.scheduler.pending[p['id']]) for p in self.config['phases'])
         r.scheduler.service_history.extend(pb.SchedulerService(phase_id=pid,last_served_tick=tick) for pid,tick in self.scheduler.last_served.items())
         r.scheduler.priority.extend(pb.SchedulerPriority(node_id=node,phase_id=pid) for node,pid in self.scheduler.priority.items())
@@ -161,9 +219,14 @@ class AggregateEngine:
                 raise ValueError('Authoritative input session changed before plan dispatch')
             if c.expected_snapshot_sequence != self.latest.snapshot_sequence:
                 raise ValueError('Snapshot changed before plan dispatch')
+            if self.command.mode!='recommend' or c.expected_control_epoch!=self.control_epoch:
+                raise ValueError('Control authority changed before plan dispatch')
             plan={v.phase_id:v.green_s for v in c.changes}
             if len(plan)!=len(c.changes):raise ValueError('Duplicate phase changes')
             validate_plan(self.config,plan)
+            for phase in self.config['phases']:
+                if (phase['id'] in self.locked_targets or any(mid in self.locked_targets for mid in phase['movement_ids'])) and plan[phase['id']]!=self.scheduler.plan[phase['id']]:
+                    raise ValueError('Manual lock violation')
             if any(v.phase_id not in self.index.phases or self.index.phases[v.phase_id]['node_id']!=v.node_id for v in c.changes):raise ValueError('Phase/node mismatch')
             if self.scheduler.priority or self.scheduler.recovering:raise ValueError('Emergency protection active')
             offsets={}
@@ -172,6 +235,9 @@ class AggregateEngine:
                 if change.node_id in offsets and offsets[change.node_id]!=value:
                     raise ValueError('Conflicting offsets for one node')
                 offsets[change.node_id]=value
+            for phase in self.config['phases']:
+                if (phase['id'] in self.locked_targets or any(mid in self.locked_targets for mid in phase['movement_ids'])) and offsets.get(phase['node_id'],0) != self.scheduler.offsets.get(phase['node_id'],0):
+                    raise ValueError('Manual lock offset violation')
             previous=self.scheduler.snapshot()
             self.scheduler.apply(plan,c.activate_not_before_simulation_s,offsets)
             try:
@@ -179,6 +245,7 @@ class AggregateEngine:
             except Exception:
                 self.scheduler.restore(previous)
                 raise
+            self.pending_scheduler_prior=previous
             self.pending_command=pb.PlanCommand();self.pending_command.CopyFrom(c)
             # Publish accepted scheduler intent even while the virtual clock is
             # held. Offset-only plans must invalidate the reviewed snapshot too.
@@ -192,7 +259,7 @@ class AggregateEngine:
             if command.input_session_id!=self.latest.input_session_id:
                 raise ValueError('Authoritative input session changed')
             self.paused=command.paused
-            self.latest.simulation_paused=self.paused
+            self.latest=self._snapshot()
             self.version+=1;self.changed.notify_all()
             return self.copy_state()
     def start_clock(self):

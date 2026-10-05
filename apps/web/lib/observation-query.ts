@@ -6,6 +6,7 @@ export function observationQuery(
   frame: TrafficState | null,
   boundaryMapping: Record<string, string>,
   sourceSessions: Record<string, string>,
+  displaySourceS?: number,
 ) {
   const query = new URLSearchParams({ camera_id: camera, mode });
   if (frame?.demand_source === 'video_profile' && boundaryMapping[camera]) {
@@ -13,5 +14,6 @@ export function observationQuery(
   } else if (sourceSessions[camera]) {
     query.set('source_session_id', sourceSessions[camera]);
   }
+  if (displaySourceS !== undefined && Number.isFinite(displaySourceS) && displaySourceS >= 0) query.set('as_of_source_s',String(displaySourceS));
   return `/api/v1/observations?${query}`;
 }

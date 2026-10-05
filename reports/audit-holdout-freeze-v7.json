@@ -1,0 +1,27 @@
+{
+  "frozen_at_utc": "2026-10-05T03:37:47.483360+00:00",
+  "source_revision": "8ad7ac78f96c151f8cc588e2236ec42d2b5d07f7",
+  "synthetic_seeds": [
+    43117,
+    43223,
+    43331
+  ],
+  "source_sha256": {
+    "services/intelligence/model.py": "17ede7ab00e9d681cb95b63b4efc1a59bbab2cd463f9854e1d75ceaeafb7dcb0",
+    "services/intelligence/controller.py": "3ec73ec21d13b566a612b77beb83066ea57e6eb56b9b2ef79a12ccac10087718",
+    "services/intelligence/forecast_demand.py": "cd8ca8493b4c0b1b2c6f229dad9c36924130e4fd6e154704dd12a9d1f5f5a304",
+    "services/simulation/aggregate_engine.py": "563e54d1fd562b1105a41b36c359d56c063eaa946e6f2d21ac3906d314ce93bc",
+    "services/simulation/video_demand.py": "b5649d773455676e53bdd6a4e7336f46382b3f3c515b8deb838029b9326669af",
+    "services/simulation/safety.py": "c43d39b4306c6bf96bad3ddf83c34e1f0690199e505ad86dfa34e0164d42b637",
+    "services/simulation/flow_kernel.py": "29c893d28b00e7bd22fd41233299fca4cd174f054cf731c220c09c4501c6b86c",
+    "scripts/prototype_evaluation.py": "bd660b443004dc9a4d844f56f052bea30c7fcc71178e17889064c316ff08a348",
+    "packages/contracts/proto/twin.proto": "28f43ab0a3a8637db9d34797917fe8d35d52b381d0685fa3a3394b203c88eb86",
+    "packages/scenario-config/comparison-scoring-v1.json": "a0336588d0acbb65809d1318a7203470b9629c698e46cadae1ecd09b6d5bc3bd",
+    "packages/scenario-config/prototype-evaluation-audit-v7.json": "5c77e44d99ac1830fce085256bfe3c5c2fb4d9cfa543942da9b964268bc536b1"
+  },
+  "thresholds": "control thresholds unchanged from prototype-evaluation-v1; 5% delay vs both baselines in at least 50% eligible origins; all displacement limits unchanged",
+  "evidence_scope": "fresh synthetic holdout frozen before execution; all earlier results retained as diagnostics",
+  "development_scope": "Only declared development seeds 1101/2202/3303 used to tune proposals. Final development: 31/144; benefit gate failed.",
+  "benchmark_corrections": "Emergency aggregate service remains in matched 120-second window; actual lifecycle recovery separately observed through declared simulation end 600; protected local policy retains authorized current timing. Original missing/censored emergency evidence preserved.",
+  "recorded_holdout": "blocked; genuine reserved authorized footage, two independent reviewers and non-implementing operator required"
+}

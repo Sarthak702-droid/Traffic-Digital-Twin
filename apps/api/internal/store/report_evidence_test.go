@@ -128,6 +128,10 @@ func TestReportEvidenceEventsAreAppendOnlyAndSurviveReconnect(t *testing.T) {
 	if err != nil || len(saved) != 7 || saved[1].Kind != "analysis" {
 		t.Fatalf("analysis evidence not durable: %+v %v", saved, err)
 	}
+	_, err = pool.Exec(ctx, "INSERT INTO audit_events(id,run_id,recommendation_id,actor,event_type,before_values,after_values,reason,safety_result) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)", UUID(), run.ID, recID, "report-test", "recommendation.rejected", []byte(`[]`), []byte(`{"command_id":"report-reject","changes":[],"plan_outcome":{"command_id":"report-reject","status":"rejected","message":"Cancelled"}}`), "Other: regression", "cancelled")
+	if err != nil {
+		t.Fatal(err)
+	}
 	report, err := New(pool).RunReport(ctx, run.ID)
 	if err != nil {
 		t.Fatal(err)
@@ -147,6 +151,10 @@ func TestReportEvidenceEventsAreAppendOnlyAndSurviveReconnect(t *testing.T) {
 	}
 	if document["schema_version"] != "prototype-run-report-v2" || document["input_session_id"] != nil {
 		t.Fatalf("seeded run invented source identity: %s", exported)
+	}
+	outcomeEvent := document["application_events"].([]any)[0].(map[string]any)
+	if _, exists := outcomeEvent["applied_at_simulation_s"]; exists {
+		t.Fatal("rejected receipt invented a null application time outside the public schema")
 	}
 	forecast := document["forecast"].(map[string]any)
 	if forecast["origin_source_s"] != nil {

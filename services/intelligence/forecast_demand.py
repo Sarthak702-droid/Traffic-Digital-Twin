@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
 
-FORECAST_VERSION = "recent-flow-v1"
+FORECAST_VERSION = "recent-flow-v2"
 HORIZONS_S = [30, 60, 120, 300]
 
 
@@ -29,7 +29,15 @@ def boundary_forecast_rates(state, index, max_bins: int = 60):
         raise ValueError('Video demand input is missing or unsuitable')
     if not state.HasField('latest_finalized_window_end_source_s'):
         raise ValueError('Finalized source watermark is missing')
+    if state.HasField('source_time_mapping'):
+        mapping=state.source_time_mapping
+        if mapping.source_origin_s!=0 or mapping.simulation_origin_s!=0 or mapping.source_seconds_per_simulation_second!=1:
+            raise ValueError('Unsupported declared source-to-simulation mapping')
+        if state.HasField('snapshot_source_available_s') and state.snapshot_source_available_s>state.simulation_time_s:
+            raise ValueError('Availability watermark exceeds mapped snapshot source time')
     watermark = state.latest_finalized_window_end_source_s
+    availability = state.snapshot_source_available_s if state.HasField('snapshot_source_available_s') else watermark
+    if not math.isfinite(availability) or availability < 0:raise ValueError('Snapshot source availability is invalid')
     if not math.isfinite(watermark) or watermark < 0:
         raise ValueError('Finalized source watermark is invalid')
     grouped = {link: [] for link in index.boundary_inputs}
@@ -56,7 +64,7 @@ def boundary_forecast_rates(state, index, max_bins: int = 60):
             raise ValueError('Duplicate or out-of-order finalized history')
         ids.add(row.observation_id)
         previous[link] = row.window_end_s
-        if row.available_at_source_s > watermark:
+        if row.window_end_s > watermark or row.available_at_source_s > availability:
             continue
         try:
             completed = datetime.fromisoformat(row.processed_at_utc.replace('Z', '+00:00'))
@@ -73,7 +81,7 @@ def boundary_forecast_rates(state, index, max_bins: int = 60):
         if not rows:
             raise ValueError(f'Finalized history missing for boundary {link}')
         last = rows[-1]
-        current_source_s = max(watermark, state.simulation_time_s)
+        current_source_s = availability if state.HasField('snapshot_source_available_s') else max(watermark, state.simulation_time_s)
         if current_source_s - last.window_end_s > 2*(last.window_end_s-last.window_start_s):
             raise ValueError(f'Finalized history stale for boundary {link}')
         for row in rows[-max_bins:]:
@@ -90,6 +98,10 @@ def boundary_rates(state, index):
     rates = {}
     for edge in index.boundary_inputs:
         if edge in offered:
+            row=offered[edge]
+            if not all(math.isfinite(v) and v>=0 for v in (row.offered_rate_vpm,row.backlog_veh)):raise ValueError('Invalid offered boundary demand')
+            if row.HasField('offered_window_s') and (not math.isfinite(row.offered_window_s) or row.offered_window_s<0 or row.offered_window_s>60 or row.offered_window_s==0 and row.offered_rate_vpm!=0):
+                raise ValueError('Invalid causal offered-demand averaging window')
             rates[edge] = max(0.0, offered[edge].offered_rate_vpm / 60.0)
             continue
         observed = links.get(edge)

@@ -5,7 +5,7 @@
   "detector_sha256": "06006ecb5fe52a348ceed805bf0aa6b32af7e24e689d09a6582f6d53159d6b00",
   "annotation_format": "yolo_v8_txt",
   "coordinate_system": "normalized_center_xywh_0_1",
-  "review_policy": "agent_reviewed_provisional_engineering_demo",
+  "review_policy": "provisional_unreviewed",
   "independent_ground_truth_claim": false,
   "exported_clips": [
     {

@@ -158,3 +158,28 @@ func (s *Server) getCommand(w http.ResponseWriter, r *http.Request) {
 	}
 	send(w, 200, map[string]any{"command_id": cmdID, "status": status, "http_status": m["http_status"], "response": m["response"]})
 }
+
+// A stream never outlives the credential/session which authorized its upgrade.
+func (s *Server) liveSessionValid(r *http.Request) bool {
+	return s.liveSessionMatches(r, nil)
+}
+func (s *Server) liveSessionMatches(r *http.Request, bound *store.AuthSession) bool {
+	if s.Sessions == nil {
+		return false
+	}
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		return false
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 500*time.Millisecond)
+	defer cancel()
+	session, err := s.Sessions.LookupSession(ctx, digestToken(cookie.Value))
+	if err != nil || session.Revoked || !time.Now().Before(session.ExpiresAt) {
+		return false
+	}
+	if bound != nil && (session.Username != bound.Username || session.AccountVersion != bound.AccountVersion || !session.ExpiresAt.Equal(bound.ExpiresAt)) {
+		return false
+	}
+	account, err := readAccount(s.AccountsPath, session.Username)
+	return err == nil && account.Version == session.AccountVersion && validRole(account.Role)
+}

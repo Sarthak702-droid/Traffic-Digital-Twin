@@ -5,8 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
+	"regexp"
 
 	"traffic.local/twin/apps/api/internal/store"
 )
@@ -43,15 +45,19 @@ func (s *Server) idempotency(next http.Handler) http.Handler {
 		}
 
 		key := r.Header.Get("Idempotency-Key")
-		if key == "" || len(key) < 8 || len(key) > 128 || s.Store == nil {
-			next.ServeHTTP(w, r)
+		if !regexp.MustCompile(`^[A-Za-z0-9._:-]{8,128}$`).MatchString(key) {
+			problem(w, 400, "Valid Idempotency-Key required (8–128 safe ASCII characters)")
+			return
+		}
+		if s.Store == nil {
+			problem(w, 503, "Command reservation store unavailable; no action dispatched")
 			return
 		}
 
 		var bodyBytes []byte
 		if r.Body != nil {
 			var err error
-			bodyBytes, err = io.ReadAll(r.Body)
+			bodyBytes, err = io.ReadAll(http.MaxBytesReader(w, r.Body, 1<<20))
 			if err != nil {
 				problem(w, 400, "Could not read request body for idempotency validation")
 				return
@@ -59,14 +65,17 @@ func (s *Server) idempotency(next http.Handler) http.Handler {
 			r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 		}
 
-		hasher := sha256.New()
-		hasher.Write(bodyBytes)
-		hash := hex.EncodeToString(hasher.Sum(nil))
+		hash, err := commandEnvelopeHash(r, bodyBytes)
+		if err != nil {
+			problem(w, 400, "One valid JSON command body required")
+			return
+		}
 
 		res, err := s.Store.Command(r.Context(), "command.reserve", store.CommandWrite{
-			ID:    key,
-			Hash:  hash,
-			Route: r.URL.Path,
+			ID:     key,
+			Hash:   hash,
+			Route:  r.URL.Path,
+			Method: r.Method, EnvelopeVersion: "command-v2",
 		})
 		if err != nil {
 			// A write whose durable command identity could not be reserved is
@@ -137,6 +146,39 @@ func (s *Server) idempotency(next http.Handler) http.Handler {
 			}
 		}
 
-		next.ServeHTTP(w, r)
+		problem(w, 503, "Command reservation returned an invalid state; no action dispatched")
 	})
+}
+
+// Stable actor scope permits recovery after re-login. The concrete path and
+// query are bound as well as the route template: path parameters are commands.
+func commandEnvelopeHash(r *http.Request, body []byte) (string, error) {
+	var value any
+	if len(bytes.TrimSpace(body)) > 0 {
+		d := json.NewDecoder(bytes.NewReader(body))
+		d.UseNumber()
+		if err := d.Decode(&value); err != nil {
+			return "", err
+		}
+		if err := d.Decode(new(any)); err != io.EOF {
+			return "", io.ErrUnexpectedEOF
+		}
+	}
+	route := ""
+	if rc := chi.RouteContext(r.Context()); rc != nil {
+		route = rc.RoutePattern()
+	}
+	envelope := struct {
+		Version, Actor, Method, Route, Path, Query string
+		AccountVersion                             int
+		Body                                       any
+	}{
+		"command-v2", store.Actor(r.Context()), r.Method, route, r.URL.EscapedPath(), r.URL.Query().Encode(), store.AccountVersion(r.Context()), value,
+	}
+	b, err := json.Marshal(envelope)
+	if err != nil {
+		return "", err
+	}
+	digest := sha256.Sum256(b)
+	return hex.EncodeToString(digest[:]), nil
 }

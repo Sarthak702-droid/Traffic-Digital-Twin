@@ -1,5 +1,7 @@
 """
-C3 Intersection Computer Vision Pipeline (OpenCV + ByteTrack tracking).
+Deprecated C3 demonstration pipeline (OpenCV + ByteTrack tracking).
+Not an authoritative recorded processor or acceptance source. Operating input
+uses RecordedClipProcessor with configured camera geometry and aggregate windows.
 PRD §8.5, §15.2; Backlog S36, S37.
 
 Translates sample video feed at C3 (North approach) into typed traffic aggregates:

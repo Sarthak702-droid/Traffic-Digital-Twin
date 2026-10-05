@@ -7,7 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 import stat
-from datetime import datetime
+from datetime import datetime, timezone
 from math import isfinite
 
 from services.intelligence.forecast_demand import CausalForecaster
@@ -19,18 +19,23 @@ def _identity(row):
             source.get("geometry_sha256"), source.get("source_session_id"))
 
 
-def measurement_score(observation, review, protocol):
+def measurement_score(observation, review, protocol, expected_split=None):
     """Score only an adjudicated, identity-matched source window."""
     if (review is None or review.get("status") != "independently_reviewed" or
             not review.get("first_reviewer") or not review.get("second_reviewer") or
             review["first_reviewer"] == review["second_reviewer"] or
             not all(review.get(key) for key in ("adjudicated_at_utc", "rights_reference",
                     "annotation_method_version", "first_reviewed_at_utc",
-                    "second_reviewed_at_utc"))):
+                    "second_reviewed_at_utc", "source_session_id", "split", "split_protocol_version"))):
         return {"status": "unavailable", "reason": "independent_review_missing"}
+    try:
+        times=[datetime.fromisoformat(review[key].replace('Z','+00:00')) for key in ('first_reviewed_at_utc','second_reviewed_at_utc','adjudicated_at_utc')]
+        if any(t.tzinfo is None for t in times) or max(times[:2])>times[2] or max(times)>datetime.now(timezone.utc) or review['split'] not in ('tuning','reserved','held_out') or (expected_split is not None and review['split']!=expected_split) or review['split_protocol_version']!=protocol.get('version'):raise ValueError('Invalid review times')
+    except (TypeError,ValueError):
+        return {"status":"unavailable","reason":"independent_review_metadata_invalid"}
     source_id = _identity(observation)
     reference_id = (review.get("camera_id"), review.get("clip_sha256"),
-                    review.get("geometry_sha256"), review.get("source_session_id", source_id[3]))
+                    review.get("geometry_sha256"), review.get("source_session_id"))
     if source_id != reference_id or any(
         observation.get(key) != review.get(key)
         for key in ("window_start_s", "window_end_s")
@@ -190,7 +195,7 @@ def build_recorded_report(protocol, candidates, observations, reviews):
         if len(matched) > 1:
             raise ValueError(f"Ambiguous source session for {window['id']}")
         result = ({"status": "unavailable", "reason": "processed_observation_missing"}
-                  if not matched else measurement_score(matched[0], reviews.get(window["id"]), protocol))
+                  if not matched else measurement_score(matched[0], reviews.get(window["id"]), protocol, expected_split=window["evaluation_split"]))
         measurement.append({"window_id": window["id"], "split": window["evaluation_split"], **result})
     return {"protocol_version": protocol["version"], "measurement": measurement,
             "forecast": forecast_scores(observations, protocol,
@@ -275,7 +280,7 @@ def _within_regression(candidate, baseline, key, fraction, lower_is_better=True)
     return value + 1e-9 >= reference * (1 - fraction)
 
 
-def emergency_plan_metrics(live, plan, horizon_s, trace=None):
+def emergency_plan_metrics(live, plan, horizon_s, trace=None, offsets=None, recovery_observation_end_s=None):
     """Tuning diagnostic of aggregate route service and actual model recovery.
 
     Replay the same configured seeded world to the complete origin, then use the
@@ -323,15 +328,21 @@ def emergency_plan_metrics(live, plan, horizon_s, trace=None):
             if engine.snapshot_internal() != live.snapshot_internal():
                 raise ValueError('Emergency benchmark origin is not the same complete seeded state')
             current = {change.phase_id: change.green_s for change in state.active_plan}
-            if plan != current:
+            if plan != current or offsets and any(offsets.values()):
                 engine.apply_plan(pb.PlanCommand(run_id=state.run_id, command_id='metric-plan',
                     expected_input_session_id=state.input_session_id,
                     expected_snapshot_sequence=state.snapshot_sequence,
-                    changes=[pb.TimingChange(node_id=engine.index.phases[phase]['node_id'], phase_id=phase, green_s=green)
+                    changes=[pb.TimingChange(node_id=engine.index.phases[phase]['node_id'], phase_id=phase, green_s=green,offset_s=(offsets or {}).get(engine.index.phases[phase]['node_id'],0))
                              for phase, green in plan.items()]))
+            continuation=copy.deepcopy(engine.demand)
             class TraceDemand:
                 def next(self, tick):
-                    return dict(trace[tick - origin - 1])
+                    realized=continuation.next(tick)
+                    if tick-origin<=horizon_s:
+                        supplied=dict(trace[tick-origin-1])
+                        if supplied!=realized:raise ValueError('Emergency trace differs from the matched seeded world')
+                        return supplied
+                    return realized
             engine.demand = TraceDemand()
             departed = sum(engine.movement_departures[mid] for mid in route_moves)
             green_service = 0
@@ -339,15 +350,20 @@ def emergency_plan_metrics(live, plan, horizon_s, trace=None):
                 green_service += sum(mid in signal.permitted_movement_ids for mid in route_moves for signal in engine.signal_states)
                 state = engine.step()
                 observe_recovery(state)
+            matched_departures=sum(engine.movement_departures[mid] for mid in route_moves)-departed
+            observation_end=origin+horizon_s if recovery_observation_end_s is None else recovery_observation_end_s
+            if observation_end<origin+horizon_s or observation_end>3600:raise ValueError('Invalid declared recovery observation end')
+            while engine.tick<observation_end and recovery_end is None:
+                state=engine.step();observe_recovery(state)
             return {'status': 'available', 'route_service_target': 'aggregate_route_traffic_not_ambulance_travel',
-                'route_departures_veh': sum(engine.movement_departures[mid] for mid in route_moves) - departed,
+                'route_departures_veh': matched_departures,
                 'route_green_service_node_s': green_service,
                 'recovery_status': 'completed' if recovery_end is not None else 'censored_at_window_end',
                 'recovery_time_s': recovery_end - recovery_start if recovery_end is not None else None,
                 'recovery_started_at_simulation_s': recovery_start,
                 'recovery_completed_at_simulation_s': recovery_end,
                 'window_start_simulation_s': origin, 'window_end_simulation_s': origin + horizon_s,
-                'measurement_scope': 'synthetic authorized-request lifecycle; recovery observed from request start; route flow during matched window'}
+                'recovery_observation_end_simulation_s':engine.tick,'measurement_scope': 'synthetic authorized-request lifecycle; actual recovery observed from request start to declared observation end; route flow restricted to matched comparison window'}
         finally:
             engine.close()
 
@@ -363,6 +379,7 @@ def sample_virtual_origin(engine, model, horizon_s, protocol, condition="peak"):
         decision_state.demand_source = "video_profile"
         decision_state.input_quality = "stale"
     analysis = model.analyze(decision_state)
+    decision_diagnostics = model.analysis_diagnostics()
     future = copy.deepcopy(engine.demand)
     trace = [future.next(int(state.simulation_time_s) + tick)
              for tick in range(1, horizon_s + 1)]
@@ -372,13 +389,18 @@ def sample_virtual_origin(engine, model, horizon_s, protocol, condition="peak"):
         local = model.allocate(state)
     except ValueError:
         local = current
+    if condition == 'emergency' and (state.scheduler.priority or state.scheduler.recovering):
+        # A baseline is a policy, not an unsafe dispatch: retain the protected
+        # plan until normal authority can resume, just as operating control does.
+        local=current
     coordinated = ({change.phase_id: change.green_s for change in analysis.recommendation.changes}
                    if analysis.outcome == "recommend" else current)
+    coordinated_offsets=({c.node_id:c.offset_s for c in analysis.recommendation.changes} if analysis.outcome=='recommend' else {})
     plans = {}
     for name, plan in (("fixed_timing", current), ("local_adaptive", local),
                        ("coordinated", coordinated)):
         try:
-            score = model.rollout(state, plan, horizon_s, evaluation)
+            score = model.rollout(state, plan, horizon_s, evaluation, offsets=coordinated_offsets if name=="coordinated" else None)
             plans[name] = {"status": "available", "demand_trace_sha256": trace_hash,
                            "queue_delay_veh_s": score["queue_delay"],
                            "boundary_exits_veh": score["throughput"],
@@ -388,11 +410,13 @@ def sample_virtual_origin(engine, model, horizon_s, protocol, condition="peak"):
                            "worst_service_debt_s": score["worst_service_debt"],
                            "timing_change_s": sum(abs(plan[key] - current[key]) for key in plan),
                            "offered_external_veh": score["offered_external_veh"],
-                           "mass_residual_veh": score["mass_residual_veh"]}
+                           "mass_residual_veh": score["mass_residual_veh"],
+                           "activation_tick": score["activation_tick"]}
         except ValueError as exc:
             plans[name] = {"status": "cannot_evaluate", "reason": str(exc),
                            "demand_trace_sha256": trace_hash}
     result = {"origin_simulation_s": state.simulation_time_s,
+              "decision_diagnostics": decision_diagnostics,
               "origin_cumulative_demand_veh": state.cumulative_demand_veh,
               "first_tick_offered_veh": sum(trace[0].values()),
               "input_quality": decision_state.input_quality,
@@ -408,7 +432,7 @@ def sample_virtual_origin(engine, model, horizon_s, protocol, condition="peak"):
             metrics = {}
             for name, plan in (("fixed_timing", current), ("local_adaptive", local), ("coordinated", coordinated)):
                 try:
-                    metrics[name] = emergency_plan_metrics(engine, plan, horizon_s, trace)
+                    metrics[name] = emergency_plan_metrics(engine, plan, horizon_s, trace, offsets=coordinated_offsets if name=='coordinated' else None, recovery_observation_end_s=protocol.get('emergency_recovery_observation_end_s'))
                 except ValueError as error:
                     metrics[name] = {'status': 'cannot_evaluate', 'reason': str(error)}
             result['emergency_metrics'] = metrics
@@ -421,24 +445,19 @@ def sample_virtual_origin(engine, model, horizon_s, protocol, condition="peak"):
     if any(item["status"] != "available" or abs(item["mass_residual_veh"]) >= 1e-6
            for item in plans.values()):
         result["pass"] = False
+        result["benefit_failures"]={name:[item.get("reason","mass_conservation_failure")] for name,item in plans.items() if item["status"]!="available" or abs(item.get("mass_residual_veh",0))>=1e-6}
         return result
     candidate = plans["coordinated"]
     criteria = protocol["control"]
-    result["pass"] = all(
-        candidate["queue_delay_veh_s"] <=
-        baseline["queue_delay_veh_s"] * (1 - criteria["primary_queue_delay_reduction_min"]) + 1e-9
-        and _within_regression(candidate, baseline, "boundary_exits_veh",
-                               criteria["boundary_exits_regression_max"], False)
-        and _within_regression(candidate, baseline, "boundary_backlog_veh",
-                               criteria["boundary_backlog_regression_max"])
-        and _within_regression(candidate, baseline, "boundary_wait_veh_s",
-                               criteria["boundary_wait_regression_max"])
-        and _within_regression(candidate, baseline, "spillback_exposure_link_s",
-                               criteria["spillback_exposure_regression_max"])
-        and _within_regression(candidate, baseline, "worst_service_debt_s",
-                               criteria["worst_service_debt_regression_max"])
-        for baseline in (plans["fixed_timing"], plans["local_adaptive"])
-    )
+    failures={}
+    for name in ('fixed_timing','local_adaptive'):
+        baseline=plans[name];reasons=[]
+        if candidate['queue_delay_veh_s']>baseline['queue_delay_veh_s']*(1-criteria['primary_queue_delay_reduction_min'])+1e-9:reasons.append('queue_delay_reduction_below_5_percent')
+        for key,limit,lower in [('boundary_exits_veh','boundary_exits_regression_max',False),('boundary_backlog_veh','boundary_backlog_regression_max',True),('boundary_wait_veh_s','boundary_wait_regression_max',True),('spillback_exposure_link_s','spillback_exposure_regression_max',True),('worst_service_debt_s','worst_service_debt_regression_max',True)]:
+            if not _within_regression(candidate,baseline,key,criteria[limit],lower):reasons.append(key)
+        failures[name]=reasons
+    result['benefit_failures']=failures
+    result['pass']=not any(failures.values())
     return result
 
 

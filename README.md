@@ -9,21 +9,13 @@ Local virtual traffic demonstration with recorded ITD v1.2 video analytics, aggr
 Requirements: Node.js 22+, Go 1.25+, Python 3.12+, Docker Compose. Install dependencies while online; startup uses no external APIs, fonts or maps.
 
 ```sh
-npm ci
-python3 -m venv .venv
-.venv/bin/pip install -r services/requirements.lock
-go mod download
-docker compose up -d --wait postgres
-```
-
-Start the local Go-control-plane stack:
-
-```sh
-python3 scripts/bootstrap-local.py
-python3 scripts/create-gateway-user.py .runtime/gateway-users.json operator --role operator
-npm run build
+python3 scripts/bootstrap-prototype.py
+.venv/bin/python scripts/create-gateway-user.py .runtime/gateway-users.json operator --role operator
+.venv/bin/python scripts/bootstrap-prototype.py --doctor --model /path/to/verified-checkpoint.pt --authorized-root /path/to/authorized-media
 npm start
 ```
+
+The canonical bootstrap installs the committed complete compute/vision runtime lock and frontend lockfile, starts PostgreSQL, preserves local settings and builds the UI. Doctor is read-only and reports missing dependencies/assets/account setup explicitly. Supply the private checkpoint and authorized clips locally; they are not downloaded or committed. Doctor readiness is setup readiness, not acceptance.
 
 The account command prompts for a password and stores its verifier in the ignored `.runtime` directory. The Go API requires this file; signing in and changing virtual controls use a server session.
 

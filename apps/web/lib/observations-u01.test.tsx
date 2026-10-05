@@ -13,3 +13,9 @@ describe("display-only finalized observation selection", () => {
     expect(latestDisplayObservation(rows, 12)?.observation_id).toBe("future");
   });
 });
+
+it('does not hold old measurements beyond two window durations',()=>{
+ const row={observation_id:'old',window_start_s:0,window_end_s:5,available_at_source_s:5,processed_at_utc:'2026-09-01T00:00:00Z',crossings_veh:3};
+ expect(latestDisplayObservation([row],16)).toBeNull();
+ expect(latestDisplayObservation([row],6)?.crossings_veh).toBe(3);
+});

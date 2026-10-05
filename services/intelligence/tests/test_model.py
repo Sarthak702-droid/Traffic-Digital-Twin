@@ -14,7 +14,13 @@ def test_forecast_horizons_candidates_and_latency(sample):
     model,state=sample;start=time.perf_counter();result=model.analyze(state)
     assert time.perf_counter()-start<2
     assert {f.horizon_s for f in result.forecasts}=={30,60,120,300}
-    assert len(result.alternatives)==2
+    assert result.outcome=='recommend'
+    assert len(result.alternatives)<=model.scoring['max_alternatives']-1
+    evaluation=model._evaluation_input(state)
+    references=[model.rollout(state,model.plan(state),120,evaluation),model.rollout(state,model.allocate(state),120,evaluation)]
+    for rec in [result.recommendation,*result.alternatives]:
+        metrics=model.rollout(state,{c.phase_id:c.green_s for c in rec.changes},120,evaluation,offsets={c.node_id:c.offset_s for c in rec.changes})
+        assert all(model._admissible(reference,metrics) for reference in references)
     assert all(f.queue_veh>=0 and 0<=f.occupancy_ratio<=1 for f in result.forecasts)
     assert result.comparison.initial_time_s==state.simulation_time_s
     assert result.comparison.seed==state.seed

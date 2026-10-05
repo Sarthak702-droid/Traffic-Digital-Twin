@@ -1,0 +1,21 @@
+
+> test:ui
+> npm run test -w apps/web
+
+
+> @traffic/web@0.1.0 test
+> vitest run
+
+
+ RUN  v5.0.1 /home/sarthaktripathy/.codex/worktrees/f526/Traffic-Digital-Twin/apps/web
+
+
+ Test Files  35 passed (35)
+      Tests  159 passed (159)
+   Start at  08:01:44
+   Duration  20.21s (environment 50%, tests 30%, import 10%, setup 5%, transform 4%)
+
+Environment  jsdom was created 35 times · 65.04s total, 50% of tracked time
+             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
+             learn more: https://vitest.dev/guide/improving-performance#test-environments
+

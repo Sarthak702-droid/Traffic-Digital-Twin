@@ -1,0 +1,24 @@
+{
+  "frozen_at_utc": "2026-10-04T17:49:11.796473+00:00",
+  "source_revision": "7e36bec05095c832e8a38df369a6644e732553e9",
+  "synthetic_seeds": [
+    88111,
+    88223,
+    88337
+  ],
+  "source_sha256": {
+    "services/intelligence/model.py": "58fe4049d414e85a12dcbc0c5370b447657bc3aa969caa3fc74b33e1edd5b9bf",
+    "services/intelligence/forecast_demand.py": "a07681d8c731aa074bdb18f9cadf08c0cad9c8b6983bc14c93b97c0e8fc194a8",
+    "services/simulation/aggregate_engine.py": "499e4c9ba426343f65216798a679287953bbe20ae39ed6add4f3658313216a6b",
+    "services/simulation/video_demand.py": "b5649d773455676e53bdd6a4e7336f46382b3f3c515b8deb838029b9326669af",
+    "services/simulation/safety.py": "c43d39b4306c6bf96bad3ddf83c34e1f0690199e505ad86dfa34e0164d42b637",
+    "services/simulation/flow_kernel.py": "29c893d28b00e7bd22fd41233299fca4cd174f054cf731c220c09c4501c6b86c",
+    "scripts/prototype_evaluation.py": "5da296a7d52c046f4686d01d035e9b27b898553c94928f58cd9f5ee80c8c3ea2",
+    "packages/contracts/proto/twin.proto": "463ae4144759810480721642448125d43f3d3bc1787a7a6b57b7bcb639b9f566",
+    "packages/scenario-config/comparison-scoring-v1.json": "edc1a6fe78b5fee5df2ccfe014451ef1fc01188a8630a1d3dc52efd31870009c",
+    "packages/scenario-config/prototype-evaluation-audit-v3.json": "a3aa92ee440d5be124da529bab428d9e40141087f4f2cf388a7f3e0f7030f04d"
+  },
+  "thresholds": "unchanged from prototype-evaluation-v1",
+  "v2_scope": "preserved failure; superseded by required causal/authority corrections, never tuned on held-out failures",
+  "recorded_holdout": "blocked; new unseen authorized input and independent review required"
+}

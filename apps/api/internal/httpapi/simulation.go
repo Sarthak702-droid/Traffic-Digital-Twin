@@ -216,7 +216,7 @@ func (s *Server) acceptFrame(frame *pb.TrafficState) error {
 	// Database work must not hold the subscriber/state mutex.
 	s.mu.RLock()
 	eligible := s.sim != nil && s.sim.command != nil && frame.RunId == s.sim.command.RunId &&
-		(s.state == nil || s.state.RunId != frame.RunId || s.state.SimulationTimeS <= frame.SimulationTimeS)
+		(s.state == nil || s.state.RunId != frame.RunId || s.state.SimulationTimeS <= frame.SimulationTimeS && s.state.ControlEpoch <= frame.ControlEpoch && s.state.SnapshotSequence <= frame.SnapshotSequence)
 	epoch := s.activeInputSessionID
 	s.mu.RUnlock()
 	if !eligible {
@@ -249,7 +249,7 @@ func (s *Server) acceptFrame(frame *pb.TrafficState) error {
 	if s.sim == nil || s.sim.command == nil || frame.RunId != s.sim.command.RunId {
 		return nil
 	}
-	if s.state != nil && s.state.RunId == frame.RunId && s.state.SimulationTimeS > frame.SimulationTimeS {
+	if s.state != nil && s.state.RunId == frame.RunId && (s.state.SimulationTimeS > frame.SimulationTimeS || s.state.ControlEpoch > frame.ControlEpoch || s.state.SnapshotSequence > frame.SnapshotSequence) {
 		return nil
 	}
 	if frame.InputSessionId != "" && frame.InputSessionId != s.activeInputSessionID {
@@ -408,6 +408,12 @@ func (s *Server) startScenario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	command := &pb.RunCommand{SchemaVersion: "1.0", ScenarioType: scenario, Seed: body.Seed, Mode: body.Mode, DemandSource: body.DemandSource}
+	for target, locked := range s.refreshLocks(r.Context()) {
+		if locked {
+			command.LockedTargets = append(command.LockedTargets, target)
+		}
+	}
+	sort.Strings(command.LockedTargets)
 	reason := "Started an aggregate-flow scenario with " + body.DemandSource + " demand"
 	if body.Incident != nil {
 		if body.Incident.Kind != "capacity_reduction" || body.Incident.CapacityRatio < 0.1 || body.Incident.CapacityRatio > 0.9 {

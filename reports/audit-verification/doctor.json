@@ -1,0 +1,456 @@
+{
+  "status": "ready_for_local_rehearsal",
+  "acceptance": "not_verified",
+  "checks": [
+    {
+      "check": "python",
+      "status": "passed",
+      "detail": "Python 3.12+ required"
+    },
+    {
+      "check": "node",
+      "status": "passed",
+      "detail": "v24.18.0"
+    },
+    {
+      "check": "go",
+      "status": "passed",
+      "detail": "go version go1.25.1 linux/amd64"
+    },
+    {
+      "check": "frontend_dependencies",
+      "status": "passed",
+      "detail": "Active npm workspace graph must resolve and installed versions must match the committed lock"
+    },
+    {
+      "check": "dependency:annotated-types",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:anyio",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:attrs",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:certifi",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:charset-normalizer",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:contourpy",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:cuda-bindings",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:cuda-pathfinder",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:cuda-toolkit",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:cycler",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:filelock",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:fonttools",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:fsspec",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:grpcio",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:grpcio-tools",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:h11",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:httpcore",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:httpx",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:idna",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:imageio-ffmpeg",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:iniconfig",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:Jinja2",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:jsonschema",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:jsonschema-specifications",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:kiwisolver",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:lap",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:MarkupSafe",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:matplotlib",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:mpmath",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:networkx",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:numpy",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:nvidia-cublas",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:nvidia-cuda-cupti",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:nvidia-cuda-nvrtc",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:nvidia-cuda-runtime",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:nvidia-cudnn-cu13",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:nvidia-cufft",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:nvidia-cufile",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:nvidia-curand",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:nvidia-cusolver",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:nvidia-cusparse",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:nvidia-cusparselt-cu13",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:nvidia-ml-py",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:nvidia-nccl-cu13",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:nvidia-nvjitlink",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:nvidia-nvshmem-cu13",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:nvidia-nvtx",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:opencv-python",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:opencv-python-headless",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:packaging",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:pillow",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:pluggy",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:polars",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:polars-runtime-32",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:protobuf",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:psutil",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:pydantic",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:pydantic_core",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:Pygments",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:pyparsing",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:pytest",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:python-dateutil",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:PyYAML",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:referencing",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:requests",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:rpds-py",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:setuptools",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:six",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:sympy",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:torch",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:torchvision",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:triton",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:typing-inspection",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:typing_extensions",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:ultralytics",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:ultralytics-platform",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:ultralytics-thop",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "dependency:urllib3",
+      "status": "passed",
+      "detail": "Must match committed runtime lock"
+    },
+    {
+      "check": "protoc-gen-go",
+      "status": "passed",
+      "detail": "protoc-gen-go v1.36.12"
+    },
+    {
+      "check": "protoc-gen-go-grpc",
+      "status": "passed",
+      "detail": "protoc-gen-go-grpc 1.6.2"
+    },
+    {
+      "check": "generated_bindings",
+      "status": "passed",
+      "detail": "Regenerated into temporary directory; repository is unchanged"
+    },
+    {
+      "check": "contracts",
+      "status": "passed",
+      "detail": "Generated contracts and public ownership verification"
+    },
+    {
+      "check": "postgres",
+      "status": "passed",
+      "detail": "PostgreSQL 16+ reachable"
+    },
+    {
+      "check": "detector_checkpoint",
+      "status": "passed",
+      "detail": "Supply verified private ITD checkpoint; never committed/downloaded by bootstrap"
+    },
+    {
+      "check": "media_root",
+      "status": "passed",
+      "detail": "Supply an authorized recorded-media directory"
+    },
+    {
+      "check": "accounts",
+      "status": "passed",
+      "detail": "Provision an account with create-gateway-user.py; no default password"
+    }
+  ]
+}
