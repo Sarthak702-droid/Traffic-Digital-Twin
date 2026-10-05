@@ -257,6 +257,9 @@ func (s *Store) RunReport(ctx context.Context, id pgtype.UUID) (map[string]any, 
 					detail.ReceiptSHA256 = hex.EncodeToString(digest[:])
 				}
 				report["applied_outcome"] = map[string]any{"command_id": detail.CommandID, "status": outcome.Status, "applied_at_simulation_s": outcome.AppliedAtSimulationS, "resolved_at_utc": created.UTC().Format(time.RFC3339Nano), "receipt_sha256": detail.ReceiptSHA256, "receipt": json.RawMessage(detail.PlanOutcome)}
+				if outcome.AppliedAtSimulationS == nil {
+					delete(report["applied_outcome"].(map[string]any), "applied_at_simulation_s")
+				}
 				report["application_events"] = append(report["application_events"].([]any), report["applied_outcome"])
 			}
 			if strings.HasPrefix(result, "rejected:") || strings.Contains(result, "failed") || strings.Contains(result, "timed_out") {
