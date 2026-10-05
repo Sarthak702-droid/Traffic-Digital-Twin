@@ -486,6 +486,121 @@ function activeCameraResolution(camera: string, slots: CameraSlot[]): [number, n
   return match ? [Number(match[1]), Number(match[2])] : [16, 9];
 }
 
+function StaticFlowAnalysisChart({ telemetry, cameraLabel }: { telemetry: any, cameraLabel: string }) {
+  if (!telemetry || !telemetry.frames || telemetry.frames.length === 0) {
+    return (
+      <div className="vision-chart-placeholder" style={{ height: "180px", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0f16", borderRadius: "8px", border: "1px solid #1e293b", marginTop: "12px", color: "#64748b", fontSize: "12px", flexDirection: "column", gap: "8px" }}>
+        <Activity size={24} opacity={0.5} />
+        <span>Flow data unavailable for {cameraLabel}</span>
+      </div>
+    );
+  }
+
+  const frames = telemetry.frames;
+  const WINDOW_SIZE = 2; // 2 seconds for finer granularity
+  const maxTime = frames[frames.length - 1].time_s;
+  const numWindows = Math.max(1, Math.ceil(maxTime / WINDOW_SIZE));
+  
+  const windows = [];
+  let maxFlow = 0;
+  
+  for (let i = 0; i < numWindows; i++) {
+    const tStart = i * WINDOW_SIZE;
+    const tEnd = (i + 1) * WINDOW_SIZE;
+    
+    let fStart = frames.find((f: any) => f.time_s >= tStart);
+    let fEnd = frames.find((f: any) => f.time_s >= tEnd);
+    
+    if (!fStart) fStart = frames[frames.length - 1];
+    if (!fEnd) fEnd = frames[frames.length - 1];
+    
+    const dt = fEnd.time_s - fStart.time_s;
+    const crossed = Math.max(0, fEnd.cumulative_crossed - fStart.cumulative_crossed);
+    const flowVpm = dt > 0 ? (crossed / dt) * 60 : 0;
+    
+    if (flowVpm > maxFlow) maxFlow = flowVpm;
+    
+    windows.push({
+       time: tEnd,
+       label: `${tStart}s - ${tEnd}s`,
+       flow: flowVpm,
+       crossed: crossed
+    });
+  }
+
+  const width = 1000;
+  const height = 160;
+  const paddingX = 0;
+  const paddingY = 20;
+  
+  const chartW = width - paddingX * 2;
+  const chartH = height - paddingY * 2;
+  const yMax = Math.max(maxFlow, 10);
+  
+  const barWidth = Math.max(2, (chartW / windows.length) - 2);
+  
+  const points = [];
+  for (let i = 0; i < windows.length; i++) {
+    const w = windows[i];
+    const x = paddingX + (i / (windows.length - 1 || 1)) * chartW;
+    const y = height - paddingY - (w.flow / yMax) * chartH;
+    points.push(`${x},${y}`);
+  }
+  
+  const path = points.length > 0 ? `M ${points.join(" L ")}` : "";
+  const fillPath = points.length > 0 ? `${path} L ${width - paddingX},${height - paddingY} L ${paddingX},${height - paddingY} Z` : "";
+
+  return (
+    <div style={{ marginTop: "12px", background: "#0f172a", borderRadius: "8px", border: "1px solid #1e293b", padding: "16px", position: "relative", display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+        <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#f8fafc", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+          <Activity size={16} color="#38bdf8" /> Flow Rate Analysis (VPM)
+        </h3>
+        <div style={{ display: "flex", gap: "12px", fontSize: "12px" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: "6px", color: "#38bdf8" }}>
+            <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "#38bdf8" }}></span> Flow Rate (Vehicles / Min)
+          </span>
+        </div>
+      </div>
+      
+      <div style={{ width: "100%", height: "160px", position: "relative" }}>
+        <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ width: "100%", height: "100%", display: "block", overflow: "visible" }}>
+          {/* Grid lines */}
+          <line x1={0} y1={paddingY} x2={width} y2={paddingY} stroke="#1e293b" strokeWidth="1" strokeDasharray="4,4" />
+          <line x1={0} y1={height/2} x2={width} y2={height/2} stroke="#1e293b" strokeWidth="1" strokeDasharray="4,4" />
+          <line x1={0} y1={height - paddingY} x2={width} y2={height - paddingY} stroke="#1e293b" strokeWidth="1" />
+          
+          {/* Y-axis labels */}
+          <text x="0" y={paddingY - 5} fill="#64748b" fontSize="10" fontFamily="monospace">{(yMax).toFixed(0)}</text>
+          <text x="0" y={height/2 - 5} fill="#64748b" fontSize="10" fontFamily="monospace">{(yMax/2).toFixed(0)}</text>
+          
+          {/* Bar Chart */}
+          {windows.map((w, i) => {
+             const x = paddingX + (i / (windows.length)) * chartW;
+             const barH = (w.flow / yMax) * chartH;
+             const y = height - paddingY - barH;
+             return (
+               <g key={i}>
+                 <rect x={x} y={y} width={barWidth} height={barH} fill="#38bdf8" opacity="0.8" rx="1" />
+                 {w.flow > 0 && <text x={x + barWidth/2} y={y - 4} fill="#94a3b8" fontSize="9" fontFamily="monospace" textAnchor="middle">{w.flow.toFixed(0)}</text>}
+               </g>
+             );
+          })}
+          
+          {/* Trend line */}
+          {path && <path d={path} fill="none" stroke="#f8fafc" strokeWidth="1.5" strokeDasharray="4,4" opacity="0.5" />}
+        </svg>
+      </div>
+      
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px", fontSize: "11px", color: "#64748b", fontFamily: "monospace" }}>
+        <span>0.0s</span>
+        <span>{(maxTime / 2).toFixed(1)}s</span>
+        <span>{maxTime.toFixed(1)}s</span>
+      </div>
+    </div>
+  );
+}
+
 export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame = null, analysis = null, boundaryMapping = {}, sourceSessions = {}, processedClips = [], onSelectSourceSession }: VisionAnalyticsPanelProps) {
   const [isOffline, setIsOffline] = useState(initialOffline);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -500,6 +615,7 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
 
   // 12 Videos & Camera selection
   const [selectedCamera, setSelectedCamera] = useState<string>("CAM-01");
+  const [selectedSummaryCamera, setSelectedSummaryCamera] = useState<string>("CAM-01");
   const processingMode = "cached_observations";
   const [liveObservations, setLiveObservations] = useState<any[]>([]);
   const [observationStatus, setObservationStatus] = useState("missing");
@@ -1462,20 +1578,46 @@ export function VisionAnalyticsPanel({ onReturn, initialOffline = false, frame =
 
       <section className="vision-upstream-card" aria-label="ITD flow detection by recorded camera">
         <div className="vision-card-header"><h2>ITD v1.2 flow detection · all recorded cameras</h2></div>
-        <p className="vision-roi-note">Each row summarizes sampled detections from its own recorded clip. Finalized observation windows are queried separately from Go. The clips are independent samples; display loops do not add virtual traffic.</p>
-        <div className="vision-camera-grid">
-          {cameraSlots.map((camera) => {
-            const item = telemetryMap[camera.id];
-            const frames = item?.frames as any[] | undefined;
-            const flow = frames?.length ? getObservedFlowVpm(frames, frames.length - 1) : null;
-            return <button key={camera.id} type="button" className={`vision-camera-card ${selectedCamera === camera.id ? "active" : ""}`} onClick={() => setSelectedCamera(camera.id)}>
-              <strong>{camera.id} · {camera.approach}</strong>
-              <span>{item ? `${item.summary?.total_unique_vehicles ?? 0} detected · ${item.summary?.total_crossed ?? 0} crossings` : "Telemetry unavailable"}</span>
-              <span>{flow == null ? "Flow unavailable" : `${flow.toFixed(1)} veh/min over analyzed segment`}</span>
-              <small>{camera.role === "external_boundary_input" ? "Video-derived boundary input" : camera.role === "internal_link_observation" ? "Internal observation" : "Independent sample"} · View recorded feed</small>
-            </button>;
-          })}
+        <p className="vision-roi-note">Each recorded clip summarizes sampled detections. Finalized observation windows are queried separately from Go. The clips are independent samples; display loops do not add virtual traffic.</p>
+        
+        <div style={{ marginTop: "12px", marginBottom: "16px", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          <label htmlFor="summary-camera-select" style={{ fontSize: "12px", fontWeight: 600, color: "#8da5b8", textTransform: "uppercase" }}>
+            Select Flow Summary:
+          </label>
+          <select
+            id="summary-camera-select"
+            value={selectedSummaryCamera}
+            onChange={(e) => setSelectedSummaryCamera(e.target.value)}
+            style={{
+              flex: 1,
+              minWidth: "250px",
+              background: "#090d13",
+              color: "#f1f5f9",
+              border: "1px solid #1e293b",
+              borderRadius: "6px",
+              padding: "7px 12px",
+              fontSize: "13px",
+              cursor: "pointer",
+              outline: "none",
+            }}
+          >
+            {cameraSlots.map((cam) => {
+              const item = telemetryMap[cam.id];
+              const frames = item?.frames as any[] | undefined;
+              const flow = frames?.length ? getObservedFlowVpm(frames, frames.length - 1) : null;
+              return (
+                <option key={cam.id} value={cam.id}>
+                  {cam.id} · {cam.approach} - {flow != null ? `${flow.toFixed(1)} veh/min` : "No data"}
+                </option>
+              );
+            })}
+          </select>
         </div>
+
+        <StaticFlowAnalysisChart 
+          telemetry={telemetryMap[selectedSummaryCamera]} 
+          cameraLabel={selectedSummaryCamera}
+        />
       </section>
 
       {/* Selected clip summary. All values below are derived from the active
